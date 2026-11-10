@@ -32,9 +32,8 @@ export function checkCandidate(text, core) {
   const session = new core.Session(candidate => {
     loaded = core.loadDocument(candidate);
     const source = candidate.physics.components.find(c => c.type === 'point-source');
-    const mirror = candidate.physics.components.find(c => c.type === 'plane-mirror');
     const emission = core.observeSourceEmission(loaded.scene.objs[loaded.idMap.get(source.id)]);
-    const reflections = mirror ? core.observeMirrorReflections(loaded.scene.objs[loaded.idMap.get(mirror.id)]) : null;
+    const reflections = core.observeMirrorSet(candidate, loaded.scene, loaded.idMap);
     const simulator = new core.Simulator(loaded.scene, null, null, null, null, null, false, candidate.simulation.processedRayLimit);
     return {
       cancel() { simulator.shouldSimulatorStop = true; },

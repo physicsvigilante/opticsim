@@ -1,0 +1,80 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 4,
+  "adapterVersion": 4,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "mixed-lens-mirror-tracing",
+    "components": [
+      {
+        "id": "source-1",
+        "type": "point-source",
+        "parameters": {
+          "x": -300,
+          "y": 10,
+          "brightness": 0.5
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 0,
+          "angleDeg": 12
+        }
+      },
+      {
+        "id": "lens-1",
+        "type": "ideal-lens",
+        "parameters": {
+          "x": 0,
+          "focalLength": 100,
+          "apertureHeight": 300
+        }
+      },
+      {
+        "id": "lens-2",
+        "type": "ideal-lens",
+        "parameters": {
+          "x": 80,
+          "focalLength": -130,
+          "apertureHeight": 300
+        }
+      },
+      {
+        "id": "mirror-1",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": 260,
+          "y": 20,
+          "orientationDeg": 45,
+          "length": 220
+        }
+      },
+      {
+        "id": "mirror-2",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": 260,
+          "y": 240,
+          "orientationDeg": 45,
+          "length": 220
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "Mixed two lenses and two mirrors",
+    "view": {
+      "x": 50,
+      "y": 80,
+      "zoom": 1
+    },
+    "mode": "rays",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000
+  }
+}

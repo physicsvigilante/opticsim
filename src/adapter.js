@@ -66,13 +66,25 @@ export function observeMirrorReflections(mirror) {
   };
   return meter;
 }
+// Attach to every native mirror, preserving stable authored IDs and physical
+// object order. The old single-mirror observer remains available for callers.
+export function observeMirrorSet(doc, scene, idMap) {
+  const entries = doc.physics.components.filter(c=>c.type==='plane-mirror')
+    .map(c=>[c.id,observeMirrorReflections(scene.objs[idMap.get(c.id)])]);
+  if(!entries.length)return null;
+  return {
+    get reflections() {return entries.reduce((n,[,meter])=>n+meter.reflections,0);},
+    get byId() {return Object.fromEntries(entries.map(([id,meter])=>[id,meter.reflections]));}
+  };
+}
 export function diagnostics(scene, simulator, meter = null, mirrorMeter = null) {
   const errors = [scene.error, simulator.error, ...scene.objs.map(o => o.getError())].filter(Boolean);
   const warnings = [scene.warning, simulator.warning, ...scene.objs.map(o => o.getWarning())].filter(Boolean);
   return { errors, warnings, processed: simulator.processedRayCount, truncation: simulator.totalTruncation,
     undefinedBehavior: simulator.totalUndefinedBehavior, emitted: meter?.emitted ?? null,
     brightnessScale: meter?.brightnessScale ?? simulator.brightnessScale,
-    reflections: mirrorMeter?.reflections ?? null };
+    reflections: mirrorMeter?.reflections ?? null,
+    reflectionsById: mirrorMeter?.byId ?? null };
 }
 export function classifyRun(event, data) {
   return data.errors.length ? 'failed' : event === 'simulationStop' ? 'stopped' :

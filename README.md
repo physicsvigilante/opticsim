@@ -41,7 +41,7 @@ No full site/gallery build or native node-canvas installation is required.
 ## Using the bench
 
 - Choose a one-, two-, three-, or four-lens, converging-plus-diverging, plane-mirror,
-  or lens/mirror return example. Examples use JSON data through the same pipeline.
+  lens/mirror return, or mixed lens/mirror tracing example. Examples use JSON data through the same pipeline.
   `scenes/two-lenses-data-check.json` is another unequal-lens arrangement to load
   with Open sandbox; it was verified without production-code changes.
   Three-/four-lens examples are data-only; the same parameter controls apply.
@@ -82,6 +82,11 @@ No full site/gallery build or native node-canvas installation is required.
   slider steps are 1 mm / 1 degree. The native mirror reflects from both sides.
   Native reflection counts distinguish actual sampled hits from misses, and
   stopped/truncated runs label their counts partial. Missed rays continue unchanged.
+- The new mixed-tracing scenes combine a source, coaxial ideal lenses and freely
+  oriented finite plane mirrors as ordinary component data. PhyDemo chooses all
+  native intersections. Reflections are summed and reported by stable mirror ID.
+  **No route-independent analytical image is claimed**; the native run, save and
+  export remain available when analysis reports unavailable.
 - The two lens/mirror examples demonstrate focal-point return and a finite return
   image. One lens ID compiles to one native lens, encountered again on return if
   PhyDemo finds an intersection. Mirror y=0 and orientation ±90 degrees are fixed
@@ -115,12 +120,20 @@ component/model/count support through migration: v1-v3 remain limited to two len
 and are never rounded. Both schemaVersion and adapterVersion are 4; native PhyDemo version 5 and the pin
 remain unchanged.
 
-Three explicit `physics.model` values select supported arrangements:
+Four explicit `physics.model` values select supported arrangements:
 `ideal-thin-lens-geometric` for **one point source and one to four coaxial ideal
 thin lenses**, with the source left of the lenses; `plane-mirror-geometric` for
 **one point source and one finite plane mirror**, with the source on either side;
 `lens-mirror-return-geometric` for **one source left of one ideal lens left of one
-perpendicular plane mirror**. Multiple mirrors and arbitrary mixed layouts are unsupported. Lengths are mm;
+perpendicular plane mirror**; and `mixed-lens-mirror-tracing` for **one source,
+1–4 coaxial ideal lenses and 1–4 finite plane mirrors** with independently
+authored x/y centres, lengths and tangent orientations. In this bounded mixed
+family, optical segments may not intersect, lens planes cannot coincide or
+contain the source, and the source cannot lie on a mirror supporting line.
+The component array has no prescribed physical ray order. The mixed family
+does not supply a route-independent analytical image formula; use native ray
+paths and per-mirror hit counts without claiming image detection.
+Lengths are mm;
 x points right, y points up. One mm maps to one native unit; y is flipped for
 the native canvas. Focal length is signed. Source/lens coordinates are bounded
 to +/-10,000 mm; |f| and aperture height are 1-10,000 mm; lens/source planes need
@@ -130,7 +143,9 @@ raise errors with document paths.
 Mirror centre coordinates use the same bounds, orientation is [-180,180] degrees,
 length is 1-10,000 mm, and derived endpoints must lie within +/-10,000 mm. The
 source must be at least 0.01 mm from the supporting line, including its extension.
-This bounded domain excludes on-line source degeneracy. Angles 180 degrees apart
+This bounded domain excludes on-line source degeneracy. Mixed tracing additionally
+rejects touching/crossing/overlapping optical segments, whose hit ordering is
+ambiguous. Its plane mirrors are two-sided (the pinned PhyDemo law). Angles 180 degrees apart
 describe the same two-sided surface; saves retain the exact authored angle.
 
 Predictions use independent ideal-lens transfer matrices, explicitly labelled
@@ -187,8 +202,8 @@ not certify all continuous rays or physical accuracy outside the ideal model.
 No curved mirrors, prisms, material thickness, dispersion, diffraction, 3D, mechanics, native semantic
 round-trip conversion, runtime AI, or general symbolic solver is provided.
 The one-to-four lens restriction is a scope policy, not a universal
-constraint on the document design. Earlier v4 readers enforcing the old two-lens
-scope may reject newly authored three-/four-lens v4 scenes. View controls are deliberately small.
+constraint on the document design. Earlier v4 readers enforcing old model/scope
+rules may reject newly authored mixed-tracing or three-/four-lens v4 scenes. View controls are deliberately small.
 
 ## Image-to-scene authoring
 
