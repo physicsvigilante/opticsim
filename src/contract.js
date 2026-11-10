@@ -57,10 +57,15 @@ function validateVersion(doc, version) {
       number(c.emission.angleDeg, 1, 180, `${path}.emission.angleDeg`);
     }
   });
-  if (p.model === 'lens-mirror-return-geometric') validateReturnScope(p.components);
-  else if (p.model === 'mixed-lens-mirror-tracing') validateMixedTraceScope(p.components);
-  else if (p.model === 'plane-mirror-geometric') validateMirrorScope(p.components);
-  else validateBenchScope(p.components, version);
+  // Detectors are passive measuring components, not part of a model's optical
+  // cardinality or analytical path. One reusable measurement layer serves all
+  // current-v4 arrangements; the original optical scope checks stay unchanged.
+  const opticalComponents=p.components.filter(c=>c.type!=='ray-detector');
+  if (p.model === 'lens-mirror-return-geometric') validateReturnScope(opticalComponents);
+  else if (p.model === 'mixed-lens-mirror-tracing') validateMixedTraceScope(opticalComponents);
+  else if (p.model === 'plane-mirror-geometric') validateMirrorScope(opticalComponents);
+  else validateBenchScope(opticalComponents, version);
+  validateDetectorScope(p.components);
   const v = doc.presentation;
   object(v, ['title', 'view', 'mode', 'grid', ...(version === 1 ? ['brightness'] : [])], '$.presentation');
   if (typeof v.title !== 'string' || v.title.length > 120) fail('$.presentation.title', 'expected a title of at most 120 characters');
@@ -142,12 +147,11 @@ function validateMixedTraceScope(components) {
   const sources=components.filter(c=>c.type==='point-source');
   const lenses=components.filter(c=>c.type==='ideal-lens');
   const mirrors=components.filter(c=>c.type==='plane-mirror');
-  const detectors=components.filter(c=>c.type==='ray-detector');
   const path='$.physics.components';
   if(sources.length!==1||lenses.length<1||lenses.length>4||
-     mirrors.length<1||mirrors.length>4||detectors.length>2||
-     components.length!==1+lenses.length+mirrors.length+detectors.length)
-    fail(path,'mixed tracing supports one source, 1–4 coaxial lenses, 1–4 plane mirrors and 0–2 ray detectors','UNSUPPORTED_SCOPE');
+     mirrors.length<1||mirrors.length>4||
+     components.length!==1+lenses.length+mirrors.length)
+    fail(path,'mixed tracing supports one source, 1–4 coaxial lenses and 1–4 plane mirrors','UNSUPPORTED_SCOPE');
   const source=sources[0].parameters;
   const planes=lenses.map(c=>c.parameters.x).sort((a,b)=>a-b);
   if(planes.some((x,i)=>Math.abs(x-source.x)<0.01 ||
@@ -160,17 +164,46 @@ function validateMixedTraceScope(components) {
     const line=c.type==='ideal-lens'
       ? [{x:p.x,y:-p.apertureHeight/2},{x:p.x,y:p.apertureHeight/2}]
       : mirrorEndpoints(p);
-    if(c.type==='plane-mirror'||c.type==='ray-detector'){
+    if(c.type==='plane-mirror'){
       if(line.some(v=>Math.abs(v.x)>10000||Math.abs(v.y)>10000))
         fail(path+'['+index+'].parameters','segment endpoints exceed coordinate bounds','UNSUPPORTED_SCOPE');
       const theta=p.orientationDeg*Math.PI/180;
       const distance=-(source.x-p.x)*Math.sin(theta)+(source.y-p.y)*Math.cos(theta);
       if(Math.abs(distance)<0.01)
-        fail(path+'['+index+'].parameters','source must be at least 0.01 mm from mirror or detector supporting line','UNSUPPORTED_SCOPE');
+        fail(path+'['+index+'].parameters','source must be at least 0.01 mm from mirror supporting line','UNSUPPORTED_SCOPE');
     }
     for(const other of surfaces)
       if(segmentsIntersect(other.line,line))
         fail(path+'['+index+']','optical segments intersect or overlap ('+other.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
+    surfaces.push({id:c.id,line});
+  }
+}
+// The detector layer is independent of the optical model and can be authored
+// on a pure lens train, a lone plane mirror, a return layout, or a mixed scene.
+// Detectors are passive but may not share a native intersection with a surface.
+function validateDetectorScope(components) {
+  const detectors=components.filter(c=>c.type==='ray-detector');
+  if(detectors.length>2)
+    fail('$.physics.components','at most two ray detectors are supported','UNSUPPORTED_SCOPE');
+  if(!detectors.length)return;
+  const source=components.find(c=>c.type==='point-source').parameters;
+  const surfaces=components.filter(c=>['ideal-lens','plane-mirror'].includes(c.type))
+    .map(c=>({id:c.id,line:c.type==='ideal-lens'
+      ? [{x:c.parameters.x,y:-c.parameters.apertureHeight/2},
+         {x:c.parameters.x,y:c.parameters.apertureHeight/2}]
+      : mirrorEndpoints(c.parameters)}));
+  for(const [i,c] of components.entries()) {
+    if(c.type!=='ray-detector')continue;
+    const p=c.parameters,line=mirrorEndpoints(p),path='$.physics.components['+i+']';
+    if(line.some(v=>Math.abs(v.x)>10000||Math.abs(v.y)>10000))
+      fail(path+'.parameters','detector endpoints exceed coordinate bounds','UNSUPPORTED_SCOPE');
+    const theta=p.orientationDeg*Math.PI/180;
+    const distance=-(source.x-p.x)*Math.sin(theta)+(source.y-p.y)*Math.cos(theta);
+    if(Math.abs(distance)<0.01)
+      fail(path+'.parameters','source must be at least 0.01 mm from detector supporting line','UNSUPPORTED_SCOPE');
+    for(const other of surfaces)
+      if(segmentsIntersect(other.line,line))
+        fail(path,'detector segment intersects or overlaps '+other.id,'UNSUPPORTED_SCOPE');
     surfaces.push({id:c.id,line});
   }
 }

@@ -41,8 +41,9 @@ No full site/gallery build or native node-canvas installation is required.
 ## Using the bench
 
 - Choose a one-, two-, three-, or four-lens, converging-plus-diverging, plane-mirror,
-  lens/mirror return, or mixed lens/mirror tracing example. The two ray-detector
-  examples demonstrate authored measurement segments in the same mixed model. Examples use JSON data through the same pipeline.
+  lens/mirror return, or mixed lens/mirror tracing example. Ray-detector
+  examples demonstrate native measurement segments in lens-only, mirror-only
+  and mixed scenes, without changing the existing optical apparatus models. Examples use JSON data through the same pipeline.
   `scenes/two-lenses-data-check.json` is another unequal-lens arrangement to load
   with Open sandbox; it was verified without production-code changes.
   Three-/four-lens examples are data-only; the same parameter controls apply.
@@ -83,7 +84,7 @@ No full site/gallery build or native node-canvas installation is required.
   slider steps are 1 mm / 1 degree. The native mirror reflects from both sides.
   Native reflection counts distinguish actual sampled hits from misses, and
   stopped/truncated runs label their counts partial. Missed rays continue unchanged.
-- In the mixed-tracing model, authors can add **zero to two** passive
+- In **any current-v4 optical model**, authors can add **zero to two** passive
   `ray-detector` components to measure sampled native ray crossings and signed
   native detector power (relative units, **not watts**). Each detector has stable
   `id` and `parameters: {x, y, orientationDeg, length}`; the angle is its
@@ -137,11 +138,13 @@ thin lenses**, with the source left of the lenses; `plane-mirror-geometric` for
 **one point source and one finite plane mirror**, with the source on either side;
 `lens-mirror-return-geometric` for **one source left of one ideal lens left of one
 perpendicular plane mirror**; and `mixed-lens-mirror-tracing` for **one source,
-1–4 coaxial ideal lenses, 1–4 finite plane mirrors, and optionally 1–2
-finite passive ray detectors** with independently
+1–4 coaxial ideal lenses and 1–4 finite plane mirrors** with independently
 authored x/y centres, lengths and tangent orientations. In this bounded mixed
-family, optical and detector segments may not intersect, lens planes cannot coincide or
+family, optical segments may not intersect, lens planes cannot coincide or
 contain the source, and the source cannot lie on a mirror supporting line.
+A model-independent current-v4 layer permits **0–2 passive `ray-detector`
+components** with segment geometry in all four optical models, disjoint from
+other finite segments and with the source off their supporting lines.
 The component array has no prescribed physical ray order. The mixed family
 does not supply a route-independent analytical image formula; use native ray
 paths and per-mirror hit counts without claiming image detection.

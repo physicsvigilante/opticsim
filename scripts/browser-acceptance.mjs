@@ -53,7 +53,8 @@ const stateExpression=[
  'painted,focal:q("lens-2-focalLength")?.value,lensX:q("lens-3-x")?.value,',
  'aperture:q("lens-1-apertureHeight")?.value,mirrorAngle:q("mirror-1-orientationDeg")?.value,',
  'detectorReadouts:q("detector-readouts")?.textContent,detectorHidden:q("detector-readouts")?.hidden,',
- 'detectorLength:q("detector-return-length")?.value,detectorY:q("detector-return-y")?.value};})()'
+ 'detectorLength:q("detector-return-length")?.value,detectorY:q("detector-return-y")?.value,',
+ 'detector1x:q("detector-1-x")?.value};})()'
 ].join('\n');
 
 async function main(){
@@ -176,6 +177,21 @@ async function main(){
     const reverse=await mixed('mixed-detectors-reverse','Reverse beam with two authored ray detectors',6);
     assert.match(reverse.detectorReadouts,/detector-away: 0 native crossings/);
     await shot('mixed-detectors-reverse-rays');
+    const onlyLens=await select('single-lens-detector','Single lens with authored ray detector',3);
+    assert.equal(onlyLens.detectorHidden,false);
+    assert.match(onlyLens.detectorReadouts,/detector-1: [0-9]+ native crossings/);
+    assert.match(onlyLens.prediction,/Real image/);
+    await shot('single-lens-detector-rays');
+    await edit('detector-1-x',180);
+    const editedLensDetector=await until(state,x=>x?.title==='Single lens with authored ray detector'&&
+      x?.status==='completed'&&x.detector1x==='180'&&!x.detectorHidden,'lens-only detector edit');
+    assert.match(editedLensDetector.prediction,/Real image/);
+    report.checks.push({name:'detector measurement layer preserves lens equation during edit',result:'pass'});
+    const onlyMirror=await select('plane-mirror-detector','Plane mirror with authored ray detector',3);
+    assert.equal(onlyMirror.detectorHidden,false);
+    assert.match(onlyMirror.detectorReadouts,/detector-1: [0-9]+ native crossings/);
+    assert.match(onlyMirror.prediction,/Analytical virtual-image prediction/);
+    await shot('plane-mirror-detector-rays');
     console.log('Browser acceptance PASS: '+report.checks.length+' checks; '+report.screenshots.length+' screenshots; '+version);
   }catch(err){
     report.errors.push(err.message);

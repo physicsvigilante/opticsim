@@ -45,14 +45,18 @@ identity and analysis. The supplied three-/four-lens examples illustrate the
 format but must not supply unspecified physical facts.
 
 Current v4 `mixed-lens-mirror-tracing` scenes may combine one point source,
-1–4 coaxial ideal lenses, 1–4 plane mirrors, and **zero to two passive
-`ray-detector` components** with independently authored
-positions and tangent orientations. The native ray path is determined by PhyDemo,
+1–4 coaxial ideal lenses, and 1–4 plane mirrors with independently authored
+positions and tangent orientations. **All four current-v4 optical models**
+allow up to two optional passive `ray-detector` measurement components.
+Detectors are not a new optical apparatus and do not change the model's
+analytical path. The native ray path is determined by PhyDemo,
 not by component-array order. The validator rejects intersecting finite surfaces,
 coincident lens planes, and source-on-optical-surface degeneracies. A completed
 native trace is not evidence of a single optical image; analysis explicitly
-reports unavailable for this model. Do not infer per-ray path assignments,
-missing finite mirror lengths, or final image coordinates from construction rays. Detector parameters are
+reports unavailable for the mixed-tracing model. Detector observations do not
+change analytical predictions for supported lens-only or mirror arrangements.
+Do not infer per-ray path assignments, missing finite mirror lengths, or final
+image coordinates from construction rays. Detector parameters are
 `x`, `y`, `orientationDeg` (tangent) and `length`; infer none of them from
 unlabelled diagram pixels. Native detector `crossings` and signed `power`
 are derived per completed run by component ID and must not be authored or

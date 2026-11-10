@@ -4,9 +4,10 @@
 - Status: milestone 1, source controls, plane mirror, and bounded lens/mirror return composition approved on 2026-11-01. Read `PROPOSAL.md`, `PLANE-MIRROR-PROPOSAL.md`, `LENS-MIRROR-PROPOSAL.md`, `README.md`, and `upstream-pin.json` for boundaries and evidence.
 - Reuse pinned PhyDemo optics and rendering. Do not rewrite ray tracing or modify upstream core without separate approval.
 - Supported arrangements: one point source with one to four coaxial ideal lenses in current v4 scenes (historical v1-v3 saves remain limited to one/two); one point source with one plane mirror; or the bounded source-left / lens / perpendicular-mirror return layout. Return layout has one lens ID/native instance, mirror y=0/orientation ±90 degrees and >=0.01mm plane separations. Current-v4 mixed-lens-mirror-tracing also allows one source, 1–4 coaxial lenses
-  and 1–4 plane mirrors with independent centre/tangent/length, plus 0–2
-  independently authored finite `ray-detector` measurement segments. No intersecting
-  optical surfaces or source-on-surface degeneracies. No route-independent image
+  and 1–4 plane mirrors with independent centre/tangent/length. All current-v4
+  models may additionally contain 0–2 independently authored finite
+  `ray-detector` measurement segments; validation excludes detector/optical
+  intersections and source-on-surface degeneracies. No intersecting optical surfaces. No route-independent image
   prediction for this tracing mode. Keep restrictions in model-specific scope validation. Examples are scene data only.
 - The versioned sandbox document is authoritative. Native JSON and annotations are derived. Keep IDs, parameter bindings, and sandbox metadata outside native objects. Reject unsupported inputs explicitly.
 - Parameter updates must keep the document, simulation, and annotations synchronized. Native physical editing is disabled in the first milestone; exported native files are independent copies.

@@ -73,16 +73,36 @@ test('v4 detector component is reusable strict scene data with stable IDs and na
   }
 });
 
-test('detectors preserve older models and historical schema exclusions',()=>{
+test('detectors compose with every current optical family while historical versions remain strict',()=>{
   const doc=example('mixed-detectors');
   const old=structuredClone(doc);
   old.schemaVersion=old.adapterVersion=3;
   checkError(()=>parseSave(JSON.stringify(old)),'$.physics.model','UNSUPPORTED');
-  for(const name of ['single-lens','plane-mirror','lens-mirror-finite','four-lenses']){
-    const scene=example(name);
-    scene.physics.components.push({...detectors(doc)[0],id:'detector-added'});
-    checkError(()=>validate(scene),'$.physics.components','UNSUPPORTED_SCOPE');
+  const placements={
+    'single-lens':{x:170,y:0,orientationDeg:90,length:160},
+    'plane-mirror':{x:-100,y:0,orientationDeg:90,length:160},
+    'lens-mirror-finite':{x:-150,y:0,orientationDeg:90,length:160},
+    'four-lenses':{x:500,y:0,orientationDeg:90,length:160}
+  };
+  for(const [name,parameters] of Object.entries(placements)){
+    const scene=example(name),before=predict(scene);
+    scene.physics.components.push({id:'detector-added',type:'ray-detector',parameters});
+    assert.equal(validate(scene),scene);
+    assert.deepEqual(predict(scene),before);
+    assert.deepEqual(parseSave(serializeSave(scene)),scene);
+    const result=run(scene);
+    assert.equal(result.state,'completed');
+    assert.deepEqual(result.data.errors,[]);
+    assert.equal(result.scene.objs[result.idMap.get('detector-added')].constructor.type,'Detector');
+    assert.ok(Number.isFinite(result.data.detectorsById['detector-added'].signedPower));
+    assert.ok(result.data.detectorsById['detector-added'].crossings>=0);
   }
+  const v3Lens=example('single-lens');
+  v3Lens.schemaVersion=v3Lens.adapterVersion=3;
+  v3Lens.physics.components.push({id:'detector-added',type:'ray-detector',
+    parameters:placements['single-lens']});
+  checkError(()=>parseSave(JSON.stringify(v3Lens)),
+    '$.physics.components','UNSUPPORTED');
   // Old mixed scenes need not supply any detector, and retain their exact exports.
   const baseline=example('mixed-two-lens-two-mirror');
   assert.equal(validate(baseline),baseline);
