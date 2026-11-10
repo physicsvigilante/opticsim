@@ -14,7 +14,7 @@
         "parameters": {
           "x": -300,
           "y": 10,
-          "brightness": 0.5
+          "brightness": 0.12
         },
         "emission": {
           "mode": "directional",
@@ -37,7 +37,7 @@
         "parameters": {
           "x": -330,
           "y": 55,
-          "brightness": 0.25
+          "brightness": 0.14
         },
         "emission": {
           "mode": "directional",
@@ -70,7 +70,7 @@
         "parameters": {
           "x": -340,
           "y": -70,
-          "brightness": 0.32
+          "brightness": 0.19
         },
         "emission": {
           "mode": "full-circle",

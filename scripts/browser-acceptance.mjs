@@ -214,9 +214,9 @@ async function main(){
       ['source-1','source-2','source-3']);
     assert.equal(three.activeSource,'source-1');
     await shot('multi-source-three-rays');
-    await edit('source-2-brightness',.375);
+    await edit('source-2-brightness',.16);
     const bright=await until(state,x=>x?.title===three.title&&x.status==='completed'&&
-      x.source2Brightness==='0.375'&&!x.sourceHidden,'source-2 brightness edit');
+      x.source2Brightness==='0.16'&&!x.sourceHidden,'source-2 brightness edit');
     assert.match(bright.sourceReadout,/source-2:/);
     const originalRevision=bright.revision;
     await evaluate('(() => {const e=document.getElementById("active-source");e.value="source-3";e.dispatchEvent(new Event("change",{bubbles:true}));})()');
@@ -227,7 +227,7 @@ async function main(){
     await edit('source-3-directionDeg',175);
     const directed=await until(state,x=>x?.title===three.title&&x.status==='completed'&&
       x.source3Direction==='175','source-3 direction edit');
-    assert.equal(directed.source2Brightness,'0.375');
+    assert.equal(directed.source2Brightness,'0.16');
     await edit('source-2-x',0);
     const invalidSource=await until(state,x=>x?.status==='invalid','source on lens plane');
     assert.equal(invalidSource.sourceHidden,true);
@@ -250,9 +250,9 @@ async function main(){
     await evaluate('document.getElementById("source-4-mode-full-circle").click()');
     await until(state,x=>x?.title===four.title&&x.status==='completed'&&
       x.sourceMode?.includes('360'),'source-4 full-circle mode');
-    await edit('source-4-brightness',.23);
+    await edit('source-4-brightness',.17);
     const changedFour=await until(state,x=>x?.title===four.title&&x.status==='completed'&&
-      x.source4Brightness==='0.23','source-4 brightness edit');
+      x.source4Brightness==='0.17','source-4 brightness edit');
     assert.match(changedFour.sourceReadout,/source-4:/);
     report.checks.push({name:'four independent sources: native counts, modes and brightness',result:'pass'});
     await evaluate('document.getElementById("save").click()');
@@ -264,7 +264,7 @@ async function main(){
       return null;
     },x=>!!x,'save multi-source JSON');
     assert.equal(multiSaved.doc.physics.components.filter(c=>c.type==='point-source').length,4);
-    assert.equal(multiSaved.doc.physics.components.find(c=>c.id==='source-4').parameters.brightness,.23);
+    assert.equal(multiSaved.doc.physics.components.find(c=>c.id==='source-4').parameters.brightness,.17);
     const fromSaved=multiSaved.doc.physics.components.find(c=>c.id==='source-4').emission.mode;
     assert.equal(fromSaved,'full-circle');
     await select('single-lens','Single converging lens',2);
@@ -273,7 +273,7 @@ async function main(){
     assert.ok(chooser.nodeId);
     await cdp.send('DOM.setFileInputFiles',{nodeId:chooser.nodeId,files:[multiSaved.filepath]});
     const reloaded=await until(state,x=>x?.title===four.title&&x.status==='completed'&&
-      !x.sourceHidden&&x.source4Brightness==='0.23','reopen multi-source save');
+      !x.sourceHidden&&x.source4Brightness==='0.17','reopen multi-source save');
     assert.equal(reloaded.fields.length,10);
     assert.match(reloaded.sourceReadout,/source-4:/);
     report.checks.push({name:'multi-source Save/Open JSON round trip',result:'pass'});

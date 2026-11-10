@@ -81,7 +81,12 @@ No full site/gallery build or native node-canvas installation is required.
   individual actual emitted counts and native relative brightness scaling;
   source-specific detector power, images and ray path attribution are not
   inferred. Stopped/invalid/incomplete runs do not publish completed
-  per-source emission results. The prior single-source mode change to
+  per-source emission results. When brightness exceeds the scene's sampling
+  density, PhyDemo may clip it; differing clipping ratios across sources
+  trigger an **explicit native warning** that detector power or colour can
+  be misleading. The validator preserves valid source brightness rather than
+  silently changing physical parameters. Increase sampling or adjust explicitly
+  authored brightness if accurate comparative power is important. The prior single-source mode change to
   Directional still selects Medium sampling for the entire scene.
 - Sampling is separate from source characteristics and camera settings. Sparse,
   Medium and Dense correspond to densities 0.048, 0.2 and 1: respectively 24, 100

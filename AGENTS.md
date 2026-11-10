@@ -24,7 +24,9 @@
   line and detector supporting line, and reject coincident source positions.
   Native emissions are counted per source by wrapping each actual start once;
   no source-specific detector attribution, summed brightness scale or
-  per-source analytical image may be fabricated. The browser source selector
+  per-source analytical image may be fabricated. Keep the real native
+  inconsistent-source-saturation warning and its caution about detector power;
+  do not silently normalize user brightness or report a clean physics result. The browser source selector
   is UI-only; every source remains editable in sidebar fields.
 - The mixed-tracing branch uses the same native component compiler and stable
   IDs; report total and per-ID reflection hits via native observers. Do not

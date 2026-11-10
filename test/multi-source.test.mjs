@@ -149,6 +149,26 @@ test('actual native execution reports the sum and every source emission, without
   }
 });
 
+test('native warns when source brightnesses saturate with inconsistent ratios',()=>{
+  const doc=example('multi-source-mixed');
+  byId(doc,'source-1').parameters.brightness=.5;
+  byId(doc,'source-2').parameters.brightness=.25;
+  assert.equal(validate(doc),doc); // Physically authorable, but sampling causes clipping.
+  const r=nativeRun(doc);
+  assert.equal(r.event,'simulationComplete');
+  assert.equal(r.state,'completed-with-warnings');
+  assert.match(r.data.warnings.join(' '),/inconsistent ratios/);
+  assert.equal(r.data.emissionsById['source-1'].brightnessScale,.4);
+  assert.equal(r.data.emissionsById['source-2'].brightnessScale,.8);
+  assert.equal(r.data.emissionsById['source-3'].brightnessScale,1);
+  assert.equal(r.data.brightnessScale,null); // Never report a misleading aggregate.
+  assert.equal(r.data.emitted,Object.values(r.data.emissionsById)
+    .reduce((n,reading)=>n+reading.emitted,0));
+  console.log('MULTI_SOURCE_SATURATION_WARNING',JSON.stringify({
+    state:r.state,warnings:r.data.warnings,byId:r.data.emissionsById
+  }));
+});
+
 test('source wrappers delegate native starts exactly once even when object order is shuffled',()=>{
   const doc=example('multi-source-four'),reversed=structuredClone(doc);
   reversed.physics.components.reverse();
