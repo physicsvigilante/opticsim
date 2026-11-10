@@ -56,7 +56,7 @@ function validateVersion(doc, version) {
   });
   if (p.model === 'lens-mirror-return-geometric') validateReturnScope(p.components);
   else if (p.model === 'plane-mirror-geometric') validateMirrorScope(p.components);
-  else validateBenchScope(p.components);
+  else validateBenchScope(p.components, version);
   const v = doc.presentation;
   object(v, ['title', 'view', 'mode', 'grid', ...(version === 1 ? ['brightness'] : [])], '$.presentation');
   if (typeof v.title !== 'string' || v.title.length > 120) fail('$.presentation.title', 'expected a title of at most 120 characters');
@@ -78,9 +78,10 @@ export function benchComponents(doc) {
   return { source: doc.physics.components.find(c => c.type === 'point-source'),
     lenses: doc.physics.components.filter(c => c.type === 'ideal-lens').sort((a, b) => a.parameters.x - b.parameters.x) };
 }
-function validateBenchScope(components) {
+function validateBenchScope(components, version) {
   const { source, lenses } = benchComponents({ physics: { components } });
-  if (components.filter(c => c.type === 'point-source').length !== 1 || lenses.length < 1 || lenses.length > 2 || components.length !== lenses.length + 1) fail('$.physics.components', 'lens bench supports one point source and one or two coaxial ideal lenses', 'UNSUPPORTED_SCOPE');
+  const maxLenses = version >= 4 ? 4 : 2;
+  if (components.filter(c => c.type === 'point-source').length !== 1 || lenses.length < 1 || lenses.length > maxLenses || components.length !== lenses.length + 1) fail('$.physics.components', `lens bench supports one point source and one to ${maxLenses} coaxial ideal lenses`, 'UNSUPPORTED_SCOPE');
   let previous = source.parameters.x;
   for (const lens of lenses) {
     if (lens.parameters.x - previous < 0.01) fail('$.physics.components', 'source must be left of the lenses; distinct lens planes need at least 0.01 mm separation');

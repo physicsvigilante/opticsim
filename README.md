@@ -40,10 +40,12 @@ No full site/gallery build or native node-canvas installation is required.
 
 ## Using the bench
 
-- Choose a single-lens, two-lens, converging-plus-diverging, plane-mirror, or
-  lens/mirror return example. Examples use JSON data through the same pipeline.
+- Choose a one-, two-, three-, or four-lens, converging-plus-diverging, plane-mirror,
+  or lens/mirror return example. Examples use JSON data through the same pipeline.
   `scenes/two-lenses-data-check.json` is another unequal-lens arrangement to load
   with Open sandbox; it was verified without production-code changes.
+  Three-/four-lens examples are data-only; the same parameter controls apply.
+  New optical components must still be added to the library.
 - Edit source position, lens position, signed focal length, or aperture height.
   Positive f converges; negative f diverges. Lenses are centred on y=0.
 - The semantic point source supports Full-circle or Directional emission.
@@ -109,12 +111,12 @@ sequential migration to v4. V1 brightness moves from presentation into source
 parameters; full-circle emission is retained. V2 to v3 and v3 to v4 change version fields only. IDs,
 optical/source values, brightness, exact density, inactive emission settings,
 view and simulation limits are preserved. Older schemas cannot acquire new
-component/model support through migration. Non-preset densities display as Custom
+component/model/count support through migration: v1-v3 remain limited to two lenses. Non-preset densities display as Custom
 and are never rounded. Both schemaVersion and adapterVersion are 4; native PhyDemo version 5 and the pin
 remain unchanged.
 
 Three explicit `physics.model` values select supported arrangements:
-`ideal-thin-lens-geometric` for **one point source and one or two coaxial ideal
+`ideal-thin-lens-geometric` for **one point source and one to four coaxial ideal
 thin lenses**, with the source left of the lenses; `plane-mirror-geometric` for
 **one point source and one finite plane mirror**, with the source on either side;
 `lens-mirror-return-geometric` for **one source left of one ideal lens left of one
@@ -136,8 +138,10 @@ Predictions use independent ideal-lens transfer matrices, explicitly labelled
 aperture-throughput guarantee. Rays missing a finite lens are not blocked.
 The selected cone and sampled rays may not illuminate the predicted image, or
 even hit the first lens. The analytical location is not an image detection.
-At infinity, the UI reports collimated output and omits finite position and
-transverse magnification. The infinity classification uses |D| <= 1e-10 *
+For finite lens trains, numerical analysis uses magnification `1/D` with an
+independent `A+z*C` check; unreliable results are explicitly unavailable, without
+blocking native tracing or save/export. At infinity, the UI reports collimated
+output and omits finite position and transverse magnification. The infinity classification uses |D| <= 1e-10 *
 max(1, |B|/100 mm), with B and D from the source-to-last-lens matrix.
 
 The mirror branch independently reflects the source across the supporting line:
@@ -182,8 +186,9 @@ not certify all continuous rays or physical accuracy outside the ideal model.
 
 No curved mirrors, prisms, material thickness, dispersion, diffraction, 3D, mechanics, native semantic
 round-trip conversion, runtime AI, or general symbolic solver is provided.
-The lens count restriction is a scope policy of this milestone, not a universal
-constraint on the document design. View controls are deliberately small.
+The one-to-four lens restriction is a scope policy, not a universal
+constraint on the document design. Earlier v4 readers enforcing the old two-lens
+scope may reject newly authored three-/four-lens v4 scenes. View controls are deliberately small.
 
 ## Image-to-scene authoring
 

@@ -520,3 +520,49 @@ accuracy. No unresolved focused-test failures, runtime AI or new dependencies.
 Local checkpointing was approved on 2026-11-02; pushing remains subject to
 separate approval. The pre-checkpoint rerun passed all 34 tests and the browser
 build. Git history records the two separate local checkpoints.
+
+## Bounded multi-lens composition candidate — 2026-11-10
+
+This entry records an **implementation candidate**, not a qualified release. The
+accepted design and conditions are in `MULTI-LENS-COMPOSITION-PROPOSAL.md`
+and `MULTI-LENS-COMPOSITION-REVIEW.md`. Work is confined to branch
+`design/bounded-multilens-trains`; `main` and the pinned upstream physics code
+remain unchanged pending review.
+
+Implemented changes:
+- Current schema-v4 `ideal-thin-lens-geometric` allows one source and 1–4
+  coaxial ideal thin lenses, retaining all existing coordinate and parameter
+  bounds. Historical schema-v1/v2/v3 validators still limit this family to
+  one or two lenses before migration.
+- The adapter retains one native object per authored component and the original
+  stable-ID/index map. Neither PhyDemo ray tracing nor ray-routing was modified.
+- Analytical forward ABCD propagation now checks finite matrix/image values and
+  cross-checks `m=1/D` against `m=A+z*C` with a 1e-7 relative tolerance.
+  Numerically unreliable finite predictions become unavailable while validated
+  scene tracing and export remain available. This heuristic does not certify
+  all possible poorly conditioned cases.
+- Two scene-only composed examples (`scenes/three-lenses.json` and
+  `scenes/four-lenses.json`), a new regression file
+  `test/multilens.test.mjs`, updated agent/user authoring instructions, and
+  a branch GitHub Actions workflow were added.
+
+Independent **exact rational arithmetic** confirms the intended reference
+predictions for the chosen parameter data (not native-run evidence):
+- Three lenses at 0/120/260 mm with focal lengths +75/+100/-200 mm,
+  source x=-300 mm, y=10 mm: `D=-219/50`,
+  `z=-6600/73 mm`, image x=`260-6600/73` mm,
+  magnification `-50/219`.
+- Four lenses at 0/100/250/400 mm with focal lengths
+  +100/-100/+125/+150 mm and the same source:
+  `D=1/3`, `z=420 mm`, image x=820 mm, magnification=3.
+
+**Not yet established in this record:** full `npm test`, the native detector
+tests, `npm run build`, `check-scene.mjs`, or browser open/edit/save/reload
+on the implementation. The tool runtime used to author this candidate has
+Node.js 22.16.0 and cannot retrieve the pinned upstream dependencies from
+GitHub (network DNS unavailable), so it is not an equivalent test environment.
+The included GitHub Actions workflow is intended to run the actual pinned
+project setup and these commands after the branch commit. Do not upgrade this
+candidate's test status without inspecting the resulting checks and any
+failures. An independent implementation review is still required before
+merging.
