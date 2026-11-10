@@ -593,3 +593,18 @@ the bounded examples**. They do not establish visual browser acceptance,
 accuracy of image interpretation from arbitrary diagrams, general mixed
 systems, or independent implementation review. Do not merge to `main`
 without those applicable review gates and user approval.
+### Browser acceptance — actual headless Chrome run, 2026-11-10
+
+**Evidence:** [GitHub Actions run #42873516129](https://github.com/physicsvigilante/opticsim/actions/runs/42873516129) on commit `7174f037fd1f6253deef8d1bce0955ff296e622a`, with browser screenshots, the saved browser sandbox JSON, the independent native-export JSON, and machine-readable `report.json` in the `browser-acceptance-evidence` workflow artifact.
+
+The browser regression at `scripts/browser-acceptance.mjs` uses preinstalled **Google Chrome 156.0.8078.79** in headless mode and built-in Node WebSocket/CDP: no new npm dependencies and no changes to upstream PhyDemo. **8/8 scripted browser checks passed**, together with **42/42 Node tests**, the production Webpack build, and both image-to-scene checker examples.
+
+Observed browser behavior:
+- Three- and four-lens presets loaded using the real scene picker; native canvases were painted and all dynamically generated lens controls appeared with unique IDs. Simulations completed without errors. The three-lens screenshot reports 100 emitted / 127 processed segments, conditional virtual image approximately (169.589, -2.283105) mm; the four-lens screenshot reports 100 emitted / 140 processed segments, conditional real image (820, 30) mm.
+- In the three-lens scene, editing focal length (100→120 mm), lens position (260→270 mm), and aperture height (180→160 mm) changed the accepted scene; the prediction responded to the focal edit.
+- A zero focal length produced an invalid state, disabled saving, and suppressed stale analysis; correcting it restored a completed simulation.
+- The extended-ray toggle switched to the native extension view with a nonblank canvas.
+- **Save sandbox** initiated an actual browser JSON download retaining authored IDs and edited parameters. After switching to the four-lens preset, **Open sandbox** restored that downloaded file, including the extended view and revised values. **Export PhyDemo JSON** produced native version-5 objects without sandbox IDs/parameters.
+- Three full-page screenshots (`three-lenses-rays.png`, `three-lenses-extended.png`, `four-lenses-rays.png`) were captured and inspected. The displayed source, all lenses, ray drawing, generated controls, numeric results, and status labels are legible without observed overlapping controls; the extended view has the expected additional backward constructions. Screenshots are **qualitative UI evidence**, not proof of physical laws.
+
+The browser acceptance requirement for the bounded fixtures is now met **for automated headless Chrome at the captured viewport**. It does not establish a broad device/responsiveness matrix, optical behavior for unsupported layouts, image-to-scene interpretation accuracy on arbitrary diagrams, or a separate-agent implementation review. The extreme numerical-unavailability example has a real load/export check but its simulated-completion callback remains mocked; do not claim a completed native run for that extreme scene. Merge approval remains outstanding.
