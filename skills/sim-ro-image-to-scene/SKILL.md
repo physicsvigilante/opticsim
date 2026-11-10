@@ -44,6 +44,15 @@ The scene array may be ordered differently; authored IDs and positions control
 identity and analysis. The supplied three-/four-lens examples illustrate the
 format but must not supply unspecified physical facts.
 
+Current v4 `mixed-lens-mirror-tracing` scenes may combine one point source,
+1–4 coaxial ideal lenses and 1–4 plane mirrors, with independently authored
+positions and tangent orientations. The native ray path is determined by PhyDemo,
+not by component-array order. The validator rejects intersecting finite surfaces,
+coincident lens planes, and source-on-optical-surface degeneracies. A completed
+native trace is not evidence of a single optical image; analysis explicitly
+reports unavailable for this model. Do not infer per-ray path assignments,
+missing finite mirror lengths, or final image coordinates from construction rays.
+
 Reject components/layouts outside the current sandbox, even when native PhyDemo
 supports them. Do not substitute an ideal lens for a prism, turn an extended object
 into an emitter without agreement, generate raw native JSON/modules, change the

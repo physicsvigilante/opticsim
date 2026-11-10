@@ -28,7 +28,7 @@ function validateVersion(doc, version) {
   object(p, ['lengthUnit', 'coordinates', 'model', 'components'], '$.physics');
   choice(p.lengthUnit, ['mm'], '$.physics.lengthUnit');
   choice(p.coordinates, ['x-right-y-up'], '$.physics.coordinates');
-  const models = ['ideal-thin-lens-geometric', ...(version >= 3 ? ['plane-mirror-geometric'] : []), ...(version >= 4 ? ['lens-mirror-return-geometric'] : [])];
+  const models = ['ideal-thin-lens-geometric', ...(version >= 3 ? ['plane-mirror-geometric'] : []), ...(version >= 4 ? ['lens-mirror-return-geometric', 'mixed-lens-mirror-tracing'] : [])];
   choice(p.model, models, '$.physics.model');
   if (!Array.isArray(p.components) || p.components.length > 32) fail('$.physics.components', 'expected a bounded component array');
   const ids = new Set();
@@ -55,6 +55,7 @@ function validateVersion(doc, version) {
     }
   });
   if (p.model === 'lens-mirror-return-geometric') validateReturnScope(p.components);
+  else if (p.model === 'mixed-lens-mirror-tracing') validateMixedTraceScope(p.components);
   else if (p.model === 'plane-mirror-geometric') validateMirrorScope(p.components);
   else validateBenchScope(p.components, version);
   const v = doc.presentation;
@@ -115,6 +116,60 @@ function validateReturnScope(components) {
   if (lens.x - source.x < 0.01 || mirror.x - lens.x < 0.01) fail(path, 'return layout requires source left of lens left of mirror, with >=0.01 mm plane separation');
   if (mirror.y !== 0 || ![90, -90].includes(mirror.orientationDeg)) fail(path, 'return layout requires mirror centre y=0 and perpendicular orientation +90 or -90 degrees', 'UNSUPPORTED_SCOPE');
   if (mirrorEndpoints(mirror).some(p => Math.abs(p.x) > 10000 || Math.abs(p.y) > 10000)) fail(path, 'derived mirror endpoints must lie within +/-10000 mm');
+}
+
+// Current-v4 bounded tracing composition: existing independent finite optical
+// segments only. Reject intersecting surfaces, where simultaneous native hits
+// would introduce an undefined ordering rather than a new optical law.
+function segmentsIntersect([a,b], [c,d]) {
+  const delta = (p,q) => ({x:q.x-p.x,y:q.y-p.y});
+  const cross = (p,q) => p.x*q.y-p.y*q.x;
+  const ab=delta(a,b), cd=delta(c,d), ac=delta(a,c);
+  const den=cross(ab,cd);
+  const scale=Math.hypot(ab.x,ab.y)*Math.hypot(cd.x,cd.y);
+  if(Math.abs(den)<1e-12*scale) {
+    if(Math.abs(cross(ab,ac))>1e-9*Math.hypot(ab.x,ab.y)) return false;
+    const dim=Math.abs(ab.x)>=Math.abs(ab.y)?'x':'y';
+    return Math.max(Math.min(a[dim],b[dim]),Math.min(c[dim],d[dim])) <=
+      Math.min(Math.max(a[dim],b[dim]),Math.max(c[dim],d[dim]))+1e-9;
+  }
+  const t=cross(ac,cd)/den, u=cross(ac,ab)/den;
+  return t>=-1e-9&&t<=1+1e-9&&u>=-1e-9&&u<=1+1e-9;
+}
+function validateMixedTraceScope(components) {
+  const sources=components.filter(c=>c.type==='point-source');
+  const lenses=components.filter(c=>c.type==='ideal-lens');
+  const mirrors=components.filter(c=>c.type==='plane-mirror');
+  const path='$.physics.components';
+  if(sources.length!==1||lenses.length<1||lenses.length>4||
+     mirrors.length<1||mirrors.length>4||
+     components.length!==1+lenses.length+mirrors.length)
+    fail(path,'mixed tracing supports one point source, 1–4 coaxial ideal lenses and 1–4 plane mirrors','UNSUPPORTED_SCOPE');
+  const source=sources[0].parameters;
+  const planes=lenses.map(c=>c.parameters.x).sort((a,b)=>a-b);
+  if(planes.some((x,i)=>Math.abs(x-source.x)<0.01 ||
+      (i>0 && x-planes[i-1]<0.01)))
+    fail(path,'source and distinct lens planes must be separated by at least 0.01 mm','UNSUPPORTED_SCOPE');
+  const surfaces=[];
+  for(const [index,c] of components.entries()) {
+    if(c.type==='point-source')continue;
+    const p=c.parameters;
+    const line=c.type==='ideal-lens'
+      ? [{x:p.x,y:-p.apertureHeight/2},{x:p.x,y:p.apertureHeight/2}]
+      : mirrorEndpoints(p);
+    if(c.type==='plane-mirror'){
+      if(line.some(v=>Math.abs(v.x)>10000||Math.abs(v.y)>10000))
+        fail(path+'['+index+'].parameters','mirror endpoints exceed coordinate bounds','UNSUPPORTED_SCOPE');
+      const theta=p.orientationDeg*Math.PI/180;
+      const distance=-(source.x-p.x)*Math.sin(theta)+(source.y-p.y)*Math.cos(theta);
+      if(Math.abs(distance)<0.01)
+        fail(path+'['+index+'].parameters','source must be at least 0.01 mm from mirror supporting line','UNSUPPORTED_SCOPE');
+    }
+    for(const other of surfaces)
+      if(segmentsIntersect(other.line,line))
+        fail(path+'['+index+']','optical segments intersect or overlap ('+other.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
+    surfaces.push({id:c.id,line});
+  }
 }
 export function setParameter(doc, id, parameter, value) {
   const next = structuredClone(doc);

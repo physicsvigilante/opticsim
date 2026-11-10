@@ -51,7 +51,7 @@ const stateExpression=[
  'saveDisabled:q("save")?.disabled,extended:q("mode-extended")?.checked,',
  'fields:[...document.querySelectorAll("#controls fieldset legend")].map(x=>x.textContent),',
  'painted,focal:q("lens-2-focalLength")?.value,lensX:q("lens-3-x")?.value,',
- 'aperture:q("lens-1-apertureHeight")?.value};})()'
+ 'aperture:q("lens-1-apertureHeight")?.value,mirrorAngle:q("mirror-1-orientationDeg")?.value};})()'
 ].join('\n');
 
 async function main(){
@@ -133,6 +133,25 @@ async function main(){
     const native=await until(async()=>JSON.parse(await readFile(join(downloads,'scene.phydemo.json'),'utf8')),x=>x?.version===5&&x.objs?.length===4,'native JSON export');
     assert.ok(native.objs.every(x=>!('id' in x)&&!('parameters' in x)));
     report.checks.push({name:'native PhyDemo export',result:'pass'});
+    async function mixed(name,title,count){
+      await evaluate('(() => {const e=document.getElementById("examples");e.value='+JSON.stringify(name)+';e.dispatchEvent(new Event("change",{bubbles:true}));})()');
+      const s=await until(state,x=>x?.title===title&&x?.status==='completed'&&x.analysis?.includes('Analysis: unavailable'),title+' trace');
+      assert.equal(s.fields.length,count);assert.equal(new Set(s.fields).size,count);
+      assert.ok(s.painted>0);assert.match(s.stats,/native reflections/);
+      assert.match(s.stats,/mirror-1:/);assert.match(s.stats,/mirror-2:/);
+      assert.equal(s.saveDisabled,false);
+      report.checks.push({name:'mixed tracing '+name,result:'pass',stats:s.stats,painted:s.painted});
+      return s;
+    }
+    await mixed('mixed-two-lens-two-mirror','Mixed two lenses and two mirrors',5);
+    await shot('mixed-two-lens-two-mirror-rays');
+    await edit('mirror-1-orientationDeg',40);
+    const changed=await until(state,x=>x?.title==='Mixed two lenses and two mirrors'&&
+      x.status==='completed'&&x.mirrorAngle==='40'&&x.analysis?.includes('unavailable'),'mixed mirror edit');
+    assert.ok(changed.painted>0);assert.equal(changed.saveDisabled,false);
+    report.checks.push({name:'mixed mirror orientation edit',result:'pass'});
+    await mixed('mixed-reverse-source','Mixed right-side source and mirrors',4);
+    await shot('mixed-reverse-source-rays');
     console.log('Browser acceptance PASS: '+report.checks.length+' checks; '+report.screenshots.length+' screenshots; '+version);
   }catch(err){
     report.errors.push(err.message);
