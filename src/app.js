@@ -1,4 +1,4 @@
-import { loadDocument, Simulator, diagnostics, nativeExport, observeSourceEmission, observeMirrorSet, observeDetectorSet } from './adapter.js';
+import { loadDocument, Simulator, diagnostics, nativeExport, observeSourceSet, observeMirrorSet, observeDetectorSet } from './adapter.js';
 import { parseSave, serializeSave, SAMPLING_PRESETS, samplingPreset, setSourceMode } from './contract.js';
 import { Session } from './session.js';
 import pointSourceIcon from '../vendor/ray-optics/src/img/PointSource.svg';
@@ -12,11 +12,11 @@ const canvases = ['light', 'below', 'above', 'grid'].map($);
 let size = { width: 1200, height: 700 };
 let scheduled;
 let bindings = [];
+let activeSourceId = null; // UI selection only; not part of authoritative scene JSON.
 function cancelScheduled() { clearTimeout(scheduled); scheduled = undefined; }
 const session = new Session(doc => {
   const { scene, idMap } = loadDocument(doc, size.width, size.height);
-  const source = doc.physics.components.find(c => c.type === 'point-source');
-  const meter = observeSourceEmission(scene.objs[idMap.get(source.id)]);
+  const meter = observeSourceSet(doc, scene, idMap);
   const mirrorMeter = observeMirrorSet(doc, scene, idMap);
   const detectorMeter = observeDetectorSet(doc, scene, idMap);
   const sim = new Simulator(scene, ...canvases.map(c => c.getContext('2d')), null, true, doc.simulation.processedRayLimit);
@@ -51,6 +51,15 @@ function update() {
   const partial = !['completed', 'completed-with-warnings'].includes(state);
   const perMirror = d?.reflectionsById ? Object.entries(d.reflectionsById)
     .map(([id,count])=>id+': '+count).join(' · ') : '';
+  const sources = session.document?.physics.components.filter(c=>c.type==='point-source') || [];
+  const complete = ['completed','completed-with-warnings'].includes(state);
+  $('source-emissions').hidden = sources.length < 2 || state === 'invalid';
+  $('source-emissions').textContent = sources.length < 2 ? '' :
+    !d || !complete ? 'Per-source emission counts pending or incomplete; no current totals are published.' :
+    Object.entries(d.emissionsById || {}).map(([id,reading]) =>
+      id+': '+reading.emitted+' native rays'+
+      (Number.isFinite(reading.brightnessScale) ? ' · native brightness scale '+format(reading.brightnessScale) : '')
+    ).join('  |  ');
   $('stats').textContent = d ? `${d.emitted} rays emitted · ${d.processed} segments processed${d.reflections != null ? ` · ${d.reflections} native reflections${partial ? ' (partial run)' : ''}${perMirror ? ' (' + perMirror + ')' : ''}` : ''} · truncated brightness ${d.truncation.toPrecision(3)} · undefined brightness ${d.undefinedBehavior.toPrecision(3)}` : session.document ? `Native emission pending · ${session.document.simulation.processedRayLimit} segment limit` : 'Loading scene';
   const detectors = session.document?.physics.components.some(c=>c.type==='ray-detector');
   $('detector-readouts').hidden = !detectors || state==='invalid';
@@ -100,6 +109,30 @@ function controls() {
   $('source-tools').replaceChildren();
   $('source-parameters').replaceChildren();
   bindings = [];
+  const sourceList=session.document.physics.components.filter(c=>c.type==='point-source');
+  if(!sourceList.some(c=>c.id===activeSourceId)) activeSourceId=sourceList[0].id;
+  const multipleSources=sourceList.length>1;
+  if(multipleSources){
+    const chooser=document.createElement('label'); chooser.className='active-source-picker';
+    chooser.textContent='Edit light source';
+    const select=document.createElement('select'); select.id='active-source';
+    for(const source of sourceList) {
+      const option=document.createElement('option');
+      option.value=source.id;option.textContent=source.id;
+      select.append(option);
+    }
+    select.value=activeSourceId;
+    select.onchange=()=>{
+      const wanted=select.value;
+      if(scheduled) {
+        cancelScheduled();commitDraft();
+        if(session.state==='invalid')return;
+      }
+      activeSourceId=wanted;
+      controls(); // Selection is a local UI action, not a new physics revision.
+    };
+    chooser.append(select);$('source-tools').append(chooser);
+  }
   const mixed = session.document.physics.model === 'lens-mirror-return-geometric';
   const tracing = session.document.physics.model === 'mixed-lens-mirror-tracing';
   const labels = { x: 'Position x', y: 'Position y', focalLength: 'Focal length', apertureHeight: 'Aperture height', orientationDeg: 'Surface orientation', length: 'Length' };
@@ -108,13 +141,16 @@ function controls() {
     const legend = document.createElement('legend'); legend.textContent = component.id;
     const caption = document.createElement('p'); caption.className = 'component-type'; caption.textContent = component.type;
     fieldset.append(legend, caption);
-    if (component.type === 'point-source') $('source-tools').append(sourcePicker(component));
+    if (component.type === 'point-source' && component.id === activeSourceId)
+      $('source-tools').append(sourcePicker(component));
     for (const [key, value] of Object.entries(component.parameters)) {
       const slider = key === 'brightness' ? { min: 0.01, max: 1, step: 0.01 } :
         ['plane-mirror','ray-detector'].includes(component.type) ?
         { min: key === 'length' ? 1 : key === 'orientationDeg' ? -180 : -10000, max: key === 'orientationDeg' ? 180 : 10000, step: 1 } : null;
       const fixed = mixed && component.type === 'plane-mirror' && ['y', 'orientationDeg'].includes(key);
-      addNumber(component.type === 'point-source' && key === 'brightness' ? $('source-parameters') : fieldset, component.id, 'parameters', key, key === 'brightness' ? 'Brightness (relative)' : `${labels[key]} (${key === 'orientationDeg' ? '°' : 'mm'})`, value, slider, fixed);
+      addNumber(component.type === 'point-source' && key === 'brightness' && !multipleSources ?
+        $('source-parameters') : fieldset, component.id, 'parameters', key,
+        key === 'brightness' ? 'Brightness (relative)' : `${labels[key]} (${key === 'orientationDeg' ? '°' : 'mm'})`, value, slider, fixed);
     }
     if (component.type === 'plane-mirror') {
       const note = document.createElement('p'); note.className = 'muted';
@@ -128,10 +164,12 @@ function controls() {
     }
     if (component.type === 'point-source') {
       const disabled = component.emission.mode !== 'directional';
-      addNumber($('source-parameters'), component.id, 'emission', 'angleDeg', 'Opening angle (°)', component.emission.angleDeg, { min: 1, max: 180, step: 1 }, disabled);
-      addNumber($('source-parameters'), component.id, 'emission', 'directionDeg', 'Direction (°)', component.emission.directionDeg, { min: -180, max: 180, step: 1 }, disabled);
+      const sourceParent=multipleSources ? fieldset : $('source-parameters');
+      addNumber(sourceParent, component.id, 'emission', 'angleDeg', 'Opening angle (°)', component.emission.angleDeg, { min: 1, max: 180, step: 1 }, disabled);
+      addNumber(sourceParent, component.id, 'emission', 'directionDeg', 'Direction (°)', component.emission.directionDeg, { min: -180, max: 180, step: 1 }, disabled);
       const note = document.createElement('p'); note.className = 'muted';
-      note.textContent = '0° right · +90° up · −90° down. Opening is the full cone angle. Selecting Directional starts at Medium sampling.';
+      note.textContent = (multipleSources ? 'Use the toolbar to select this source for Full-circle / Directional mode. ' : '')+
+        '0° right · +90° up · −90° down. Opening is the full cone angle. Selecting Directional starts at Medium global sampling.';
       fieldset.append(note);
     }
     $('controls').append(fieldset);
@@ -139,7 +177,7 @@ function controls() {
   $('title').textContent = session.document.presentation.title;
   const mirror = session.document.physics.model === 'plane-mirror-geometric';
   $('model-label').textContent = mixed ? 'Lens / mirror return · geometric optics' : tracing ? 'Mixed lens / mirror tracing' : mirror ? 'Plane mirror · geometric optics' : 'Ideal lenses · geometric optics';
-  $('parameter-guidance').textContent = `Lengths in mm. x points right; y points up. ${mixed ? 'Source left of lens left of perpendicular mirror; lens and mirror share y=0.' : tracing ? 'One source, 1–4 coaxial lenses and 1–4 plane mirrors; physical surfaces must not intersect.' : mirror ? 'Mirror orientation describes the surface tangent.' : 'Lenses share the horizontal axis.'}`;
+  $('parameter-guidance').textContent = `Lengths in mm. x points right; y points up. ${mixed ? 'Source left of lens left of perpendicular mirror; lens and mirror share y=0.' : tracing ? '1–4 independent point sources, 1–4 coaxial lenses and 1–4 plane mirrors; finite optical surfaces must not intersect.' : mirror ? 'Mirror orientation describes the surface tangent.' : 'Lenses share the horizontal axis.'}`;
   $('physical-note').textContent = mixed ? 'One native lens can be encountered in both directions. PhyDemo chooses every intersection; finite lens/mirror misses are not blocked. Positive f converges; negative f diverges.' : tracing ? 'PhyDemo chooses each hit; analytical image predictions are intentionally unavailable without a specified optical path. Reflection totals and per-mirror counts describe sampled native encounters, not image formation.' : mirror ? 'The finite native mirror reflects from both sides. Rays missing its segment continue unchanged. Edit physical values here; the canvas is a simulation view.' : 'Positive focal length converges. Negative focal length diverges. Edit physical values here; the canvas is a simulation view.';
   $('grid-toggle').checked = session.document.presentation.grid;
   $('zoom').value = session.document.presentation.view.zoom;
@@ -152,7 +190,9 @@ function sourcePicker(component) {
   ];
   const details = document.createElement('details'); details.className = 'source-picker';
   const summary = document.createElement('summary'); summary.id = `${component.id}-mode`;
-  const heading = document.createElement('span'); heading.textContent = 'Light Source';
+  const heading = document.createElement('span');
+  heading.textContent = session.document.physics.components.filter(c=>c.type==='point-source').length>1 ?
+    'Light Source · '+component.id : 'Light Source';
   const selected = document.createElement('small'); selected.textContent = choices.find(c => c.mode === component.emission.mode).title;
   summary.append(heading, selected);
   const menu = document.createElement('div'); menu.className = 'source-menu'; menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', 'Light Source');

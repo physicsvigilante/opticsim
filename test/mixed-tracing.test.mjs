@@ -65,9 +65,11 @@ test('current v4 mixed scenes author existing components without changing native
 test('mixed scope diagnoses invalid cardinalities, intersections, and source degeneracies',()=>{
   const baseline=example('mixed-two-lens-two-mirror');
   const rejected=[
-    d=>d.physics.components.push({id:'second-source',type:'point-source',
-      parameters:{x:-400,y:40,brightness:0.5},
-      emission:{mode:'full-circle',directionDeg:0,angleDeg:30}}),
+    d=>d.physics.components.push(...[2,3,4,5].map(i=>({
+      id:'source-'+i,type:'point-source',
+      parameters:{x:-400-i*10,y:20+i*35,brightness:0.5},
+      emission:{mode:'full-circle',directionDeg:0,angleDeg:30}
+    }))), // Five otherwise legal sources now exceed the bounded count.
     d=>d.physics.components.splice(d.physics.components.findIndex(c=>c.id==='mirror-1'),2),
     d=>d.physics.components.splice(d.physics.components.findIndex(c=>c.id==='lens-1'),2),
     d=>d.physics.components.push(...[3,4,5].map(i=>({id:'mirror-'+i,

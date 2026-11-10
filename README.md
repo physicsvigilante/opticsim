@@ -43,13 +43,24 @@ No full site/gallery build or native node-canvas installation is required.
 - Choose a one-, two-, three-, or four-lens, converging-plus-diverging, plane-mirror,
   lens/mirror return, or mixed lens/mirror tracing example. Ray-detector
   examples demonstrate native measurement segments in lens-only, mirror-only
-  and mixed scenes, without changing the existing optical apparatus models. Examples use JSON data through the same pipeline.
+  and mixed scenes, without changing the existing optical apparatus models.
+  The `multi-source-mixed.json` and `multi-source-four.json` examples show
+  independent emitters sharing one native optical system. Examples use JSON
+  data through the same pipeline.
   `scenes/two-lenses-data-check.json` is another unequal-lens arrangement to load
   with Open sandbox; it was verified without production-code changes.
   Three-/four-lens examples are data-only; the same parameter controls apply.
   New optical components must still be added to the library.
 - Edit source position, lens position, signed focal length, or aperture height.
   Positive f converges; negative f diverges. Lenses are centred on y=0.
+- The mixed-tracing model supports **1–4 independent point sources**, each
+  with its own stable ID, position, brightness and full-circle/directional
+  emission settings. Every source is compiled into one unmodified native
+  PhyDemo emitter; the optical surfaces are shared. The toolbar selects
+  **which source's emission mode to edit**, while each source's numerical
+  parameters remain in its labelled sidebar fieldset. This selector does not
+  change the saved physical document or rerun the simulation. It does not
+  invent separate detector measurements by source.
 - The semantic point source supports Full-circle or Directional emission.
   Choose it in the illustrated **Light Source** menu in the top ray toolbar, following PhyDemo's
   source-tool dropdown style. The selected entry is marked with a check.
@@ -64,6 +75,19 @@ No full site/gallery build or native node-canvas installation is required.
   without quantization. Continuous input simulates at most once per 75 ms; release
   commits the latest slider value. Source brightness is 0.01-1 in upstream-relative
   units, not watts. Native low-density clipping is reported separately.
+- Ray density, depth and processed-segment limits apply to the **entire scene**,
+  not separately per source. Native emissions are counted per stable source
+  ID and summed into the scene's total. A multi-source scene displays the
+  individual actual emitted counts and native relative brightness scaling;
+  source-specific detector power, images and ray path attribution are not
+  inferred. Stopped/invalid/incomplete runs do not publish completed
+  per-source emission results. When brightness exceeds the scene's sampling
+  density, PhyDemo may clip it; differing clipping ratios across sources
+  trigger an **explicit native warning** that detector power or colour can
+  be misleading. The validator preserves valid source brightness rather than
+  silently changing physical parameters. Increase sampling or adjust explicitly
+  authored brightness if accurate comparative power is important. The prior single-source mode change to
+  Directional still selects Medium sampling for the entire scene.
 - Sampling is separate from source characteristics and camera settings. Sparse,
   Medium and Dense correspond to densities 0.048, 0.2 and 1: respectively 24, 100
   and 500 full-circle samples. A 30-degree directional cone emits 2, 9 and 42 rays;
@@ -137,11 +161,13 @@ Four explicit `physics.model` values select supported arrangements:
 thin lenses**, with the source left of the lenses; `plane-mirror-geometric` for
 **one point source and one finite plane mirror**, with the source on either side;
 `lens-mirror-return-geometric` for **one source left of one ideal lens left of one
-perpendicular plane mirror**; and `mixed-lens-mirror-tracing` for **one source,
-1–4 coaxial ideal lenses and 1–4 finite plane mirrors** with independently
+perpendicular plane mirror**; and `mixed-lens-mirror-tracing` for **1–4
+independent point sources, 1–4 coaxial ideal lenses and 1–4 finite plane mirrors**
+with independently
 authored x/y centres, lengths and tangent orientations. In this bounded mixed
 family, optical segments may not intersect, lens planes cannot coincide or
-contain the source, and the source cannot lie on a mirror supporting line.
+contain any source, distinct source positions must remain at least 0.01 mm
+apart, and no source may lie on a mirror or detector supporting line.
 A model-independent current-v4 layer permits **0–2 passive `ray-detector`
 components** with segment geometry in all four optical models, disjoint from
 other finite segments and with the source off their supporting lines.
@@ -209,8 +235,10 @@ An invalid document/native load still blocks tracing; stopped, truncated, failed
 or undefined native runs still suppress predictions. Revision changes clear old
 values and reasons. No new ray-routing, solver framework or ray-history UI is used.
 
-The native simulation uses at most 500 source samples, interaction depth 8,
-and a 10,000 processed-segment limit. Saves may lower these settings. A stopped,
+Each full-circle source uses at most 500 native samples at Dense sampling;
+the current mixed-tracing model permits up to four independent sources. The
+scene-wide interaction depth is at most 8 and the processed-segment limit is
+10,000. Saves may lower these settings. A stopped,
 truncated, undefined, or failed run is labelled explicitly. Invalid drafts hide
 the previous canvas, clear predictions, and disable saving/exporting until
 corrected. Accepted scene values are retained for correction. Run revision

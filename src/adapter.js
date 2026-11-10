@@ -61,6 +61,26 @@ export function observeSourceEmission(source) {
   };
   return meter;
 }
+// Wrap each authored source once; no ray provenance is assigned after emission.
+// Stable-ID counts describe actual PhyDemo sampling, never detector attribution.
+export function observeSourceSet(doc, scene, idMap) {
+  const entries=doc.physics.components.filter(c=>c.type==='point-source')
+    .map(c=>[c.id,observeSourceEmission(scene.objs[idMap.get(c.id)])]);
+  return {
+    get emitted() {
+      return entries.some(([,meter])=>meter.emitted===null) ? null :
+        entries.reduce((sum,[,meter])=>sum+meter.emitted,0);
+    },
+    get brightnessScale() {
+      return entries.length===1 ? entries[0][1].brightnessScale : null;
+    },
+    get byId() {
+      return Object.fromEntries(entries.map(([id,meter])=>[
+        id,{emitted:meter.emitted,brightnessScale:meter.brightnessScale}
+      ]));
+    }
+  };
+}
 export function observeMirrorReflections(mirror) {
   const meter = { reflections: 0 };
   const nativeIncident = mirror.onRayIncident;
@@ -104,9 +124,14 @@ export function observeDetectorSet(doc, scene, idMap) {
 export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, detectorMeter = null) {
   const errors = [scene.error, simulator.error, ...scene.objs.map(o => o.getError())].filter(Boolean);
   const warnings = [scene.warning, simulator.warning, ...scene.objs.map(o => o.getWarning())].filter(Boolean);
+  const emissionsById=meter?.byId ?? null;
+  const sourceCount=emissionsById ? Object.keys(emissionsById).length : 0;
   return { errors, warnings, processed: simulator.processedRayCount, truncation: simulator.totalTruncation,
     undefinedBehavior: simulator.totalUndefinedBehavior, emitted: meter?.emitted ?? null,
-    brightnessScale: meter?.brightnessScale ?? simulator.brightnessScale,
+    // There is no meaningful single scale for multiple independently emitting
+    // sources; keep source-specific scaling in emissionsById instead.
+    brightnessScale: sourceCount>1 ? null : meter?.brightnessScale ?? simulator.brightnessScale,
+    emissionsById,
     reflections: mirrorMeter?.reflections ?? null,
     reflectionsById: mirrorMeter?.byId ?? null,
     detectorsById: detectorMeter?.byId ?? null };

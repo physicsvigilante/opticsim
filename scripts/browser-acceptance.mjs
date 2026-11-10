@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import {spawn,spawnSync} from 'node:child_process';
 import {createServer} from 'node:net';
-import {mkdir,mkdtemp,readFile,rm,writeFile} from 'node:fs/promises';
+import {mkdir,mkdtemp,readFile,readdir,rm,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -54,7 +54,11 @@ const stateExpression=[
  'aperture:q("lens-1-apertureHeight")?.value,mirrorAngle:q("mirror-1-orientationDeg")?.value,',
  'detectorReadouts:q("detector-readouts")?.textContent,detectorHidden:q("detector-readouts")?.hidden,',
  'detectorLength:q("detector-return-length")?.value,detectorY:q("detector-return-y")?.value,',
- 'detector1x:q("detector-1-x")?.value};})()'
+ 'detector1x:q("detector-1-x")?.value,sourceReadout:q("source-emissions")?.textContent,',
+ 'sourceHidden:q("source-emissions")?.hidden,activeSource:q("active-source")?.value,',
+ 'revision:q("revision")?.textContent,source2X:q("source-2-x")?.value,',
+ 'source2Brightness:q("source-2-brightness")?.value,source3Direction:q("source-3-directionDeg")?.value,',
+ 'source4Brightness:q("source-4-brightness")?.value,sourceMode:document.querySelector("#source-tools .source-picker summary")?.textContent};})()'
 ].join('\n');
 
 async function main(){
@@ -192,6 +196,88 @@ async function main(){
     assert.match(onlyMirror.detectorReadouts,/detector-1: [0-9]+ native crossings/);
     assert.match(onlyMirror.prediction,/Analytical virtual-image prediction/);
     await shot('plane-mirror-detector-rays');
+    async function multi(name,title,count,ids) {
+      await evaluate('(() => {const e=document.getElementById("examples");e.value='+JSON.stringify(name)+';e.dispatchEvent(new Event("change",{bubbles:true}));})()');
+      const current=await until(state,x=>x?.title===title&&x.status==='completed'&&
+        x.analysis?.includes('Analysis: unavailable')&&!x.sourceHidden,
+        title+' multi-source native trace');
+      assert.equal(current.fields.length,count);
+      for(const id of ids)assert.match(current.sourceReadout,new RegExp(id+': [0-9]+ native rays'));
+      assert.match(current.stats,/rays emitted/);
+      assert.match(current.detectorReadouts,/native crossings/);
+      assert.equal(current.saveDisabled,false);
+      report.checks.push({name:'multi-source '+name,result:'pass',stats:current.stats,
+        sources:current.sourceReadout});
+      return current;
+    }
+    const three=await multi('multi-source-mixed','Three-source lens and mirror ensemble',9,
+      ['source-1','source-2','source-3']);
+    assert.equal(three.activeSource,'source-1');
+    await shot('multi-source-three-rays');
+    await edit('source-2-brightness',.16);
+    const bright=await until(state,x=>x?.title===three.title&&x.status==='completed'&&
+      x.source2Brightness==='0.16'&&!x.sourceHidden,'source-2 brightness edit');
+    assert.match(bright.sourceReadout,/source-2:/);
+    const originalRevision=bright.revision;
+    await evaluate('(() => {const e=document.getElementById("active-source");e.value="source-3";e.dispatchEvent(new Event("change",{bubbles:true}));})()');
+    const chosen=await state();
+    assert.equal(chosen.activeSource,'source-3');
+    assert.equal(chosen.revision,originalRevision);
+    assert.match(chosen.sourceMode,/source-3/);
+    await edit('source-3-directionDeg',175);
+    const directed=await until(state,x=>x?.title===three.title&&x.status==='completed'&&
+      x.source3Direction==='175','source-3 direction edit');
+    assert.equal(directed.source2Brightness,'0.16');
+    await edit('source-2-x',0);
+    const invalidSource=await until(state,x=>x?.status==='invalid','source on lens plane');
+    assert.equal(invalidSource.sourceHidden,true);
+    assert.equal(invalidSource.saveDisabled,true);
+    await edit('source-2-x',-330);
+    await until(state,x=>x?.title===three.title&&x.status==='completed'&&
+      !x.sourceHidden&&x.source2X==='-330','recover source position');
+    report.checks.push({name:'per-source editing, UI selection and invalid-source recovery',result:'pass'});
+    const four=await multi('multi-source-four','Four-source mixed optical ensemble',10,
+      ['source-1','source-2','source-3','source-4']);
+    await shot('multi-source-four-rays');
+    await evaluate('(() => {const e=document.getElementById("active-source");e.value="source-4";e.dispatchEvent(new Event("change",{bubbles:true}));})()');
+    const selectedFour=await state();
+    assert.equal(selectedFour.activeSource,'source-4');
+    assert.match(selectedFour.sourceMode,/360/);
+    await evaluate('document.getElementById("source-4-mode-directional").click()');
+    const newMode=await until(state,x=>x?.title===four.title&&x.status==='completed'&&
+      x.sourceMode?.includes('directional'),'source-4 directional mode');
+    assert.match(newMode.sourceReadout,/source-4:/);
+    await evaluate('document.getElementById("source-4-mode-full-circle").click()');
+    await until(state,x=>x?.title===four.title&&x.status==='completed'&&
+      x.sourceMode?.includes('360'),'source-4 full-circle mode');
+    await edit('source-4-brightness',.17);
+    const changedFour=await until(state,x=>x?.title===four.title&&x.status==='completed'&&
+      x.source4Brightness==='0.17','source-4 brightness edit');
+    assert.match(changedFour.sourceReadout,/source-4:/);
+    report.checks.push({name:'four independent sources: native counts, modes and brightness',result:'pass'});
+    await evaluate('document.getElementById("save").click()');
+    const multiSaved=await until(async()=>{
+      for(const filename of (await readdir(downloads)).filter(n=>n.startsWith('scene.ray-optics-2d')&&n.endsWith('.json'))){
+        const filepath=join(downloads,filename),value=JSON.parse(await readFile(filepath,'utf8'));
+        if(value.presentation?.title===four.title)return {filepath,doc:value};
+      }
+      return null;
+    },x=>!!x,'save multi-source JSON');
+    assert.equal(multiSaved.doc.physics.components.filter(c=>c.type==='point-source').length,4);
+    assert.equal(multiSaved.doc.physics.components.find(c=>c.id==='source-4').parameters.brightness,.17);
+    const fromSaved=multiSaved.doc.physics.components.find(c=>c.id==='source-4').emission.mode;
+    assert.equal(fromSaved,'full-circle');
+    await select('single-lens','Single converging lens',2);
+    const domReload=await cdp.send('DOM.getDocument',{depth:-1});
+    const chooser=await cdp.send('DOM.querySelector',{nodeId:domReload.root.nodeId,selector:'#load'});
+    assert.ok(chooser.nodeId);
+    await cdp.send('DOM.setFileInputFiles',{nodeId:chooser.nodeId,files:[multiSaved.filepath]});
+    const reloaded=await until(state,x=>x?.title===four.title&&x.status==='completed'&&
+      !x.sourceHidden&&x.source4Brightness==='0.17','reopen multi-source save');
+    assert.equal(reloaded.fields.length,10);
+    assert.match(reloaded.sourceReadout,/source-4:/);
+    report.checks.push({name:'multi-source Save/Open JSON round trip',result:'pass'});
+    await shot('multi-source-reloaded-rays');
     console.log('Browser acceptance PASS: '+report.checks.length+' checks; '+report.screenshots.length+' screenshots; '+version);
   }catch(err){
     report.errors.push(err.message);
