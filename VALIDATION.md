@@ -608,3 +608,67 @@ Observed browser behavior:
 - Three full-page screenshots (`three-lenses-rays.png`, `three-lenses-extended.png`, `four-lenses-rays.png`) were captured and inspected. The displayed source, all lenses, ray drawing, generated controls, numeric results, and status labels are legible without observed overlapping controls; the extended view has the expected additional backward constructions. Screenshots are **qualitative UI evidence**, not proof of physical laws.
 
 The browser acceptance requirement for the bounded fixtures is now met **for automated headless Chrome at the captured viewport**. It does not establish a broad device/responsiveness matrix, optical behavior for unsupported layouts, image-to-scene interpretation accuracy on arbitrary diagrams, or a separate-agent implementation review. The extreme numerical-unavailability example has a real load/export check but its simulated-completion callback remains mocked; do not claim a completed native run for that extreme scene. Merge approval remains outstanding.
+## Milestone 2 — bounded mixed lens–mirror tracing candidate (2026-11-11)
+
+**Candidate only; not merged to `main`.** This milestone adds current-v4
+`physics.model: "mixed-lens-mirror-tracing"` for an authored combination of
+exactly one point source, 1–4 existing coaxial ideal thin lenses, and 1–4 finite
+plane mirrors with individually authored centre, length, and surface tangent.
+It reuses the same component compiler and pinned PhyDemo v5.4.0 core; no optical
+engine rewrite, new solver or npm dependencies were introduced.
+
+- The bounded geometry validator rejects overlapping/intersecting finite optical
+  segments, coincident lens planes, a source on a lens plane, a source on the
+  supporting line of a mirror, and out-of-bounds mirror endpoints. The original
+  pure-lens, plane-mirror, and restricted lens/mirror-return models retain their
+  previous validators and analytical predictions. Historical schema v1–v3 does
+  not admit the new model. Older v4 readers may also reject this additive model.
+- The mixed mode intentionally has **no route-independent image prediction**.
+  A native completed run does not certify a single image or continuous-ray
+  throughput. `Session` retains an unavailable-analysis status with an explicit
+  reason, independently of native simulation completion and save/export.
+- A native observer is attached to **every** authored mirror by stable ID;
+  aggregate and per-ID reflection counts are exposed to browser and headless
+  checker diagnostics without replacing the underlying `onRayIncident` law.
+- Two data-only examples explore a two-lens/two-rotated-mirror path and a
+  right-side directional source with one lens and two mirrors. Their view
+  settings and Dense sampling are explicitly presentation/inspection choices,
+  not extra physical assumptions about the problem.
+
+**Qualification at commit `7557b5c356972bf3a05916eeb0fb6301cb259003`:**
+[GitHub Actions run #42879650662](https://github.com/physicsvigilante/opticsim/actions/runs/42879650662)
+successfully executed pinned setup, **50/50 Node tests**, the production
+Webpack build, **5/5 headless scene-checker candidates** (three-/four-lens,
+extreme lens train, and both new mixed scenes), and **11/11 headless Chrome
+browser acceptance checks**. Zero failures were recorded.
+
+Independent native tests for the new family exercise malformed counts,
+unsupported intersections, source degeneracies, old-model isolation, strict
+save/export round trips, native completion, real stop/truncation and revision
+invalidation. A test-only `SingleRay` traversed **lens-1 → lens-2 → mirror-1
+→ mirror-2**, in both original and deliberately shuffled authored-array
+orders; real native hit locations, incident/output slopes and specular
+reflection vectors were compared with independent geometric calculations.
+No forced ray route or upstream physics change was made.
+
+The latest headless Chrome screenshots were also inspected qualitatively:
+both mixed diagrams now fit their optical elements inside the canvas at the
+tested desktop viewport, with distinct native rays and legible controls.
+The browser accepts a mirror-angle edit without changing the unavailable
+analytical status. The test artifacts retain `report.json`, five screenshots,
+saved sandbox JSON, native JSON export and the checker report.
+
+At Dense sampling, the two-lens/two-mirror scene emitted **17 rays** and
+processed **85 segments** with **17 native interactions on each mirror**.
+The right-side-source scene emitted **14 rays** and processed **56 segments**,
+with **14 interactions on mirror-1 and none on mirror-2**. Both simulations
+completed with zero native errors, warnings, truncated brightness or undefined
+behavior. Reflection counts are samples, not image detections.
+
+**Remaining scope:** one source, 1–4 coaxial lenses, 1–4 mirrors, disjoint
+finite optical surfaces, finite sampling and bounded interaction depth. No
+arbitrary curved/thick elements, crossing surfaces, general source composition,
+symbolic inverse imaging, prescribed rays or verified image formation. Browser
+qualification covers an automated Chrome desktop viewport, not a broad device
+matrix. The implementer reviewed the code and successful evidence, but this
+record does not represent an independent external implementation review.
