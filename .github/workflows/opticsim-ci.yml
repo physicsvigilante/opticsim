@@ -1,7 +1,9 @@
 name: Optical composition checks
 on:
   push:
-    branches: [design/bounded-multilens-trains]
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read

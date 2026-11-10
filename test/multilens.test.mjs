@@ -192,3 +192,95 @@ test('finite aperture miss occurs naturally without enforcing the idealized full
   assert.ok(!hits.includes('lens-2'));
   assert.equal(predict(d).kind,'finite-virtual'); // A prediction, not measured throughput.
 });
+
+
+test('native tracing is invariant to authored component ordering without reordering PhyDemo objects', () => {
+  // This tests the actual authored -> compiler -> native route. Only the source
+  // is replaced by a test-only SingleRay; all lenses retain authored object order.
+  for (const name of ['three-lenses', 'four-lenses']) {
+    const base = example(name);
+    const normal = base.physics.components.map(c => c.id);
+    const shuffled = name === 'three-lenses'
+      ? ['lens-3', 'source-1', 'lens-1', 'lens-2']
+      : ['lens-4', 'lens-2', 'source-1', 'lens-1', 'lens-3'];
+    assert.deepEqual(new Set(shuffled), new Set(normal));
+    assert.notDeepEqual(shuffled.filter(id => id !== 'source-1'), lenses(base).map(l => l.id));
+    const outcomes = [];
+
+    for (const order of [normal, shuffled]) {
+      const doc = structuredClone(base);
+      const components = new Map(doc.physics.components.map(c => [c.id, c]));
+      doc.physics.components = order.map(id => components.get(id));
+      validate(doc);
+      const { native, idMap } = compile(doc);
+      assert.deepEqual([...idMap.keys()], order);
+      assert.equal(idMap.get('source-1'), order.indexOf('source-1'));
+      const physical = lenses(doc), src = source(doc).parameters;
+      const first = physical[0], last = physical.at(-1);
+      const planes = [last.parameters.x + 50, last.parameters.x + 100];
+      const observedCases = [];
+
+      for (const height of [-20, 20]) {
+        const objs = native.objs.slice(); // Retain native authored order exactly.
+        objs[idMap.get('source-1')] = { type: 'SingleRay',
+          p1: { x: src.x, y: -src.y },
+          p2: { x: first.parameters.x, y: -height }, brightness: 1 };
+        objs.push(...planes.map(x => ({type:'Detector',
+          p1:{x,y:-200},p2:{x,y:200},irradMap:true,binSize:.01})));
+        const scene = loadNative({ ...native, objs });
+        assert.equal(scene.objs[idMap.get('source-1')].constructor.type, 'SingleRay');
+        const hits = [];
+
+        for (const lens of physical) {
+          const object = scene.objs[idMap.get(lens.id)];
+          assert.equal(object.constructor.type, 'IdealLens');
+          const incident = object.onRayIncident;
+          object.onRayIncident = function (ray, index, point, ...rest) {
+            const entering = -(ray.p2.y-ray.p1.y)/(ray.p2.x-ray.p1.x);
+            const result = incident.call(this, ray, index, point, ...rest);
+            const leaving = -(ray.p2.y-ray.p1.y)/(ray.p2.x-ray.p1.x);
+            hits.push({id:lens.id, x:point.x, y:-point.y, entering, leaving});
+            return result;
+          };
+        }
+
+        const sim = new Simulator(scene,null,null,null,null,null,false,10000);
+        let finished = null;
+        sim.on('simulationComplete', () => { finished = 'completed'; });
+        sim.on('simulationStop', () => { finished = 'stopped'; });
+        sim.updateSimulation();
+        const data = diagnostics(scene,sim);
+        assert.equal(finished,'completed');
+        assert.deepEqual(data.errors,[]);
+        assert.equal(data.truncation,0);
+        assert.equal(data.undefinedBehavior,0);
+        assert.deepEqual(hits.map(hit => hit.id),physical.map(lens => lens.id));
+
+        // Independent paraxial heights and slopes, in semantic y-up units.
+        let x = src.x, y = src.y, slope = (height-src.y)/(first.parameters.x-src.x);
+        for (const [i,lens] of physical.entries()) {
+          y += slope * (lens.parameters.x-x);
+          x = lens.parameters.x;
+          near(hits[i].x,x,1e-7);
+          near(hits[i].y,y,1e-7);
+          near(hits[i].entering,slope,1e-9);
+          slope -= y/lens.parameters.focalLength;
+          near(hits[i].leaving,slope,1e-9);
+        }
+
+        const binsForBothDetectors = [];
+        for (const [i, detector] of scene.objs.slice(-2).entries()) {
+          const bins = detector.binData.flatMap((power, j) => power !== 0 ? [j] : []);
+          assert.equal(bins.length,1);
+          const expectedY = -(y+slope*(planes[i]-x));
+          const binStart = -200+bins[0]*.01;
+          assert.ok(expectedY>=binStart-1e-7 && expectedY<=binStart+.01+1e-7);
+          binsForBothDetectors.push(bins[0]);
+        }
+        observedCases.push({hitIds:hits.map(hit=>hit.id),bins:binsForBothDetectors});
+      }
+      outcomes.push(observedCases);
+    }
+    assert.deepEqual(outcomes[1],outcomes[0],name+' reordered native rays differ');
+  }
+});
