@@ -672,3 +672,79 @@ symbolic inverse imaging, prescribed rays or verified image formation. Browser
 qualification covers an automated Chrome desktop viewport, not a broad device
 matrix. The implementer reviewed the code and successful evidence, but this
 record does not represent an independent external implementation review.
+## Milestone 3 candidate — reusable native ray measurements (2026-11-11)
+
+**Status: implemented and qualified on the feature branch, not merged.**
+
+The current-v4 scene contract accepts **zero to two passive `ray-detector`
+components alongside any existing optical model**: one/multiple coaxial lenses,
+a plane mirror, the restricted lens–mirror return, or mixed lens–mirror tracing.
+Detectors are an independent measurement layer; adding or relocating a detector
+does not change the supported optical arrangement or its analytical model. No
+new apparatus-specific simulator, ray equation, or external dependency is used.
+
+- The detector has stable `id` and explicit `x, y, orientationDeg, length`
+  parameters. Its finite tangent-oriented segment is compiled to an existing
+  PhyDemo `Detector`, using the same y-up → y-down conversion as mirrors.
+- Model-specific optical cardinality and version 1–3 validation remain strict.
+  Detector validation runs separately after the optical model validation:
+  at most two detectors, complete bounded segment geometry, no supporting-line
+  source degeneracy, and no detector/optical or detector/detector intersections.
+- Native `onRayIncident` calls are counted by stable detector ID while
+  preserving the original native incident method and its return. The native
+  `Detector.power` value is exposed unchanged as `signedPower`, not a
+  calibrated watt or irradiance reading. Opposite-direction crossings can
+  cancel algebraically, so **zero signed power does not imply zero crossings**.
+  No detector readings are authored into sandbox JSON.
+- `Session` revision status governs display; current results appear only for
+  completed/completed-with-warnings native runs. During invalid, stopped,
+  incomplete, or failed runs, the browser withholds current measurements rather
+  than showing stale data. The authoring checker distinguishes detector
+  `complete`, `incomplete-or-failed`, `unavailable`, and `not-applicable`
+  measurement statuses. Its execution pass requires finite readings whenever
+  detectors are authored.
+- Two mixed and two simple optical examples provide independently authored
+  detector configurations. All four previously supported optical families
+  retain their original analytical predictions, conditional qualifications,
+  native exports, and historical migration semantics.
+
+**Verified CI** at feature commit
+`6784de6ec7b50a17d87bc8e5a0b6991580467fd5`:
+[GitHub Actions run #42883955139](https://github.com/physicsvigilante/opticsim/actions/runs/42883955139)
+**completed successfully**, with pinned PhyDemo v5.4.0, **56/56 Node tests**,
+successful production browser build, **9/9 authoritative scene-checker cases**,
+and **17/17 headless Google Chrome browser checks**. The CI run retained nine
+screenshots, download/export evidence, and the JSON checker report. No changes
+were made to the upstream engine or dependency lockfiles.
+
+Native tests verify direct detector intersections, single-ray signed power
+magnitudes, independently authored native object ordering, invalid geometry,
+round-trip retention of stable IDs, zero-hit readings, and unchanged older
+apparatus predictions. The browser covers full-scene editing, invalid-state
+suppression, and per-detector results with analytical calculations still active.
+
+Examples from the actual native evidence:
+
+- Mixed two-lens/two-mirror/detector scene: 17 emitted rays, 119 processed
+  segments, 17 crossings at `detector-early` with signed native power -8.5,
+  and 17 at `detector-return` with signed power +8.5.
+- Reverse mixed scene: 28 crossings at `detector-left` with **signed power 0**,
+  and zero crossings/power at `detector-away`. Cancellation is explicit.
+- Single-lens scene with a downstream detector: 46 crossings, signed native
+  power -23, while the existing real-image prediction remains
+  (150 mm, -5 mm), magnification -0.5.
+- Plane-mirror scene with a detector: 16 crossings, signed native power -1.5,
+  with the original conditional virtual-image prediction at (200 mm, 30 mm).
+
+The new screenshots were visually inspected at the CI desktop viewport; the
+native rays, finite detector segments, generated controls, values, and
+conditional-analysis readouts were visible. Captured screenshots provide
+qualitative interface evidence, **not a physics proof**; the native tests
+supply separate numerical verification.
+
+**Limits:** at most two finite detectors, no surface intersections, one source,
+bounded supported optical apparatus, finite sampled ray data, signed relative
+native power only. No continuous field/irradiance integration, spectrum or
+polarization measurement, general symbolic solution, image detection, broad
+device testing, or general scene graph. A code-focused review and user
+approval are required before merging this candidate into `main`.
