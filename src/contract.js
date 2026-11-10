@@ -16,7 +16,8 @@ function number(n, min, max, path) {
 function choice(value, choices, path) { if (!choices.includes(value)) fail(path, `supported: ${choices.join(', ')}`, 'UNSUPPORTED'); }
 // These schemas describe components. The current bench scope is enforced separately below.
 const parameters = { 'point-source': ['x', 'y'], 'ideal-lens': ['x', 'focalLength', 'apertureHeight'],
-  'plane-mirror': ['x', 'y', 'orientationDeg', 'length'] };
+  'plane-mirror': ['x', 'y', 'orientationDeg', 'length'],
+  'ray-detector': ['x', 'y', 'orientationDeg', 'length'] };
 export function validate(doc) { return validateVersion(doc, 4); }
 function validateVersion(doc, version) {
   object(doc, ['format', 'schemaVersion', 'adapterVersion', 'upstreamCommit', 'physics', 'presentation', 'simulation'], '$');
@@ -37,7 +38,9 @@ function validateVersion(doc, version) {
     object(c, ['id', 'type', 'parameters', ...(version >= 2 && c?.type === 'point-source' ? ['emission'] : [])], path);
     if (typeof c.id !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(c.id) || ids.has(c.id)) fail(`${path}.id`, 'expected a unique stable ID (letters, digits, underscores, hyphens)');
     ids.add(c.id);
-    choice(c.type, version >= 3 ? Object.keys(parameters) : ['point-source', 'ideal-lens'], `${path}.type`);
+    choice(c.type, version >= 4 ? Object.keys(parameters) :
+      version >= 3 ? ['point-source', 'ideal-lens', 'plane-mirror'] :
+      ['point-source', 'ideal-lens'], `${path}.type`);
     object(c.parameters, [...parameters[c.type], ...(version >= 2 && c.type === 'point-source' ? ['brightness'] : [])], `${path}.parameters`);
     for (const [key, value] of Object.entries(c.parameters)) {
       number(value, -10000, 10000, `${path}.parameters.${key}`);
@@ -118,9 +121,8 @@ function validateReturnScope(components) {
   if (mirrorEndpoints(mirror).some(p => Math.abs(p.x) > 10000 || Math.abs(p.y) > 10000)) fail(path, 'derived mirror endpoints must lie within +/-10000 mm');
 }
 
-// Current-v4 bounded tracing composition: existing independent finite optical
-// segments only. Reject intersecting surfaces, where simultaneous native hits
-// would introduce an undefined ordering rather than a new optical law.
+// Current-v4 bounded composition: finite optical and measuring segments.
+// Reject intersections to avoid ambiguous simultaneous native encounters.
 function segmentsIntersect([a,b], [c,d]) {
   const delta = (p,q) => ({x:q.x-p.x,y:q.y-p.y});
   const cross = (p,q) => p.x*q.y-p.y*q.x;
@@ -140,11 +142,12 @@ function validateMixedTraceScope(components) {
   const sources=components.filter(c=>c.type==='point-source');
   const lenses=components.filter(c=>c.type==='ideal-lens');
   const mirrors=components.filter(c=>c.type==='plane-mirror');
+  const detectors=components.filter(c=>c.type==='ray-detector');
   const path='$.physics.components';
   if(sources.length!==1||lenses.length<1||lenses.length>4||
-     mirrors.length<1||mirrors.length>4||
-     components.length!==1+lenses.length+mirrors.length)
-    fail(path,'mixed tracing supports one point source, 1–4 coaxial ideal lenses and 1–4 plane mirrors','UNSUPPORTED_SCOPE');
+     mirrors.length<1||mirrors.length>4||detectors.length>2||
+     components.length!==1+lenses.length+mirrors.length+detectors.length)
+    fail(path,'mixed tracing supports one source, 1–4 coaxial lenses, 1–4 plane mirrors and 0–2 ray detectors','UNSUPPORTED_SCOPE');
   const source=sources[0].parameters;
   const planes=lenses.map(c=>c.parameters.x).sort((a,b)=>a-b);
   if(planes.some((x,i)=>Math.abs(x-source.x)<0.01 ||
@@ -157,13 +160,13 @@ function validateMixedTraceScope(components) {
     const line=c.type==='ideal-lens'
       ? [{x:p.x,y:-p.apertureHeight/2},{x:p.x,y:p.apertureHeight/2}]
       : mirrorEndpoints(p);
-    if(c.type==='plane-mirror'){
+    if(c.type==='plane-mirror'||c.type==='ray-detector'){
       if(line.some(v=>Math.abs(v.x)>10000||Math.abs(v.y)>10000))
-        fail(path+'['+index+'].parameters','mirror endpoints exceed coordinate bounds','UNSUPPORTED_SCOPE');
+        fail(path+'['+index+'].parameters','segment endpoints exceed coordinate bounds','UNSUPPORTED_SCOPE');
       const theta=p.orientationDeg*Math.PI/180;
       const distance=-(source.x-p.x)*Math.sin(theta)+(source.y-p.y)*Math.cos(theta);
       if(Math.abs(distance)<0.01)
-        fail(path+'['+index+'].parameters','source must be at least 0.01 mm from mirror supporting line','UNSUPPORTED_SCOPE');
+        fail(path+'['+index+'].parameters','source must be at least 0.01 mm from mirror or detector supporting line','UNSUPPORTED_SCOPE');
     }
     for(const other of surfaces)
       if(segmentsIntersect(other.line,line))

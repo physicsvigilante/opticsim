@@ -1,0 +1,91 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 4,
+  "adapterVersion": 4,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "mixed-lens-mirror-tracing",
+    "components": [
+      {
+        "id": "source-1",
+        "type": "point-source",
+        "parameters": {
+          "x": 320,
+          "y": 10,
+          "brightness": 0.5
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 180,
+          "angleDeg": 10
+        }
+      },
+      {
+        "id": "lens-1",
+        "type": "ideal-lens",
+        "parameters": {
+          "x": 100,
+          "focalLength": 150,
+          "apertureHeight": 240
+        }
+      },
+      {
+        "id": "mirror-1",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": -180,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 320
+        }
+      },
+      {
+        "id": "mirror-2",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": -90,
+          "y": 250,
+          "orientationDeg": 15,
+          "length": 180
+        }
+      },
+      {
+        "id": "detector-left",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 160
+        }
+      },
+      {
+        "id": "detector-away",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 220,
+          "y": -150,
+          "orientationDeg": 0,
+          "length": 150
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "Reverse beam with two authored ray detectors",
+    "view": {
+      "x": 60,
+      "y": 55,
+      "zoom": 0.65
+    },
+    "mode": "rays",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 1,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000
+  }
+}

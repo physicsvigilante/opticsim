@@ -1,4 +1,4 @@
-import { loadDocument, Simulator, diagnostics, nativeExport, observeSourceEmission, observeMirrorSet } from './adapter.js';
+import { loadDocument, Simulator, diagnostics, nativeExport, observeSourceEmission, observeMirrorSet, observeDetectorSet } from './adapter.js';
 import { parseSave, serializeSave, SAMPLING_PRESETS, samplingPreset, setSourceMode } from './contract.js';
 import { Session } from './session.js';
 import pointSourceIcon from '../vendor/ray-optics/src/img/PointSource.svg';
@@ -18,13 +18,14 @@ const session = new Session(doc => {
   const source = doc.physics.components.find(c => c.type === 'point-source');
   const meter = observeSourceEmission(scene.objs[idMap.get(source.id)]);
   const mirrorMeter = observeMirrorSet(doc, scene, idMap);
+  const detectorMeter = observeDetectorSet(doc, scene, idMap);
   const sim = new Simulator(scene, ...canvases.map(c => c.getContext('2d')), null, true, doc.simulation.processedRayLimit);
   const cancel = () => {
     if (sim.simulationTimerId !== -1) clearTimeout(sim.simulationTimerId);
     sim.simulationTimerId = -1; sim.shouldSimulatorStop = true;
   };
   return { scene, cancel, run: notify => {
-    for (const event of ['simulationComplete', 'simulationStop']) sim.on(event, () => notify(event, diagnostics(scene, sim, meter, mirrorMeter)));
+    for (const event of ['simulationComplete', 'simulationStop']) sim.on(event, () => notify(event, diagnostics(scene, sim, meter, mirrorMeter, detectorMeter)));
     sim.updateSimulation(false, false);
   } };
 }, update);
@@ -51,6 +52,14 @@ function update() {
   const perMirror = d?.reflectionsById ? Object.entries(d.reflectionsById)
     .map(([id,count])=>id+': '+count).join(' · ') : '';
   $('stats').textContent = d ? `${d.emitted} rays emitted · ${d.processed} segments processed${d.reflections != null ? ` · ${d.reflections} native reflections${partial ? ' (partial run)' : ''}${perMirror ? ' (' + perMirror + ')' : ''}` : ''} · truncated brightness ${d.truncation.toPrecision(3)} · undefined brightness ${d.undefinedBehavior.toPrecision(3)}` : session.document ? `Native emission pending · ${session.document.simulation.processedRayLimit} segment limit` : 'Loading scene';
+  const detectors = session.document?.physics.components.some(c=>c.type==='ray-detector');
+  $('detector-readouts').hidden = !detectors || state==='invalid';
+  $('detector-readouts').textContent = !detectors ? '' :
+    !d || !['completed','completed-with-warnings'].includes(state) ?
+      'Ray detector readings pending or incomplete. No current measurement is published.' :
+    Object.entries(d.detectorsById || {}).map(([id,r])=>
+      id+': '+r.crossings+' native crossings · signed detector power '+
+      (r.signedPower===null?'unavailable':format(r.signedPower))+' (relative native units)').join('  |  ');
   $('sampling-note').textContent = d && d.emitted < 3 ? `Only ${d.emitted} native ray${d.emitted === 1 ? '' : 's'} emitted. This cone is sparsely sampled and may miss the ${mixed ? 'lens or mirror' : mirror ? 'mirror' : 'lenses'}. Increase sampling or opening angle to inspect more rays.` : 'Sampling changes the angular spacing, not the optical model.';
   $('reflection-note').textContent = mirror ? !d ? state === 'running' ? 'Native reflection count pending for this revision.' : 'No current reflection count is available.' : partial ? 'Reflection counts are partial; the simulation is incomplete.' :
     d.reflections === 0 ? `No sampled rays reflected. ${session.prediction ? 'The analytical image is conditional; this run does not establish a simulated image.' : 'This run does not establish a simulated image.'}` :
@@ -101,7 +110,8 @@ function controls() {
     fieldset.append(legend, caption);
     if (component.type === 'point-source') $('source-tools').append(sourcePicker(component));
     for (const [key, value] of Object.entries(component.parameters)) {
-      const slider = key === 'brightness' ? { min: 0.01, max: 1, step: 0.01 } : component.type === 'plane-mirror' ?
+      const slider = key === 'brightness' ? { min: 0.01, max: 1, step: 0.01 } :
+        ['plane-mirror','ray-detector'].includes(component.type) ?
         { min: key === 'length' ? 1 : key === 'orientationDeg' ? -180 : -10000, max: key === 'orientationDeg' ? 180 : 10000, step: 1 } : null;
       const fixed = mixed && component.type === 'plane-mirror' && ['y', 'orientationDeg'].includes(key);
       addNumber(component.type === 'point-source' && key === 'brightness' ? $('source-parameters') : fieldset, component.id, 'parameters', key, key === 'brightness' ? 'Brightness (relative)' : `${labels[key]} (${key === 'orientationDeg' ? '°' : 'mm'})`, value, slider, fixed);
@@ -109,6 +119,11 @@ function controls() {
     if (component.type === 'plane-mirror') {
       const note = document.createElement('p'); note.className = 'muted';
       note.textContent = mixed ? 'Return layout fixes centre y=0 and perpendicular orientation ±90°. Mirror x and finite length remain editable. The same lens is used on both encounters.' : 'Position is the segment centre. Surface tangent: 0° horizontal · 90° vertical · +45° rises right. Reflects from both sides.';
+      fieldset.append(note);
+    }
+    if (component.type === 'ray-detector') {
+      const note = document.createElement('p'); note.className = 'muted';
+      note.textContent = 'Passive native detector. Orientation is its surface tangent; signed power uses native relative units and can cancel across directions. Crossing count is sampled, not continuous throughput.';
       fieldset.append(note);
     }
     if (component.type === 'point-source') {

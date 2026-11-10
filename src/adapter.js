@@ -18,6 +18,11 @@ const compilers = {
   'plane-mirror': c => {
     const [a, b] = mirrorEndpoints(c.parameters);
     return { type: 'Mirror', p1: { x: a.x, y: -a.y }, p2: { x: b.x, y: -b.y }, filter: false };
+  },
+  'ray-detector': c => {
+    const [a, b] = mirrorEndpoints(c.parameters);
+    return { type: 'Detector', p1: { x: a.x, y: -a.y },
+      p2: { x: b.x, y: -b.y }, irradMap: false };
   }
 };
 export function compile(doc, width = 1200, height = 700) {
@@ -77,14 +82,34 @@ export function observeMirrorSet(doc, scene, idMap) {
     get byId() {return Object.fromEntries(entries.map(([id,meter])=>[id,meter.reflections]));}
   };
 }
-export function diagnostics(scene, simulator, meter = null, mirrorMeter = null) {
+// Observe only authored detectors. Native onRayIncident and power accounting
+// stay authoritative; the observer counts calls and delegates exactly once.
+export function observeDetectorSet(doc, scene, idMap) {
+  const entries=doc.physics.components.filter(c=>c.type==='ray-detector').map(c=>{
+    const detector=scene.objs[idMap.get(c.id)], original=detector.onRayIncident;
+    let crossings=0;
+    detector.onRayIncident=function (...args) {
+      const result=original.apply(this,args);
+      crossings++;
+      return result;
+    };
+    return {id:c.id,detector,get crossings(){return crossings;}};
+  });
+  if(!entries.length)return null;
+  return {get byId(){return Object.fromEntries(entries.map(entry=>[
+    entry.id,{crossings:entry.crossings,
+      signedPower:Number.isFinite(entry.detector.power)?entry.detector.power:null}
+  ]));}};
+}
+export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, detectorMeter = null) {
   const errors = [scene.error, simulator.error, ...scene.objs.map(o => o.getError())].filter(Boolean);
   const warnings = [scene.warning, simulator.warning, ...scene.objs.map(o => o.getWarning())].filter(Boolean);
   return { errors, warnings, processed: simulator.processedRayCount, truncation: simulator.totalTruncation,
     undefinedBehavior: simulator.totalUndefinedBehavior, emitted: meter?.emitted ?? null,
     brightnessScale: meter?.brightnessScale ?? simulator.brightnessScale,
     reflections: mirrorMeter?.reflections ?? null,
-    reflectionsById: mirrorMeter?.byId ?? null };
+    reflectionsById: mirrorMeter?.byId ?? null,
+    detectorsById: detectorMeter?.byId ?? null };
 }
 export function classifyRun(event, data) {
   return data.errors.length ? 'failed' : event === 'simulationStop' ? 'stopped' :
