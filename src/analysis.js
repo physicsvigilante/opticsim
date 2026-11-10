@@ -53,10 +53,16 @@ function predictLenses(doc) {
     [c, d] = [c - a / lens.parameters.focalLength, d - b / lens.parameters.focalLength];
     x = lens.parameters.x;
   }
+  const unavailable = () => ({ kind: 'unavailable', reason: 'The lens-train matrix is numerically unreliable at these parameters.' });
+  if (![a, b, c, d].every(Number.isFinite)) return unavailable();
   const tolerance = 1e-10;
   if (Math.abs(d) <= tolerance * Math.max(1, Math.abs(b) / 100)) return { kind: 'at-infinity', tolerance };
   const distance = -b / d;
-  const magnification = a + distance * c;
-  return { kind: distance >= 0 ? 'finite-real' : 'finite-virtual', x: x + distance,
-    y: magnification * source.parameters.y, distance, magnification };
+  // det(M)=1 implies magnification=1/D, checked against A+z*C for cancellation.
+  const magnification = 1 / d, checkMagnification = a + distance * c;
+  const imageX = x + distance, imageY = magnification * source.parameters.y;
+  if (![distance, magnification, checkMagnification, imageX, imageY].every(Number.isFinite) ||
+      Math.abs(checkMagnification - magnification) > 1e-7 * Math.abs(magnification)) return unavailable();
+  return { kind: distance >= 0 ? 'finite-real' : 'finite-virtual', x: imageX,
+    y: imageY, distance, magnification };
 }

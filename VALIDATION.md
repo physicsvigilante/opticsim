@@ -520,3 +520,91 @@ accuracy. No unresolved focused-test failures, runtime AI or new dependencies.
 Local checkpointing was approved on 2026-11-02; pushing remains subject to
 separate approval. The pre-checkpoint rerun passed all 34 tests and the browser
 build. Git history records the two separate local checkpoints.
+
+## Bounded multi-lens composition candidate — 2026-11-10
+
+This entry records an **implementation candidate**, not a qualified release. The
+accepted design and conditions are in `MULTI-LENS-COMPOSITION-PROPOSAL.md`
+and `MULTI-LENS-COMPOSITION-REVIEW.md`. Work is confined to branch
+`design/bounded-multilens-trains`; `main` and the pinned upstream physics code
+remain unchanged pending review.
+
+Implemented changes:
+- Current schema-v4 `ideal-thin-lens-geometric` allows one source and 1–4
+  coaxial ideal thin lenses, retaining all existing coordinate and parameter
+  bounds. Historical schema-v1/v2/v3 validators still limit this family to
+  one or two lenses before migration.
+- The adapter retains one native object per authored component and the original
+  stable-ID/index map. Neither PhyDemo ray tracing nor ray-routing was modified.
+- Analytical forward ABCD propagation now checks finite matrix/image values and
+  cross-checks `m=1/D` against `m=A+z*C` with a 1e-7 relative tolerance.
+  Numerically unreliable finite predictions become unavailable while validated
+  scene tracing and export remain available. This heuristic does not certify
+  all possible poorly conditioned cases.
+- Two scene-only composed examples (`scenes/three-lenses.json` and
+  `scenes/four-lenses.json`), a new regression file
+  `test/multilens.test.mjs`, updated agent/user authoring instructions, and
+  a branch GitHub Actions workflow were added.
+
+Independent **exact rational arithmetic** confirms the intended reference
+predictions for the chosen parameter data (not native-run evidence):
+- Three lenses at 0/120/260 mm with focal lengths +75/+100/-200 mm,
+  source x=-300 mm, y=10 mm: `D=-219/50`,
+  `z=-6600/73 mm`, image x=`260-6600/73` mm,
+  magnification `-50/219`.
+- Four lenses at 0/100/250/400 mm with focal lengths
+  +100/-100/+125/+150 mm and the same source:
+  `D=1/3`, `z=420 mm`, image x=820 mm, magnification=3.
+
+**Not yet established in this record:** full `npm test`, the native detector
+tests, `npm run build`, `check-scene.mjs`, or browser open/edit/save/reload
+on the implementation. The tool runtime used to author this candidate has
+Node.js 22.16.0 and cannot retrieve the pinned upstream dependencies from
+GitHub (network DNS unavailable), so it is not an equivalent test environment.
+The included GitHub Actions workflow is intended to run the actual pinned
+project setup and these commands after the branch commit. Do not upgrade this
+candidate's test status without inspecting the resulting checks and any
+failures. An independent implementation review is still required before
+merging.
+
+### Candidate CI qualification — GitHub Actions
+
+After correcting the three-lens infinity fixture spacing (second lens x=150 mm),
+the branch run [Optical composition checks #2](https://github.com/physicsvigilante/opticsim/actions/runs/42868739598)
+at commit `c30eeac81f624a3c102d94c5a0438fe4cdaa7c9b` completed **successfully**:
+
+- Pinned PhyDemo `811f508d2b070898c241a568b0c167dcb8645251`
+  cloned and installed under Node.js 24.19.0/npm 11.17.0.
+- `npm test`: **41 tests passed, 0 failed**; all older focused tests
+  and the seven new multi-lens tests passed, including native detectors,
+  incident sequences, aperture misses, historical migration and numerical
+  unavailability.
+- `npm run build`: local browser production bundle built successfully.
+- `check-scene.mjs`: both three- and four-lens authored scenes reported
+  `executionPassed: true` with native execution and serialization checks.
+  The emitted report is preserved as the workflow artifact.
+- The initial CI run had **one erroneous test expectation** for a final
+  infinity case: the second lens retained x=120 mm instead of the required
+  x=150 mm. That fixture was corrected without changing production optics.
+  The earlier failing run is retained in GitHub Actions history.
+
+These results establish **headless native/runtime/build qualification on
+the bounded examples**. They do not establish visual browser acceptance,
+accuracy of image interpretation from arbitrary diagrams, general mixed
+systems, or independent implementation review. Do not merge to `main`
+without those applicable review gates and user approval.
+### Browser acceptance — actual headless Chrome run, 2026-11-10
+
+**Evidence:** [GitHub Actions run #42873516129](https://github.com/physicsvigilante/opticsim/actions/runs/42873516129) on commit `7174f037fd1f6253deef8d1bce0955ff296e622a`, with browser screenshots, the saved browser sandbox JSON, the independent native-export JSON, and machine-readable `report.json` in the `browser-acceptance-evidence` workflow artifact.
+
+The browser regression at `scripts/browser-acceptance.mjs` uses preinstalled **Google Chrome 156.0.8078.79** in headless mode and built-in Node WebSocket/CDP: no new npm dependencies and no changes to upstream PhyDemo. **8/8 scripted browser checks passed**, together with **42/42 Node tests**, the production Webpack build, and both image-to-scene checker examples.
+
+Observed browser behavior:
+- Three- and four-lens presets loaded using the real scene picker; native canvases were painted and all dynamically generated lens controls appeared with unique IDs. Simulations completed without errors. The three-lens screenshot reports 100 emitted / 127 processed segments, conditional virtual image approximately (169.589, -2.283105) mm; the four-lens screenshot reports 100 emitted / 140 processed segments, conditional real image (820, 30) mm.
+- In the three-lens scene, editing focal length (100→120 mm), lens position (260→270 mm), and aperture height (180→160 mm) changed the accepted scene; the prediction responded to the focal edit.
+- A zero focal length produced an invalid state, disabled saving, and suppressed stale analysis; correcting it restored a completed simulation.
+- The extended-ray toggle switched to the native extension view with a nonblank canvas.
+- **Save sandbox** initiated an actual browser JSON download retaining authored IDs and edited parameters. After switching to the four-lens preset, **Open sandbox** restored that downloaded file, including the extended view and revised values. **Export PhyDemo JSON** produced native version-5 objects without sandbox IDs/parameters.
+- Three full-page screenshots (`three-lenses-rays.png`, `three-lenses-extended.png`, `four-lenses-rays.png`) were captured and inspected. The displayed source, all lenses, ray drawing, generated controls, numeric results, and status labels are legible without observed overlapping controls; the extended view has the expected additional backward constructions. Screenshots are **qualitative UI evidence**, not proof of physical laws.
+
+The browser acceptance requirement for the bounded fixtures is now met **for automated headless Chrome at the captured viewport**. It does not establish a broad device/responsiveness matrix, optical behavior for unsupported layouts, image-to-scene interpretation accuracy on arbitrary diagrams, or a separate-agent implementation review. The extreme numerical-unavailability example has a real load/export check but its simulated-completion callback remains mocked; do not claim a completed native run for that extreme scene. Merge approval remains outstanding.

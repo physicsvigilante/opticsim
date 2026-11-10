@@ -1,0 +1,35 @@
+name: Optical composition checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - run: npm test
+      - run: npm run build
+      - run: node skills/sim-ro-image-to-scene/scripts/check-scene.mjs scenes/three-lenses.json scenes/four-lenses.json test/fixtures/multilens-extreme.json --report test-artifacts/image-to-scene/multi-lens/checks.json
+      - name: Browser acceptance with preinstalled Chrome
+        run: node scripts/browser-acceptance.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-acceptance-evidence
+          path: test-artifacts/browser-acceptance/
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: composed-lens-evidence
+          path: test-artifacts/image-to-scene/multi-lens/checks.json
+          if-no-files-found: ignore

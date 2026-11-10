@@ -37,6 +37,13 @@ brightness defaults are relative authoring choices, not measured power. Emission
 is a source characteristic; ray density is sampling; camera/grid are presentation.
 Inactive full-circle direction/opening fields must not be presented as measured.
 
+Current v4 lens scenes support one point source and one to four distinct
+coaxial lenses in increasing physical x order, with the source to their left.
+Previous v1-v3 documents cannot acquire three-/four-lens scope by migration.
+The scene array may be ordered differently; authored IDs and positions control
+identity and analysis. The supplied three-/four-lens examples illustrate the
+format but must not supply unspecified physical facts.
+
 Reject components/layouts outside the current sandbox, even when native PhyDemo
 supports them. Do not substitute an ideal lens for a prism, turn an extended object
 into an emitter without agreement, generate raw native JSON/modules, change the
