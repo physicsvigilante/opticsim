@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ray Optics 2D</title><link rel="stylesheet" href="style.css"><link rel="icon" href="data:,"></head>
+<body>
+<header><div><span class="eyebrow">LOCAL OPTICAL BENCH</span><h1>Ray Optics <span>2D</span></h1></div><div class="brand-note">Powered by PhyDemo<br><span id="model-label">Geometric optics</span></div></header>
+<nav class="ray-toolbar" aria-label="Ray controls">
+<div id="source-tools"></div>
+<div class="view-picker" role="radiogroup" aria-label="Ray view"><span class="view-title">View</span><label title="Show the simulated rays"><input id="mode-rays" type="radio" name="ray-view" value="rays" checked disabled><span><img id="view-rays-icon" alt="" width="16" height="20">Rays</span></label><label title="Show rays with their backward extensions"><input id="mode-extended" type="radio" name="ray-view" value="extended" disabled><span><img id="view-extended-icon" alt="" width="16" height="20">Extended rays</span></label></div>
+<label class="toolbar-sampling">Ray sampling<select id="sampling"><option value="sparse">Sparse</option><option value="medium">Medium</option><option value="dense">Dense</option><option id="sampling-custom" value="custom" disabled hidden>Custom</option></select></label>
+<div id="source-parameters" class="source-parameters" role="group" aria-label="Source ray parameters"></div>
+</nav>
+<main>
+<aside>
+<label class="scene-picker">Scene<select id="examples"><option value="single-lens">01 / Single converging lens</option><option value="two-lenses">02 / Two converging lenses</option><option value="diverging-pair">03 / Converging + diverging</option><option value="plane-mirror">04 / Plane mirror</option><option value="lens-mirror-focal">05 / Lens + mirror: focal return</option><option value="lens-mirror-finite">06 / Lens + mirror: finite image</option><option value="" disabled hidden>Loaded sandbox</option></select></label>
+<div class="actions"><button id="save" disabled>Save sandbox</button><label class="button">Open sandbox<input id="load" type="file" accept=".json,application/json"></label><button id="export" disabled>Export PhyDemo JSON</button></div>
+<h2>Physical parameters</h2><p id="parameter-guidance" class="muted">Lengths in mm. x points right; y points up.</p>
+<div id="controls"></div>
+<p id="physical-note" class="muted">Edit physical values here; the canvas is a simulation view.</p>
+</aside>
+<section class="workspace">
+<div class="bench-heading"><div><span class="eyebrow">SIMULATED RAYS</span><h2 id="title">Loading optical bench…</h2></div><span id="revision">Revision 0</span></div>
+<div class="viewbar"><label class="check"><input id="grid-toggle" type="checkbox"> Grid</label><label>Zoom <input id="zoom" type="range" min="0.03" max="2" step="0.01" value="1"></label><button id="pan-left" aria-label="Pan view left">←</button><button id="pan-right" aria-label="Pan view right">→</button></div>
+<div id="stage"><canvas id="below"></canvas><canvas id="grid"></canvas><canvas id="light"></canvas><canvas id="above"></canvas><div class="axis-note">x → &nbsp; y ↑ &nbsp; / mm</div></div>
+<div class="runbar"><span id="status" role="status">Loading</span><button id="stop" disabled>Stop</button><button id="rerun" disabled>Run again</button><p id="stats"></p></div>
+<p id="sampling-note" class="muted">Sampling changes the angular spacing, not the optical model.</p>
+<div id="error" role="alert" hidden></div><pre id="warnings"></pre>
+<p id="brightness-note" class="muted"></p>
+<p id="reflection-note" class="muted"></p>
+<section class="analysis"><span class="eyebrow">ANALYTICAL PREDICTION</span><p id="analysis-status" class="muted"></p><div id="prediction"></div><p id="prediction-note" class="muted">Calculated independently from the authored optical parameters.</p></section>
+</section>
+</main>
+<footer><span>PhyDemo Ray Optics Simulation v5.4.0 · Ray Optics Simulation authors and contributors</span><a href="licenses/phydemo/LICENSE" target="_blank">Apache-2.0 license</a><a href="licenses/phydemo/CITATION.md" target="_blank">Citation</a><a href="licenses/INDEX.txt" target="_blank">Dependency notices</a></footer>
+<script src="app.js" defer></script></body></html>

@@ -1,0 +1,36 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 4,
+  "adapterVersion": 4,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "ideal-thin-lens-geometric",
+    "components": [
+      {
+        "id": "source-data",
+        "type": "point-source",
+        "parameters": { "x": -240, "y": 16, "brightness": 0.15 },
+        "emission": { "mode": "directional", "directionDeg": 0, "angleDeg": 20 }
+      },
+      {
+        "id": "lens-a",
+        "type": "ideal-lens",
+        "parameters": { "x": -40, "focalLength": 80, "apertureHeight": 200 }
+      },
+      {
+        "id": "lens-b",
+        "type": "ideal-lens",
+        "parameters": { "x": 240, "focalLength": 120, "apertureHeight": 240 }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "Data-only check: unequal converging lenses",
+    "view": { "x": 300, "y": 0, "zoom": 0.5 },
+    "mode": "extended",
+    "grid": true
+  },
+  "simulation": { "rayDensity": 0.2, "maxRayDepth": 8, "processedRayLimit": 10000 }
+}

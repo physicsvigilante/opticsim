@@ -1,0 +1,6 @@
+# Store text consistently while allowing Windows working-tree preferences.
+* text=auto
+*.md text eol=lf
+*.json text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf

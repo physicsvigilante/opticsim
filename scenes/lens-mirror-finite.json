@@ -1,0 +1,61 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 4,
+  "adapterVersion": 4,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "lens-mirror-return-geometric",
+    "components": [
+      {
+        "id": "source-1",
+        "type": "point-source",
+        "parameters": {
+          "x": -300,
+          "y": 10,
+          "brightness": 0.05
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 0,
+          "angleDeg": 20
+        }
+      },
+      {
+        "id": "lens-1",
+        "type": "ideal-lens",
+        "parameters": {
+          "x": 0,
+          "focalLength": 100,
+          "apertureHeight": 200
+        }
+      },
+      {
+        "id": "mirror-1",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": 200,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 400
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "Lens + mirror: finite return image",
+    "view": {
+      "x": 0,
+      "y": 0,
+      "zoom": 0.8
+    },
+    "mode": "extended",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000
+  }
+}

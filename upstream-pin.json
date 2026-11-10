@@ -1,0 +1,17 @@
+{
+  "status": "approved-milestone-1",
+  "repository": "https://github.com/ricktu288/ray-optics",
+  "release": "v5.4.0",
+  "commit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "nativeSceneVersion": 5,
+  "inspectedOn": "2026-11-01",
+  "observedDefaultBranchCommit": "9dd7706097ec8b93171e04e7985be12c3309533c",
+  "dependencyStrategy": "Unmodified source checkout at the exact release commit; preserve upstream package-lock.json; no moving deployment dependency",
+  "observedLocalToolchain": {
+    "node": "24.19.0",
+    "npm": "11.17.0",
+    "git": "2.43.0.windows.1"
+  },
+  "upstreamLockSha256": "04244fdf59c55ef0acf9ac89e856bea92e74514e65b8ceb6034ee4b4b810bdfd",
+  "buildOrRuntimeVerified": true
+}

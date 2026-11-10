@@ -1,0 +1,17 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 4,
+  "adapterVersion": 4,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "plane-mirror-geometric",
+    "components": [
+      { "id": "source-1", "type": "point-source", "parameters": { "x": -150, "y": 20, "brightness": 0.15 }, "emission": { "mode": "full-circle", "directionDeg": 0, "angleDeg": 30 } },
+      { "id": "mirror-1", "type": "plane-mirror", "parameters": { "x": 0, "y": 0, "orientationDeg": 90, "length": 160 } }
+    ]
+  },
+  "presentation": { "title": "Case 03: point source and vertical plane mirror", "view": { "x": 0, "y": 0, "zoom": 1 }, "mode": "rays", "grid": false },
+  "simulation": { "rayDensity": 1, "maxRayDepth": 8, "processedRayLimit": 10000 }
+}

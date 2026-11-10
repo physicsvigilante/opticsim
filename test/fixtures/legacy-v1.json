@@ -1,0 +1,46 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 1,
+  "adapterVersion": 1,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "ideal-thin-lens-geometric",
+    "components": [
+      {
+        "id": "source-1",
+        "type": "point-source",
+        "parameters": {
+          "x": -300,
+          "y": 10
+        }
+      },
+      {
+        "id": "lens-1",
+        "type": "ideal-lens",
+        "parameters": {
+          "x": 0,
+          "focalLength": 100,
+          "apertureHeight": 180
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "Single converging lens",
+    "view": {
+      "x": 0,
+      "y": 0,
+      "zoom": 1
+    },
+    "mode": "rays",
+    "grid": false,
+    "brightness": 0.5
+  },
+  "simulation": {
+    "rayDensity": 1,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000
+  }
+}

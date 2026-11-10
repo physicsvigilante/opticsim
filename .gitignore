@@ -1,0 +1,52 @@
+# Installed dependencies (keep package manifests and lockfiles tracked).
+node_modules/
+
+# Local, unmodified PhyDemo checkout; exact revision is in upstream-pin.json.
+/vendor/ray-optics/
+
+# Generated application, upstream, and documentation builds.
+dist/
+dist-node/
+dist-integrations/
+build/
+out/
+
+# Tool/package caches and logs.
+.cache/
+.npm/
+.npm-cache/
+.webpack-cache/
+.parcel-cache/
+.vite/
+.eslintcache
+*.tsbuildinfo
+*.log
+
+# Generated test output (source tests, fixtures, and baselines stay trackable).
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+test-artifacts/
+blob-report/
+/artifacts/
+
+# Temporary/local files and environment secrets.
+tmp/
+temp/
+.tmp/
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Operating-system metadata.
+.DS_Store
+Thumbs.db
+Desktop.ini

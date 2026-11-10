@@ -1,0 +1,81 @@
+import Scene from '../vendor/ray-optics/src/core/Scene.js';
+import Simulator from '../vendor/ray-optics/src/core/Simulator.js';
+import i18next from '../vendor/ray-optics/node_modules/i18next/dist/esm/i18next.js';
+import en from '../vendor/ray-optics/locales/en/simulator.json';
+import { validate, mirrorEndpoints } from './contract.js';
+i18next.init({ lng: 'en', resources: { en: { simulator: en } }, initImmediate: false, interpolation: { escapeValue: false } });
+const compilers = {
+  'point-source': c => {
+    const { x, y, brightness } = c.parameters;
+    if (c.emission.mode === 'full-circle') return { type: 'PointSource', x, y: -y, brightness };
+    const theta = c.emission.directionDeg * Math.PI / 180;
+    return { type: 'AngleSource', p1: { x, y: -y },
+      p2: { x: x + 20 * Math.cos(theta), y: -y - 20 * Math.sin(theta) },
+      brightness, emisAngle: c.emission.angleDeg, symmetric: true };
+  },
+  'ideal-lens': c => ({ type: 'IdealLens', p1: { x: c.parameters.x, y: -c.parameters.apertureHeight / 2 },
+    p2: { x: c.parameters.x, y: c.parameters.apertureHeight / 2 }, focalLength: c.parameters.focalLength }),
+  'plane-mirror': c => {
+    const [a, b] = mirrorEndpoints(c.parameters);
+    return { type: 'Mirror', p1: { x: a.x, y: -a.y }, p2: { x: b.x, y: -b.y }, filter: false };
+  }
+};
+export function compile(doc, width = 1200, height = 700) {
+  validate(doc);
+  const { view } = doc.presentation;
+  return { idMap: new Map(doc.physics.components.map((c, i) => [c.id, i])),
+    native: { version: 5, name: doc.presentation.title, objs: doc.physics.components.map(c => compilers[c.type](c, doc)),
+      width, height, scale: view.zoom, origin: { x: width / 2 - view.x * view.zoom, y: height / 2 + view.y * view.zoom },
+      mode: doc.presentation.mode, showGrid: doc.presentation.grid, gridSize: 50,
+      lockObjs: true, rayModeDensity: doc.simulation.rayDensity, maxRayDepth: doc.simulation.maxRayDepth,
+      simulateColors: false, colorMode: 'default', lengthScale: 1 } };
+}
+export function loadNative(native, width = native.width || 1200, height = native.height || 700) {
+  const scene = new Scene();
+  scene.setViewportSize(width, height);
+  let completed = false;
+  scene.loadJSON(JSON.stringify(native), (_, done) => { completed = done; });
+  if (!completed || scene.error) throw Error(scene.error || 'Native scene did not load synchronously');
+  return scene;
+}
+export function loadDocument(doc, width, height) {
+  const compiled = compile(doc, width, height);
+  return { ...compiled, scene: loadNative(compiled.native, width, height) };
+}
+export function nativeExport(doc) { return loadDocument(doc).scene.toJSON(); }
+// Instance-local observation only: one native call, same return value and rays.
+// No tracing, resampling, or source prototype/upstream modification.
+export function observeSourceEmission(source) {
+  const meter = { emitted: null, brightnessScale: null };
+  const nativeStart = source.onSimulationStart;
+  source.onSimulationStart = function (...args) {
+    const result = nativeStart.apply(this, args);
+    meter.emitted = result?.newRays?.length || 0;
+    meter.brightnessScale = result?.brightnessScale ?? null;
+    return result;
+  };
+  return meter;
+}
+export function observeMirrorReflections(mirror) {
+  const meter = { reflections: 0 };
+  const nativeIncident = mirror.onRayIncident;
+  mirror.onRayIncident = function (...args) {
+    const result = nativeIncident.apply(this, args);
+    meter.reflections++;
+    return result;
+  };
+  return meter;
+}
+export function diagnostics(scene, simulator, meter = null, mirrorMeter = null) {
+  const errors = [scene.error, simulator.error, ...scene.objs.map(o => o.getError())].filter(Boolean);
+  const warnings = [scene.warning, simulator.warning, ...scene.objs.map(o => o.getWarning())].filter(Boolean);
+  return { errors, warnings, processed: simulator.processedRayCount, truncation: simulator.totalTruncation,
+    undefinedBehavior: simulator.totalUndefinedBehavior, emitted: meter?.emitted ?? null,
+    brightnessScale: meter?.brightnessScale ?? simulator.brightnessScale,
+    reflections: mirrorMeter?.reflections ?? null };
+}
+export function classifyRun(event, data) {
+  return data.errors.length ? 'failed' : event === 'simulationStop' ? 'stopped' :
+    data.truncation > 0 || data.undefinedBehavior > 0 ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
+}
+export { Scene, Simulator };

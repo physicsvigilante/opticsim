@@ -1,0 +1,14 @@
+{
+  "purpose": "Reviewer answer key. Do not supply this file, proposal, SVG source or generation scripts to the authoring trial.",
+  "cases": [
+    { "id": "case-01", "decision": "resolved", "model": "ideal-thin-lens-geometric", "source": {"x":-240,"y":12,"emissionMode":"full-circle"}, "lenses": [{"x":0,"focalLength":80,"apertureHeight":160}], "image": {"x":120,"y":-6,"magnification":-0.5} },
+    { "id": "case-01-stretched", "decision": "resolved", "samePhysicsAs": "case-01", "model": "ideal-thin-lens-geometric", "source": {"x":-240,"y":12,"emissionMode":"full-circle"}, "lenses": [{"x":0,"focalLength":80,"apertureHeight":160}], "image": {"x":120,"y":-6,"magnification":-0.5} },
+    { "id": "case-02", "decision": "resolved", "model": "ideal-thin-lens-geometric", "source": {"x":-240,"y":12,"emissionMode":"full-circle"}, "lenses": [{"x":0,"focalLength":80,"apertureHeight":200},{"x":280,"focalLength":120,"apertureHeight":240}], "image": {"x":760,"y":18,"magnification":1.5} },
+    { "id": "case-03", "decision": "resolved", "model": "plane-mirror-geometric", "source": {"x":-150,"y":20,"emissionMode":"full-circle"}, "mirror": {"x":0,"y":0,"orientationDeg":90,"length":160}, "image": {"x":150,"y":20} },
+    { "id": "case-04", "decision": "resolved", "model": "plane-mirror-geometric", "source": {"x":-120,"y":40,"emissionMode":"full-circle"}, "mirror": {"x":0,"y":0,"orientationDeg":135,"length":160}, "image": {"x":-40,"y":120} },
+    { "id": "case-05", "decision": "needs-clarification", "missing": "source-to-lens distance d", "onAxis":true, "focalLength":80, "apertureHeight":160, "followUp": {"statement":"The supplied source-to-lens distance is d=24 cm.","source":{"x":-240,"y":0},"image":{"x":120,"y":0,"magnification":-0.5}} },
+    { "id": "case-05-conflict", "decision": "needs-clarification", "conflict": {"diagramDistanceMm":240,"statementDistanceMm":300} },
+    { "id": "case-06", "decision": "unsupported", "reason": "Triangular glass prism/refraction is not an admitted sandbox component or arrangement." }
+  ],
+  "comparison": "Translate first lens/mirror centre to the declared canonical origin; preserve y-up and stated relative geometry. Mirror tangent equivalent modulo 180 degrees. IDs need consistency across revisions, not a particular spelling. Camera/brightness/sampling defaults must be declared, not mistaken for input facts."
+}

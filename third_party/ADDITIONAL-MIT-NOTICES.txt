@@ -1,0 +1,37 @@
+The following MIT-licensed packages do not ship a standalone license file
+in their pinned npm archives. Original README attribution is copied under
+dist/licenses, and source headers are retained in the browser bundle.
+
+bezier-js 6.1.4: A javascript Bezier curve library by Pomax.
+Source package: https://github.com/Pomax/bezierjs
+Its source header and package metadata declare the MIT license.
+
+javascript-natural-sort 0.7.1: Natural Sort algorithm for Javascript.
+Author: Jim Palmer (based on chunking idea from Dave Koelle).
+Source package: https://github.com/overset/javascript-natural-sort
+Its source header and package metadata declare the MIT license.
+
+seedrandom 3.0.5: Copyright 2019 David Bau.
+Source package: https://github.com/davidbau/seedrandom
+The full MIT text is also retained in its copied README and bundle source.
+
+MIT permission and warranty terms:
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
