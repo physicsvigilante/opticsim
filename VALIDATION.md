@@ -748,3 +748,79 @@ native power only. No continuous field/irradiance integration, spectrum or
 polarization measurement, general symbolic solution, image detection, broad
 device testing, or general scene graph. A code-focused review and user
 approval are required before merging this candidate into `main`.
+## Milestone 4 — independent multi-source composition candidate (2026-11-11)
+
+**Status: candidate implementation on `feature/multi-source-composition`, not merged.**
+The current-v4 `mixed-lens-mirror-tracing` family admits **1–4 independent
+point-source components**, reusing the existing PhyDemo `PointSource` and
+`AngleSource`, 1–4 lenses, 1–4 plane mirrors and the current 0–2 optional
+passive detectors. Source components retain independent stable IDs, x/y position,
+relative brightness and full-circle/directional emission settings. The ray
+density, maximum interaction depth and processed-ray limit remain **shared**
+simulation settings. The three older analytical optical families continue to
+accept **exactly one** source, and prior version migrations stay strict.
+
+The mixed validator checks every source against every lens plane, mirror
+supporting line and detector supporting line, and rejects coincident source
+locations (less than 0.01 mm separation) and more than four sources. The
+existing compiler still creates one native emitter per authored source without
+rewriting PhyDemo or imposing ray paths. `observeSourceSet` wraps each native
+`onSimulationStart` once through the stable ID map, publishes per-ID emitted
+sample counts and original native brightness scales, and sums emitted counts.
+It does **not** synthesize a combined brightness scale or claim that detector
+readings/reflections belong to specific source IDs. The mixed analytical image
+remains explicitly unavailable.
+
+For several sources, the browser provides a **UI-only active source selector**
+for the Full-circle/Directional mode; every source has numeric x/y/brightness/
+cone/direction fields in a labelled sidebar group. Source selection does not
+change the saved document or force a new physics revision. Native diagnostics
+are displayed per source only for a completed run. Invalid, stopped or
+incomplete runs suppress current emission readouts, as with detectors. The
+authoring checker independently checks that every source has an observed
+nonnegative integer sample count and that the counts sum to the native total.
+
+**Verified on candidate commit `e260668010d84a128ef115f73b0ba8e9d31968b2`:**
+[GitHub Actions #42888983977](https://github.com/physicsvigilante/opticsim/actions/runs/42888983977)
+completed successfully using the pinned PhyDemo checkout:
+**65/65 Node tests**, production Webpack build, **11/11 authored-scene
+checks**, **23/23 headless Chrome checks** and twelve retained screenshots.
+Native cases include original and shuffled source/object order, independently
+computed source sampling, one-to-four cardinality, earlier-model isolation,
+source-plane degeneracies, independent source-mode and brightness edits, native
+stop/truncation, browser invalid/recovery, and real Save/Open round trips.
+
+Example actual native results at density 0.2, all without warnings:
+- Three-source mixed scene: 13 rays emitted (source-1: 4, source-2: 5,
+  source-3: 4), 67 segments processed, 17 total mirror interactions.
+  Every source's native brightness scale was 1.
+- Four-source scene: 113 emitted (source-1: 4, source-2: 5,
+  source-4 full circle: 100, source-3: 4), 219 processed segments,
+  27 total mirror interactions. Every scale was 1.
+  Both scenes completed with zero native errors, truncation or
+  undefined brightness. Existing detectors report only aggregate crossings
+  and signed relative native power, **not per-source provenance**.
+
+A separate **real native warning regression** deliberately increases source-1
+brightness to 0.5 and source-2 to 0.25 at density 0.2 (source-3 remains 0.18).
+PhyDemo completes **with warnings** because clipping ratios differ (0.4, 0.8,
+1), and warns that detector readings and colour may be misleading. The
+validated scene is not silently altered. This warning is physical/measurement
+evidence, not a test failure; users may increase density or explicitly
+change relative brightness if comparative detector power is needed.
+Previous CI attempts that treated this warning as a clean completion were
+left in workflow history; the warning was diagnosed before qualification.
+
+The browser screenshots and saved JSON were inspected qualitatively. All
+authored sources and shared optical surfaces appeared at the tested desktop
+viewport; the controls remained distinct by ID and numerical emission counts
+were visible. The test validates actual renderer behavior, not interpretation
+of arbitrary diagrams.
+
+**Limitations:** no general multi-source analytical image, no source-specific
+detector power or per-ray provenance, no extended-object semantic primitive,
+no intersecting optical components, no source outside the existing 2-D
+bounded domain, and no broad device matrix or new optical physics.
+This was a focused implementer review plus automated verification, **not
+a separate independent reviewer**. The PR remains draft pending explicit
+user merge approval.
