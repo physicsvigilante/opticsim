@@ -566,3 +566,30 @@ project setup and these commands after the branch commit. Do not upgrade this
 candidate's test status without inspecting the resulting checks and any
 failures. An independent implementation review is still required before
 merging.
+
+### Candidate CI qualification — GitHub Actions
+
+After correcting the three-lens infinity fixture spacing (second lens x=150 mm),
+the branch run [Optical composition checks #2](https://github.com/physicsvigilante/opticsim/actions/runs/42868739598)
+at commit `c30eeac81f624a3c102d94c5a0438fe4cdaa7c9b` completed **successfully**:
+
+- Pinned PhyDemo `811f508d2b070898c241a568b0c167dcb8645251`
+  cloned and installed under Node.js 24.19.0/npm 11.17.0.
+- `npm test`: **41 tests passed, 0 failed**; all older focused tests
+  and the seven new multi-lens tests passed, including native detectors,
+  incident sequences, aperture misses, historical migration and numerical
+  unavailability.
+- `npm run build`: local browser production bundle built successfully.
+- `check-scene.mjs`: both three- and four-lens authored scenes reported
+  `executionPassed: true` with native execution and serialization checks.
+  The emitted report is preserved as the workflow artifact.
+- The initial CI run had **one erroneous test expectation** for a final
+  infinity case: the second lens retained x=120 mm instead of the required
+  x=150 mm. That fixture was corrected without changing production optics.
+  The earlier failing run is retained in GitHub Actions history.
+
+These results establish **headless native/runtime/build qualification on
+the bounded examples**. They do not establish visual browser acceptance,
+accuracy of image interpretation from arbitrary diagrams, general mixed
+systems, or independent implementation review. Do not merge to `main`
+without those applicable review gates and user approval.
