@@ -19,6 +19,14 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: node skills/sim-ro-image-to-scene/scripts/check-scene.mjs scenes/three-lenses.json scenes/four-lenses.json --report test-artifacts/image-to-scene/multi-lens/checks.json
+      - name: Browser acceptance with preinstalled Chrome
+        run: node scripts/browser-acceptance.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-acceptance-evidence
+          path: test-artifacts/browser-acceptance/
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
