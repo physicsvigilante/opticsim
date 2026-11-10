@@ -119,6 +119,7 @@ test('multiple source native compilation preserves stable IDs, modes and indepen
 test('actual native execution reports the sum and every source emission, without fabricated detector provenance',()=>{
   for(const name of ['multi-source-mixed','multi-source-four']){
     const doc=example(name),r=nativeRun(doc);
+    console.log('MULTI_SOURCE_NATIVE',JSON.stringify({name,state:r.state,data:r.data}));
     assert.equal(r.event,'simulationComplete');
     assert.equal(r.state,'completed');
     assert.deepEqual(r.data.errors,[]);
