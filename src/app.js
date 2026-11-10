@@ -63,7 +63,9 @@ function update() {
   $('analysis-status').textContent = `Analysis: ${session.analysisStatus}. Native simulation: ${state.replaceAll('-', ' ')}.`;
   $('prediction').replaceChildren();
   if (!p) {
-    $('prediction').textContent = session.analysisStatus === 'failed' ? 'Analytical calculation failed.' : 'Prediction unavailable for the current edit or run state.';
+    $('prediction').textContent = session.analysisStatus === 'failed' ? 'Analytical calculation failed.' :
+      session.analysisStatus === 'unavailable' ? 'No reliable, route-independent analytical image prediction is available for this scene.' :
+      'Prediction unavailable for the current edit or run state.';
     $('prediction-note').textContent = `${session.analysisReason || 'No current analytical result is displayed.'}${['unavailable', 'failed'].includes(session.analysisStatus) && session.document ? ' Native tracing and sandbox save/export remain available for the accepted scene.' : ''}`;
     return;
   }

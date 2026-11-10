@@ -66,14 +66,14 @@
     "title": "Mixed two lenses and two mirrors",
     "view": {
       "x": 50,
-      "y": 80,
-      "zoom": 1
+      "y": 85,
+      "zoom": 0.62
     },
     "mode": "rays",
     "grid": false
   },
   "simulation": {
-    "rayDensity": 0.2,
+    "rayDensity": 1,
     "maxRayDepth": 8,
     "processedRayLimit": 10000
   }

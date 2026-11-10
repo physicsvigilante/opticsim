@@ -57,14 +57,14 @@
     "title": "Mixed right-side source and mirrors",
     "view": {
       "x": 60,
-      "y": 80,
-      "zoom": 0.9
+      "y": 55,
+      "zoom": 0.65
     },
     "mode": "rays",
     "grid": false
   },
   "simulation": {
-    "rayDensity": 0.2,
+    "rayDensity": 1,
     "maxRayDepth": 8,
     "processedRayLimit": 10000
   }
