@@ -31,8 +31,7 @@ export function checkCandidate(text, core) {
   let loaded;
   const session = new core.Session(candidate => {
     loaded = core.loadDocument(candidate);
-    const source = candidate.physics.components.find(c => c.type === 'point-source');
-    const emission = core.observeSourceEmission(loaded.scene.objs[loaded.idMap.get(source.id)]);
+    const emission = core.observeSourceSet(candidate, loaded.scene, loaded.idMap);
     const reflections = core.observeMirrorSet(candidate, loaded.scene, loaded.idMap);
     const detectors = core.observeDetectorSet(candidate, loaded.scene, loaded.idMap);
     const simulator = new core.Simulator(loaded.scene, null, null, null, null, null, false, candidate.simulation.processedRayLimit);
@@ -47,6 +46,13 @@ export function checkCandidate(text, core) {
   session.apply(doc);
   if (session.state === 'running') session.stop(); // Never report an unobserved completion.
   const completed = ['completed', 'completed-with-warnings'].includes(session.state);
+  const expectedSources=doc.physics.components.filter(c=>c.type==='point-source');
+  const sourceReadings=session.data?.emissionsById || {};
+  const sourceState = !completed ? 'incomplete-or-failed' :
+    expectedSources.every(c=>Number.isInteger(sourceReadings[c.id]?.emitted)&&
+      sourceReadings[c.id].emitted>=0)&&
+    Object.values(sourceReadings).reduce((n,reading)=>n+reading.emitted,0)===session.data?.emitted ?
+      'complete' : 'unavailable';
   const expectedDetectors=doc.physics.components.filter(c=>c.type==='ray-detector');
   const readings=session.data?.detectorsById || {};
   const measurementState = !expectedDetectors.length ? 'not-applicable' :
@@ -54,7 +60,8 @@ export function checkCandidate(text, core) {
     expectedDetectors.every(c=>Number.isFinite(readings[c.id]?.signedPower) &&
       Number.isInteger(readings[c.id]?.crossings)) ? 'complete' : 'unavailable';
   report.native = { status: session.state, completed, diagnostics: session.data,
-    error: session.error ?? null, detectorMeasurements: measurementState };
+    error: session.error ?? null, sourceEmissions: sourceState,
+    detectorMeasurements: measurementState };
   report.analysis = { status: session.analysisStatus, reason: session.analysisReason, prediction: session.prediction };
   report.components = loaded ? doc.physics.components.map(c => ({ id: c.id, type: c.type, nativeIndex: loaded.idMap.get(c.id) })) : [];
   try {
@@ -65,7 +72,8 @@ export function checkCandidate(text, core) {
     report.roundTrip = { sandbox: true, native: true };
   } catch (error) { report.roundTrip = { error: error.message }; }
   report.executionPassed = completed && report.roundTrip.sandbox === true &&
-    report.roundTrip.native === true && ['not-applicable','complete'].includes(measurementState);
+    report.roundTrip.native === true && sourceState==='complete' &&
+    ['not-applicable','complete'].includes(measurementState);
   return report;
 }
 

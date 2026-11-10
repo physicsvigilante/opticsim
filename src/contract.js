@@ -148,15 +148,18 @@ function validateMixedTraceScope(components) {
   const lenses=components.filter(c=>c.type==='ideal-lens');
   const mirrors=components.filter(c=>c.type==='plane-mirror');
   const path='$.physics.components';
-  if(sources.length!==1||lenses.length<1||lenses.length>4||
+  if(sources.length<1||sources.length>4||lenses.length<1||lenses.length>4||
      mirrors.length<1||mirrors.length>4||
-     components.length!==1+lenses.length+mirrors.length)
-    fail(path,'mixed tracing supports one source, 1–4 coaxial lenses and 1–4 plane mirrors','UNSUPPORTED_SCOPE');
-  const source=sources[0].parameters;
+     components.length!==sources.length+lenses.length+mirrors.length)
+    fail(path,'mixed tracing supports 1–4 point sources, 1–4 coaxial lenses and 1–4 plane mirrors','UNSUPPORTED_SCOPE');
+  const points=sources.map(c=>c.parameters);
+  for(let i=0;i<points.length;i++)for(let j=0;j<i;j++)
+    if(Math.hypot(points[i].x-points[j].x,points[i].y-points[j].y)<0.01)
+      fail(path,'distinct point sources must be separated by at least 0.01 mm','UNSUPPORTED_SCOPE');
   const planes=lenses.map(c=>c.parameters.x).sort((a,b)=>a-b);
-  if(planes.some((x,i)=>Math.abs(x-source.x)<0.01 ||
+  if(planes.some((x,i)=>points.some(p=>Math.abs(x-p.x)<0.01)||
       (i>0 && x-planes[i-1]<0.01)))
-    fail(path,'source and distinct lens planes must be separated by at least 0.01 mm','UNSUPPORTED_SCOPE');
+    fail(path,'each source and distinct lens planes must be separated by at least 0.01 mm','UNSUPPORTED_SCOPE');
   const surfaces=[];
   for(const [index,c] of components.entries()) {
     if(c.type==='point-source')continue;
@@ -168,9 +171,9 @@ function validateMixedTraceScope(components) {
       if(line.some(v=>Math.abs(v.x)>10000||Math.abs(v.y)>10000))
         fail(path+'['+index+'].parameters','segment endpoints exceed coordinate bounds','UNSUPPORTED_SCOPE');
       const theta=p.orientationDeg*Math.PI/180;
-      const distance=-(source.x-p.x)*Math.sin(theta)+(source.y-p.y)*Math.cos(theta);
-      if(Math.abs(distance)<0.01)
-        fail(path+'['+index+'].parameters','source must be at least 0.01 mm from mirror supporting line','UNSUPPORTED_SCOPE');
+      if(points.some(source=>Math.abs(
+        -(source.x-p.x)*Math.sin(theta)+(source.y-p.y)*Math.cos(theta))<0.01))
+        fail(path+'['+index+'].parameters','each source must be at least 0.01 mm from mirror supporting line','UNSUPPORTED_SCOPE');
     }
     for(const other of surfaces)
       if(segmentsIntersect(other.line,line))
@@ -186,7 +189,7 @@ function validateDetectorScope(components) {
   if(detectors.length>2)
     fail('$.physics.components','at most two ray detectors are supported','UNSUPPORTED_SCOPE');
   if(!detectors.length)return;
-  const source=components.find(c=>c.type==='point-source').parameters;
+  const sources=components.filter(c=>c.type==='point-source').map(c=>c.parameters);
   const surfaces=components.filter(c=>['ideal-lens','plane-mirror'].includes(c.type))
     .map(c=>({id:c.id,line:c.type==='ideal-lens'
       ? [{x:c.parameters.x,y:-c.parameters.apertureHeight/2},
@@ -198,9 +201,9 @@ function validateDetectorScope(components) {
     if(line.some(v=>Math.abs(v.x)>10000||Math.abs(v.y)>10000))
       fail(path+'.parameters','detector endpoints exceed coordinate bounds','UNSUPPORTED_SCOPE');
     const theta=p.orientationDeg*Math.PI/180;
-    const distance=-(source.x-p.x)*Math.sin(theta)+(source.y-p.y)*Math.cos(theta);
-    if(Math.abs(distance)<0.01)
-      fail(path+'.parameters','source must be at least 0.01 mm from detector supporting line','UNSUPPORTED_SCOPE');
+    if(sources.some(source=>Math.abs(
+      -(source.x-p.x)*Math.sin(theta)+(source.y-p.y)*Math.cos(theta))<0.01))
+      fail(path+'.parameters','each source must be at least 0.01 mm from detector supporting line','UNSUPPORTED_SCOPE');
     for(const other of surfaces)
       if(segmentsIntersect(other.line,line))
         fail(path,'detector segment intersects or overlaps '+other.id,'UNSUPPORTED_SCOPE');

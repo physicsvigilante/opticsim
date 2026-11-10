@@ -44,10 +44,17 @@ The scene array may be ordered differently; authored IDs and positions control
 identity and analysis. The supplied three-/four-lens examples illustrate the
 format but must not supply unspecified physical facts.
 
-Current v4 `mixed-lens-mirror-tracing` scenes may combine one point source,
-1–4 coaxial ideal lenses, and 1–4 plane mirrors with independently authored
+Current v4 `mixed-lens-mirror-tracing` scenes may combine **1–4 independent
+point sources**, 1–4 coaxial ideal lenses, and 1–4 plane mirrors with independently authored
 positions and tangent orientations. **All four current-v4 optical models**
 allow up to two optional passive `ray-detector` measurement components.
+The other three optical models remain single-source and retain their
+own analytical interpretation. Assign source IDs only to physically distinct
+stated emitters, never to auxiliary construction rays, object markings or
+unlabelled extended-object points. Every source must have explicitly supported
+position, brightness and emission characteristics; shared ray-density and
+native run limits apply scene-wide. Native per-source emission counts are
+observations, not inferred relative weights or a per-source detector provenance.
 Detectors are not a new optical apparatus and do not change the model's
 analytical path. The native ray path is determined by PhyDemo,
 not by component-array order. The validator rejects intersecting finite surfaces,
