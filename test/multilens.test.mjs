@@ -11,15 +11,6 @@ const near = (a, b, epsilon = 1e-7) => assert.ok(Math.abs(a-b) <= epsilon, Strin
 const source = d => d.physics.components.find(c => c.type === 'point-source');
 const lenses = d => d.physics.components.filter(c => c.type === 'ideal-lens').sort((a,b) => a.parameters.x - b.parameters.x);
 
-function many(n) {
-  const d = example('four-lenses');
-  d.physics.components = [source(d), ...lenses(d).slice(0, n)];
-  for (let i = d.physics.components.length-1; i < n+1; i++) {
-    d.physics.components.push({id:'lens-'+i,type:'ideal-lens',parameters:{x:i*150,focalLength:120,apertureHeight:180}});
-  }
-  return d;
-}
-
 test('v4 accepts data-only three/four-lens trains and preserves IDs and compiler order', () => {
   for (const name of ['three-lenses', 'four-lenses']) {
     const d = example(name), n = lenses(d).length;
@@ -79,7 +70,6 @@ test('old versions never acquire three-lens scope by migration', () => {
       delete source(d).parameters.brightness;
       delete source(d).emission;
       d.presentation.brightness=.073219;
-      d.simulation.rayDensity=.137891;
       d.simulation.rayDensity=.1; // Version 1 had a minimum density of 0.1.
     } else d.simulation.rayDensity=.137891;
     const migrated=parseSave(JSON.stringify(d));
@@ -110,6 +100,7 @@ test('three/four-lens ABCD predictions match fixed independent scalar expectatio
   const infLenses=lenses(infinity);
   infLenses[0].parameters.focalLength=100;
   infLenses[1].parameters.focalLength=-100;
+  infLenses[1].parameters.x=150;
   infLenses[2].parameters.x=300;
   infLenses[2].parameters.focalLength=150;
   const p=predict(infinity);
@@ -145,7 +136,6 @@ test('native detectors and lens incident observers verify traversal for composed
     const authored=example(name);
     authored.physics.components.reverse();
     const compiled=compile(authored), sorted=lenses(authored);
-    const sourceObject=compiled.native.objs[compiled.idMap.get(source(authored).id)];
     const orderedNative=sorted.map(l=>compiled.native.objs[compiled.idMap.get(l.id)]);
     for(const h0 of [-20,20]) {
       const s=source(authored).parameters;
