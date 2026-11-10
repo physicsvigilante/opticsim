@@ -4,8 +4,10 @@
 - Status: milestone 1, source controls, plane mirror, and bounded lens/mirror return composition approved on 2026-11-01. Read `PROPOSAL.md`, `PLANE-MIRROR-PROPOSAL.md`, `LENS-MIRROR-PROPOSAL.md`, `README.md`, and `upstream-pin.json` for boundaries and evidence.
 - Reuse pinned PhyDemo optics and rendering. Do not rewrite ray tracing or modify upstream core without separate approval.
 - Supported arrangements: one point source with one to four coaxial ideal lenses in current v4 scenes (historical v1-v3 saves remain limited to one/two); one point source with one plane mirror; or the bounded source-left / lens / perpendicular-mirror return layout. Return layout has one lens ID/native instance, mirror y=0/orientation ±90 degrees and >=0.01mm plane separations. Current-v4 mixed-lens-mirror-tracing also allows one source, 1–4 coaxial lenses
-  and 1–4 plane mirrors with independent centre/tangent/length, no intersecting
-  optical surfaces or source-on-surface degeneracies. No route-independent image
+  and 1–4 plane mirrors with independent centre/tangent/length. All current-v4
+  models may additionally contain 0–2 independently authored finite
+  `ray-detector` measurement segments; validation excludes detector/optical
+  intersections and source-on-surface degeneracies. No intersecting optical surfaces. No route-independent image
   prediction for this tracing mode. Keep restrictions in model-specific scope validation. Examples are scene data only.
 - The versioned sandbox document is authoritative. Native JSON and annotations are derived. Keep IDs, parameter bindings, and sandbox metadata outside native objects. Reject unsupported inputs explicitly.
 - Parameter updates must keep the document, simulation, and annotations synchronized. Native physical editing is disabled in the first milestone; exported native files are independent copies.
@@ -18,6 +20,11 @@
   IDs; report total and per-ID reflection hits via native observers. Do not
   prescribe ray paths, fabricate image predictions, or use analytical equations
   from the restricted lens/mirror return family for arbitrary mixed systems.
+- Ray-detector readings are derived native observations by stable ID: crossing
+  count and signed native detector power in relative units. Do not call them watts,
+  physical irradiance, detected images, or continuous throughput. Detectors must
+  be nonintersecting with other segments; invalid/incomplete run readouts are
+  withheld. Keep native physics, source/optics and measured values separate.
 - Use proportionate validation: contract/adapter tests, independent lens checks including virtual/infinite images, and browser parameter/save/reload checks. Screenshots alone do not establish physics correctness. Report errors, truncation, and untested behavior.
 - Image authoring uses the explicitly invoked repo skill `skills/sim-ro-image-to-scene/SKILL.md`. Keep provenance outside strict sandbox JSON, prefer labels over pixels, withhold scenes for essential unknowns/conflicts, and reject unsupported arrangements. The Node checker rebuilds/reuses the current core; execution success does not certify interpretation. Generated reports/previews stay in ignored `test-artifacts/image-to-scene/`.
 - After approval, routine implementation and focused testing may proceed within the agreed milestone. Ask before scope expansion, upstream physics changes, writes outside this workspace, committing, or pushing. Keep caches/build outputs inside this workspace where configurable.

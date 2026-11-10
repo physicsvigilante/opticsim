@@ -51,7 +51,10 @@ const stateExpression=[
  'saveDisabled:q("save")?.disabled,extended:q("mode-extended")?.checked,',
  'fields:[...document.querySelectorAll("#controls fieldset legend")].map(x=>x.textContent),',
  'painted,focal:q("lens-2-focalLength")?.value,lensX:q("lens-3-x")?.value,',
- 'aperture:q("lens-1-apertureHeight")?.value,mirrorAngle:q("mirror-1-orientationDeg")?.value};})()'
+ 'aperture:q("lens-1-apertureHeight")?.value,mirrorAngle:q("mirror-1-orientationDeg")?.value,',
+ 'detectorReadouts:q("detector-readouts")?.textContent,detectorHidden:q("detector-readouts")?.hidden,',
+ 'detectorLength:q("detector-return-length")?.value,detectorY:q("detector-return-y")?.value,',
+ 'detector1x:q("detector-1-x")?.value};})()'
 ].join('\n');
 
 async function main(){
@@ -152,6 +155,43 @@ async function main(){
     report.checks.push({name:'mixed mirror orientation edit',result:'pass'});
     await mixed('mixed-reverse-source','Mixed right-side source and mirrors',4);
     await shot('mixed-reverse-source-rays');
+    const det=await mixed('mixed-detectors','Mixed beam with two authored ray detectors',7);
+    assert.equal(det.detectorHidden,false);
+    assert.match(det.detectorReadouts,/detector-early: [0-9]+ native crossings/);
+    assert.match(det.detectorReadouts,/detector-return: [0-9]+ native crossings/);
+    assert.match(det.detectorReadouts,/signed detector power/);
+    await shot('mixed-detectors-rays');
+    await edit('detector-return-y',140);
+    const adjusted=await until(state,x=>x?.title==='Mixed beam with two authored ray detectors'&&
+      x?.status==='completed'&&x.detectorY==='140'&&!x.detectorHidden,'detector position edit');
+    assert.match(adjusted.detectorReadouts,/detector-return/);
+    await edit('detector-return-length',0);
+    const badDetector=await until(state,x=>x?.status==='invalid','invalid detector length');
+    assert.equal(badDetector.detectorHidden,true);
+    assert.equal(badDetector.saveDisabled,true);
+    await edit('detector-return-length',150);
+    const restoredDetector=await until(state,x=>x?.status==='completed'&&
+      x.detectorLength==='150'&&!x.detectorHidden,'valid detector restored');
+    assert.match(restoredDetector.detectorReadouts,/detector-return/);
+    report.checks.push({name:'detector edit, invalid-state suppression and recovery',result:'pass'});
+    const reverse=await mixed('mixed-detectors-reverse','Reverse beam with two authored ray detectors',6);
+    assert.match(reverse.detectorReadouts,/detector-away: 0 native crossings/);
+    await shot('mixed-detectors-reverse-rays');
+    const onlyLens=await select('single-lens-detector','Single lens with authored ray detector',3);
+    assert.equal(onlyLens.detectorHidden,false);
+    assert.match(onlyLens.detectorReadouts,/detector-1: [0-9]+ native crossings/);
+    assert.match(onlyLens.prediction,/Real image/);
+    await shot('single-lens-detector-rays');
+    await edit('detector-1-x',180);
+    const editedLensDetector=await until(state,x=>x?.title==='Single lens with authored ray detector'&&
+      x?.status==='completed'&&x.detector1x==='180'&&!x.detectorHidden,'lens-only detector edit');
+    assert.match(editedLensDetector.prediction,/Real image/);
+    report.checks.push({name:'detector measurement layer preserves lens equation during edit',result:'pass'});
+    const onlyMirror=await select('plane-mirror-detector','Plane mirror with authored ray detector',3);
+    assert.equal(onlyMirror.detectorHidden,false);
+    assert.match(onlyMirror.detectorReadouts,/detector-1: [0-9]+ native crossings/);
+    assert.match(onlyMirror.prediction,/Analytical virtual-image prediction/);
+    await shot('plane-mirror-detector-rays');
     console.log('Browser acceptance PASS: '+report.checks.length+' checks; '+report.screenshots.length+' screenshots; '+version);
   }catch(err){
     report.errors.push(err.message);

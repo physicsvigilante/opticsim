@@ -1,0 +1,62 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 4,
+  "adapterVersion": 4,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "plane-mirror-geometric",
+    "components": [
+      {
+        "id": "source-1",
+        "type": "point-source",
+        "parameters": {
+          "x": -200,
+          "y": 30,
+          "brightness": 0.15
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 0,
+          "angleDeg": 30
+        }
+      },
+      {
+        "id": "mirror-1",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 200
+        }
+      },
+      {
+        "id": "detector-1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": -100,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 160
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "Plane mirror with authored ray detector",
+    "view": {
+      "x": -90,
+      "y": 0,
+      "zoom": 0.9
+    },
+    "mode": "extended",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000
+  }
+}

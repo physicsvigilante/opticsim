@@ -41,7 +41,9 @@ No full site/gallery build or native node-canvas installation is required.
 ## Using the bench
 
 - Choose a one-, two-, three-, or four-lens, converging-plus-diverging, plane-mirror,
-  lens/mirror return, or mixed lens/mirror tracing example. Examples use JSON data through the same pipeline.
+  lens/mirror return, or mixed lens/mirror tracing example. Ray-detector
+  examples demonstrate native measurement segments in lens-only, mirror-only
+  and mixed scenes, without changing the existing optical apparatus models. Examples use JSON data through the same pipeline.
   `scenes/two-lenses-data-check.json` is another unequal-lens arrangement to load
   with Open sandbox; it was verified without production-code changes.
   Three-/four-lens examples are data-only; the same parameter controls apply.
@@ -82,6 +84,16 @@ No full site/gallery build or native node-canvas installation is required.
   slider steps are 1 mm / 1 degree. The native mirror reflects from both sides.
   Native reflection counts distinguish actual sampled hits from misses, and
   stopped/truncated runs label their counts partial. Missed rays continue unchanged.
+- In **any current-v4 optical model**, authors can add **zero to two** passive
+  `ray-detector` components to measure sampled native ray crossings and signed
+  native detector power (relative units, **not watts**). Each detector has stable
+  `id` and `parameters: {x, y, orientationDeg, length}`; the angle is its
+  finite segment's tangent in y-up coordinates, just like a mirror. The detector
+  does not replace an image-formation solver or establish continuous throughput.
+  Detectors must not intersect optical segments, one another, or the source.
+  Completed runs display per-ID readings. Invalid, stopped, truncated, or failed
+  runs never publish current measurements; save/export preserves the authored
+  detector geometry without embedding measurements in scene JSON.
 - The new mixed-tracing scenes combine a source, coaxial ideal lenses and freely
   oriented finite plane mirrors as ordinary component data. PhyDemo chooses all
   native intersections. Reflections are summed and reported by stable mirror ID.
@@ -130,6 +142,9 @@ perpendicular plane mirror**; and `mixed-lens-mirror-tracing` for **one source,
 authored x/y centres, lengths and tangent orientations. In this bounded mixed
 family, optical segments may not intersect, lens planes cannot coincide or
 contain the source, and the source cannot lie on a mirror supporting line.
+A model-independent current-v4 layer permits **0–2 passive `ray-detector`
+components** with segment geometry in all four optical models, disjoint from
+other finite segments and with the source off their supporting lines.
 The component array has no prescribed physical ray order. The mixed family
 does not supply a route-independent analytical image formula; use native ray
 paths and per-mirror hit counts without claiming image detection.
@@ -145,7 +160,10 @@ length is 1-10,000 mm, and derived endpoints must lie within +/-10,000 mm. The
 source must be at least 0.01 mm from the supporting line, including its extension.
 This bounded domain excludes on-line source degeneracy. Mixed tracing additionally
 rejects touching/crossing/overlapping optical segments, whose hit ordering is
-ambiguous. Its plane mirrors are two-sided (the pinned PhyDemo law). Angles 180 degrees apart
+ambiguous. Its plane mirrors are two-sided (the pinned PhyDemo law). Detectors are native
+non-blocking crossing observations with an orientation-dependent signed power.
+They are not calibrated physical optical-power meters. Their raw readings are
+derived per run and are never stored as authored physics parameters. Angles 180 degrees apart
 describe the same two-sided surface; saves retain the exact authored angle.
 
 Predictions use independent ideal-lens transfer matrices, explicitly labelled
@@ -199,7 +217,7 @@ corrected. Accepted scene values are retained for correction. Run revision
 checks suppress older completions. Ray sampling is finite; completion does
 not certify all continuous rays or physical accuracy outside the ideal model.
 
-No curved mirrors, prisms, material thickness, dispersion, diffraction, 3D, mechanics, native semantic
+No curved mirrors, prisms, material thickness, dispersion, diffraction, 3D, mechanics, continuous-ray power integration, native semantic
 round-trip conversion, runtime AI, or general symbolic solver is provided.
 The one-to-four lens restriction is a scope policy, not a universal
 constraint on the document design. Earlier v4 readers enforcing old model/scope

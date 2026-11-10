@@ -18,7 +18,7 @@ jobs:
       - run: npm run setup
       - run: npm test
       - run: npm run build
-      - run: node skills/sim-ro-image-to-scene/scripts/check-scene.mjs scenes/three-lenses.json scenes/four-lenses.json test/fixtures/multilens-extreme.json scenes/mixed-two-lens-two-mirror.json scenes/mixed-reverse-source.json --report test-artifacts/image-to-scene/multi-lens/checks.json
+      - run: node skills/sim-ro-image-to-scene/scripts/check-scene.mjs scenes/three-lenses.json scenes/four-lenses.json test/fixtures/multilens-extreme.json scenes/mixed-two-lens-two-mirror.json scenes/mixed-reverse-source.json scenes/mixed-detectors.json scenes/mixed-detectors-reverse.json scenes/single-lens-detector.json scenes/plane-mirror-detector.json --report test-artifacts/image-to-scene/multi-lens/checks.json
       - name: Browser acceptance with preinstalled Chrome
         run: node scripts/browser-acceptance.mjs
       - uses: actions/upload-artifact@v4
