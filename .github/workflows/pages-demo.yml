@@ -1,0 +1,65 @@
+name: Publish browser demo (manual approval only)
+
+# Never deploy on push/PR. A private source repository can still yield a public site.
+on:
+  workflow_dispatch:
+    inputs:
+      public_demo_approval:
+        description: 'Enter PUBLISH_PUBLIC_DEMO to acknowledge public demo access'
+        required: true
+        type: string
+        default: 'NO'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opticsim-pages-publish
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require explicit publication acknowledgment
+        env:
+          PUBLIC_DEMO_APPROVAL: ${{ inputs.public_demo_approval }}
+        run: |
+          if [ "$PUBLIC_DEMO_APPROVAL" != 'PUBLISH_PUBLIC_DEMO' ]; then
+            echo 'Not publishing: public website acknowledgment was not provided.'
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - run: npm test
+      - run: npm run build
+      - run: node scripts/check-static-demo.mjs --report test-artifacts/static-demo/checks.json
+      - name: Test static site in browser at project subpath
+        env:
+          OPTICSIM_BASE_PATH: /opticsim/
+        run: node scripts/browser-acceptance.mjs --demo-smoke
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload exactly the browser build, not the private repository
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist/
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy approved static browser artifact
+        id: deployment
+        uses: actions/deploy-pages@v4

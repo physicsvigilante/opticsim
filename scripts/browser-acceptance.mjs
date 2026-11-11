@@ -8,7 +8,12 @@ import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
-const out=join(root,'test-artifacts/browser-acceptance'), downloads=join(out,'downloads');
+const demoSmoke=process.argv.includes('--demo-smoke');
+const basePath=process.env.OPTICSIM_BASE_PATH || '/';
+if (!/^\/(?:[a-zA-Z0-9_-]+\/)?$/.test(basePath))
+  throw Error('Invalid OPTICSIM_BASE_PATH');
+const out=join(root,'test-artifacts',demoSmoke?'browser-demo-smoke':'browser-acceptance');
+const downloads=join(out,'downloads');
 const sleep=ms=>new Promise(ok=>setTimeout(ok,ms)), timeout=20000;
 async function until(fn,ok,label){
   const end=Date.now()+timeout;let last,err;
@@ -71,7 +76,19 @@ async function main(){
     '--window-size=1440,960','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:'ignore'});
   let cdp;const report={browser:version,checks:[],screenshots:[],errors:[]};
   try{
-    await until(async()=>(await fetch('http://127.0.0.1:'+port+'/')).status,x=>x===200,'server ready');
+    const base='http://127.0.0.1:'+port+basePath;
+    await until(async()=>(await fetch(base)).status,x=>x===200,'server ready');
+    if (demoSmoke) {
+      for (const target of ['app.js','style.css','scenes/single-lens.json',
+          'scenes/multi-source-four.json','licenses/INDEX.txt']) {
+        const r=await fetch(base+target);
+        assert.equal(r.status,200,'Missing static demo asset: '+target);
+        assert.ok((await r.arrayBuffer()).byteLength>0,'Empty static demo asset: '+target);
+      }
+      if (basePath!=='/') assert.equal((await fetch('http://127.0.0.1:'+port+'/')).status,404,
+        'Subpath test must reject unprefixed requests');
+      report.checks.push({name:'standalone static resources under '+basePath,result:'pass'});
+    }
     const chromePort=await until(async()=>Number((await readFile(join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0]),x=>x>0,'debug port');
     const targets=await until(async()=>await(await fetch('http://127.0.0.1:'+chromePort+'/json/list')).json(),x=>x.some(t=>t.type==='page'),'browser page');
     cdp=await connect(targets.find(t=>t.type==='page').webSocketDebuggerUrl);
@@ -101,8 +118,60 @@ async function main(){
       const r=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
       await writeFile(join(out,name+'.png'),Buffer.from(r.data,'base64'));report.screenshots.push(name+'.png');
     }
-    await cdp.send('Page.navigate',{url:'http://127.0.0.1:'+port+'/'});
+    await cdp.send('Page.navigate',{url:base});
     await completed('Single converging lens');
+    if(demoSmoke){
+      const first=await state();
+      assert.ok(first.painted>0);assert.equal(first.saveDisabled,false);
+      report.checks.push({name:'initial native rays from static project subpath',result:'pass'});
+      await shot('standalone-single-lens');
+      await evaluate('(() => {const e=document.getElementById("examples");e.value="multi-source-four";e.dispatchEvent(new Event("change",{bubbles:true}));})()');
+      const composed=await until(state,x=>x?.title==='Four-source mixed optical ensemble'&&
+        x?.status==='completed'&&x.sourceReadout?.includes('source-4:')&&
+        !x.sourceHidden&&x.painted>0,'static project multi-source');
+      assert.match(composed.detectorReadouts,/native crossings/);
+      assert.match(composed.stats,/rays emitted/);
+      report.checks.push({name:'multi-source native tracing and measurements under subpath',result:'pass',
+        stats:composed.stats});
+      await edit('source-4-brightness',.17);
+      const changed=await until(state,x=>x?.title===composed.title&&x?.status==='completed'&&
+        x.source4Brightness==='0.17','static project interactive edit');
+      assert.match(changed.sourceReadout,/source-4:/);
+      report.checks.push({name:'interactive source edit without server API',result:'pass'});
+      await evaluate('document.getElementById("save").click()');
+      const downloaded=await until(async()=>{
+        for(const filename of (await readdir(downloads)).filter(n=>n.endsWith('.json'))){
+          const file=join(downloads,filename),value=JSON.parse(await readFile(file,'utf8'));
+          if(value.presentation?.title===composed.title)return {file,value};
+        }
+        return null;
+      },Boolean,'static project sandbox download');
+      assert.equal(downloaded.value.physics.components.filter(c=>c.type==='point-source').length,4);
+      assert.equal(downloaded.value.physics.components.find(c=>c.id==='source-4').parameters.brightness,.17);
+      report.checks.push({name:'sandbox JSON save from static project subpath',result:'pass'});
+      const dom=await cdp.send('DOM.getDocument',{depth:-1});
+      const chooser=await cdp.send('DOM.querySelector',{nodeId:dom.root.nodeId,selector:'#load'});
+      assert.ok(chooser.nodeId);
+      await cdp.send('DOM.setFileInputFiles',{nodeId:chooser.nodeId,files:[downloaded.file]});
+      const reopened=await until(state,x=>x?.title===composed.title&&x?.status==='completed'&&
+        x.source4Brightness==='0.17'&&x.painted>0,'reopening static project sandbox');
+      assert.match(reopened.sourceReadout,/source-4:/);
+      report.checks.push({name:'sandbox JSON reopen without local filesystem server API',result:'pass'});
+      await evaluate('document.getElementById("export").click()');
+      const native=await until(async()=>{
+        for(const filename of (await readdir(downloads)).filter(n=>n.startsWith('scene.phydemo')&&n.endsWith('.json'))){
+          const value=JSON.parse(await readFile(join(downloads,filename),'utf8'));
+          if(value.version===5)return value;
+        }
+        return null;
+      },Boolean,'native PhyDemo export from static project');
+      assert.ok(native.objs.every(o=>!('id' in o)&&!('parameters' in o)));
+      report.checks.push({name:'native JSON export from static project',result:'pass'});
+      await shot('standalone-multi-source');
+      console.log('Static demo acceptance PASS: '+report.checks.length+
+        ' checks; '+report.screenshots.length+' screenshots; '+version);
+      return;
+    }
     const first=await select('three-lenses','Three-lens mixed train',4);
     assert.match(first.prediction,/Virtual image/);await shot('three-lenses-rays');
     await edit('lens-2-focalLength',120);

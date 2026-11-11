@@ -1,8 +1,26 @@
 # Ray Optics 2D
 
-A local optical bench powered by PhyDemo Ray Optics Simulation **v5.4.0**,
+A standalone browser optical bench powered by PhyDemo Ray Optics Simulation **v5.4.0**,
 pinned to **811f508d2b070898c241a568b0c167dcb8645251**. Browser runtime resources
 are local. No LLM request is needed to open, simulate, or edit supported scenes.
+
+## Shareable browser demo (Milestone 5)
+
+The existing production build is a **standalone static browser site** containing
+HTML, JS, CSS, the example scene JSON and the original PhyDemo attribution.
+After hosting, rays trace entirely in the visitor's browser; no Node.js,
+remote physics server, account or API is needed. The build also works from
+a project path such as `/opticsim/`.
+
+See [the demo deployment guide](docs/DEMO-DEPLOYMENT.md). **No website is
+published simply by checking, pushing or merging this code.** The source
+repository is private, but standard GitHub Pages websites are publicly
+accessible. The site requires a separate explicit access-level decision.
+
+CI packages the complete browser-only static site as a private downloadable
+artifact and smoke-tests it in headless Chrome at `/opticsim/`.
+After the local setup, use `npm run build` and `npm run check:demo`
+to verify the static bundle. A live Pages URL is not assumed to exist.
 
 ## Windows PowerShell
 

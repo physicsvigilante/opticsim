@@ -27,6 +27,9 @@ const stats = await new Promise((accept, reject) => {
 });
 if (!testing) {
   for (const name of ['index.html', 'style.css']) copyFileSync(resolve(root, 'public', name), resolve(output, name));
+  // A no-Jekyll marker makes this self-contained folder safe to serve via
+  // GitHub Pages without losing files through its default Jekyll processor.
+  writeFileSync(resolve(output, '.nojekyll'), '');
   mkdirSync(resolve(output, 'scenes'), { recursive: true });
   for (const name of readdirSync(resolve(root, 'scenes'))) copyFileSync(resolve(root, 'scenes', name), resolve(output, 'scenes', name));
   // Preserve upstream notices plus license texts for packages included in this bundle.
