@@ -193,6 +193,7 @@ test('execution status, measurement availability and interpretation remain separ
 test('native source brightness warnings qualify rather than invalidate general tracing observations',()=>{
   const doc=prepareScene(fixture('general-two-source-lens')).document;
   doc.physics.components.find(c=>c.id==='S1').parameters.brightness=.5;
+  doc.physics.components.find(c=>c.id==='S2').parameters.brightness=.25;
   const outcome=evaluateDocument(doc,core);
   assert.equal(outcome.summary.native.status,'completed-with-warnings');
   assert.match(outcome.summary.native.warnings.join(' '),/inconsistent ratios/);
