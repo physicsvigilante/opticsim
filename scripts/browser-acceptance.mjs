@@ -119,7 +119,7 @@ async function main(){
       await writeFile(join(out,name+'.png'),Buffer.from(r.data,'base64'));report.screenshots.push(name+'.png');
     }
     if(smoke){
-      await cdp.send('Page.navigate',{url:origin+basePath+'?scene=multi-source-four'});
+      await cdp.send('Page.navigate',{url:origin+basePath+'?scene=multi-source-four&private_query=not_for_sharing'});
       const ready=await until(state,x=>x?.title==='Four-source mixed optical ensemble'&&
         x.status==='completed'&&x.painted>0&&!x.sourceHidden,'hosted query scene');
       assert.equal(ready.fields.length,10);
@@ -130,6 +130,8 @@ async function main(){
       assert.equal(shared.origin,origin);
       assert.equal(shared.pathname,basePath);
       assert.equal(shared.searchParams.get('scene'),'multi-source-four');
+      assert.deepEqual([...shared.searchParams.keys()],['scene']);
+      assert.deepEqual([...new URL(await evaluate('location.href')).searchParams.keys()],['scene']);
       report.checks.push({name:'nested static URL loads real four-source simulation',result:'pass',stats:ready.stats});
       await shot('hosted-subpath-rays');
       await evaluate('(() => {const e=document.getElementById("source-2-brightness");e.value="0.13";e.dispatchEvent(new Event("input",{bubbles:true}));e.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true}));})()');
