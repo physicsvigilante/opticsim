@@ -18,9 +18,28 @@ jobs:
       - run: npm run setup
       - run: npm test
       - run: npm run build
+      - name: Package isolated browser demo (no source/test bundles)
+        run: node scripts/pack-demo.mjs
       - run: node skills/sim-ro-image-to-scene/scripts/check-scene.mjs scenes/three-lenses.json scenes/four-lenses.json test/fixtures/multilens-extreme.json scenes/mixed-two-lens-two-mirror.json scenes/mixed-reverse-source.json scenes/mixed-detectors.json scenes/mixed-detectors-reverse.json scenes/single-lens-detector.json scenes/plane-mirror-detector.json scenes/multi-source-mixed.json scenes/multi-source-four.json --report test-artifacts/image-to-scene/multi-lens/checks.json
       - name: Browser acceptance with preinstalled Chrome
         run: node scripts/browser-acceptance.mjs
+      - name: Hosted path/browser acceptance (no public deployment)
+        run: node scripts/browser-acceptance.mjs --hosted-smoke
+      - name: Upload tested, standalone static demo
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opticsim-demo-site
+          path: test-artifacts/demo-site/
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Upload hosted browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosted-browser-evidence
+          path: test-artifacts/browser-hosted-smoke/
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:

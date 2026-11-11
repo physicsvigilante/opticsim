@@ -299,18 +299,47 @@ $('load').addEventListener('change', async event => {
   session.invalidate(Error('Loading sandbox scene…'));
   try { if (file.size > 1024 * 1024) throw Error('Scene file exceeds 1 MB limit');
     const doc = parseSave(await file.text());
-    if (request === exampleRequest && apply(doc, true)) $('examples').value = '';
+    if (request === exampleRequest && apply(doc, true)) {
+      $('examples').value = '';
+      setExampleLink(null); // A local save is not a shareable URL.
+    }
   }
   catch (error) { if (request === exampleRequest) session.invalidate(error); }
   event.target.value = '';
 });
 let exampleRequest = 0;
+// Share only an explicitly bundled starting example. The URL never encodes
+// current edits or local file contents; use Save sandbox to preserve those.
+function isBundledExample(name) {
+  return !!name && Array.from($('examples').options)
+    .some(option => option.value === name && !option.disabled);
+}
+function setExampleLink(name) {
+  const supported = isBundledExample(name);
+  const link = $('example-link');
+  link.hidden = !supported;
+  const url = new URL(window.location.href);
+  url.search = ''; // Share only this allowlisted example, never unrelated URL parameters.
+  if (supported) url.searchParams.set('scene', name);
+  else url.searchParams.delete('scene');
+  url.hash = '';
+  if (supported) link.href = url.href;
+  window.history.replaceState(null, '', url.pathname + url.search);
+}
 async function example(name) {
+  if (!isBundledExample(name)) {
+    session.invalidate(Error('Unknown bundled example.'));
+    return;
+  }
   const request = ++exampleRequest;
   cancelScheduled();
   session.invalidate(Error('Loading example scene…'));
   try { const response = await fetch(`scenes/${name}.json`); if (!response.ok) throw Error('Scene could not be loaded');
-    const doc = parseSave(await response.text()); if (request === exampleRequest) apply(doc, true);
+    const doc = parseSave(await response.text());
+    if (request === exampleRequest && apply(doc, true)) {
+      $('examples').value = name;
+      setExampleLink(name);
+    }
   } catch (error) { if (request === exampleRequest) session.invalidate(error); }
 }
 $('examples').onchange = e => example(e.target.value);
@@ -334,4 +363,5 @@ function resize() {
 }
 let resizeTimer;
 new ResizeObserver(() => { clearTimeout(resizeTimer); resizeTimer = setTimeout(resize, 100); }).observe($('stage'));
-resize(); example('single-lens');
+const requestedExample = new URL(window.location.href).searchParams.get('scene');
+resize(); example(isBundledExample(requestedExample) ? requestedExample : 'single-lens');

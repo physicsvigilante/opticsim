@@ -8,7 +8,10 @@ import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
-const out=join(root,'test-artifacts/browser-acceptance'), downloads=join(out,'downloads');
+const smoke=process.argv.includes('--hosted-smoke');
+const basePath=process.env.OPTICSIM_BASE_PATH || (smoke ? '/opticsim/' : '/');
+const out=join(root,'test-artifacts',smoke?'browser-hosted-smoke':'browser-acceptance');
+const downloads=join(out,'downloads');
 const sleep=ms=>new Promise(ok=>setTimeout(ok,ms)), timeout=20000;
 async function until(fn,ok,label){
   const end=Date.now()+timeout;let last,err;
@@ -31,11 +34,13 @@ async function freePort(){
 async function connect(url){
   const ws=new WebSocket(url);
   await new Promise((ok,err)=>{ws.addEventListener('open',ok,{once:true});ws.addEventListener('error',err,{once:true});});
-  let next=0;const pending=new Map();
+  let next=0;const pending=new Map(),listeners=new Set();
   ws.addEventListener('message',e=>{let r;try{r=JSON.parse(e.data);}catch{return;}
+    if(r.method)for(const listener of listeners)listener(r);
     const done=pending.get(r.id);if(done){pending.delete(r.id);done(r);}
   });
-  return {close:()=>ws.close(),send:(method,params={})=>new Promise((ok,err)=>{
+  return {close:()=>ws.close(),onEvent:fn=>listeners.add(fn),
+    send:(method,params={})=>new Promise((ok,err)=>{
     const id=++next,timer=setTimeout(()=>{pending.delete(id);err(Error(method+' timeout'));},timeout);
     pending.set(id,r=>{clearTimeout(timer);r.error?err(Error(method+': '+r.error.message)):ok(r.result);});
     ws.send(JSON.stringify({id,method,params}));
@@ -66,16 +71,28 @@ async function main(){
   const {bin,version}=browserBinary();
   const profile=await mkdtemp(join(tmpdir(),'opticsim-browser-'));
   const port=await freePort();
-  const server=spawn(process.execPath,['scripts/serve.mjs'],{cwd:root,env:{...process.env,PORT:String(port)},stdio:'ignore'});
+  const origin='http://127.0.0.1:'+port;
+  const server=spawn(process.execPath,['scripts/serve.mjs'],{cwd:root,
+    env:{...process.env,PORT:String(port),OPTICSIM_BASE_PATH:basePath,
+      OPTICSIM_SERVE_DEMO:smoke?'1':'0'},stdio:'ignore'});
   const browser=spawn(bin,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
     '--window-size=1440,960','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:'ignore'});
   let cdp;const report={browser:version,checks:[],screenshots:[],errors:[]};
+  const requests=[],badResponses=[],javascriptErrors=[];
   try{
-    await until(async()=>(await fetch('http://127.0.0.1:'+port+'/')).status,x=>x===200,'server ready');
+    await until(async()=>(await fetch(origin+basePath)).status,x=>x===200,'server ready');
     const chromePort=await until(async()=>Number((await readFile(join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0]),x=>x>0,'debug port');
     const targets=await until(async()=>await(await fetch('http://127.0.0.1:'+chromePort+'/json/list')).json(),x=>x.some(t=>t.type==='page'),'browser page');
     cdp=await connect(targets.find(t=>t.type==='page').webSocketDebuggerUrl);
+    cdp.onEvent(e=>{
+      if(e.method==='Network.requestWillBeSent'&&e.params?.request?.url?.startsWith('http'))
+        requests.push(e.params.request.url);
+      if(e.method==='Network.responseReceived'&&e.params?.response?.status>=400)
+        badResponses.push({url:e.params.response.url,status:e.params.response.status});
+      if(e.method==='Runtime.exceptionThrown')javascriptErrors.push(e.params.exceptionDetails?.text||'Script exception');
+    });
     await cdp.send('Page.enable');await cdp.send('Runtime.enable');
+    await cdp.send('Network.enable');
     await cdp.send('Emulation.setDeviceMetricsOverride',{width:1440,height:960,deviceScaleFactor:1,mobile:false});
     await cdp.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:downloads,eventsEnabled:true});
     async function evaluate(expression){
@@ -101,7 +118,54 @@ async function main(){
       const r=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
       await writeFile(join(out,name+'.png'),Buffer.from(r.data,'base64'));report.screenshots.push(name+'.png');
     }
-    await cdp.send('Page.navigate',{url:'http://127.0.0.1:'+port+'/'});
+    if(smoke){
+      await cdp.send('Page.navigate',{url:origin+basePath+'?scene=multi-source-four&private_query=not_for_sharing'});
+      const ready=await until(state,x=>x?.title==='Four-source mixed optical ensemble'&&
+        x.status==='completed'&&x.painted>0&&!x.sourceHidden,'hosted query scene');
+      assert.equal(ready.fields.length,10);
+      assert.match(ready.sourceReadout,/source-4: [0-9]+ native rays/);
+      assert.equal(ready.error,'');
+      const share=await evaluate('document.getElementById("example-link").href');
+      const shared=new URL(share);
+      assert.equal(shared.origin,origin);
+      assert.equal(shared.pathname,basePath);
+      assert.equal(shared.searchParams.get('scene'),'multi-source-four');
+      assert.deepEqual([...shared.searchParams.keys()],['scene']);
+      assert.deepEqual([...new URL(await evaluate('location.href')).searchParams.keys()],['scene']);
+      report.checks.push({name:'nested static URL loads real four-source simulation',result:'pass',stats:ready.stats});
+      await shot('hosted-subpath-rays');
+      await evaluate('(() => {const e=document.getElementById("source-2-brightness");e.value="0.13";e.dispatchEvent(new Event("input",{bubbles:true}));e.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true}));})()');
+      const edited=await until(state,x=>x?.title===ready.title&&x.status==='completed'&&
+        x.source2Brightness==='0.13','hosted source edit');
+      assert.ok(edited.painted>0);
+      assert.equal(new URL(await evaluate('document.getElementById("example-link").href')).searchParams.get('scene'),'multi-source-four');
+      report.checks.push({name:'hosted editable native rays; sharing never includes edited parameters',result:'pass'});
+      await evaluate('document.getElementById("save").click()');
+      const saved=await until(async()=>JSON.parse(await readFile(join(downloads,'scene.ray-optics-2d.json'),'utf8')),
+        x=>x?.presentation?.title===ready.title,'hosted sandbox download');
+      assert.equal(saved.physics.components.find(c=>c.id==='source-2').parameters.brightness,.13);
+      report.checks.push({name:'hosted browser downloads exact edited sandbox JSON',result:'pass'});
+      await cdp.send('Page.navigate',{url:origin+basePath+'?scene=%2E%2E%2F.env'});
+      const fallback=await until(state,x=>x?.title==='Single converging lens'&&x.status==='completed'&&
+        x.painted>0,'reject unknown scene slug');
+      assert.equal(fallback.error,'');
+      assert.equal(new URL(await evaluate('document.getElementById("example-link").href')).searchParams.get('scene'),'single-lens');
+      report.checks.push({name:'invalid URL parameter cannot load arbitrary assets',result:'pass'});
+      for(const requested of requests){
+        const parsed=new URL(requested);
+        assert.equal(parsed.origin,origin,'Unexpected external network access');
+        assert.ok(parsed.pathname.startsWith(basePath),'Request outside hosted prefix: '+requested);
+        assert.ok(!parsed.pathname.includes('.env'),'Attempted to fetch private file');
+      }
+      assert.deepEqual(badResponses,[]);
+      assert.deepEqual(javascriptErrors,[]);
+      report.checks.push({name:'static page only requests its own packaged origin; no JS errors',result:'pass',
+        requests:requests.length});
+      console.log('Hosted demo smoke PASS: '+report.checks.length+
+        ' checks; '+report.screenshots.length+' screenshot; '+version);
+      return;
+    }
+    await cdp.send('Page.navigate',{url:origin+basePath});
     await completed('Single converging lens');
     const first=await select('three-lenses','Three-lens mixed train',4);
     assert.match(first.prediction,/Virtual image/);await shot('three-lenses-rays');
