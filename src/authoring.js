@@ -166,7 +166,9 @@ export function prepareScene(request) {
       ...(own(request,'title')?[]:['presentation.title']),
       ...(own(request,'runPolicy')?[]:['simulation.runPolicy']),
       'presentation.view','presentation.mode','presentation.grid',
-      ...components.filter(c=>c.type==='point-source'&&c.emission.mode==='full-circle')
+      ...components.filter((c,i)=>c.type==='point-source'&&
+        c.emission.mode==='full-circle'&&
+        ['directionDeg','angleDeg'].some(key=>!own(request.components[i].emission,key)))
         .map(c=>c.id+'.inactiveEmissionAngles')
     ]
   }};

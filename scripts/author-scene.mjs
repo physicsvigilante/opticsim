@@ -45,7 +45,7 @@ export function evaluateDocument(doc,core) {
     canonicalSha256:hash(sceneText),
     validation:run.validation,
     native:{
-      status:run.native.status,
+      status:run.native.status,error:run.native.error??null,
       emitted:diag.emitted??null,processed:diag.processed??null,
       truncation:diag.truncation??null,undefinedBehavior:diag.undefinedBehavior??null,
       errors:diag.errors||[],warnings

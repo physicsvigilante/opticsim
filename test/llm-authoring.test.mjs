@@ -190,6 +190,18 @@ test('execution status, measurement availability and interpretation remain separ
   assert.equal(incomplete.summary.analysis.status,'suppressed');
 });
 
+test('native source brightness warnings qualify rather than invalidate general tracing observations',()=>{
+  const doc=prepareScene(fixture('general-two-source-lens')).document;
+  doc.physics.components.find(c=>c.id==='S1').parameters.brightness=.5;
+  const outcome=evaluateDocument(doc,core);
+  assert.equal(outcome.summary.native.status,'completed-with-warnings');
+  assert.match(outcome.summary.native.warnings.join(' '),/inconsistent ratios/);
+  assert.equal(outcome.summary.measurementState,'qualified-with-warnings');
+  assert.equal(outcome.summary.analysis.status,'unavailable');
+  assert.equal(outcome.summary.executionPassed,true);
+  assert.equal(outcome.summary.interpretation,'not-assessed-by-engine');
+});
+
 test('CLI capabilities are usable without a native build and stale revisions are rejected before execution',()=>{
   const output=execFileSync(process.execPath,['scripts/author-scene.mjs','capabilities'],
     {cwd:root,encoding:'utf8'});
