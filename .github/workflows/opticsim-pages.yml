@@ -1,0 +1,47 @@
+name: Publish opticsim demo (manual public opt-in)
+
+# No push/PR triggers. Deployment requires a human to opt into a public site
+# and deliberately run this workflow on main after approving the PR.
+on:
+  workflow_dispatch:
+    inputs:
+      publish_scope:
+        description: 'GitHub Pages may be public even for a private repo. Confirm public release.'
+        type: choice
+        required: true
+        default: do-not-publish
+        options:
+          - do-not-publish
+          - public-site-approved
+
+concurrency:
+  group: opticsim-pages-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main' && inputs.publish_scope == 'public-site-approved'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - name: Build pinned PhyDemo browser package and verify its contents
+        run: npm run demo:package
+      - name: Verify hosted project subpath with Chrome
+        run: node scripts/browser-acceptance.mjs --hosted-smoke
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: test-artifacts/demo-site/
+      - id: deployment
+        uses: actions/deploy-pages@v4

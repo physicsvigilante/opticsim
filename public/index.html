@@ -1,7 +1,7 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ray Optics 2D</title><link rel="stylesheet" href="style.css"><link rel="icon" href="data:,"></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"><title>Ray Optics 2D</title><link rel="stylesheet" href="style.css"><link rel="icon" href="data:,"></head>
 <body>
-<header><div><span class="eyebrow">LOCAL OPTICAL BENCH</span><h1>Ray Optics <span>2D</span></h1></div><div class="brand-note">Powered by PhyDemo<br><span id="model-label">Geometric optics</span></div></header>
+<header><div><span class="eyebrow">INTERACTIVE OPTICS LAB</span><h1>Ray Optics <span>2D</span></h1></div><div class="brand-note">Powered by PhyDemo<br><span id="model-label">Geometric optics</span></div></header>
 <nav class="ray-toolbar" aria-label="Ray controls">
 <div id="source-tools"></div>
 <div class="view-picker" role="radiogroup" aria-label="Ray view"><span class="view-title">View</span><label title="Show the simulated rays"><input id="mode-rays" type="radio" name="ray-view" value="rays" checked disabled><span><img id="view-rays-icon" alt="" width="16" height="20">Rays</span></label><label title="Show rays with their backward extensions"><input id="mode-extended" type="radio" name="ray-view" value="extended" disabled><span><img id="view-extended-icon" alt="" width="16" height="20">Extended rays</span></label></div>
@@ -11,6 +11,7 @@
 <main>
 <aside>
 <label class="scene-picker">Scene<select id="examples"><option value="single-lens">01 / Single converging lens</option><option value="two-lenses">02 / Two converging lenses</option><option value="diverging-pair">03 / Converging + diverging</option><option value="plane-mirror">04 / Plane mirror</option><option value="lens-mirror-focal">05 / Lens + mirror: focal return</option><option value="lens-mirror-finite">06 / Lens + mirror: finite image</option><option value="three-lenses">07 / Three-lens train</option><option value="four-lenses">08 / Four-lens train</option><option value="mixed-two-lens-two-mirror">09 / Mixed: two lenses + two mirrors</option><option value="mixed-reverse-source">10 / Mixed: source from right</option><option value="mixed-detectors">11 / Mixed: two ray detectors</option><option value="mixed-detectors-reverse">12 / Reverse beam detectors</option><option value="single-lens-detector">13 / Single lens + detector</option><option value="plane-mirror-detector">14 / Plane mirror + detector</option><option value="multi-source-mixed">15 / Three independent sources</option><option value="multi-source-four">16 / Four independent sources</option><option value="" disabled hidden>Loaded sandbox</option></select></label>
+<p class="example-link-note"><a id="example-link" hidden href="">Share starting example</a> <span class="muted">Link opens the unedited example; use Save sandbox to preserve your changes.</span></p>
 <div class="actions"><button id="save" disabled>Save sandbox</button><label class="button">Open sandbox<input id="load" type="file" accept=".json,application/json"></label><button id="export" disabled>Export PhyDemo JSON</button></div>
 <h2>Physical parameters</h2><p id="parameter-guidance" class="muted">Lengths in mm. x points right; y points up.</p>
 <div id="controls"></div>
@@ -28,5 +29,5 @@
 <section class="analysis"><span class="eyebrow">ANALYTICAL PREDICTION</span><p id="analysis-status" class="muted"></p><div id="prediction"></div><p id="prediction-note" class="muted">Calculated independently from the authored optical parameters.</p></section>
 </section>
 </main>
-<footer><span>PhyDemo Ray Optics Simulation v5.4.0 · Ray Optics Simulation authors and contributors</span><a href="licenses/phydemo/LICENSE" target="_blank">Apache-2.0 license</a><a href="licenses/phydemo/CITATION.md" target="_blank">Citation</a><a href="licenses/INDEX.txt" target="_blank">Dependency notices</a></footer>
+<footer><span>Simulates in your browser · No scene uploads or server-side processing</span><span>PhyDemo Ray Optics Simulation v5.4.0 · Ray Optics Simulation authors and contributors</span><a href="licenses/phydemo/LICENSE" target="_blank">Apache-2.0 license</a><a href="licenses/phydemo/CITATION.md" target="_blank">Citation</a><a href="licenses/INDEX.txt" target="_blank">Dependency notices</a></footer>
 <script src="app.js" defer></script></body></html>

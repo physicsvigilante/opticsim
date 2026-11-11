@@ -14,3 +14,6 @@
 #source-tools:has(.active-source-picker) .source-picker summary{font-size:11px;padding:9px 24px 9px 10px}
 #source-emissions{padding:8px 0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 @media(max-width:680px){#source-tools:has(.active-source-picker){width:100%}}
+.example-link-note{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:12px;margin:10px 0 0}
+.example-link-note a{font-weight:600}
+.example-link-note .muted{margin:0}

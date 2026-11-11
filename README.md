@@ -1,6 +1,6 @@
 # Ray Optics 2D
 
-A local optical bench powered by PhyDemo Ray Optics Simulation **v5.4.0**,
+A standalone-browser-capable optical bench powered by PhyDemo Ray Optics Simulation **v5.4.0**,
 pinned to **811f508d2b070898c241a568b0c167dcb8645251**. Browser runtime resources
 are local. No LLM request is needed to open, simulate, or edit supported scenes.
 
@@ -29,6 +29,33 @@ npm test
 
 After editing application source, run `npm run build` and reload the browser.
 `npm start` serves the existing build; it does not rebuild it.
+
+## Standalone browser demo (Milestone 5)
+
+The same production application can be packaged as a **self-contained static
+website** with no installation required **for visitors**. All ray tracing and
+example/parameter operations occur in the visitor's browser; there is no backend
+or remote simulation API. The built site works from a nested URL such as
+`/opticsim/?scene=multi-source-four`, and its **Share starting example** link
+shares a known example only (not edited physical values or uploaded files).
+Saving and reopening an edited scene still uses local sandbox JSON files.
+
+To generate the static hosting directory after `npm run setup`:
+
+```powershell
+npm run demo:package
+```
+
+The tested site is isolated in `test-artifacts/demo-site/` and includes the
+bundle, bundled scenes and original license notices, **not** the repository,
+vendor checkout, Node test core or caches. GitHub Actions CI also attaches
+the ready-to-host `opticsim-demo-site` artifact and tests the site under a
+nested project URL with headless Chrome. A new **manual-only GitHub Pages**
+workflow can deploy it after separate explicit permission to publish a public
+site. **No public demo URL has been deployed by this change** and the repository
+is not made public. A private GitHub repository does not automatically make its
+Pages site private. The publication steps, hosting requirements and limitations
+are in [docs/DEMO-DEPLOYMENT.md](docs/DEMO-DEPLOYMENT.md).
 
 Setup obtains an unmodified checkout at `vendor/ray-optics`, verifies the exact
 commit and tracked source, and runs `npm ci --omit=optional` using `.npm-cache`.

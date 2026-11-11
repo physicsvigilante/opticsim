@@ -3,6 +3,16 @@
 - This workspace is an independent local 2D optics project. No mechanics or 3D integration.
 - Status: milestone 1, source controls, plane mirror, and bounded lens/mirror return composition approved on 2026-11-01. Read `PROPOSAL.md`, `PLANE-MIRROR-PROPOSAL.md`, `LENS-MIRROR-PROPOSAL.md`, `README.md`, and `upstream-pin.json` for boundaries and evidence.
 - Reuse pinned PhyDemo optics and rendering. Do not rewrite ray tracing or modify upstream core without separate approval.
+- Milestone 5 builds a standalone static **browser** distribution using the
+  exact native core and strict scenes. The package may contain only reviewed
+  `index.html`, `style.css`, `app.js`, bundled `scenes/`, complete
+  `licenses/`, and `.nojekyll`; never include `test-core.cjs`, unreviewed
+  `dist/` extras, caches, private files, runtime secrets or a backend. Keep
+  CSP self-origin and validate the `/opticsim/` hosted path in real Chrome.
+  Shareable query links choose known starting examples only, never user edits.
+  **Do not publish a GitHub Pages site automatically or change repository
+  visibility; publication needs a separate explicit public-visibility choice
+  and manual opt-in.** A private source repo alone does not imply a private site.
 - Supported arrangements: one point source with one to four coaxial ideal lenses in current v4 scenes (historical v1-v3 saves remain limited to one/two); one point source with one plane mirror; or the bounded source-left / lens / perpendicular-mirror return layout. Return layout has one lens ID/native instance, mirror y=0/orientation ±90 degrees and >=0.01mm plane separations. Current-v4 mixed-lens-mirror-tracing allows 1–4 independently authored sources, 1–4 coaxial lenses
   and 1–4 plane mirrors with independent centre/tangent/length. All current-v4
   models may additionally contain 0–2 independently authored finite
