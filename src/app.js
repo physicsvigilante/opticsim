@@ -319,6 +319,7 @@ function setExampleLink(name) {
   const link = $('example-link');
   link.hidden = !supported;
   const url = new URL(window.location.href);
+  url.search = ''; // Share only this allowlisted example, never unrelated URL parameters.
   if (supported) url.searchParams.set('scene', name);
   else url.searchParams.delete('scene');
   url.hash = '';
