@@ -1,0 +1,41 @@
+{
+  "title": "General tracing: plane mirrors without a lens",
+  "lengthUnit": "cm",
+  "runPolicy": "preview-v1",
+  "components": [
+    {
+      "id": "S1",
+      "type": "point-source",
+      "parameters": {
+        "x": -25,
+        "y": 2,
+        "brightness": 0.08
+      },
+      "emission": {
+        "mode": "directional",
+        "directionDeg": 0,
+        "angleDeg": 20
+      }
+    },
+    {
+      "id": "M1",
+      "type": "plane-mirror",
+      "parameters": {
+        "x": 0,
+        "y": 0,
+        "orientationDeg": 90,
+        "length": 20
+      }
+    },
+    {
+      "id": "M2",
+      "type": "plane-mirror",
+      "parameters": {
+        "x": -5,
+        "y": 15,
+        "orientationDeg": 0,
+        "length": 12
+      }
+    }
+  ]
+}

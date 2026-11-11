@@ -20,7 +20,9 @@ jobs:
       - run: npm run build
       - name: Package isolated browser demo (no source/test bundles)
         run: node scripts/pack-demo.mjs
-      - run: node skills/sim-ro-image-to-scene/scripts/check-scene.mjs scenes/three-lenses.json scenes/four-lenses.json test/fixtures/multilens-extreme.json scenes/mixed-two-lens-two-mirror.json scenes/mixed-reverse-source.json scenes/mixed-detectors.json scenes/mixed-detectors-reverse.json scenes/single-lens-detector.json scenes/plane-mirror-detector.json scenes/multi-source-mixed.json scenes/multi-source-four.json --report test-artifacts/image-to-scene/multi-lens/checks.json
+      - name: LLM authoring CLI with real native execution and revision guards
+        run: node scripts/author-scene-acceptance.mjs
+      - run: node skills/sim-ro-image-to-scene/scripts/check-scene.mjs scenes/three-lenses.json scenes/four-lenses.json test/fixtures/multilens-extreme.json scenes/mixed-two-lens-two-mirror.json scenes/mixed-reverse-source.json scenes/mixed-detectors.json scenes/mixed-detectors-reverse.json scenes/single-lens-detector.json scenes/plane-mirror-detector.json scenes/multi-source-mixed.json scenes/multi-source-four.json scenes/general-source-detector.json scenes/general-two-source-lens.json scenes/general-mirror-pair.json scenes/general-source-only.json --report test-artifacts/image-to-scene/multi-lens/checks.json
       - name: Browser acceptance with preinstalled Chrome
         run: node scripts/browser-acceptance.mjs
       - name: Hosted path/browser acceptance (no public deployment)
@@ -51,4 +53,10 @@ jobs:
         with:
           name: composed-lens-evidence
           path: test-artifacts/image-to-scene/multi-lens/checks.json
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: llm-authoring-evidence
+          path: test-artifacts/llm-authoring/
           if-no-files-found: ignore

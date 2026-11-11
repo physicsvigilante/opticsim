@@ -134,7 +134,8 @@ function controls() {
     chooser.append(select);$('source-tools').append(chooser);
   }
   const mixed = session.document.physics.model === 'lens-mirror-return-geometric';
-  const tracing = session.document.physics.model === 'mixed-lens-mirror-tracing';
+  const general = session.document.physics.model === 'general-component-tracing';
+  const tracing = general || session.document.physics.model === 'mixed-lens-mirror-tracing';
   const labels = { x: 'Position x', y: 'Position y', focalLength: 'Focal length', apertureHeight: 'Aperture height', orientationDeg: 'Surface orientation', length: 'Length' };
   for (const component of session.document.physics.components) {
     const fieldset = document.createElement('fieldset');
@@ -176,8 +177,8 @@ function controls() {
   }
   $('title').textContent = session.document.presentation.title;
   const mirror = session.document.physics.model === 'plane-mirror-geometric';
-  $('model-label').textContent = mixed ? 'Lens / mirror return · geometric optics' : tracing ? 'Mixed lens / mirror tracing' : mirror ? 'Plane mirror · geometric optics' : 'Ideal lenses · geometric optics';
-  $('parameter-guidance').textContent = `Lengths in mm. x points right; y points up. ${mixed ? 'Source left of lens left of perpendicular mirror; lens and mirror share y=0.' : tracing ? '1–4 independent point sources, 1–4 coaxial lenses and 1–4 plane mirrors; finite optical surfaces must not intersect.' : mirror ? 'Mirror orientation describes the surface tangent.' : 'Lenses share the horizontal axis.'}`;
+  $('model-label').textContent = mixed ? 'Lens / mirror return · geometric optics' : general ? 'General component tracing' : tracing ? 'Mixed lens / mirror tracing' : mirror ? 'Plane mirror · geometric optics' : 'Ideal lenses · geometric optics';
+  $('parameter-guidance').textContent = `Lengths in mm. x points right; y points up. ${mixed ? 'Source left of lens left of perpendicular mirror; lens and mirror share y=0.' : general ? '1–4 sources, up to four coaxial lenses, four mirrors and two detectors; finite surfaces must not intersect.' : tracing ? '1–4 independent point sources, 1–4 coaxial lenses and 1–4 plane mirrors; finite optical surfaces must not intersect.' : mirror ? 'Mirror orientation describes the surface tangent.' : 'Lenses share the horizontal axis.'}`;
   $('physical-note').textContent = mixed ? 'One native lens can be encountered in both directions. PhyDemo chooses every intersection; finite lens/mirror misses are not blocked. Positive f converges; negative f diverges.' : tracing ? 'PhyDemo chooses each hit; analytical image predictions are intentionally unavailable without a specified optical path. Reflection totals and per-mirror counts describe sampled native encounters, not image formation.' : mirror ? 'The finite native mirror reflects from both sides. Rays missing its segment continue unchanged. Edit physical values here; the canvas is a simulation view.' : 'Positive focal length converges. Negative focal length diverges. Edit physical values here; the canvas is a simulation view.';
   $('grid-toggle').checked = session.document.presentation.grid;
   $('zoom').value = session.document.presentation.view.zoom;

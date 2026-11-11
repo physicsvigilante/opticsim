@@ -278,6 +278,71 @@ The one-to-four lens restriction is a scope policy, not a universal
 constraint on the document design. Earlier v4 readers enforcing old model/scope
 rules may reject newly authored mixed-tracing or three-/four-lens v4 scenes. View controls are deliberately small.
 
+## Milestone 6: general component tracing and LLM authoring
+
+The new explicit `general-component-tracing` scene model uses **the same pinned
+PhyDemo compiler** but does not require a lens or mirror to be present:
+**1–4 point sources, 0–4 coaxial vertical thin lenses, 0–4 finite plane
+mirrors, and 0–2 passive ray detectors**. Source-only and detector-only
+observations, multiple-source lens experiments, and mirror-only systems
+share one tracing path. The existing four arrangement models and their
+conditional analytical predictions are unchanged. General tracing intentionally
+does **not** fabricate an analytical image position or ray sequence.
+Existing geometric restrictions, native limits and finite ray sampling remain.
+
+The LLM **authors physical components**, not PhyDemo rays, Javascript or an
+apparatus-specific template. The deterministic authoring interface prepares
+the canonical versioned scene, converts units, provides a bounded camera and
+named run policy, validates the exact existing contract, executes PhyDemo, and
+returns compact diagnostics using the existing scene checker. No external LLM
+API, online service, new optical laws or extra npm dependencies are required.
+
+CLI commands (from the repo root, after `npm run setup`):
+
+```powershell
+node scripts/author-scene.mjs capabilities
+node scripts/author-scene.mjs evaluate test/fixtures/llm-authoring/general-source-detector.request.json --out test-artifacts/llm-authoring/my-scene
+node scripts/author-scene.mjs evaluate test/fixtures/llm-authoring/general-mirror-pair.request.json
+```
+
+The `evaluate` command produces `scene.ray-optics-2d.json` (openable via
+**Open sandbox**) and `report.json` under the requested, ignored
+`test-artifacts/llm-authoring/` directory. Without `--out` the canonical
+scene is returned with the JSON response. Only a successful native run exits
+with status 0. Preparation rejects missing physics before native execution.
+
+An authoring request has `lengthUnit` (`mm`, `cm`, `m`) and
+`components` using the same types and parameter names as the sandbox;
+optional `title` and named `runPolicy`. It is **not** a separate
+physics language. Source position, brightness and emission, lens focal length
+and aperture, and finite mirror/detector geometry must be specified.
+Only inactive full-circle direction/opening fields receive recorded
+nonphysical defaults. Numerical run policies are explicit:
+`preview-v1` (density 0.2, depth 8, processed limit 10000) and
+`dense-v1` (density 1, same limits). No physical quantities are silently
+inferred, added or altered to satisfy validation.
+
+For targeted edits, run:
+
+```powershell
+node scripts/author-scene.mjs revise test-artifacts/llm-authoring/my-scene/scene.ray-optics-2d.json test-artifacts/llm-authoring/my-edit.json --out test-artifacts/llm-authoring/my-revision
+```
+
+The edit JSON must supply the accepted scene's `expectedSha256` (from its
+evaluation report) and a `changes` list with stable component ID,
+`section` (`parameters` or `emission`), `key`, `value`, and optional
+length `unit`. A stale hash, unknown field, unsupported geometry or
+incomplete switch to directional emission rejects the whole revision.
+No full-scene rewrite is required for a one-parameter edit.
+
+The summary separates native completion, emitted rays, reflection/detector
+observations, warnings, measurement availability, and analytical applicability.
+**It does not evaluate whether an LLM correctly interpreted a question**.
+Warnings (including inconsistent brightness saturation) remain visible, and
+stopped/truncated runs withhold current measurements. User questions with
+missing physical facts still require clarification or explicitly agreed
+illustrative assumptions.
+
 ## Image-to-scene authoring
 
 Ask Codex to use [skills/sim-ro-image-to-scene/SKILL.md](skills/sim-ro-image-to-scene/SKILL.md)

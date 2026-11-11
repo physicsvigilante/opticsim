@@ -1,0 +1,44 @@
+{
+  "title": "General tracing: two sources and one lens",
+  "lengthUnit": "cm",
+  "runPolicy": "preview-v1",
+  "components": [
+    {
+      "id": "S1",
+      "type": "point-source",
+      "parameters": {
+        "x": -30,
+        "y": 1,
+        "brightness": 0.1
+      },
+      "emission": {
+        "mode": "directional",
+        "directionDeg": 0,
+        "angleDeg": 12
+      }
+    },
+    {
+      "id": "S2",
+      "type": "point-source",
+      "parameters": {
+        "x": -33,
+        "y": -4,
+        "brightness": 0.08
+      },
+      "emission": {
+        "mode": "directional",
+        "directionDeg": 0,
+        "angleDeg": 16
+      }
+    },
+    {
+      "id": "L1",
+      "type": "ideal-lens",
+      "parameters": {
+        "x": 0,
+        "focalLength": 10,
+        "apertureHeight": 30
+      }
+    }
+  ]
+}

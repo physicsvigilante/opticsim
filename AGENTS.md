@@ -48,5 +48,14 @@
   be nonintersecting with other segments; invalid/incomplete run readouts are
   withheld. Keep native physics, source/optics and measured values separate.
 - Use proportionate validation: contract/adapter tests, independent lens checks including virtual/infinite images, and browser parameter/save/reload checks. Screenshots alone do not establish physics correctness. Report errors, truncation, and untested behavior.
+- The general `general-component-tracing` model reuses PhyDemo components with
+  1–4 sources, 0–4 vertical coaxial lenses, 0–4 finite mirrors and 0–2 passive
+  detectors. Existing arrangement-specific models remain strict. The LLM
+  selects and describes actual physics; `src/authoring.js` prepares only
+  mechanical boilerplate, unit conversions, camera and named sampling policy.
+  `scripts/author-scene.mjs` reuses the checker/native physics, returns
+  separate execution/measurement/analysis/interpretation status, and enforces
+  SHA-based targeted edits before any native run. No custom ray routing,
+  invented physical values, apparatus template language, or new LLM provider.
 - Image authoring uses the explicitly invoked repo skill `skills/sim-ro-image-to-scene/SKILL.md`. Keep provenance outside strict sandbox JSON, prefer labels over pixels, withhold scenes for essential unknowns/conflicts, and reject unsupported arrangements. The Node checker rebuilds/reuses the current core; execution success does not certify interpretation. Generated reports/previews stay in ignored `test-artifacts/image-to-scene/`.
 - After approval, routine implementation and focused testing may proceed within the agreed milestone. Ask before scope expansion, upstream physics changes, writes outside this workspace, committing, or pushing. Keep caches/build outputs inside this workspace where configurable.

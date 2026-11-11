@@ -29,6 +29,21 @@ relative geometry. Sandbox angles are counterclockwise in x-right/y-up coordinat
 the mirror stores **surface tangent**, not normal angle. Equivalent two-sided
 mirror tangent angles differ by 180 degrees. The adapter alone handles native y-down.
 
+To minimise routine authoring effort, first run `node scripts/author-scene.mjs
+capabilities` for the live supported component types, units and bounds.
+When all necessary physical facts are known, prefer an LLM-sized request
+(`lengthUnit`, `components`, optional `title`/`runPolicy`) using the
+**same supported component types and parameter names**, then execute it
+with `node scripts/author-scene.mjs evaluate <request.json> --out
+test-artifacts/llm-authoring/<case>`. This prepares the authoritative
+scene and returns native diagnostics. The generated scene is opened through
+the existing sandbox. This is not a new apparatus/facts language.
+The general `general-component-tracing` model permits 1–4 sources,
+0–4 coaxial thin lenses, 0–4 finite mirrors and 0–2 detectors under the
+same bounded geometry rules. No lens/mirror is required merely to satisfy
+an arrangement validator. Predictions for general tracing are intentionally
+unavailable unless separately justified.
+
 If essential geometry, focal length/sign, source height/emission or finite
 aperture/length is absent, ask a focused question and withhold an authoritative
 scene. Never fill missing physics from pixels or a template. An illustrative
