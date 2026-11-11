@@ -824,3 +824,55 @@ bounded domain, and no broad device matrix or new optical physics.
 This was a focused implementer review plus automated verification, **not
 a separate independent reviewer**. The PR remains draft pending explicit
 user merge approval.
+
+## Milestone 5 — standalone static browser demo (2026-11-11)
+
+**Status: tested candidate in draft PR #5; not deployed or merged.** Source repo
+`physicsvigilante/opticsim` remains private; no outside repository was changed.
+
+The existing pinned PhyDemo v5.4.0 browser build is now distributable as a
+**strict, isolated static website** without any runtime Node server. The
+`npm run demo:package` command produces ignored
+`test-artifacts/demo-site/` containing exactly the browser HTML, stylesheet,
+Webpack application bundle, third-party license directory, `.nojekyll`, and
+**only the 16 explicitly listed example scene JSONs**. It must not include
+the checkout, `vendor/`, `dist/test-core.cjs`, caches, environment files or
+other unpublished scenes. All example documents are validated during packaging.
+
+The app's content security policy restricts scripts, styles, images and fetches
+to its own origin (plus data-URI images for the original SVG controls).
+`?scene=<known-name>` selects bundled examples at root or nested project
+paths such as `/opticsim/`. Unknown or path-shaped names revert to a known
+single-lens example; the **Share starting example** link includes only a safe
+scene slug and strips unrelated query parameters. It never includes locally
+loaded files, edited scene values or detector readings. Local Save/Open and
+native export remain the mechanism to preserve a changed simulation.
+
+**Confirmed in GitHub Actions CI #42962178637**
+(<https://github.com/physicsvigilante/opticsim/actions/runs/42962178637>):
+the pinned setup, **67/67 Node tests**, production Webpack build, isolated
+static asset package check, **11/11 scene authoring checks**,
+**23/23 existing Chrome browser checks** and **5/5 nested-path hosted Chrome
+smoke checks** all passed. Existing acceptance preserved 12 screenshots;
+the hosted smoke captured a further screenshot and tested real rays from the
+four-source example, editing a source brightness, downloading the exact changed
+JSON, rejecting arbitrary scene URL values, and all observed HTTP requests
+staying within the packaged origin. CI attaches the downloadable
+`opticsim-demo-site` artifact, plus hosted-browser acceptance evidence.
+
+A separate GitHub Pages workflow is **manual-only** and guarded by both
+`refs/heads/main` and a deliberate `public-site-approved` choice. Its
+permissions are scoped to that manual publication job. It has **no push,
+pull-request, or scheduled deployment trigger**. Although the GitHub source
+repository can remain private, ordinary Pages publication can expose the
+compiled JavaScript and bundled scenes publicly; the user must explicitly
+approve that visibility and configure GitHub Pages settings before publication.
+Private-site access control depends on GitHub Enterprise Cloud configuration.
+No Pages site or public URL has been asserted as deployed.
+
+**Limits:** the package is a static host artifact, not a live URL until a
+manual deployment succeeds. It includes compiled client-side source and is
+intended for public examination if deployed; do not embed secrets. Hosted
+acceptance covers local Chrome and a simulated project subpath, not a real
+remote CDN/HTTPS delivery, broad devices, server authorization, or access
+control. All earlier physics validity and finite-sampling limitations apply.
