@@ -13,7 +13,7 @@ test('Pages publication is manual-only and requires a positive visibility choice
   assert.match(flow,/pages: write/);
   assert.match(flow,/id-token: write/);
   assert.match(flow,/environment:\n\s+name: github-pages/);
-  assert.match(flow,/actions\/upload-pages-artifact@v3/);
+  assert.match(flow,/actions\/upload-pages-artifact@v4/);
   assert.match(flow,/actions\/deploy-pages@v4/);
 });
 

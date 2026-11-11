@@ -40,7 +40,7 @@ jobs:
       - name: Verify hosted project subpath with Chrome
         run: node scripts/browser-acceptance.mjs --hosted-smoke
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: test-artifacts/demo-site/
       - id: deployment
