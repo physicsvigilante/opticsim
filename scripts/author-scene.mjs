@@ -8,6 +8,7 @@ import {readFileSync,mkdirSync,writeFileSync} from 'node:fs';
 import {resolve,dirname,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {capabilities,prepareScene,reviseScene,AuthoringError} from '../src/authoring.js';
+import {problemCapabilities,resolveProblemRequest} from '../src/problem-authoring.js';
 import {serializeSave} from '../src/contract.js';
 import {checkCandidate} from '../skills/sim-ro-image-to-scene/scripts/check-scene.mjs';
 
@@ -63,7 +64,8 @@ export function evaluateDocument(doc,core) {
 }
 function usage() {
   return 'Usage:\n'+
-    '  node scripts/author-scene.mjs capabilities\n'+
+    '  node scripts/author-scene.mjs capabilities|problem-capabilities\n'+
+    '  node scripts/author-scene.mjs problem <request.json> [--illustrate] [--out test-artifacts/llm-authoring/<name>]\n'+
     '  node scripts/author-scene.mjs evaluate <request.json> [--out test-artifacts/llm-authoring/<name>]\n'+
     '  node scripts/author-scene.mjs revise <scene.json> <changes.json> [--out test-artifacts/llm-authoring/<name>]\n'+
     'The evaluate/revise commands build the pinned native test core and return structured diagnostics.\n';
@@ -72,6 +74,55 @@ function main(){
   const [command,...args]=process.argv.slice(2);
   if(command==='capabilities'&&args.length===0){
     process.stdout.write(JSON.stringify(capabilities(),null,2)+'\n');return;
+  }
+  if(command==='problem-capabilities'&&args.length===0){
+    process.stdout.write(JSON.stringify(problemCapabilities(),null,2)+'\n');return;
+  }
+  if(command==='problem'){
+    if(!args.length)throw new Error(usage());
+    let illustration=false,outPrefix=null;
+    for(let i=1;i<args.length;i++){
+      if(args[i]==='--illustrate'&&!illustration)illustration=true;
+      else if(args[i]==='--out'&&outPrefix===null&&i+1<args.length)
+        outPrefix=args[++i];
+      else throw new Error(usage());
+    }
+    const output=outputPaths(outPrefix);
+    const problem=resolveProblemRequest(safeRead(args[0]),{illustration});
+    const qualification={
+      status:problem.status,illustrationOptIn:illustration,
+      choices:problem.choices,issues:problem.issues,
+      interpretation:problem.interpretation,
+      physicalFidelity:problem.physicalFidelity
+    };
+    if(!problem.prepared){
+      // Missing essential physics or unsupported optics: no build, native call,
+      // scene JSON or fabricated image. Keep the diagnostic report reviewable.
+      const summary={accepted:false,problem:qualification,issues:problem.issues,
+        native:{status:'not-run'},interpretation:'not-assessed-by-engine'};
+      if(output){
+        mkdirSync(output.directory,{recursive:true});
+        writeFileSync(output.report,JSON.stringify({summary},null,2)+'\n');
+        summary.outputs={report:output.report};
+      }
+      process.stdout.write(JSON.stringify(summary,null,2)+'\n');
+      process.exitCode=1;return;
+    }
+    execFileSync(process.execPath,[resolve(root,'scripts/build.mjs'),'--test'],
+      {cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']});
+    const core=createRequire(import.meta.url)(resolve(root,'dist/test-core.cjs'));
+    const result=evaluateDocument(problem.prepared.document,core);
+    const summary={...result.summary,problem:qualification,
+      preparation:problem.prepared.preparation};
+    if(output){
+      mkdirSync(output.directory,{recursive:true});
+      writeFileSync(output.scene,result.sceneText);
+      writeFileSync(output.report,JSON.stringify({summary,details:result.report},null,2)+'\n');
+      summary.outputs={scene:output.scene,report:output.report};
+    }else summary.document=problem.prepared.document;
+    process.stdout.write(JSON.stringify(summary,null,2)+'\n');
+    if(!summary.executionPassed)process.exitCode=1;
+    return;
   }
   if(!['evaluate','revise'].includes(command))throw new Error(usage());
   const count=command==='evaluate'?1:2;
