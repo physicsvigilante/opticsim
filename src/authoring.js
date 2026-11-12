@@ -29,7 +29,7 @@ function checkObject(value,path,allowed,required=[]) {
   if(issues.length)fail(issues);
 }
 function units(value,path) {
-  if(!own(lengthScales,value))
+  if(typeof value!=='string'||!own(lengthScales,value))
     fail([issue(path,'UNSUPPORTED_UNIT','Use mm, cm or m; no unit will be inferred')]);
   return lengthScales[value];
 }
@@ -69,6 +69,81 @@ export function capabilities() {
       'no image prediction for unconstrained general tracing','no source-specific detector provenance']
   };
 }
+// Collect independent field problems in one pass. Names and numerical limits
+// come from the same live contract used below. Geometry is still validated only
+// by the canonical validator once a complete document can be constructed.
+export function inspectAuthoringRequest(request){
+  const issues=[];
+  const object=(value,path,allowed,required=[])=>{
+    try{checkObject(value,path,allowed,required);}
+    catch(error){if(!(error instanceof AuthoringError))throw error;issues.push(...error.issues);}
+    return isObject(value);
+  };
+  if(!object(request,'$',['lengthUnit','components','title','runPolicy'],['lengthUnit','components']))return issues;
+  let scale=null;
+  if(own(request,'lengthUnit')){
+    try{scale=units(request.lengthUnit,'$.lengthUnit');}
+    catch(error){issues.push(...error.issues);}
+  }
+  if(own(request,'runPolicy')&&(typeof request.runPolicy!=='string'||!own(policies,request.runPolicy)))
+    issues.push(issue('$.runPolicy','UNSUPPORTED_POLICY','Use a run policy exposed by capabilities()'));
+  if(own(request,'title')&&(typeof request.title!=='string'||request.title.length>120))
+    issues.push(issue('$.title','INVALID_TITLE','Expected a title of at most 120 characters'));
+  if(!own(request,'components'))return issues;
+  if(!Array.isArray(request.components)||request.components.length<1||request.components.length>14){
+    issues.push(issue('$.components','INVALID_COMPONENTS','Expected 1–14 bounded component objects'));
+    return issues;
+  }
+  const number=(key,value,path)=>{
+    if(typeof value!=='number'||!Number.isFinite(value)){
+      issues.push(issue(path,'INVALID_VALUE','Expected a finite numeric value, not text or an unlabelled expression'));return;
+    }
+    if(lengthKeys.has(key)&&scale===null)return;
+    const n=value*(lengthKeys.has(key)?scale:1),b=COMPONENT_BOUNDS;
+    const bounds=key==='brightness'?b.brightness:
+      key==='orientationDeg'?b.orientationDeg:key==='directionDeg'?b.directionDeg:
+      key==='angleDeg'?b.openingAngleDeg:
+      ['length','apertureHeight'].includes(key)?b.positiveLengthMm:b.coordinateMm;
+    if(!Number.isFinite(n)||n<bounds[0]||n>bounds[1]||
+      (key==='focalLength'&&Math.abs(n)<b.minimumAbsFocalLengthMm))
+      issues.push(issue(path,'INVALID_INPUT','Value is outside the live contract bounds'+
+        (lengthKeys.has(key)?' after conversion to mm':'')));
+  };
+  const ids=new Set();
+  for(const [i,c] of request.components.entries()){
+    const path='$.components['+i+']';
+    if(!object(c,path,['id','type','parameters','emission'],['type','parameters']))continue;
+    if(own(c,'id')){
+      if(typeof c.id!=='string'||!idPattern.test(c.id))
+        issues.push(issue(path+'.id','INVALID_ID','ID must begin with a letter and use letters, digits, _ or -'));
+      else if(ids.has(c.id))issues.push(issue(path+'.id','DUPLICATE_ID','Component IDs must be unique'));
+      else ids.add(c.id);
+    }
+    if(!own(c,'type'))continue;
+    if(!COMPONENT_TYPES.includes(c.type)){
+      issues.push(issue(path+'.type','UNSUPPORTED_COMPONENT','Not a supported PhyDemo-backed component'));continue;
+    }
+    const required=componentParameterNames(c.type);
+    if(own(c,'parameters')&&object(c.parameters,path+'.parameters',required,required))
+      for(const key of required)if(own(c.parameters,key))number(key,c.parameters[key],path+'.parameters.'+key);
+    if(c.type!=='point-source'){
+      if(own(c,'emission'))issues.push(issue(path+'.emission','UNSUPPORTED_FIELD','Only sources have emission'));
+      continue;
+    }
+    if(!own(c,'emission')){
+      issues.push(issue(path+'.emission','MISSING_VALUE','Source emission must be explicitly specified'));continue;
+    }
+    if(!object(c.emission,path+'.emission',['mode','directionDeg','angleDeg'],['mode']))continue;
+    if(own(c.emission,'mode')&&!['full-circle','directional'].includes(c.emission.mode))
+      issues.push(issue(path+'.emission.mode','UNSUPPORTED_MODE','Expected full-circle or directional'));
+    for(const key of ['directionDeg','angleDeg']){
+      if(own(c.emission,key))number(key,c.emission[key],path+'.emission.'+key);
+      else if(c.emission.mode==='directional')issues.push(issue(path+'.emission.'+key,
+        'MISSING_VALUE','Directional emission requires the explicit physical angle'));
+    }
+  }
+  return issues;
+}
 // Bounded camera preparation is presentation-only. It never modifies components.
 function camera(components) {
   const vertices=[];
@@ -86,39 +161,15 @@ function camera(components) {
     zoom:Math.max(.03,Math.min(2,.85*1200/width,.85*700/height))};
 }
 export function prepareScene(request) {
-  checkObject(request,'$',['lengthUnit','components','title','runPolicy'],
-    ['lengthUnit','components']);
+  const issues=inspectAuthoringRequest(request);
+  if(issues.length)fail(issues);
   const scale=units(request.lengthUnit,'$.lengthUnit');
-  if(!Array.isArray(request.components)||request.components.length<1||request.components.length>14)
-    fail([issue('$.components','INVALID_COMPONENTS','Expected 1–14 bounded component objects')]);
   const policyName=own(request,'runPolicy')?request.runPolicy:'preview-v1';
-  if(!own(policies,policyName))
-    fail([issue('$.runPolicy','UNSUPPORTED_POLICY','Use a run policy exposed by capabilities()')]);
   const title=own(request,'title')?request.title:'LLM-authored optical scene';
-  if(typeof title!=='string'||title.length>120)
-    fail([issue('$.title','INVALID_TITLE','Expected a title of at most 120 characters')]);
-  const knownIds=new Set(),assignedIds=[];
-  for(const [i,component] of request.components.entries()){
-    const path='$.components['+i+']';
-    if(!isObject(component))fail([issue(path,'EXPECTED_OBJECT','Expected a component object')]);
-    if(own(component,'id')){
-      if(typeof component.id!=='string'||!idPattern.test(component.id))
-        fail([issue(path+'.id','INVALID_ID','ID must begin with a letter and use letters, digits, _ or -')]);
-      if(knownIds.has(component.id))
-        fail([issue(path+'.id','DUPLICATE_ID','Component IDs must be unique')]);
-      knownIds.add(component.id);
-    }
-  }
-  const missing=[];
+  const knownIds=new Set(request.components.filter(c=>own(c,'id')).map(c=>c.id)),assignedIds=[];
   const components=request.components.map((component,i)=>{
     const path='$.components['+i+']';
-    checkObject(component,path,['id','type','parameters','emission'],['type','parameters']);
-    if(!COMPONENT_TYPES.includes(component.type))
-      fail([issue(path+'.type','UNSUPPORTED_COMPONENT','Not a supported PhyDemo-backed component')]);
-    if(component.type!=='point-source'&&own(component,'emission'))
-      fail([issue(path+'.emission','UNSUPPORTED_FIELD','Only sources have emission')]);
     const required=componentParameterNames(component.type);
-    checkObject(component.parameters,path+'.parameters',required,required);
     let id=component.id;
     if(!id) {
       let index=1,prefix=prefixes[component.type];
@@ -129,26 +180,13 @@ export function prepareScene(request) {
       key,component.parameters[key],scale,path+'.parameters.'+key)]));
     const result={id,type:component.type,parameters};
     if(component.type==='point-source'){
-      checkObject(component.emission,path+'.emission',['mode','directionDeg','angleDeg'],['mode']);
-      const mode=component.emission.mode;
-      if(!['full-circle','directional'].includes(mode))
-        fail([issue(path+'.emission.mode','UNSUPPORTED_MODE','Expected full-circle or directional')]);
-      if(mode==='directional'){
-        for(const key of ['directionDeg','angleDeg'])
-          if(!own(component.emission,key))
-            missing.push(issue(path+'.emission.'+key,'MISSING_VALUE',
-              'Directional emission requires the explicit physical angle'));
-        if(missing.length)return result; // finish collecting missing angles below.
-      }
-      result.emission={mode,directionDeg:own(component.emission,'directionDeg')?
-        physicalNumber(component.emission.directionDeg,path+'.emission.directionDeg'):0,
-        angleDeg:own(component.emission,'angleDeg')?
-        physicalNumber(component.emission.angleDeg,path+'.emission.angleDeg'):30};
+      result.emission={mode:component.emission.mode,
+        directionDeg:own(component.emission,'directionDeg')?component.emission.directionDeg:0,
+        angleDeg:own(component.emission,'angleDeg')?component.emission.angleDeg:30};
     }
     return result;
   });
-  if(missing.length)fail(missing);
-  let doc={
+  const doc={
     format:'ray-optics-2d',schemaVersion:4,adapterVersion:4,upstreamCommit:UPSTREAM,
     physics:{lengthUnit:'mm',coordinates:'x-right-y-up',
       model:'general-component-tracing',components},

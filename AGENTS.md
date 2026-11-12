@@ -1,7 +1,7 @@
 # ray-optics-2d
 
 - This workspace is an independent local 2D optics project. No mechanics or 3D integration.
-- Status: milestone 1, source controls, plane mirror, and bounded lens/mirror return composition approved on 2026-11-01. Read `PROPOSAL.md`, `PLANE-MIRROR-PROPOSAL.md`, `LENS-MIRROR-PROPOSAL.md`, `README.md`, and `upstream-pin.json` for boundaries and evidence.
+- Baseline: PRs #7 (general authoring), #10 (evaluation runner) and #13 (minimal problem preparation) were merged on 2026-11-12. Preparation is not an image interpreter or proof of independent model accuracy. Read `README.md`, `docs/MINIMAL-PROBLEM-AUTHORING.md`, `PROPOSAL.md`, `PLANE-MIRROR-PROPOSAL.md`, `LENS-MIRROR-PROPOSAL.md`, and `upstream-pin.json` for boundaries and evidence.
 - Reuse pinned PhyDemo optics and rendering. Do not rewrite ray tracing or modify upstream core without separate approval.
 - Milestone 5 builds a standalone static **browser** distribution using the
   exact native core and strict scenes. The package may contain only reviewed
@@ -26,9 +26,9 @@
 - Source controls retained in schema/adapter v4: one semantic point-source with full-circle/directional emission, paired native-style sliders/numbers, source-relative brightness, and sampling presets. Strictly validate historical v1/v2/v3 before sequential migration; preserve exact brightness/density/IDs and all lens/source values. Selecting Directional defaults to Medium; loading saves never resets density. Do not resample native rays. Keep angle sign and symmetric-cone regression tests.
 - Plane mirror: semantic centre x/y, tangent orientation counterclockwise from +x in y-up, and finite length compile to native Mirror endpoints with y flipped. Native physics is two-sided. Source must be >=0.01 mm from the supporting line, including its extension; derived endpoints stay within coordinate bounds. Separate conditional virtual-image prediction from native rays/reflection counts; misses continue unchanged. Count native incident calls only, with per-run instance observers; partial runs label counts partial. No ray history, custom tracing, image-detection claim or analytical ray overlay.
 - Mixed return analysis is conditional on lens-ID -> mirror-ID -> same lens-ID, not a prescribed ray route or image detection. In unfolded travel coordinates use L T(2g) L T(s), then xImage=xLens-z for left-going output. Keep y-up fixed. PhyDemo chooses all intersections and finite misses. No production ray-history viewer; test-only native incident observations are allowed.
-- Multi-source extension applies **only** to mixed-lens-mirror-tracing. Pure
-  lens, plane mirror and return models retain exactly one source and their
-  analytical predictions. Mixed sources have independent IDs, positions,
+- Multi-source support applies to both mixed-lens-mirror-tracing and general-component-tracing. Pure
+  lens, plane mirror and return analytical models retain exactly one source and their
+  analytical predictions. Sources have independent IDs, positions,
   brightness and emission mode/direction/cone; ray density and native limits are
   scene-wide. Validate every source against every lens plane, mirror supporting
   line and detector supporting line, and reject coincident source positions.
@@ -56,6 +56,18 @@
   `scripts/author-scene.mjs` reuses the checker/native physics, returns
   separate execution/measurement/analysis/interpretation status, and enforces
   SHA-based targeted edits before any native run. No custom ray routing,
-  invented physical values, apparatus template language, or new LLM provider.
+  invented physical values in strict mode, apparatus template language, or new LLM provider.
+- `src/problem-authoring.js` may apply only the documented `illustration-v1`
+  policy with explicit opt-in. Aperture, brightness and emission are physical
+  assumptions, not presentation settings. Distinguish proposed from applied
+  choices; blocked requests have no applied choices and no scene. Preserve
+  all supplied values, including invalid values for diagnosis. Aggregate field
+  issues using the shared authoring contract; do not duplicate its schema.
+  `fully-specified` means request completeness, not correctness about a question.
+- Authoring CLI output directories must be fresh, non-symlink paths inside
+  `test-artifacts/llm-authoring/`. Preserve original input bytes and hashes
+  alongside the scene and report. Do not silently overwrite prior evidence.
+  Canonical scene JSON alone does not preserve physical-assumption provenance;
+  the browser currently does not load the sidecar. Do not claim otherwise.
 - Image authoring uses the explicitly invoked repo skill `skills/sim-ro-image-to-scene/SKILL.md`. Keep provenance outside strict sandbox JSON, prefer labels over pixels, withhold scenes for essential unknowns/conflicts, and reject unsupported arrangements. The Node checker rebuilds/reuses the current core; execution success does not certify interpretation. Generated reports/previews stay in ignored `test-artifacts/image-to-scene/`.
 - After approval, routine implementation and focused testing may proceed within the agreed milestone. Ask before scope expansion, upstream physics changes, writes outside this workspace, committing, or pushing. Keep caches/build outputs inside this workspace where configurable.

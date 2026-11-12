@@ -1,7 +1,6 @@
 // Minimal problem-to-scene preparation over the SAME strict component contract.
-// No new apparatus DSL, custom optics, implicit physical inference or API calls.
-// An incomplete textbook question is not evidence for physical values omitted
-// from the statement. Only explicitly opted-in illustration choices are filled.
+// These opt-in choices change simulated physics; they are not cosmetic defaults.
+// Input completeness never certifies interpretation or the question's answer.
 import {capabilities, prepareScene, AuthoringError} from './authoring.js';
 import {COMPONENT_TYPES} from './contract.js';
 
@@ -9,18 +8,17 @@ const scales=Object.freeze({mm:1,cm:10,m:1000});
 const has=(obj,key)=>Object.prototype.hasOwnProperty.call(obj,key);
 const isObject=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const policy=Object.freeze({
-  sourceBrightness:0.08,
-  lensApertureMm:100,
+  version:'illustration-v1',sourceBrightness:0.08,lensApertureMm:100,
   unspecifiedSourceEmission:'full-circle'
 });
-
+const unsupportedCodes=new Set(['UNSUPPORTED_COMPONENT','UNSUPPORTED_SCOPE',
+  'UNSUPPORTED_MODE','UNSUPPORTED_UNIT','UNSUPPORTED_POLICY']);
 export function problemCapabilities(){
   return {
     ...capabilities(),
     problemAuthoring:{
-      interfaceVersion:1,
-      command:'problem',
-      optInFlag:'--illustrate',
+      interfaceVersion:2,policyVersion:policy.version,
+      command:'problem',optInFlag:'--illustrate',
       choices:{
         'point-source.parameters.brightness':{
           value:policy.sourceBrightness,unit:'relative native brightness'
@@ -33,9 +31,11 @@ export function problemCapabilities(){
           condition:'only when emission is entirely omitted or empty'
         }
       },
-      statuses:['fully-specified','illustrative','needs-information','unsupported'],
-      policy:'Only opt-in illustration may fill the three listed fields. Other physical information, including coordinates, focal lengths, mirror/detector geometry and directional emission angles, is never inferred. All choices remain outside canonical scene JSON.',
-      interpretation:'not-assessed-by-engine'
+      statuses:['fully-specified','illustrative','needs-information','unsupported','invalid-input'],
+      policy:'Only explicit illustration opt-in may fill these three physical fields. Choices can alter ray paths, clipping and detector readings. They are not evidence about the question. Other physical information is never inferred.',
+      statusMeaning:'Preparation status only. Fully specified means the request is complete, not that it faithfully represents or answers the original problem.',
+      provenance:'proposedChoices lists options; appliedChoices lists only values incorporated in an accepted scene. Save the input, scene and report together.',
+      interpretation:'not-assessed-by-engine',questionSupport:'not-assessed-by-engine'
     }
   };
 }
@@ -48,27 +48,29 @@ function choicesFor(input,illustration){
     const p=component.parameters;
     if(!isObject(p))continue;
     const prefix='$.components['+i+']';
+    const choice=details=>choices.push({componentIndex:i,
+      componentId:typeof component.id==='string'?component.id:null,
+      physicalAssumption:true,...details});
     if(component.type==='point-source'){
       if(!has(p,'brightness')){
         const value=policy.sourceBrightness;
-        choices.push({path:prefix+'.parameters.brightness',value,
-          unit:'relative native brightness',purpose:'illustrative source sampling, not measured radiant power'});
+        choice({path:prefix+'.parameters.brightness',value,
+          unit:'relative native brightness',
+          purpose:'illustrative source strength, not measured radiant power'});
         if(illustration)p.brightness=value;
       }
       if(!has(component,'emission')||
         (isObject(component.emission)&&Object.keys(component.emission).length===0)){
-        choices.push({path:prefix+'.emission.mode',value:'full-circle',
+        choice({path:prefix+'.emission.mode',value:policy.unspecifiedSourceEmission,
           unit:'mode',purpose:'illustrative emitter; actual emission pattern was not specified'});
-        if(illustration)component.emission={mode:'full-circle'};
+        if(illustration)component.emission={mode:policy.unspecifiedSourceEmission};
       }
     }
     if(component.type==='ideal-lens'&&!has(p,'apertureHeight')){
-      // Use an absolute native length, not an arbitrary number of input units.
-      // If the length unit is unspecified, do not manufacture a conversion.
-      const scale=scales[input.lengthUnit];
+      const scale=typeof input.lengthUnit==='string'&&has(scales,input.lengthUnit)?scales[input.lengthUnit]:null;
       if(scale){
         const value=policy.lensApertureMm/scale;
-        choices.push({path:prefix+'.parameters.apertureHeight',value,
+        choice({path:prefix+'.parameters.apertureHeight',value,
           unit:input.lengthUnit,canonicalValueMm:policy.lensApertureMm,
           purpose:'illustrative finite aperture; rays and detector readings may depend on it'});
         if(illustration)p.apertureHeight=value;
@@ -77,32 +79,36 @@ function choicesFor(input,illustration){
   }
   return choices;
 }
-const unsupported=issues=>issues.some(x=>
-  ['UNSUPPORTED_COMPONENT','UNSUPPORTED_FIELD','UNSUPPORTED_SCOPE',
-    'UNSUPPORTED_MODE','UNSUPPORTED_UNIT','UNSUPPORTED_POLICY'].includes(x.code));
-
+function rejectedStatus(issues){
+  // Syntax/values are distinct from unavailable physics. Neither is concealed
+  // by an earlier missing field in a different component.
+  if(issues.some(x=>x.code!=='MISSING_VALUE'&&!unsupportedCodes.has(x.code)))return 'invalid-input';
+  return issues.some(x=>unsupportedCodes.has(x.code))?'unsupported':'needs-information';
+}
 export function resolveProblemRequest(request,{illustration=false}={}){
   if(typeof illustration!=='boolean')throw new AuthoringError([{
     path:'$.illustration',code:'INVALID_POLICY',message:'Illustration opt-in must be boolean'
   }]);
-  // Copy before applying any choices; the original LLM first attempt is immutable.
-  const candidate=structuredClone(request);
-  const choices=choicesFor(candidate,illustration);
+  const common={policyVersion:policy.version,
+    interpretation:'not-assessed-by-engine',physicalFidelity:'not-assessed-by-engine',
+    questionSupport:'not-assessed-by-engine'};
+  let candidate;
+  try{candidate=structuredClone(request);}
+  catch{return {...common,status:'invalid-input',choices:[],proposedChoices:[],
+    appliedChoices:[],prepared:null,issues:[{path:'$',code:'INVALID_INPUT',
+      message:'Expected cloneable JSON request data'}]};}
+  const proposedChoices=choicesFor(candidate,illustration);
   try{
     const prepared=prepareScene(candidate);
-    return {
-      status:choices.length?'illustrative':'fully-specified',
-      choices,issues:[],prepared,
-      interpretation:'not-assessed-by-engine',
-      physicalFidelity:'not-assessed-by-engine'
-    };
+    const appliedChoices=illustration?proposedChoices.map(c=>({...c,
+      componentId:prepared.document.physics.components[c.componentIndex].id})):[];
+    return {...common,status:appliedChoices.length?'illustrative':'fully-specified',
+      // Retained compatibility alias; new consumers must use the explicit names.
+      choices:proposedChoices,proposedChoices,appliedChoices,issues:[],prepared};
   }catch(error){
     if(!(error instanceof AuthoringError))throw error;
-    return {
-      status:unsupported(error.issues)?'unsupported':'needs-information',
-      choices,issues:error.issues,prepared:null,
-      interpretation:'not-assessed-by-engine',
-      physicalFidelity:'not-assessed-by-engine'
-    };
+    return {...common,status:rejectedStatus(error.issues),
+      choices:proposedChoices,proposedChoices,appliedChoices:[],
+      issues:error.issues,prepared:null};
   }
 }
