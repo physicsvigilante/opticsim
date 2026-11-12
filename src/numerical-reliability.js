@@ -7,6 +7,34 @@ export const NATIVE_REPLAY_MODES=Object.freeze({
   default:Object.freeze({nativeColorMode:'default',weakReflectedRayCutoff:0.01}),
   linear:Object.freeze({nativeColorMode:'linear',weakReflectedRayCutoff:0.000001})
 });
+function numericalTraceFindings(doc,trace){
+  const findings=[],interfaces=new Map(doc.physics.components
+    .filter(c=>c.type==='planar-interface').map(c=>[c.id,c.parameters]));
+  // Diagnostic tolerances do NOT decide physical intersections, refract rays,
+  // change solver precision or authorize requested measurements.
+  for(let i=1;i<trace.length;i++){
+    const prev=trace[i-1],next=trace[i],p=interfaces.get(next.interfaceId);
+    if(!p||prev.interfaceId!==next.interfaceId||next.incidentDistanceMm==null)continue;
+    const a=p.normalDeg*Math.PI/180,n={x:Math.cos(a),y:Math.sin(a)};
+    const d=prev.outgoingPrimaryDirection;
+    const projection=d?Math.abs(d.x*n.x+d.y*n.y):Infinity;
+    if(next.incidentDistanceMm<.001&&projection<1e-5){
+      findings.push({code:'NEAR_TANGENT_SAME_INTERFACE_REHIT',level:'diagnostic',
+        interfaceId:next.interfaceId,traceIndices:[i-1,i],
+        incidentDistanceMm:next.incidentDistanceMm,
+        precedingOutgoingNormalProjection:projection,
+        meaning:'The native ray re-intersected its previous boundary after a microscopic near-tangent step. This suggests a numerical grazing ambiguity, not a validated second physical event.'});
+      break;
+    }
+  }
+  const far=trace.findIndex(e=>e.incidentPoint&&
+    Math.max(Math.abs(e.incidentPoint.x),Math.abs(e.incidentPoint.y))>1e8);
+  if(far>=0)findings.push({code:'EXTREME_GRAZING_TRAVEL',level:'diagnostic',
+    traceIndex:far,interfaceId:trace[far].interfaceId,
+    incidentPoint:trace[far].incidentPoint,
+    meaning:'A native ray reached a boundary at extremely large coordinates. Infinite interfaces permit this, but the ray is numerically ill-conditioned for a bounded scene.'});
+  return findings;
+}
 export function nativeNumericalReplay(doc,core,mode='default'){
   validate(doc);
   if(!Object.hasOwn(NATIVE_REPLAY_MODES,mode))throw Error('Unsupported native numerical replay mode');
@@ -73,6 +101,7 @@ export function nativeNumericalReplay(doc,core,mode='default'){
     alteredNativeProperties:['colorMode'],
     canonicalDocument:structuredClone(doc),
     nativeSceneColorMode:nativeScene.colorMode??'default',
+    numericalFindings:numericalTraceFindings(doc,trace),
     status,complete,
     diagnostic:{
       nativeEvent:event,
