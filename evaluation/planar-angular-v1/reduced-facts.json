@@ -1,0 +1,107 @@
+{
+  "format": "opticsim-planar-angular-reduced-facts-evaluation-v1",
+  "context": "Derived from previously seen B05/B06 Problems, frozen before running this reduced-input correction. No new blind evaluation; no brightness or drawing distances specified.",
+  "cases": [
+    {
+      "id": "B05-analytic-only",
+      "input": {
+        "format": "opticsim-planar-angular-facts-v1",
+        "source": {
+          "id": "S1",
+          "region": 0
+        },
+        "interfaces": [
+          {
+            "id": "I12",
+            "negativeIndex": 1.6,
+            "positiveIndex": 1.8
+          },
+          {
+            "id": "I23",
+            "negativeIndex": 1.8,
+            "positiveIndex": 1.3
+          }
+        ]
+      },
+      "query": {
+        "format": "opticsim-planar-angle-query-v1",
+        "kind": "critical-input-angle",
+        "sourceId": "S1",
+        "boundaryId": "I23",
+        "approach": "positive",
+        "tangentSide": "negative"
+      }
+    },
+    {
+      "id": "B06-analytic-only",
+      "input": {
+        "format": "opticsim-planar-angular-facts-v1",
+        "source": {
+          "id": "S1",
+          "region": 3,
+          "incidentAngleDeg": 30,
+          "approach": "negative"
+        },
+        "interfaces": [
+          {
+            "id": "I34",
+            "negativeIndex": 1.45,
+            "positiveIndex": 1.32
+          },
+          {
+            "id": "I23",
+            "negativeIndex": 1.32,
+            "positiveIndex": 1.4
+          },
+          {
+            "id": "I12",
+            "negativeIndex": 1.4,
+            "positiveIndex": 1.3
+          },
+          {
+            "id": "I1A",
+            "negativeIndex": 1.3,
+            "positiveIndex": 1
+          }
+        ]
+      },
+      "query": {
+        "format": "opticsim-planar-angle-query-v1",
+        "kind": "branch-angles",
+        "sourceId": "S1",
+        "branches": [
+          {
+            "id": "theta4",
+            "events": [
+              {
+                "interfaceId": "I12",
+                "action": "transmit"
+              },
+              {
+                "interfaceId": "I23",
+                "action": "transmit"
+              },
+              {
+                "interfaceId": "I34",
+                "action": "transmit"
+              }
+            ]
+          },
+          {
+            "id": "theta5",
+            "events": [
+              {
+                "interfaceId": "I12",
+                "action": "reflect"
+              },
+              {
+                "interfaceId": "I1A",
+                "action": "transmit"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
