@@ -42,7 +42,7 @@ export function nativeNumericalReplay(doc,core,mode='default'){
     scope:'headless v5 native-planar diagnostic only; not canonical scene execution',
     alteredNativeProperties:['colorMode'],
     canonicalDocument:structuredClone(doc),
-    nativeSceneColorMode:nativeScene.colorMode,
+    nativeSceneColorMode:nativeScene.colorMode??'default',
     status,complete,
     diagnostic:{
       nativeEvent:event,
