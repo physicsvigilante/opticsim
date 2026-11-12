@@ -1,0 +1,33 @@
+name: Deterministic planar angular query checks
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  angular:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - run: npm test
+      - name: Execute original B05/B06 and independently chosen angular queries
+        run: node scripts/planar-angle-acceptance.mjs
+      - run: npm run build
+      - name: Confirm computed-field provenance in real browser import/edit/export/reopen
+        run: node scripts/planar-angle-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: planar-angular-query-evidence
+          path: |
+            test-artifacts/llm-authoring/planar-angle-acceptance/
+            test-artifacts/browser-planar-angular/
+          if-no-files-found: error
+          retention-days: 14

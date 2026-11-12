@@ -1,0 +1,180 @@
+{
+  "format": "opticsim-planar-angular-evaluation-v1",
+  "context": "B05/B06 queries refer to already reviewed original Problems and sealed original first requests. The additional synthetic reverse/branch cases are chosen before execution of this milestone's tests. Same-assistant development evidence, not blind independent scoring.",
+  "originalRequest": "evaluation/original-refraction-pair-v1/first-attempt.json",
+  "original": {
+    "B05": {
+      "format": "opticsim-planar-angle-query-v1",
+      "kind": "critical-input-angle",
+      "sourceId": "S1",
+      "boundaryId": "I23",
+      "approach": "positive",
+      "tangentSide": "negative"
+    },
+    "B06": {
+      "format": "opticsim-planar-angle-query-v1",
+      "kind": "branch-angles",
+      "sourceId": "S1",
+      "branches": [
+        {
+          "id": "theta4",
+          "events": [
+            {
+              "interfaceId": "I12",
+              "action": "transmit"
+            },
+            {
+              "interfaceId": "I23",
+              "action": "transmit"
+            },
+            {
+              "interfaceId": "I34",
+              "action": "transmit"
+            }
+          ]
+        },
+        {
+          "id": "theta5",
+          "events": [
+            {
+              "interfaceId": "I12",
+              "action": "reflect"
+            },
+            {
+              "interfaceId": "I1A",
+              "action": "transmit"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "synthetic": {
+    "reverseCritical": {
+      "request": {
+        "lengthUnit": "cm",
+        "title": "Independent reverse critical-angle constraint",
+        "components": [
+          {
+            "id": "S2",
+            "type": "point-source",
+            "parameters": {
+              "x": 20,
+              "y": 2,
+              "brightness": 1
+            },
+            "emission": {
+              "mode": "single-ray"
+            }
+          },
+          {
+            "id": "A",
+            "type": "planar-interface",
+            "parameters": {
+              "x": 0,
+              "y": 0,
+              "normalDeg": 0,
+              "negativeIndex": 1.1,
+              "positiveIndex": 1.6,
+              "partialReflection": true
+            }
+          },
+          {
+            "id": "B",
+            "type": "planar-interface",
+            "parameters": {
+              "x": 10,
+              "y": 0,
+              "normalDeg": 0,
+              "negativeIndex": 1.6,
+              "positiveIndex": 1.33,
+              "partialReflection": true
+            }
+          }
+        ]
+      },
+      "query": {
+        "format": "opticsim-planar-angle-query-v1",
+        "kind": "critical-input-angle",
+        "sourceId": "S2",
+        "boundaryId": "A",
+        "approach": "negative",
+        "tangentSide": "positive"
+      }
+    },
+    "middleBranches": {
+      "request": {
+        "lengthUnit": "cm",
+        "title": "Independent branches from middle material",
+        "components": [
+          {
+            "id": "S2",
+            "type": "point-source",
+            "parameters": {
+              "x": 5,
+              "y": 0,
+              "brightness": 1
+            },
+            "emission": {
+              "mode": "single-ray",
+              "directionDeg": 150
+            }
+          },
+          {
+            "id": "A",
+            "type": "planar-interface",
+            "parameters": {
+              "x": 0,
+              "y": 0,
+              "normalDeg": 0,
+              "negativeIndex": 1.2,
+              "positiveIndex": 1.6,
+              "partialReflection": true
+            }
+          },
+          {
+            "id": "B",
+            "type": "planar-interface",
+            "parameters": {
+              "x": 10,
+              "y": 0,
+              "normalDeg": 0,
+              "negativeIndex": 1.6,
+              "positiveIndex": 1.25,
+              "partialReflection": true
+            }
+          }
+        ]
+      },
+      "query": {
+        "format": "opticsim-planar-angle-query-v1",
+        "kind": "branch-angles",
+        "sourceId": "S2",
+        "branches": [
+          {
+            "id": "toward-left",
+            "events": [
+              {
+                "interfaceId": "A",
+                "action": "transmit"
+              }
+            ]
+          },
+          {
+            "id": "bounce-right",
+            "events": [
+              {
+                "interfaceId": "A",
+                "action": "reflect"
+              },
+              {
+                "interfaceId": "B",
+                "action": "transmit"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

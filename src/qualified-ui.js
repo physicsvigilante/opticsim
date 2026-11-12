@@ -38,6 +38,11 @@ export class QualifiedUI {
   commit(next){
     this.qualification=next.qualification;this.requests=next.requests;
     $('qualification-error').textContent='';this.refresh();
+    // Scene execution may have finished synchronously before its imported
+    // qualification was committed. Re-render scope labels without rerunning
+    // native physics so calculated results cannot appear contradicted by the
+    // general-image panel until the next physical edit.
+    if(this.qualification?.calculations?.length)this.session.changed(this.session);
   }
   async save(){
     const s=this.session;
@@ -84,11 +89,47 @@ export class QualifiedUI {
     $('qualification-note').textContent=info.text+' Native completion is not question correctness. Raw sandbox/native exports omit this history.';
     const lines=(info.assumptions||[]).map(a=>a.componentId+'.'+a.key+': assumed '+a.value+' '+a.unit+
       (a.changed?' -> currently '+a.current+' (edited)':'')+'. '+a.purpose);
+    for(const calc of info.calculated||[]){
+      lines.push('Calculated ('+calc.kind+', '+calc.status+'): '+calc.method+
+        '; query SHA-256 '+calc.querySha256+'. Ideal-model result, not native detection.');
+      const computed=calc.resultValue;
+      const historical=info.physicsEdited;
+      if(calc.kind==='critical-input-angle'&&computed){
+        if(Number.isFinite(computed.initialIncidenceAngleDeg))
+          lines.push((historical?'Historical calculated':'Calculated')+
+            ' initial incidence: '+computed.initialIncidenceAngleDeg+' degrees from normal.');
+        if(Number.isFinite(computed.criticalIncidenceAngleDeg))
+          lines.push('Calculated target critical incidence: '+computed.criticalIncidenceAngleDeg+
+            ' degrees from normal'+(historical?' (historical after physical edit)':'')+'.');
+      }
+      if(calc.kind==='branch-angles'){
+        for(const branch of computed?.branches||[]){
+          lines.push((historical?'Historical calculated':'Calculated')+' branch '+branch.id+
+            ': '+(Number.isFinite(branch.value?.exitAngleDeg)?
+              branch.value.exitAngleDeg+' degrees from normal':
+              branch.status+(branch.reasonCode?' ('+branch.reasonCode+')':''))+
+            (historical?' (physical scene since revised)':'')+'.');
+        }
+      }
+      for(const field of calc.computedFields){
+        lines.push('Derived '+field.componentId+'.'+field.section+'.'+field.key+
+          ': '+field.value+' '+field.unit+
+          (field.changed?' -> currently '+field.current+' (physically revised)':'')+
+          '. '+field.purpose);
+      }
+      for(const condition of calc.conditions)lines.push('Calculation condition: '+condition);
+    }
     for(const note of info.declaredAssumptions||[])lines.push('Author assumption: '+note);
     for(const unknown of info.unknowns||[])lines.push('Unresolved: '+unknown);
     if(info.requestedResult)lines.unshift('Requested question result: '+info.requestedResult);
     $('qualification-details').textContent=lines.join('\n');
-    if(!this.requests.length){$('fit-results').disabled=!['completed','completed-with-warnings'].includes(s.state);$('observable-results').textContent='No explicit result requests loaded. This view shows native tracing only.';return;}
+    if(!this.requests.length){
+      $('fit-results').disabled=!['completed','completed-with-warnings'].includes(s.state);
+      $('observable-results').textContent=(this.qualification?.calculations?.length?
+        'Conditional angular calculations are recorded in Qualification above (historical after physical edits). No native requested-result readouts are loaded. Native ray tracing and its completion status are separate.':
+        'No explicit result requests loaded. This view shows native tracing only.');
+      return;
+    }
     if(!s.document||!['completed','completed-with-warnings'].includes(s.state)){
       $('observable-results').textContent='Requested results suppressed until this revision completes.';return;
     }
