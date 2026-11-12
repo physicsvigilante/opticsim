@@ -1,0 +1,45 @@
+name: Unified problem workflow checks
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  unified:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - run: npm test
+      - name: Run five synthetic and existing integration controls
+        run: node scripts/unified-problem-acceptance.mjs
+      - name: Replay six sealed original-image first attempts without repairs
+        run: node scripts/unified-original-trial.mjs
+      - name: Preserve source fingerprints and separate review
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync,copyFileSync} from 'node:fs';
+          import {createHash} from 'node:crypto';
+          const out='test-artifacts/llm-authoring/unified-original-trial';
+          const files=['src/problem-workflow.js','scripts/run-problem.mjs','scripts/planar-angle-query.mjs','src/planar-angle-queries.js','src/adapter.js','src/observables.js','upstream-pin.json','dist/test-core.cjs'];
+          const hashes=Object.fromEntries(files.map(p=>[p,createHash('sha256').update(readFileSync(p)).digest('hex')]));
+          writeFileSync(out+'/execution-provenance.json',JSON.stringify({checkoutSha:process.env.GITHUB_SHA,runId:process.env.GITHUB_RUN_ID,node:process.version,sourceSha256:hashes},null,2)+'\n',{flag:'wx'});
+          copyFileSync('evaluation/unified-workflow-v1/REVIEW.md',out+'/REVIEW.md');
+          copyFileSync('docs/UNIFIED-PROBLEM-WORKFLOW.md',out+'/GUIDE.md');
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unified-workflow-evidence
+          path: |
+            test-artifacts/llm-authoring/unified-acceptance/
+            test-artifacts/llm-authoring/unified-original-trial/
+          if-no-files-found: error
+          retention-days: 14
