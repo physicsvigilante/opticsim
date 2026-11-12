@@ -10,16 +10,17 @@
 <label>Playback speed<select id="speed"><option value="0.1">0.1× (slow)</option><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1">1×</option></select></label>
 </section>
 <section class="choices"><label>Explicit mirror model<select id="example"><option value="ideal">Ideal Gaussian mirror</option><option value="circular">Circular mirror — paraxial image</option></select></label><span id="native-state" data-state="loading" role="status">Loading native core…</span><span id="sample">Frame —</span></section>
+<section class="camera-tools" aria-label="Camera controls"><label>Camera <select id="camera-mode"><option value="motion">Whole motion · include image</option><option value="frame">Current frame · include image</option><option value="apparatus">Apparatus close-up</option></select></label><span id="camera-note">Whole-motion view keeps a steady scale during playback.</span></section>
 <div class="views">
 <section class="panel"><div class="panel-heading"><div><span class="tag">NATIVE PHYDEMO</span><h2>Rays at this time</h2></div><span id="native-counts">No completed ray observations yet</span></div>
-<div id="native-stage"><canvas id="below"></canvas><canvas id="grid"></canvas><canvas id="light"></canvas><canvas id="above"></canvas></div>
-<p class="caption">Apparatus view. Only native ray paths are drawn here. Ray intersections and finite misses are selected by PhyDemo.</p></section>
+<div id="native-stage"><canvas id="below"></canvas><canvas id="grid"></canvas><canvas id="light"></canvas><canvas id="above"></canvas><canvas id="guides" aria-label="Calculated image guide, not native detection"></canvas></div>
+<p id="native-view-note" class="caption">Whole-motion view. Rays are native PhyDemo; the dashed image marker is a separate calculated guide, not detection.</p></section>
 <section class="panel"><div class="panel-heading"><div><span class="tag analytical">CONDITIONAL MATHEMATICS</span><h2>Object and image position</h2></div></div>
 <canvas id="image-plot" aria-label="Separate calculated object and image position diagram"></canvas>
 <p id="plot-note" class="caption">This point is calculated, not detected in the native rays. Axes are global x-right, y-up in centimetres.</p></section>
 </div>
 <section class="readouts"><article><h3>Object</h3><div id="object-value">—</div><p>Given initial position and velocity</p></article><article><h3>Conditional image</h3><div id="image-value">—</div><p id="image-model">—</p></article><article><h3>Instantaneous image velocity</h3><div id="velocity-value">—</div><p>Global x-right / y-up · cm/s</p></article></section>
 <p id="error" role="alert" hidden></p>
-<details open><summary>Assumptions, limits and provenance</summary><p id="assumptions">Loading…</p><p id="experiment-hash" class="hash"></p><p>Native completion is not image detection. The calculated image may be outside the fixed plot, at infinity, or numerically indeterminate. Circular-mirror rays may exhibit aberration; their single image prediction is paraxial. A stopped or failed native frame is never labelled complete.</p></details>
+<details open><summary>Assumptions, limits and provenance</summary><p id="assumptions">Loading…</p><p id="experiment-hash" class="hash"></p><p>Native completion is not image detection. The camera fits finite sampled image positions without changing physics. Infinite, indeterminate or extreme out-of-range positions have no finite guide. A dashed marker is an analytical guide, not a natively detected image. Circular-mirror rays may exhibit aberration; their single image prediction is paraxial. A stopped or failed native frame is never labelled complete.</p></details>
 <footer><button id="save-motion" disabled>Save experiment</button><button id="save-frame" disabled>Save current static scene</button><button id="save-report" disabled>Save frame evidence</button><span>Static scene export is one snapshot. The experiment file preserves the motion.</span></footer>
 </main><script src="motion.js"></script></body></html>
