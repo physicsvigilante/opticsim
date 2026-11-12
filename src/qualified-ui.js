@@ -3,7 +3,7 @@ import {parseSave,validate} from './contract.js';
 import {bundleFormat,parseQualifiedBundle,createQualifiedBundle,
   recordQualifiedEdit,qualificationSummary} from './qualification.js';
 import {evaluateObservables} from './observables.js';
-import {sceneHash} from './qualified-utils.js';
+import {sceneHash,canonicalJSON} from './qualified-utils.js';
 import {fitRequestedView,formatRequestedResult} from './result-preview.js';
 const $=id=>document.getElementById(id);
 export class QualifiedUI {
@@ -16,7 +16,7 @@ export class QualifiedUI {
       const tracked=this.prepare(doc);
       if(!this.session.apply(doc))return false;
       this.commit(tracked);$('zoom').value=doc.presentation.view.zoom;return true;
-    };this.currentResults=null;this.resultRevision=null;this.fitRevision=null;
+    };this.currentResults=null;this.resultRevision=null;this.fitState=null;this.fitSequence=0;
     this.session=session;this.download=download;this.qualification=null;this.requests=[];this.sequence=0;
     $('fit-results').onclick=()=>this.fit().catch(e=>{$('fit-note').textContent=e.message;});
     $('save-qualified').onclick=()=>this.save().catch(e=>{$('qualification-error').textContent=e.message;});
@@ -52,17 +52,30 @@ export class QualifiedUI {
     if(!s.document||!['completed','completed-with-warnings'].includes(s.state))throw Error('Fit requires a completed current run');
     if(this.requests.length&&this.resultRevision!==s.revision)throw Error('Requested results are not current yet');
     const revision=s.revision,width=canvas.width,height=canvas.height;
+    const sequence=++this.fitSequence;$('fit-results').disabled=true;
     const fitted=await fitRequestedView(s.document,this.currentResults,width,height);
     if(revision!==s.revision||width!==canvas.width||height!==canvas.height)throw Error('Scene or viewport changed during fit; retry on the current view');
     if(!this.applyView(fitted.document))throw Error('Presentation edit was not accepted');
-    this.fitRevision=s.revision;$('fit-note').textContent=fitted.note;
+    // The fit belongs to the exact document and viewport, not a run counter.
+    // Re-running the same scene (including a redundant UI refresh) is harmless;
+    // changed physics, view or dimensions invalidates this explanation below.
+    this.fitState={document:canonicalJSON(s.document),width,height,note:fitted.note};
+    $('fit-note').dataset.fitSequence=String(sequence);
+    $('fit-note').textContent=fitted.note;
   }
   refresh(){
     const s=this.session,sequence=++this.sequence;
     this.currentResults=null;this.resultRevision=null;
     delete $('observable-results').dataset.results;
     $('fit-results').disabled=true;
-    if(this.fitRevision!==s.revision)$('fit-note').textContent='';
+    if(this.fitState){
+      const same=s.document&&this.fitState.document===canonicalJSON(s.document)&&
+        this.fitState.width===$('light').width&&this.fitState.height===$('light').height;
+      if(!same||s.state==='invalid'){
+        this.fitState=null;$('fit-note').textContent='';
+        delete $('fit-note').dataset.fitSequence;
+      }else $('fit-note').textContent=this.fitState.note;
+    }
     $('save-qualified').disabled=!this.qualification||!s.document||s.state==='invalid';
     const info=s.document?qualificationSummary(s.document,this.qualification):{status:'unknown',text:'No accepted scene.'};
     if(s.state==='invalid'&&this.qualification){info.status='suspended';info.text='Current edit/import is invalid. Historical assumptions below belong to the last accepted scene, not a current result.';}
