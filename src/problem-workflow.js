@@ -2,12 +2,14 @@
 // native result gating stay in their existing implementations.
 import {problemCapabilities,resolveProblemRequest} from './problem-authoring.js';
 import {analyzePlanarAngleQuery,angularCapabilities,ANGLE_QUERY_FORMAT,ANGLE_FACTS_FORMAT} from './planar-angle-queries.js';
+import {analyzePlaneMirrorAngleQuery,mirrorAngularCapabilities,MIRROR_FACTS_FORMAT,MIRROR_QUERY_FORMAT} from './mirror-angle-queries.js';
 import {observableCapabilities,validateObservables} from './observables.js';
 import {validateInterpretation} from './qualification.js';
 import {canonicalJSON,isRecord,boundedText} from './qualified-utils.js';
 export const PROBLEM_FORMAT='opticsim-problem-v1';
 const own=(x,k)=>Object.hasOwn(x,k);
 const angularKinds=new Set(angularCapabilities().kinds);
+const mirrorKinds=new Set(mirrorAngularCapabilities().kinds);
 const observableKinds=observableCapabilities().kinds;
 const empty=(r,status,code,reason)=>({id:r.id,kind:r.kind,status,value:null,method:null,reasonCode:code,reason});
 export function problemWorkflowCapabilities(){
@@ -15,8 +17,9 @@ export function problemWorkflowCapabilities(){
     required:['format','physical','requests'],optional:['interpretation','illustration','verifyNative'],
     physical:'Existing minimal authoring request, existing reduced planar-angular facts, or null when unsupported. No new apparatus fields.',
     requestKinds:{...Object.fromEntries(angularCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:ANGLE_QUERY_FORMAT}])),
+      ...Object.fromEntries(mirrorAngularCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:MIRROR_QUERY_FORMAT}])),
       ...Object.fromEntries(Object.entries(observableKinds).map(([k,v])=>[k,{...v,route:k==='ideal-image'?'existing-analysis-with-native-gate':'native-observation'}]))},
-    authoring:problemCapabilities(),angular:angularCapabilities(),observables:observableCapabilities(),
+    authoring:problemCapabilities(),angular:angularCapabilities(),mirrorAngular:mirrorAngularCapabilities(),observables:observableCapabilities(),
     policy:'One request file; route by kind, never by answers or expected values. Unknown kinds remain unavailable. No physical repairs or method fallback. Angular-only requests do not trigger native work unless verifyNative is true. Interpretation remains author-provided and unverified.'};
 }
 function validateEnvelope(input){
@@ -31,7 +34,10 @@ function validateEnvelope(input){
     if(!isRecord(r))throw Error('Invalid requested quantity');
     boundedText(r.id,'Request ID',64);boundedText(r.kind,'Request kind',80);
     if(ids.has(r.id))throw Error('Duplicate request ID');ids.add(r.id);
-    if(angularKinds.has(r.kind)){
+    if(mirrorKinds.has(r.kind)){
+      const keys=['id','kind','referenceMirrorId','outgoingRelation','angleConvention'];
+      if(Object.keys(r).some(k=>!keys.includes(k)))throw Error('Unsupported plane-mirror analytical request field');
+    }else if(angularKinds.has(r.kind)){
       if(++angularCount>4)throw Error('At most four angular queries per problem');
       const keys=r.kind==='critical-input-angle'?['id','kind','sourceId','boundaryId','approach','tangentSide']:['id','kind','sourceId','branches'];
       if(Object.keys(r).some(k=>!keys.includes(k)))throw Error('Unsupported analytical request field');
@@ -46,13 +52,31 @@ export function planProblem(input){
   const nativeRequests=request.requests.filter(r=>own(observableKinds,r.kind));
   const needsNative=nativeRequests.length>0||request.verifyNative===true;
   let preparation=null,scene=null,sceneConflict=false;
-  if(physical&&physical.format!==ANGLE_FACTS_FORMAT){
+  if(physical&&physical.format!==ANGLE_FACTS_FORMAT&&physical.format!==MIRROR_FACTS_FORMAT){
     preparation=resolveProblemRequest(physical,{illustration:request.illustration===true});
     scene=preparation.prepared?.document??null;
   }
   const calculations=[],results=[];
   for(const r of request.requests){
-    if(angularKinds.has(r.kind)){
+    if(mirrorKinds.has(r.kind)){
+      if(!physical){
+        results.push(empty(r,'needs-information','NO_PHYSICAL_FACTS',
+          'The angular relation needs stated mirror inclinations and reflection order.'));continue;
+      }
+      try{
+        const {id,...fields}=r,query={format:MIRROR_QUERY_FORMAT,...fields};
+        const result=analyzePlaneMirrorAngleQuery(physical,query);
+        calculations.push({id,query,result});
+        results.push({id,kind:r.kind,status:result.status,value:result.value,
+          ...(result.status==='multiple-solutions'?{candidateIncidenceAnglesDeg:result.candidateIncidenceAnglesDeg}:{}),
+          method:result.method,reasonCode:result.reasonCode,assumptions:result.assumptions,
+          nativeObservation:false,limitations:result.limitations});
+      }catch(error){
+        const missing=/required|Invalid mirror angular query fields|Expected one|Unknown reference|undefined/i.test(error.message);
+        results.push(empty(r,missing?'needs-information':'invalid-input',
+          missing?'MISSING_MIRROR_ANGLE_FACTS':'INVALID_MIRROR_ANGLE_FACTS',error.message));
+      }
+    }else if(angularKinds.has(r.kind)){
       const {id,...rest}=r,query={format:ANGLE_QUERY_FORMAT,...rest};
       if(!physical){results.push(empty(r,'needs-information','NO_PHYSICAL_FACTS','No physical facts were supplied for this known calculation.'));continue;}
       let result;
