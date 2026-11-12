@@ -46,7 +46,7 @@ function checkResults(text,expected,structured){
   const blocks=text.split('\n\n');
   for(const r of expected){
     const block=blocks.find(b=>b.startsWith(r.id+' — '));assert.ok(block,'Missing result '+r.id);
-    assert.equal(block.split('\n')[0],r.id+' — '+r.status+'; '+r.method);
+    assert.equal(block.split('\n')[0],r.id+' — '+r.status+'; '+(r.method||'no method'));
     assert.equal(block,formatRequestedResult(r));
   }
 }
@@ -78,7 +78,7 @@ async function main(){
       const r=await cdp.send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});
       if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result?.value;
     };
-    const ui=()=>evaluate('({title:document.getElementById("title").textContent,state:document.getElementById("status").dataset.state,qualification:document.getElementById("qualification-status").dataset.state,results:document.getElementById("observable-results").textContent,structuredResults:JSON.parse(document.getElementById("observable-results").dataset.results||"null"),fitDisabled:document.getElementById("fit-results").disabled,fitNote:document.getElementById("fit-note").textContent,error:document.getElementById("error").textContent,disabled:document.getElementById("save-qualified").disabled,width:document.getElementById("light").width,height:document.getElementById("light").height})');
+    const ui=()=>evaluate('({title:document.getElementById("title").textContent,state:document.getElementById("status").dataset.state,qualification:document.getElementById("qualification-status").dataset.state,results:document.getElementById("observable-results").textContent,structuredResults:JSON.parse(document.getElementById("observable-results").dataset.results||"null"),fitDisabled:document.getElementById("fit-results").disabled,fitNote:document.getElementById("fit-note").textContent,fitSequence:document.getElementById("fit-note").dataset.fitSequence||null,error:document.getElementById("error").textContent,disabled:document.getElementById("save-qualified").disabled,width:document.getElementById("light").width,height:document.getElementById("light").height})');
     const upload=async path=>{
       const dom=await cdp.send('DOM.getDocument',{depth:-1});
       const input=await cdp.send('DOM.querySelector',{nodeId:dom.root.nodeId,selector:'#load'});
@@ -102,10 +102,12 @@ async function main(){
       return true;
     }
     async function fitAndCheck(id,phase,original,results,title,qualification,includeImage=true){
-      await until(ui,s=>!s.fitDisabled&&s.state==='completed','fit ready');
+      const beforeFit=await until(ui,s=>!s.fitDisabled&&s.state==='completed','fit ready');
       await evaluate('document.getElementById("fit-results").click()');
+      // Do not mistake the pre-click completed run for completion of async fit.
+      await until(ui,s=>s.fitSequence!==null&&s.fitSequence!==beforeFit.fitSequence&&
+        s.fitNote.includes('No physics or sampling changed'),'fit explanation');
       const fitted=await current(title,qualification,results);
-      await until(ui,s=>s.fitNote.includes('No physics or sampling changed'),'fit explanation');
       const directory=join(downloads,id,phase);await mkdir(directory,{recursive:true});
       await cdp.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:directory,eventsEnabled:true});
       await evaluate('document.getElementById("save-qualified").click()');

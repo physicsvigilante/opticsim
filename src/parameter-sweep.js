@@ -40,9 +40,10 @@ export function validateSweep(spec,baseline){
   return requests;
 }
 export async function runParameterSweep(bundle,spec,{execute,onSample=async()=>{}}={}){
+  // Snapshot both caller-owned inputs before the first async boundary.
+  // Verification and native execution may yield while a caller edits its inputs.
+  bundle=structuredClone(bundle);spec=structuredClone(spec);
   const baseline=await verifyQualifiedBundle(bundle);
-  // Copy caller data before any async hooks; no mutated specification mid-run.
-  spec=structuredClone(spec);
   const requests=validateSweep(spec,baseline);
   if(typeof execute!=='function')throw Error('Native execution function is required');
   const report={format:'opticsim-sweep-report-v1',baselineSceneSha256:baseline.sceneSha256,
