@@ -27,7 +27,7 @@ function chrome(){
 async function port(){
  const s=createServer();
  await new Promise((ok,err)=>s.once('error',err).listen(0,'127.0.0.1',ok));
- const p=s.address().port;await new Promise((ok,err)=>s.close(err?err:ok));return p;
+ const p=s.address().port;await new Promise((ok,err)=>s.close(e=>e?err(e):ok()));return p;
 }
 async function connect(url){
  const ws=new WebSocket(url),pending=new Map();let n=0;
