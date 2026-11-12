@@ -22,6 +22,36 @@ export function nativeNumericalReplay(doc,core,mode='default'){
   const mirror=core.observeMirrorSet(doc,loaded.scene,loaded.idMap);
   const detector=core.observeDetectorSet(doc,loaded.scene,loaded.idMap);
   const interfaces=core.observeInterfaceSet(doc,loaded.scene,loaded.idMap);
+  // Bounded, read-only native incident trace to localize exact-critical
+  // numerical loops. No source attribution, ray reinsertion or path steering.
+  const trace=[],traceLimit=32;let tracedEvents=0;
+  const dir=ray=>{
+    if(!ray?.p1||!ray?.p2)return null;
+    const x=ray.p2.x-ray.p1.x,y=-(ray.p2.y-ray.p1.y),len=Math.hypot(x,y);
+    return len>0&&Number.isFinite(len)?{x:x/len,y:y/len}:null;
+  };
+  const point=p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y)?{x:p.x,y:-p.y}:null;
+  for(const component of doc.physics.components.filter(c=>c.type==='planar-interface')){
+    const obj=loaded.scene.objs[loaded.idMap.get(component.id)],originalIncident=obj.onRayIncident;
+    obj.onRayIncident=function(...args){
+      const ray=args[0],hit=args[2],incident=dir(ray),start=point(ray.p1),location=point(hit),depth=ray.depth;
+      const distance=location&&start?Math.hypot(location.x-start.x,location.y-start.y):null;
+      // The prior observer and the pinned native interaction are invoked only
+      // once, with the same arguments, return value and mutated ray.
+      const outcome=originalIncident.apply(this,args);
+      tracedEvents++;
+      if(trace.length<traceLimit)trace.push({
+        interfaceId:component.id,rayIndex:args[1],depth:depth??null,
+        rayStart:start,incidentPoint:location,incidentDistanceMm:distance,
+        incomingDirection:incident,outgoingPrimaryDirection:dir(ray),
+        newRayCount:outcome?.newRays?.length??0,
+        truncation:outcome?.truncation??0,
+        absorbed:!!outcome?.isAbsorbed,undefinedBehavior:!!outcome?.isUndefinedBehavior,
+        nativeReturnedUndefined:outcome===undefined
+      });
+      return outcome;
+    };
+  }
   const simulator=new core.Simulator(loaded.scene,null,null,null,null,null,false,
     doc.simulation.processedRayLimit);
   let event=null;
@@ -48,7 +78,10 @@ export function nativeNumericalReplay(doc,core,mode='default'){
       nativeEvent:event,
       // These MAY be partial! Never expose as requested final measurements
       // without completion and current matching native execution evidence.
-      ...diagnostics
+      ...diagnostics,
+      interactionTrace:{coordinateConvention:'x-right-y-up',maxEvents:traceLimit,
+        totalEvents:tracedEvents,eventsOmitted:tracedEvents-trace.length,
+        entries:trace}
     },
     observations:complete?{
       emissionsById:diagnostics.emissionsById,
