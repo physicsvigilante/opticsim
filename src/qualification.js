@@ -49,6 +49,44 @@ function validateQualification(q){
     for(const key of ['componentId','key','unit','purpose'])boundedText(a[key],'Assumption '+key);
     if(!['string','number'].includes(typeof a.value)||typeof a.value==='number'&&!Number.isFinite(a.value))throw Error('Invalid assumption value');
   }
+  // An optional bounded, structured derivation record travels with the normal
+  // hash-bound qualified scene. Old packages without calculations stay valid.
+  if(q.calculations!==undefined){
+    if(!Array.isArray(q.calculations)||q.calculations.length<1||q.calculations.length>4)
+      throw Error('Expected one to four bounded calculation provenance entries');
+    for(const c of q.calculations){
+      if(!isRecord(c)||Object.keys(c).some(k=>![
+        'format','inputSha256','querySha256','sourceRequest','query','method',
+        'kind','status','resultValue','computedFields','conditions'
+      ].includes(k))||c.format!=='opticsim-qualified-calculation-v1')
+        throw Error('Invalid calculated-value provenance');
+      if(!hashPattern.test(c.inputSha256||'')||!hashPattern.test(c.querySha256||''))
+        throw Error('Calculation source/query hashes must be SHA-256');
+      if(c.inputSha256!==q.origin.inputSha256)
+        throw Error('Calculation original-input hash must match qualification origin');
+      if(c.method!=='conditional-analytical'||
+         !['critical-input-angle','branch-angles'].includes(c.kind)||
+         !['conditional','unavailable','partially-unavailable',
+           'numerically-indeterminate','partially-indeterminate'].includes(c.status))
+        throw Error('Unsupported calculation method or status');
+      if(!isRecord(c.query)||c.query.kind!==c.kind||!isRecord(c.sourceRequest))
+        throw Error('Calculation must preserve the original physical request and typed query');
+      if(!Array.isArray(c.computedFields)||c.computedFields.length>8)
+        throw Error('Calculated fields must be a bounded array');
+      if(!Array.isArray(c.conditions)||c.conditions.length>16)
+        throw Error('Calculation conditions must be bounded');
+      for(const note of c.conditions)boundedText(note,'Calculation condition');
+      for(const field of c.computedFields){
+        if(!isRecord(field)||Object.keys(field).some(k=>!['componentId','section','key','value','unit','purpose'].includes(k))||
+           field.section!=='emission'||field.key!=='directionDeg'||field.unit!=='degrees'||
+           typeof field.value!=='number'||!Number.isFinite(field.value))
+          throw Error('Invalid computed physical-field record');
+        boundedText(field.componentId,'Computed field component ID',64);
+        boundedText(field.purpose,'Computed field purpose');
+      }
+      if(canonicalJSON(c).length>60000)throw Error('Calculation provenance exceeds per-entry bound');
+    }
+  }
   for(const e of q.edits){
     if(!isRecord(e)||!['physics','numerics','presentation'].includes(e.kind)||!Array.isArray(e.changes)||e.changes.length>128)throw Error('Invalid edit history');
     for(const c of e.changes){
@@ -88,13 +126,22 @@ export function qualificationSummary(doc,q){
     return {...a,current:current??null,changed:current!==a.value};
   });
   const physicsEdited=q.edits.some(e=>e.kind==='physics');
-  const status=physicsEdited?'revised':q.origin.preparationStatus;
-  return {status,assumptions,physicsEdited,editCount:q.edits.length,
+  const calculated=(q.calculations||[]).map(c=>({
+    kind:c.kind,method:c.method,status:c.status,querySha256:c.querySha256,
+    computedFields:c.computedFields.map(f=>{
+      const current=doc.physics.components.find(x=>x.id===f.componentId)?.[f.section]?.[f.key];
+      return {...f,current:current??null,changed:current!==f.value};
+    }),
+    conditions:c.conditions
+  }));
+  const status=physicsEdited?'revised':calculated.length?'calculated':q.origin.preparationStatus;
+  return {status,assumptions,calculated,physicsEdited,editCount:q.edits.length,
     declaredAssumptions:q.interpretation?.assumptions||[],
     unknowns:q.interpretation?.unknowns||[],requestedResult:q.interpretation?.requestedResult||null,
     text:'Origin: '+q.origin.preparationStatus+'. '+assumptions.length+' policy assumptions; '+
+      calculated.length+' attached conditional calculations; '+
       (q.interpretation?.assumptions?.length||0)+' author-declared assumptions. '+q.edits.length+
-      ' recorded edits. Author notes are unverified; completeness is not physical fidelity.'};
+      ' recorded edits. Author notes and calculation provenance are not independent confirmation of source-question correctness.'};
 }
 export async function createQualifiedBundle(doc,qualification,observables=[]){
   validate(doc);validateQualification(qualification);validateObservables(observables);
