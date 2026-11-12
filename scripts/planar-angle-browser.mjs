@@ -61,7 +61,7 @@ async function main(){
     const r=await cdp.send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});
     if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result?.value;
   };
-  const state=()=>evaluate('({native:document.getElementById("status").dataset.state,qualification:document.getElementById("qualification-status").dataset.state,details:document.getElementById("qualification-details").textContent,prediction:document.getElementById("prediction").textContent,analysisStatus:document.getElementById("analysis-status").textContent,saveDisabled:document.getElementById("save-qualified").disabled})');
+  const state=()=>evaluate('({title:document.getElementById("title").textContent,native:document.getElementById("status").dataset.state,qualification:document.getElementById("qualification-status").dataset.state,details:document.getElementById("qualification-details").textContent,prediction:document.getElementById("prediction").textContent,analysisStatus:document.getElementById("analysis-status").textContent,saveDisabled:document.getElementById("save-qualified").disabled})');
   const upload=async filepath=>{
     const dom=await cdp.send('DOM.getDocument',{depth:-1});
     const input=await cdp.send('DOM.querySelector',{nodeId:dom.root.nodeId,selector:'#load'});
@@ -82,6 +82,8 @@ async function main(){
   assert.match(s.details,/query SHA-256/);assert.equal(s.saveDisabled,false);
   assert.match(s.details,/Calculated initial incidence: 54\.3409/);
   assert.match(s.prediction,/separate conditional angular calculation/);
+  assert.match(s.title,/Critical-angle forward proposal/);
+  assert.doesNotMatch(s.title,/unresolved/);
   assert.match(s.analysisStatus,/General image analysis:/);
   assert.doesNotMatch(s.prediction,/Prediction unavailable/);
   check('B05 calculated direction and query provenance remain visible despite incomplete native ray tracing');
