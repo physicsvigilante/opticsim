@@ -188,6 +188,12 @@ function solveCritical(request,query,l){
     derived.components.find(c=>c.id===query.sourceId).emission.directionDeg=sourceDirectionDeg;
     // Validation is strict only when a forward scene is explicitly possible.
     prepared=prepareScene(derived);
+    // The original title may correctly say "input unresolved". This is now a
+    // derived FORWARD proposal: label only its presentation, never the original
+    // request or the computed physical parameter.
+    prepared.document.presentation.title=
+      ('Critical-angle forward proposal — '+query.boundaryId+
+       ' (calculated '+query.sourceId+' direction)').slice(0,120);
   }
   return {...base(query.kind),status:'conditional',
     value:{initialIncidenceAngleDeg:initialAngle,criticalIncidenceAngleDeg:criticalAngle,
