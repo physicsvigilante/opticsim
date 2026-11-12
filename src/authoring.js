@@ -1,6 +1,7 @@
 // Small LLM authoring view over the EXISTING strict opticsim scene contract.
 // Interpret/choose physics outside this module. No new ray tracing, geometry DSL,
 // physical parameter guessing, implicit native JSON or network service.
+import {isCurved,curvedPoints} from './curved-mirrors.js';
 import {validate,UPSTREAM,SAMPLING_PRESETS,COMPONENT_TYPES,componentParameterNames,
   GENERAL_SCOPE,COMPONENT_BOUNDS,LENGTH_PARAMETERS,mirrorEndpoints} from './contract.js';
 
@@ -10,7 +11,7 @@ const policies=Object.freeze({
   'dense-v1':Object.freeze({rayDensity:SAMPLING_PRESETS.dense,maxRayDepth:8,processedRayLimit:10000})
 });
 const prefixes=Object.freeze({
-  'point-source':'source','ideal-lens':'lens','plane-mirror':'mirror','ray-detector':'detector','planar-interface':'interface'
+  'point-source':'source','ideal-lens':'lens','plane-mirror':'mirror','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror'
 });
 const lengthKeys=new Set(LENGTH_PARAMETERS);
 const own=(value,key)=>Object.prototype.hasOwnProperty.call(value,key);
@@ -51,6 +52,7 @@ export class AuthoringError extends Error {
 export function capabilities() {
   return {
     interfaceVersion:1,canonicalFormat:'ray-optics-2d',schemaVersion:4,
+    curvedMirrors:{schemaVersion:6,model:'curved-mirror-tracing',scope:'1–2 ideal/circular-arc mirrors; 1–4 sources; 0–2 plane mirrors and detectors; disjoint aperture disks; no lenses or refraction',normal:'Front-facing normal; f>0 or radius>0 means concave toward front; all dimensions explicit'},
     planarMedia:{schemaVersion:5,model:'planar-media-tracing',interfaces:'1–4 parallel consistently oriented planes; matching adjacent indices',sources:'1–4 single-ray emitters',lenses:'unsupported',indices:'absolute positive indices [1,4], normalized as native ratios',partialReflection:'required boolean; false explicitly neglects Fresnel partial reflection, not TIR'},
     model:'general-component-tracing',nativeUpstreamCommit:UPSTREAM,
     lengthUnits:Object.keys(lengthScales),coordinates:'x-right-y-up',
@@ -59,6 +61,7 @@ export function capabilities() {
       parameters:componentParameterNames(type),
       ...(type==='planar-interface'?{booleanParameters:['partialReflection'],nativeType:'PlaneGlass',normal:'negative to positive side; degrees CCW in y-up'}:{}),
       counts:{...GENERAL_SCOPE[type]},
+      ...(isCurved(type)?{nativeType:type==='ideal-curved-mirror'?'IdealMirror':'ArcMirror',model:type==='ideal-curved-mirror'?'ideal Gaussian mapping':'native circular local-normal reflection; analytical image is paraxial'}:{}),
       ...(type==='point-source'?{emission:{mode:['full-circle','directional'],
         directionalFields:['directionDeg','angleDeg'],planarOnlyMode:'single-ray',singleRayFields:['directionDeg']}}:{})
     }])),
@@ -110,7 +113,8 @@ export function inspectAuthoringRequest(request){
       key==='angleDeg'?b.openingAngleDeg:
       ['length','apertureHeight'].includes(key)?b.positiveLengthMm:b.coordinateMm;
     if(!Number.isFinite(n)||n<bounds[0]||n>bounds[1]||
-      (key==='focalLength'&&Math.abs(n)<b.minimumAbsFocalLengthMm))
+      (key==='focalLength'&&Math.abs(n)<b.minimumAbsFocalLengthMm)||
+      (key==='radius'&&Math.abs(n)<2))
       issues.push(issue(path,'INVALID_INPUT','Value is outside the live contract bounds'+
         (lengthKeys.has(key)?' after conversion to mm':'')));
   };
@@ -155,6 +159,7 @@ function camera(components) {
   for(const c of components) {
     const p=c.parameters;
     if(c.type==='point-source')vertices.push({x:p.x,y:p.y});
+    else if(isCurved(c.type))vertices.push(...curvedPoints(c));
     else if(c.type==='ideal-lens')vertices.push({x:p.x,y:-p.apertureHeight/2},
       {x:p.x,y:p.apertureHeight/2});
     else if(c.type==='planar-interface')vertices.push({x:p.x,y:p.y});
@@ -192,11 +197,11 @@ export function prepareScene(request) {
     }
     return result;
   });
-  const planar=components.some(c=>c.type==='planar-interface');
+  const planar=components.some(c=>c.type==='planar-interface'),curved=components.some(c=>isCurved(c.type));
   const doc={
-    format:'ray-optics-2d',schemaVersion:planar?5:4,adapterVersion:planar?5:4,upstreamCommit:UPSTREAM,
+    format:'ray-optics-2d',schemaVersion:curved?6:planar?5:4,adapterVersion:curved?6:planar?5:4,upstreamCommit:UPSTREAM,
     physics:{lengthUnit:'mm',coordinates:'x-right-y-up',
-      model:planar?'planar-media-tracing':'general-component-tracing',components},
+      model:curved?'curved-mirror-tracing':planar?'planar-media-tracing':'general-component-tracing',components},
     presentation:{title,view:camera(components),mode:'rays',grid:false},
     simulation:{...policies[policyName]}
   };
@@ -242,7 +247,7 @@ export function reviseScene(document,patch){
     if(seen.has(identity)){issues.push(issue(path,'DUPLICATE_CHANGE','Update a field only once per revision'));continue;}
     seen.add(identity);
     if(change.section==='emission'&&change.key==='mode'){
-      if(own(change,'unit')||!(document.schemaVersion===5?['single-ray']:['full-circle','directional']).includes(change.value))
+      if(own(change,'unit')||!(document.schemaVersion===6?['single-ray','full-circle','directional']:document.schemaVersion===5?['single-ray']:['full-circle','directional']).includes(change.value))
         issues.push(issue(path+'.value','INVALID_MODE','Expected full-circle or directional without units'));
       else component.emission.mode=change.value;
       continue;

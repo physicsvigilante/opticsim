@@ -111,6 +111,13 @@ export class QualifiedUI {
             (historical?' (physical scene since revised)':'')+'.');
         }
       }
+      if(calc.kind.startsWith('curved-mirror-')&&computed){
+        lines.push((historical?'Historical ':'')+'Curved mirror image: '+computed.imageKind+
+          '; v = '+computed.imageDistance+' '+computed.lengthUnit+'; m = '+computed.magnification+'.');
+        if(computed.imageHeight!==null)lines.push('Calculated image height: '+computed.imageHeight+' '+computed.lengthUnit+'.');
+        if(computed.velocity)lines.push('Calculated image velocity: axial '+computed.velocity.axial+
+          ', transverse '+computed.velocity.transverse+' '+computed.velocityUnit+'. '+computed.axes);
+      }
       for(const field of calc.computedFields){
         lines.push('Derived '+field.componentId+'.'+field.section+'.'+field.key+
           ': '+field.value+' '+field.unit+
@@ -150,7 +157,7 @@ export class QualifiedUI {
         $('prediction-note').textContent='The general scene does not assert a unique optical route. The requested analytical result uses a validated restricted model and its stated illumination/route conditions; it is not a native image detection.';
       }
     })().catch(error=>{
-      if(sequence===this.sequence&&revision===s.revision)$('observable-results').textContent='Requested results unavailable: '+error.message;
+      if(sequence===this.sequence||revision===s.revision)$('observable-results').textContent='Requested results unavailable: '+error.message;
     });
   }
 }

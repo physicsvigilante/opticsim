@@ -65,7 +65,7 @@ function validateQualification(q){
       if(c.inputSha256!==q.origin.inputSha256)
         throw Error('Calculation original-input hash must match qualification origin');
       if(c.method!=='conditional-analytical'||
-         !['critical-input-angle','branch-angles'].includes(c.kind)||
+         !['critical-input-angle','branch-angles','curved-mirror-image','curved-mirror-image-velocity'].includes(c.kind)||
          !['conditional','unavailable','partially-unavailable',
            'numerically-indeterminate','partially-indeterminate'].includes(c.status))
         throw Error('Unsupported calculation method or status');
