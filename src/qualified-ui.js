@@ -1,0 +1,74 @@
+// UI adapter for qualified packages. Imports are untrusted data; render text only.
+import {parseSave,validate} from './contract.js';
+import {bundleFormat,parseQualifiedBundle,createQualifiedBundle,
+  recordQualifiedEdit,qualificationSummary} from './qualification.js';
+import {evaluateObservables} from './observables.js';
+import {sceneHash} from './qualified-utils.js';
+const $=id=>document.getElementById(id);
+export class QualifiedUI {
+  constructor(session,download){
+    this.session=session;this.download=download;this.qualification=null;this.requests=[];this.sequence=0;
+    $('save-qualified').onclick=()=>this.save().catch(e=>{$('qualification-error').textContent=e.message;});
+  }
+  async read(text){
+    const parsed=JSON.parse(text);
+    if(parsed.format===bundleFormat){
+      const bundle=await parseQualifiedBundle(text);
+      return {document:bundle.scene,qualification:bundle.qualification,requests:bundle.observables};
+    }
+    return {document:parseSave(text),qualification:null,requests:[]};
+  }
+  prepare(doc,imported){
+    validate(doc);
+    if(imported!==undefined)return {qualification:imported.qualification,requests:imported.requests};
+    return {qualification:this.qualification&&this.session.document?
+      recordQualifiedEdit(this.session.document,doc,this.qualification):null,requests:this.requests};
+  }
+  commit(next){
+    this.qualification=next.qualification;this.requests=next.requests;
+    $('qualification-error').textContent='';this.refresh();
+  }
+  async save(){
+    const s=this.session;
+    if(!this.qualification||!s.document||s.state==='invalid')throw Error('No accepted qualified scene is available');
+    const revision=s.revision,doc=structuredClone(s.document),q=structuredClone(this.qualification),requests=structuredClone(this.requests);
+    const bundle=await createQualifiedBundle(doc,q,requests);
+    if(revision!==s.revision)throw Error('Scene changed during export; export the current revision again');
+    this.download(JSON.stringify(bundle,null,2)+'\n','scene.qualified.json');
+  }
+  refresh(){
+    const s=this.session,sequence=++this.sequence;
+    $('save-qualified').disabled=!this.qualification||!s.document||s.state==='invalid';
+    const info=s.document?qualificationSummary(s.document,this.qualification):{status:'unknown',text:'No accepted scene.'};
+    if(s.state==='invalid'&&this.qualification){info.status='suspended';info.text='Current edit/import is invalid. Historical assumptions below belong to the last accepted scene, not a current result.';}
+    $('qualification-status').textContent='Qualification: '+info.status;
+    $('qualification-status').dataset.state=info.status;
+    $('qualification-note').textContent=info.text+' Native completion is not question correctness. Raw sandbox/native exports omit this history.';
+    const lines=(info.assumptions||[]).map(a=>a.componentId+'.'+a.key+': assumed '+a.value+' '+a.unit+
+      (a.changed?' -> currently '+a.current+' (edited)':'')+'. '+a.purpose);
+    for(const note of info.declaredAssumptions||[])lines.push('Author assumption: '+note);
+    for(const unknown of info.unknowns||[])lines.push('Unresolved: '+unknown);
+    if(info.requestedResult)lines.unshift('Requested question result: '+info.requestedResult);
+    $('qualification-details').textContent=lines.join('\n');
+    if(!this.requests.length){$('observable-results').textContent='No explicit result requests loaded. This view shows native tracing only.';return;}
+    if(!s.document||!['completed','completed-with-warnings'].includes(s.state)){
+      $('observable-results').textContent='Requested results suppressed until this revision completes.';return;
+    }
+    const revision=s.revision,doc=structuredClone(s.document),data=structuredClone(s.data),requests=structuredClone(this.requests),status=s.state;
+    $('observable-results').textContent='Checking results for this revision…';
+    (async()=>{
+      const execution={canonicalSha256:await sceneHash(doc),executionPassed:true,
+        native:{status,warnings:data?.warnings||[]},observations:{
+          emissionsById:data?.emissionsById,reflectionsById:data?.reflectionsById,detectorsById:data?.detectorsById}};
+      const results=await evaluateObservables(doc,requests,execution);
+      if(sequence!==this.sequence||revision!==s.revision)return;
+      $('observable-results').textContent=results.results.map(r=>
+        r.id+' — '+r.status+'; '+(r.method||'no method')+'\n'+
+        (r.reason||JSON.stringify(r.value))+(r.unit?'\nUnits: '+r.unit:'')+
+        (r.assumptions?'\nConditions: '+r.assumptions.join(' '):'')+
+        (r.warnings?.length?'\nWarnings: '+r.warnings.join(' '):'')).join('\n\n');
+    })().catch(error=>{
+      if(sequence===this.sequence&&revision===s.revision)$('observable-results').textContent='Requested results unavailable: '+error.message;
+    });
+  }
+}

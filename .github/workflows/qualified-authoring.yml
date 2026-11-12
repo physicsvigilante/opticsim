@@ -1,0 +1,37 @@
+name: Qualified authoring checks
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualified:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - run: npm test
+      - run: npm run build
+      - name: Qualified create/revise and evidence guards
+        run: node scripts/qualified-workflow-acceptance.mjs
+      - name: Replay sealed five-problem development attempt (not a model benchmark)
+        run: node scripts/five-problem-trial.mjs
+      - name: Browser qualification import, edits, results and export
+        run: node scripts/qualified-browser-acceptance.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qualified-authoring-evidence
+          path: |
+            test-artifacts/qualified-workflow/
+            test-artifacts/llm-authoring/
+            test-artifacts/browser-qualified/
+          if-no-files-found: error
+          retention-days: 14

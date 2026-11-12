@@ -17,3 +17,10 @@
 .example-link-note{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:12px;margin:10px 0 0}
 .example-link-note a{font-weight:600}
 .example-link-note .muted{margin:0}
+
+.qualification-panel { margin: 1rem 0; padding: .85rem; border: 1px solid #b7c9da; border-radius: .5rem; }
+.qualification-panel h2 { font-size: 1rem; margin-top: 0; }
+.qualification-panel h3 { font-size: .9rem; }
+.qualification-panel p, .qualification-panel pre { font-size: .8rem; line-height: 1.45; }
+.qualification-panel pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 20rem; overflow-y: auto; }
+#qualification-error { color: #a82525; }
