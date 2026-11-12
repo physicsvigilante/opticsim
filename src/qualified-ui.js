@@ -38,6 +38,11 @@ export class QualifiedUI {
   commit(next){
     this.qualification=next.qualification;this.requests=next.requests;
     $('qualification-error').textContent='';this.refresh();
+    // Scene execution may have finished synchronously before its imported
+    // qualification was committed. Re-render scope labels without rerunning
+    // native physics so calculated results cannot appear contradicted by the
+    // general-image panel until the next physical edit.
+    if(this.qualification?.calculations?.length)this.session.changed(this.session);
   }
   async save(){
     const s=this.session;
