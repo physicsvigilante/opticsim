@@ -34,7 +34,7 @@ export function nativeNumericalReplay(doc,core,mode='default'){
   const complete=['completed','completed-with-warnings'].includes(status);
   if(serializeSave(doc)!==original)throw Error('Numerical replay mutated the canonical scene');
   const nativeScene=JSON.parse(loaded.scene.toJSON());
-  if(nativeScene.colorMode!==mode)throw Error('Native replay mode did not survive serialization');
+  if((nativeScene.colorMode??'default')!==mode)throw Error('Native replay mode did not survive serialization');
   return {
     format:'opticsim-native-numerical-replay-v1',
     mode,upstreamColorMode:mode,
