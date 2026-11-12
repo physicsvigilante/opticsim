@@ -1,0 +1,62 @@
+name: Independent opticsim model evaluation (manual opt-in)
+# Never runs on push or pull request. Requires a private model API key,
+# explicit external-data approval, and a reviewed version on main.
+on:
+  workflow_dispatch:
+    inputs:
+      model_id:
+        description: 'OpenAI-compatible chat-completions model ID; must support JSON and PNG vision'
+        type: string
+        required: true
+      authoring_cases:
+        description: 'First N synthetic authoring prompts (0 to 10)'
+        type: choice
+        options: ['1','3','5','10','0']
+        default: '1'
+      image_cases:
+        description: 'First N original JEE problem PNGs (0 to 9); sends images externally'
+        type: choice
+        options: ['1','3','5','9','0']
+        default: '1'
+      external_transfer_approved:
+        description: 'Explicitly approve sending selected private prompts/images to the configured model provider'
+        type: choice
+        options:
+          - do-not-send
+          - approved
+        default: do-not-send
+permissions:
+  contents: read
+jobs:
+  independent-evaluation:
+    if: ${{ github.ref == 'refs/heads/main' && inputs.external_transfer_approved == 'approved' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - name: Install only pinned PhyDemo native dependencies
+        run: npm run setup
+      - name: Build headless native core for separate post-inference scoring
+        run: node scripts/build.mjs --test
+      - name: Query independent model ONCE per selected case
+        env:
+          OPTICSIM_MODEL_API_KEY: ${{ secrets.OPTICSIM_MODEL_API_KEY }}
+          OPTICSIM_MODEL_ID: ${{ inputs.model_id }}
+          OPTICSIM_MODEL_API_URL: ${{ vars.OPTICSIM_MODEL_API_URL || 'https://api.openai.com/v1/chat/completions' }}
+          OPTICSIM_MODEL_ALLOWED_ORIGIN: ${{ vars.OPTICSIM_MODEL_ALLOWED_ORIGIN || 'https://api.openai.com' }}
+          OPTICSIM_MAX_AUTHORING: ${{ inputs.authoring_cases }}
+          OPTICSIM_MAX_CORPUS: ${{ inputs.image_cases }}
+          OPTICSIM_EXTERNAL_DATA_APPROVED: 'yes'
+        run: node evaluation/llm-pilot-v1/run-independent.mjs
+      - name: Score after first attempts are captured
+        run: node evaluation/llm-pilot-v1/score.mjs test-artifacts/llm-evaluation/independent/submission.json --report test-artifacts/llm-evaluation/independent/score.json
+      - name: Upload private model output and score for separate review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-model-evaluation
+          path: test-artifacts/llm-evaluation/independent/
+          if-no-files-found: ignore
