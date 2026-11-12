@@ -22,7 +22,11 @@ function asinAngle(s){
   if(!Number.isFinite(s)||s<0||s>1+2e-12)return null;
   return Math.asin(Math.min(1,s))/RAD;
 }
-function invalid(reason){return {status:'unavailable',value:null,reason};}
+function invalid(reason,reasonCode='UNAVAILABLE'){return {status:'unavailable',value:null,reason,reasonCode};}
+function uncertain(reason,reasonCode='NEAR_CRITICAL_NUMERIC'){return {status:'numerically-indeterminate',value:null,reason,reasonCode};}
+// Distinguish physical branch absence from floating-point uncertainty. The
+// uncertainty band is not a claim that every nearby value is exactly critical.
+const CRITICAL_UNCERTAINTY=2e-12;
 function layout(request,sourceId){
   record(request,['lengthUnit','title','runPolicy','components'],['lengthUnit','components'],'scene request');
   if(!['mm','cm','m'].includes(request.lengthUnit))throw Error('Explicit lengthUnit must be mm, cm or m');
@@ -152,19 +156,25 @@ function branchResults(request,query,l){
   if(Math.abs(along)<1e-12)throw Error('Source ray is parallel to all boundaries; no finite crossing can be derived');
   const initialAngle=Math.atan2(Math.abs(dir.x*l.normal.y-dir.y*l.normal.x),Math.abs(along))/RAD;
   const initialIndex=l.regions[l.startRegion],transverse=initialIndex*Math.sin(initialAngle*RAD);
+  // Structural validity is independent of whether an early branch is
+  // physically unavailable. Validate every field and ID before ray algebra.
   const seen=new Set();
-  const results=query.branches.map(b=>{
+  for(const b of query.branches){
     record(b,['id','events'],['id','events'],'branch');
     token(b.id,'branch ID');
     if(seen.has(b.id))throw Error('Duplicate branch ID');seen.add(b.id);
     if(!Array.isArray(b.events)||b.events.length<1||b.events.length>8)
       throw Error('A branch must have 1–8 bounded interface events');
-    let region=l.startRegion,travel=Math.sign(along),angle=initialAngle;
-    const events=[];
     for(const e of b.events){
       record(e,['interfaceId','action'],['interfaceId','action'],'branch event');
       token(e.interfaceId,'interface ID');
       if(!['transmit','reflect'].includes(e.action))throw Error('Expected declared reflect or transmit choice');
+    }
+  }
+  const results=query.branches.map(b=>{
+    let region=l.startRegion,travel=Math.sign(along),angle=initialAngle;
+    const events=[];
+    for(const e of b.events){
       const next=region+travel;
       if(next<0||next>=l.regions.length)return {id:b.id,...invalid('Declared branch exits the available media before its next event.'),events};
       const iface=l.planes[travel===1?region:next];
@@ -172,21 +182,28 @@ function branchResults(request,query,l){
       const n1=l.regions[region],n2=l.regions[next];
       const ratio=transverse/n2;
       const at=asinAngle(transverse/n1);
-      if(at===null)return {id:b.id,...invalid('Previous branch is evanescent.'),events};
-      const tir=ratio>1+2e-12;
-      const critical=Math.abs(ratio-1)<=2e-12;
-      const out=asinAngle(ratio);
+      if(at===null)return {id:b.id,...invalid('Previous branch is evanescent.','INVALID_PREVIOUS_REGION'),events};
+      // Identical materials have no refractive bend or Fresnel reflection;
+      // in particular nearly tangent rays are NOT critical at equal indices.
+      const sameMedium=n1===n2;
+      const delta=ratio-1;
+      const uncertainCritical=!sameMedium&&Math.abs(delta)<=CRITICAL_UNCERTAINTY;
+      const tir=!sameMedium&&delta>CRITICAL_UNCERTAINTY;
+      const out=sameMedium?at:asinAngle(ratio);
       const step={interfaceId:iface.id,action:e.action,fromIndex:n1,toIndex:n2,
         incidenceAngleDeg:at,totalInternalReflection:tir,
         nativeBranchStatus:'not-checked'};
+      if(uncertainCritical)return {id:b.id,...uncertain(
+        'The transmitted/reflected branch is at or too close to the critical boundary for a reliable floating-point classification. No physical absence is inferred.'),events:[...events,step]};
       if(e.action==='transmit'){
-        if(tir||critical||out===null)return {id:b.id,...invalid(tir?
-          'Requested transmitted branch is absent under total internal reflection.':
-          'Critical/grazing transmission is a limiting angle, not a reliable finite propagating ray.'),events:[...events,step]};
+        if(tir)return {id:b.id,...invalid(
+          'Requested transmitted branch is absent under total internal reflection.','TOTAL_INTERNAL_REFLECTION'),events:[...events,step]};
+        if(out===null)return {id:b.id,...invalid(
+          'No physical propagating transmission angle exists.','NO_TRANSMITTED_BRANCH'),events:[...events,step]};
         step.outgoingAngleDeg=out;region=next;angle=out;
       }else{
-        if(!tir&&(n1===n2||!iface.parameters.partialReflection))
-          return {id:b.id,...invalid('Requested weak/reflected branch is absent under the explicitly selected transmitted-only or equal-index model.'),events:[...events,step]};
+        if(!tir&&(sameMedium||!iface.parameters.partialReflection))
+          return {id:b.id,...invalid('Requested partial Fresnel reflection is absent in the explicitly selected transmitted-only or equal-index model.','NO_PARTIAL_REFLECTION'),events:[...events,step]};
         step.outgoingAngleDeg=at;step.reflectionKind=tir?'total-internal-reflection':'fresnel-conditional';
         angle=at;travel=-travel;
       }
@@ -198,7 +215,12 @@ function branchResults(request,query,l){
       method:'analytical-snells-law-plus-specular-reflection',
       limitation:'This declared ray branch is conditional geometry; PhyDemo might truncate or omit it.'};
   });
-  return {...base(query.kind),status:results.every(r=>r.status==='conditional')?'conditional':'partially-unavailable',
+  const statuses=results.map(r=>r.status);
+  const aggregate=statuses.every(s=>s==='conditional')?'conditional':
+    statuses.every(s=>s==='unavailable')?'unavailable':
+    statuses.every(s=>s==='numerically-indeterminate')?'numerically-indeterminate':
+    statuses.includes('unavailable')?'partially-unavailable':'partially-indeterminate';
+  return {...base(query.kind),status:aggregate,
     initial:{sourceId:query.sourceId,incidenceAngleDeg:initialAngle,index:initialIndex,
       region:l.startRegion,transverseIndexInvariant:transverse},
     results,assumptions:assumptions(),
