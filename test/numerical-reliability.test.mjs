@@ -58,5 +58,14 @@ test('exact-critical diagnostic never silently promotes a partial run into accep
     assert.equal(r.nativeSceneColorMode,mode);
     assert.ok(r.diagnostic.interactionTrace.entries.some(e=>e.interfaceId==='I23'));
     assert.ok(r.diagnostic.interactionTrace.entries.length<=32);
+    assert.ok(r.numericalFindings.some(x=>x.code==='NEAR_TANGENT_SAME_INTERFACE_REHIT'));
+    assert.ok(r.numericalFindings.some(x=>x.code==='EXTREME_GRAZING_TRAVEL'));
+    // These assertions pin observed numerical defects, not correct physics.
   }
+  const off=structuredClone(scene);
+  const source=off.physics.components.find(x=>x.id==='S1');
+  source.emission.directionDeg+=0.001;
+  const stable=nativeNumericalReplay(off,core,'default');
+  assert.equal(stable.status,'completed');
+  assert.ok(!stable.numericalFindings.some(x=>x.code==='NEAR_TANGENT_SAME_INTERFACE_REHIT'));
 });
