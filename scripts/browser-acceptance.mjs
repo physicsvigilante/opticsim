@@ -342,6 +342,34 @@ async function main(){
     assert.match(reloaded.sourceReadout,/source-4:/);
     report.checks.push({name:'multi-source Save/Open JSON round trip',result:'pass'});
     await shot('multi-source-reloaded-rays');
+    async function general(name,title,count){
+      await evaluate('(() => {const e=document.getElementById("examples");e.value='+JSON.stringify(name)+';e.dispatchEvent(new Event("change",{bubbles:true}));})()');
+      const s=await until(state,x=>x?.title===title&&x.status==='completed'&&
+        x.analysis?.includes('Analysis: unavailable')&&x.painted>0,title+' general trace');
+      assert.equal(s.fields.length,count);
+      assert.equal(new Set(s.fields).size,count);
+      assert.equal(s.error,'');
+      assert.equal(s.saveDisabled,false);
+      report.checks.push({name:'general '+name,result:'pass',stats:s.stats});
+      return s;
+    }
+    const sourceDetector=await general('general-source-detector',
+      'General tracing: source and detector',2);
+    assert.match(sourceDetector.detectorReadouts,/D1: [0-9]+ native crossings/);
+    await shot('general-source-detector-rays');
+    await edit('D1-x',160);
+    const detectorEdit=await until(state,x=>x?.title==='General tracing: source and detector'&&
+      x?.status==='completed'&&x.detectorReadouts?.includes('D1:')&&x.painted>0,
+      'general detector edit');
+    assert.ok(detectorEdit.detectorReadouts.includes('signed detector power'));
+    report.checks.push({name:'general detector edit',result:'pass'});
+    const twoSourceLens=await general('general-two-source-lens',
+      'General tracing: two sources and one lens',3);
+    assert.match(twoSourceLens.sourceReadout,/S1: [0-9]+ native rays/);
+    assert.match(twoSourceLens.sourceReadout,/S2: [0-9]+ native rays/);
+    await shot('general-two-source-lens-rays');
+    await general('general-mirror-pair','General tracing: plane mirrors without a lens',3);
+    await shot('general-mirror-pair-rays');
     console.log('Browser acceptance PASS: '+report.checks.length+' checks; '+report.screenshots.length+' screenshots; '+version);
   }catch(err){
     report.errors.push(err.message);

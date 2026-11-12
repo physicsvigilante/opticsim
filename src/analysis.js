@@ -8,6 +8,8 @@ export function predict(doc) {
     case 'lens-mirror-return-geometric': return predictReturn(doc);
     case 'mixed-lens-mirror-tracing': return { kind: 'unavailable',
       reason: 'Mixed lens–mirror tracing has no route-independent analytical image; native PhyDemo selects the actual ray encounters.' };
+    case 'general-component-tracing': return { kind: 'unavailable',
+      reason: 'General component tracing does not imply an optical route or an analytical image. PhyDemo traces the actual ray intersections.' };
     default: return { kind: 'unavailable', reason: 'No analytical prediction is available for this arrangement.' };
   }
 }

@@ -48,6 +48,8 @@ function update() {
   const d = session.data;
   const mixed = session.document?.physics.model === 'lens-mirror-return-geometric';
   const mirror = session.document?.physics.components.some(c => c.type === 'plane-mirror');
+  const hasOptics = session.document?.physics.components.some(c =>
+    c.type==='ideal-lens'||c.type==='plane-mirror');
   const partial = !['completed', 'completed-with-warnings'].includes(state);
   const perMirror = d?.reflectionsById ? Object.entries(d.reflectionsById)
     .map(([id,count])=>id+': '+count).join(' · ') : '';
@@ -69,7 +71,10 @@ function update() {
     Object.entries(d.detectorsById || {}).map(([id,r])=>
       id+': '+r.crossings+' native crossings · signed detector power '+
       (r.signedPower===null?'unavailable':format(r.signedPower))+' (relative native units)').join('  |  ');
-  $('sampling-note').textContent = d && d.emitted < 3 ? `Only ${d.emitted} native ray${d.emitted === 1 ? '' : 's'} emitted. This cone is sparsely sampled and may miss the ${mixed ? 'lens or mirror' : mirror ? 'mirror' : 'lenses'}. Increase sampling or opening angle to inspect more rays.` : 'Sampling changes the angular spacing, not the optical model.';
+  $('sampling-note').textContent = d && d.emitted < 3 ?
+    !hasOptics ? `Only ${d.emitted} native ray${d.emitted===1?'':'s'} emitted; increase sampling to inspect free-space propagation.` :
+    `Only ${d.emitted} native ray${d.emitted===1?'':'s'} emitted. This cone is sparsely sampled and may miss the ${mixed ? 'lens or mirror' : mirror ? 'mirror' : 'lenses'}. Increase sampling or opening angle to inspect more rays.` :
+    'Sampling changes the angular spacing, not the optical model.';
   $('reflection-note').textContent = mirror ? !d ? state === 'running' ? 'Native reflection count pending for this revision.' : 'No current reflection count is available.' : partial ? 'Reflection counts are partial; the simulation is incomplete.' :
     d.reflections === 0 ? `No sampled rays reflected. ${session.prediction ? 'The analytical image is conditional; this run does not establish a simulated image.' : 'This run does not establish a simulated image.'}` :
     `${d.reflections} sampled ray${d.reflections === 1 ? '' : 's'} reflected. This count does not establish an image or guarantee ${mixed ? 'the lens → mirror → lens path or ' : ''}continuous-cone coverage.` : '';
@@ -134,7 +139,8 @@ function controls() {
     chooser.append(select);$('source-tools').append(chooser);
   }
   const mixed = session.document.physics.model === 'lens-mirror-return-geometric';
-  const tracing = session.document.physics.model === 'mixed-lens-mirror-tracing';
+  const general = session.document.physics.model === 'general-component-tracing';
+  const tracing = general || session.document.physics.model === 'mixed-lens-mirror-tracing';
   const labels = { x: 'Position x', y: 'Position y', focalLength: 'Focal length', apertureHeight: 'Aperture height', orientationDeg: 'Surface orientation', length: 'Length' };
   for (const component of session.document.physics.components) {
     const fieldset = document.createElement('fieldset');
@@ -176,9 +182,9 @@ function controls() {
   }
   $('title').textContent = session.document.presentation.title;
   const mirror = session.document.physics.model === 'plane-mirror-geometric';
-  $('model-label').textContent = mixed ? 'Lens / mirror return · geometric optics' : tracing ? 'Mixed lens / mirror tracing' : mirror ? 'Plane mirror · geometric optics' : 'Ideal lenses · geometric optics';
-  $('parameter-guidance').textContent = `Lengths in mm. x points right; y points up. ${mixed ? 'Source left of lens left of perpendicular mirror; lens and mirror share y=0.' : tracing ? '1–4 independent point sources, 1–4 coaxial lenses and 1–4 plane mirrors; finite optical surfaces must not intersect.' : mirror ? 'Mirror orientation describes the surface tangent.' : 'Lenses share the horizontal axis.'}`;
-  $('physical-note').textContent = mixed ? 'One native lens can be encountered in both directions. PhyDemo chooses every intersection; finite lens/mirror misses are not blocked. Positive f converges; negative f diverges.' : tracing ? 'PhyDemo chooses each hit; analytical image predictions are intentionally unavailable without a specified optical path. Reflection totals and per-mirror counts describe sampled native encounters, not image formation.' : mirror ? 'The finite native mirror reflects from both sides. Rays missing its segment continue unchanged. Edit physical values here; the canvas is a simulation view.' : 'Positive focal length converges. Negative focal length diverges. Edit physical values here; the canvas is a simulation view.';
+  $('model-label').textContent = mixed ? 'Lens / mirror return · geometric optics' : general ? 'General component tracing' : tracing ? 'Mixed lens / mirror tracing' : mirror ? 'Plane mirror · geometric optics' : 'Ideal lenses · geometric optics';
+  $('parameter-guidance').textContent = `Lengths in mm. x points right; y points up. ${mixed ? 'Source left of lens left of perpendicular mirror; lens and mirror share y=0.' : general ? '1–4 sources, up to four coaxial lenses, four mirrors and two detectors; finite surfaces must not intersect.' : tracing ? '1–4 independent point sources, 1–4 coaxial lenses and 1–4 plane mirrors; finite optical surfaces must not intersect.' : mirror ? 'Mirror orientation describes the surface tangent.' : 'Lenses share the horizontal axis.'}`;
+  $('physical-note').textContent = mixed ? 'One native lens can be encountered in both directions. PhyDemo chooses every intersection; finite lens/mirror misses are not blocked. Positive f converges; negative f diverges.' : general ? 'Native PhyDemo traces each supported component and all actual intersections. Sources need not encounter a lens or mirror. Analytic image predictions are unavailable without a justified optical path; counts and detector readings are sampled observations, not image detection.' : tracing ? 'PhyDemo chooses each hit; analytical image predictions are intentionally unavailable without a specified optical path. Reflection totals and per-mirror counts describe sampled native encounters, not image formation.' : mirror ? 'The finite native mirror reflects from both sides. Rays missing its segment continue unchanged. Edit physical values here; the canvas is a simulation view.' : 'Positive focal length converges. Negative focal length diverges. Edit physical values here; the canvas is a simulation view.';
   $('grid-toggle').checked = session.document.presentation.grid;
   $('zoom').value = session.document.presentation.view.zoom;
   syncSampling();

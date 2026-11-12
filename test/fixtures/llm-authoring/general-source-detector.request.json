@@ -1,0 +1,31 @@
+{
+  "title": "General tracing: source and detector",
+  "lengthUnit": "cm",
+  "runPolicy": "preview-v1",
+  "components": [
+    {
+      "id": "S1",
+      "type": "point-source",
+      "parameters": {
+        "x": -25,
+        "y": 2,
+        "brightness": 0.08
+      },
+      "emission": {
+        "mode": "directional",
+        "directionDeg": 0,
+        "angleDeg": 20
+      }
+    },
+    {
+      "id": "D1",
+      "type": "ray-detector",
+      "parameters": {
+        "x": 15,
+        "y": 0,
+        "orientationDeg": 90,
+        "length": 20
+      }
+    }
+  ]
+}

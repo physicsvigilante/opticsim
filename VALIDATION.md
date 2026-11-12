@@ -876,3 +876,74 @@ intended for public examination if deployed; do not embed secrets. Hosted
 acceptance covers local Chrome and a simulated project subpath, not a real
 remote CDN/HTTPS delivery, broad devices, server authorization, or access
 control. All earlier physics validity and finite-sampling limitations apply.
+
+## Milestone 6 candidate — general component tracing and minimal LLM authoring (2026-11-12)
+
+**Status: candidate on `feature/llm-authored-scene-engine`, NOT merged or deployed.**
+
+This milestone extends **native composition** rather than adding an apparatus
+engine. The new explicit current-v4 `general-component-tracing` model compiles
+the **same** pinned PhyDemo `PointSource`, `AngleSource`, `IdealLens`, `Mirror`
+and `Detector` objects. It permits 1–4 independent sources, 0–4 vertically
+coaxial ideal lenses, 0–4 finite plane mirrors and 0–2 passive detectors
+within existing geometry and simulation limits. No lens/mirror pair is mandatory.
+The four historical model scopes and all existing conditional analytical
+predictions remain separately available and unchanged. General tracing has
+**no route-independent analytical image prediction**, even for arrangements
+where a future applicability checker might supply one.
+
+`src/authoring.js` is a small deterministic view of the current component
+contract: `capabilities()`, `prepareScene()` and `reviseScene()`. Physical
+components retain their exact sandbox type/parameter names. LLM inputs provide
+explicit physical values and a stated `mm`, `cm` or `m` unit; the preparer
+supplies only canonical versioning/pin, unit conversions, stable IDs when
+unspecified, camera and a named bounded run policy. Relative source brightness
+and emission, finite apertures, mirror length/orientation and detector geometry
+are **not silently inferred**. Full-circle source direction/opening numbers are
+recorded as inactive defaults when omitted. No separate facts language,
+apparatus template solver, new ray tracer, LLM provider or external service
+was introduced.
+
+`scripts/author-scene.mjs` exposes `capabilities`, `evaluate` and
+SHA-guarded `revise` commands. It reuses the existing
+`checkCandidate()` validation/native-run/round-trip pipeline. Reports
+separate accepted document, completed/failed/stopped/truncated native run,
+actual per-source/per-mirror/per-detector observations, warnings and
+measurement qualification, independent analytical availability, and
+`interpretation: not-assessed-by-engine`. Missing physics rejects **before**
+a native build. An edit is atomic, targeted by stable ID, rejects invalid
+geometry and stale SHA-256, and requires new direction/opening angles when
+switching from full-circle to directional rather than activating an inactive
+default as though it were physically supplied. Generated output paths are
+restricted to the ignored `test-artifacts/llm-authoring/` subtree.
+
+**Verified native and browser qualification**:
+[CI #43104104478](https://github.com/physicsvigilante/opticsim/actions/runs/43104104478)
+on candidate `cdc78c8c461e1a62635ee01c330b16fff1efcdac`
+completed successfully with **77/77 Node tests, 15/15 authored-scene checker
+cases, a successful browser build, 27/27 Chrome browser checks (15 captured
+screenshots), five hosted project-path smoke checks, and four CLI acceptance
+cases**. This includes real PhyDemo execution and sandbox/native round trips
+of source-only, source+detector with no lens/mirror, two sources+one lens with
+no mirror, and a two-mirror scene with no lens. No scene required a dummy
+apparatus or custom per-layout physics. A separate real native saturation
+fixture verifies that an inconsistent source-brightness clipping warning is
+reported as `completed-with-warnings` and measurement status
+`qualified-with-warnings`, without silently normalising brightness.
+Incomplete runs withhold current observations and suppress analytical
+predictions. User-authored source/optic values are never adjusted merely to
+make a test pass.
+
+**Not established by these tests:** accuracy of LLM interpretation of an
+arbitrary question/diagram, an integrated external LLM chatbot, general
+ray-image inference, calibrated detector power, source-specific detector
+provenance, unlimited objects, intersecting surfaces or angled/non-coaxial
+ideal lenses. Those remain separate work. The browser scene editor and public
+deployment policy were not changed, and `main` was not modified.
+
+The first qualification passed 76 tests; a subsequent new saturation fixture
+was corrected to reuse a previously independently qualified native optical
+arrangement. Both unsuccessful intermediate CI runs remain visible in history
+rather than being hidden. This is **implementer-side verification**, not an
+independent code review or evidence that an LLM has already solved a held-out
+JEE interpretation benchmark.

@@ -1,0 +1,65 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 4,
+  "adapterVersion": 4,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "general-component-tracing",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -300,
+          "y": 10,
+          "brightness": 0.1
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 0,
+          "angleDeg": 12
+        }
+      },
+      {
+        "id": "S2",
+        "type": "point-source",
+        "parameters": {
+          "x": -330,
+          "y": -40,
+          "brightness": 0.08
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 0,
+          "angleDeg": 16
+        }
+      },
+      {
+        "id": "L1",
+        "type": "ideal-lens",
+        "parameters": {
+          "x": 0,
+          "focalLength": 100,
+          "apertureHeight": 300
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "General tracing: two sources and one lens",
+    "view": {
+      "x": -165,
+      "y": 0,
+      "zoom": 1.4166666666666667
+    },
+    "mode": "rays",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000
+  }
+}

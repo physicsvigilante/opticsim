@@ -1,0 +1,19 @@
+{
+  "title": "General tracing: free-space emitter",
+  "lengthUnit": "cm",
+  "runPolicy": "preview-v1",
+  "components": [
+    {
+      "id": "S1",
+      "type": "point-source",
+      "parameters": {
+        "x": -10,
+        "y": 0,
+        "brightness": 0.08
+      },
+      "emission": {
+        "mode": "full-circle"
+      }
+    }
+  ]
+}
