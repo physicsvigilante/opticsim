@@ -270,9 +270,11 @@ function branchResults(request,query,l){
           'No physical propagating transmission angle exists.','NO_TRANSMITTED_BRANCH'),events:[...events,step]};
         step.outgoingAngleDeg=out;region=next;angle=out;
       }else{
-        if(!tir&&(sameMedium||!iface.parameters.partialReflection))
+        if(!tir&&(sameMedium||iface.parameters.partialReflection===false))
           return {id:b.id,...invalid('Requested partial Fresnel reflection is absent in the explicitly selected transmitted-only or equal-index model.','NO_PARTIAL_REFLECTION'),events:[...events,step]};
         step.outgoingAngleDeg=at;step.reflectionKind=tir?'total-internal-reflection':'fresnel-conditional';
+        if(!tir&&iface.parameters.partialReflection===undefined)
+          step.nativeReflectionPolicy='unspecified; analytically conditional on physical Fresnel reflection';
         angle=at;travel=-travel;
       }
       events.push(step);
