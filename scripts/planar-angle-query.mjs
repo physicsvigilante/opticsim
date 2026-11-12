@@ -43,7 +43,7 @@ function calculatedQualification(scene,request,query,result,inputSha256,querySha
   const interpretation={requestedResult:'Calculate conditional planar-media angular quantities ('+result.kind+').',
     stated:['Original author input and typed query are preserved with SHA-256 references in calculation provenance.'],
     derived:['Angles are deterministic ideal-model calculations, not PhyDemo native detections.'],
-    assumptions:result.assumptions||[],
+    assumptions:[],
     unknowns:originalUnknown?['Original source direction was unknown; the saved scene uses a distinctly labelled calculated value.']:[]};
   const origin={status:originalUnknown?'unknown':'fully-specified',appliedChoices:[],policyVersion:null};
   const qualification=initialQualification(scene,origin,{inputSha256,interpretation});
