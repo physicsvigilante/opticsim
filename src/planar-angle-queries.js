@@ -1,7 +1,7 @@
 // Deterministic ideal-model angular constraints for validated, parallel v5
 // media. These are CONDITIONAL analytical relationships, NOT native ray paths,
 // detector observations, an inverse ray tracer or hidden authoring defaults.
-import {prepareScene} from './authoring.js';
+import {prepareScene,inspectAuthoringRequest,AuthoringError} from './authoring.js';
 import {interfaceNormal,signedSide} from './planar-media.js';
 import {isRecord} from './qualified-utils.js';
 export const ANGLE_QUERY_FORMAT='opticsim-planar-angle-query-v1';
@@ -65,6 +65,11 @@ function layout(request,sourceId){
   const distances=planes.map(c=>signedSide(ref,c.parameters));
   if(distances.some(x=>Math.abs(signedPosition-x)<1e-12))
     throw Error('Source lies on an interface');
+  const scale={mm:1,cm:10,m:1000}[request.lengthUnit];
+  if(distances.some(x=>Math.abs(signedPosition-x)*scale<.01))
+    throw Error('Source must be at least 0.01 mm from each interface');
+  for(let i=1;i<distances.length;i++)if((distances[i]-distances[i-1])*scale<.01)
+    throw Error('Parallel interface planes must be separated by at least 0.01 mm');
   const startRegion=distances.filter(x=>x<signedPosition).length;
   return {source,planes,regions,normal,startRegion};
 }
@@ -206,6 +211,14 @@ export function analyzePlanarAngleQuery(request,query){
   if(query.format!==ANGLE_QUERY_FORMAT)throw Error('Unsupported planar angular query format');
   if(!['critical-input-angle','branch-angles'].includes(query.kind))throw Error('Unsupported angular query kind');
   token(query.sourceId,'source ID');
+  // Reuse live minimal-authoring completeness/range validation. The one
+  // intentional exception is the explicitly requested inverse unknown.
+  const sourceIndex=Array.isArray(request?.components)?
+    request.components.findIndex(c=>c?.id===query.sourceId&&c?.type==='point-source'):-1;
+  const unknownPath='$.components['+sourceIndex+'].emission.directionDeg';
+  const issues=inspectAuthoringRequest(request).filter(e=>!(query.kind==='critical-input-angle'&&
+    e.path===unknownPath&&e.code==='MISSING_VALUE'));
+  if(issues.length)throw new AuthoringError(issues);
   const l=layout(request,query.sourceId);
   return query.kind==='critical-input-angle'?solveCritical(request,query,l):branchResults(request,query,l);
 }
