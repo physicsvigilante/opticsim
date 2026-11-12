@@ -54,6 +54,10 @@ test('illustration is explicit, deterministic, provenance-rich and outside saved
 test('aperture choices convert units correctly without changing native length',()=>{
   for(const [unit,scale] of [['mm',1],['cm',10],['m',1000]]){
     const input=make();input.lengthUnit=unit;
+    // Keep the same physical geometry (mm) in every input unit.
+    input.components[0].parameters.x=-250/scale;
+    input.components[0].parameters.y=20/scale;
+    input.components[1].parameters.focalLength=120/scale;
     const r=resolveProblemRequest(input,{illustration:true});
     assert.equal(r.status,'illustrative');
     const choice=r.choices.find(c=>c.path.endsWith('apertureHeight'));
