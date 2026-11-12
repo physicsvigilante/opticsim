@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'"><title>Opticsim · Moving source</title><link rel="stylesheet" href="motion.css"><link rel="icon" href="data:,"></head>
+<body>
+<header><div><p class="eyebrow">OPTICSIM / TIME SNAPSHOTS</p><h1>A moving object. An evolving image.</h1><p>U2 · Concave mirror · <strong>native rays</strong> and <strong>conditional image kinematics</strong>, shown separately.</p></div><label class="open">Open experiment<input id="open-motion" type="file" accept=".json"></label></header>
+<main>
+<section class="notice"><strong>This is a declared continuation, not extra information from U2.</strong> The stated instant is <b>t = 0</b>. This example assumes constant object velocity afterwards. Ray tracing is rerun at each time; light-travel time is not simulated.</section>
+<section class="transport" aria-label="Time controls">
+<button id="play" disabled>Play</button><button id="pause" disabled>Pause</button><button id="reset" disabled>Reset to t = 0</button>
+<label class="scrub">Simulation time <output id="clock">0.000 s</output><input id="time" type="range" min="0" max="60" step="1" value="0" disabled></label>
+<label>Playback speed<select id="speed"><option value="0.1">0.1× (slow)</option><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1">1×</option></select></label>
+</section>
+<section class="choices"><label>Explicit mirror model<select id="example"><option value="ideal">Ideal Gaussian mirror</option><option value="circular">Circular mirror — paraxial image</option></select></label><span id="native-state" data-state="loading" role="status">Loading native core…</span><span id="sample">Frame —</span></section>
+<div class="views">
+<section class="panel"><div class="panel-heading"><div><span class="tag">NATIVE PHYDEMO</span><h2>Rays at this time</h2></div><span id="native-counts">No completed ray observations yet</span></div>
+<div id="native-stage"><canvas id="below"></canvas><canvas id="grid"></canvas><canvas id="light"></canvas><canvas id="above"></canvas></div>
+<p class="caption">Apparatus view. Only native ray paths are drawn here. Ray intersections and finite misses are selected by PhyDemo.</p></section>
+<section class="panel"><div class="panel-heading"><div><span class="tag analytical">CONDITIONAL MATHEMATICS</span><h2>Object and image position</h2></div></div>
+<canvas id="image-plot" aria-label="Separate calculated object and image position diagram"></canvas>
+<p id="plot-note" class="caption">This point is calculated, not detected in the native rays. Axes are global x-right, y-up in centimetres.</p></section>
+</div>
+<section class="readouts"><article><h3>Object</h3><div id="object-value">—</div><p>Given initial position and velocity</p></article><article><h3>Conditional image</h3><div id="image-value">—</div><p id="image-model">—</p></article><article><h3>Instantaneous image velocity</h3><div id="velocity-value">—</div><p>Global x-right / y-up · cm/s</p></article></section>
+<p id="error" role="alert" hidden></p>
+<details open><summary>Assumptions, limits and provenance</summary><p id="assumptions">Loading…</p><p id="experiment-hash" class="hash"></p><p>Native completion is not image detection. The calculated image may be outside the fixed plot, at infinity, or numerically indeterminate. Circular-mirror rays may exhibit aberration; their single image prediction is paraxial. A stopped or failed native frame is never labelled complete.</p></details>
+<footer><button id="save-motion" disabled>Save experiment</button><button id="save-frame" disabled>Save current static scene</button><button id="save-report" disabled>Save frame evidence</button><span>Static scene export is one snapshot. The experiment file preserves the motion.</span></footer>
+</main><script src="motion.js"></script></body></html>

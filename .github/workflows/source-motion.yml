@@ -14,24 +14,24 @@ jobs:
         with:
           node-version: '24.19.0'
       - run: npm run setup
-      - run: node scripts/build.mjs --test
-      - run: npm run build
-      - name: Preserve source and compiled native workspace
-        shell: bash
-        run: |
-          mkdir -p test-artifacts/motion-workspace
-          git ls-files -z | while IFS= read -r -d '' p; do
-            case "$p" in
-              *.js|*.mjs|*.json|*.html|*.css|*.md|*.yml|.gitignore)
-                mkdir -p "test-artifacts/motion-workspace/$(dirname "$p")"
-                cp "$p" "test-artifacts/motion-workspace/$p";;
-            esac
-          done
-          cp -r dist test-artifacts/motion-workspace/dist
+      - run: npm test
+      - run: node scripts/motion-acceptance.mjs
+      - run: npm run build:motion
+      - run: node scripts/pack-motion.mjs
+      - run: node scripts/motion-browser.mjs
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: motion-workspace
-          path: test-artifacts/motion-workspace/
-          include-hidden-files: true
+          name: source-motion-evidence
+          path: |
+            test-artifacts/llm-authoring/source-motion/
+            test-artifacts/browser-source-motion/
           if-no-files-found: error
-          retention-days: 3
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: opticsim-moving-source-demo
+          path: test-artifacts/motion-demo/
+          if-no-files-found: error
+          retention-days: 14
