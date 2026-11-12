@@ -1,0 +1,61 @@
+name: Private experiment workspace
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/private-experiment-workspace.yml']
+permissions:
+  contents: read
+jobs:
+  prepare:
+    if: github.head_ref == 'feature/result-preview-and-sweeps'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - run: node scripts/build.mjs --test
+      - name: Preserve source and deterministic cross-section Problems sample, never Solutions
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {execFileSync} from 'node:child_process';
+          import {mkdirSync,copyFileSync,readFileSync,writeFileSync} from 'node:fs';
+          import {dirname} from 'node:path';
+          import {readProblemPng,sha256} from './evaluation/llm-pilot-v1/independent-inference.mjs';
+          const out='test-artifacts/experiment-workspace';
+          const manifest={revision:process.env.GITHUB_SHA,files:{}};
+          for(const p of execFileSync('git',['ls-files','-z'],{encoding:'utf8'}).split('\0').filter(Boolean)){
+            if(!/\.(?:js|mjs|json|md|html|css|yml)$/.test(p)&&p!=='.gitignore')continue;
+            if(p.split('/').includes('Solutions'))continue;
+            mkdirSync(dirname(out+'/'+p),{recursive:true});copyFileSync(p,out+'/'+p);
+            manifest.files[p]=sha256(readFileSync(p));
+          }
+          mkdirSync(out+'/dist',{recursive:true});copyFileSync('dist/test-core.cjs',out+'/dist/test-core.cjs');
+          const archiveName='08_Ray_Optics_Explanations.zip';
+          const archive=readFileSync(archiveName),archiveSha256=sha256(archive);
+          if(archiveSha256!=='03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939')throw Error('Archive mismatch');
+          // unzip -Z1 lists names only; it does not open any Solutions content.
+          const names=execFileSync('unzip',['-Z1',archiveName],{encoding:'utf8'}).split('\n')
+            .filter(p=>/\/Problems\/[^/]+\.png$/i.test(p)&&!p.includes('/Solutions/')).sort();
+          const groups=Object.groupBy(names,p=>p.split('/Problems/')[0]);
+          const sections=Object.keys(groups).sort();
+          const indices=[...new Set([0,Math.floor((sections.length-1)/4),Math.floor((sections.length-1)/2),Math.floor(3*(sections.length-1)/4),sections.length-1])];
+          const selected=indices.flatMap(i=>{const g=groups[sections[i]];return [...new Set([g[0],g[Math.floor(g.length/2)]])];});
+          const cases=selected.map((problemPath,i)=>{
+            const bytes=readProblemPng(archive,problemPath),id='B'+String(i+1).padStart(2,'0');
+            mkdirSync(out+'/review-inputs',{recursive:true});writeFileSync(out+'/review-inputs/'+id+'.png',bytes);
+            return {id,problemPath,imageSha256:sha256(bytes)};
+          });
+          writeFileSync(out+'/review-inputs/selection.json',JSON.stringify({archiveName,archiveSha256,selectionRule:'Sort sections; take first, quarter, middle, three-quarter and last sections; first and middle Problems PNG of each. Fixed before opening images. Development capability review, not an accuracy benchmark.',solutionsRead:false,sections:sections.map(s=>({section:s,count:groups[s].length})),cases},null,2));
+          writeFileSync(out+'/source-manifest.json',JSON.stringify(manifest,null,2));
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: private-experiment-workspace
+          path: test-artifacts/experiment-workspace/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
