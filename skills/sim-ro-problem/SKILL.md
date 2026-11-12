@@ -18,6 +18,19 @@ representation and an unavailable quantity rather than silently substituting
 an easier apparatus. Unknown kinds remain unavailable; never count that as a
 proof that the original problem is physically underdetermined.
 
+For sequential **plane-mirror angular inverses**, the physical view
+`opticsim-plane-mirror-angular-facts-v1` takes 2–4 ordered mirror IDs
+and **unsigned consecutive line inclinations** only. Request
+`mirror-incidence-from-output-direction` with a reference mirror,
+`outgoingRelation: parallel|perpendicular`, and explicit
+`angleConvention: from-normal`. For the previously reviewed U1 case,
+two mirrors at 70 degrees with outgoing ray parallel to the first yield
+a **conditional 50-degree incidence from the first normal**. The
+deterministic solver enumerates inclination signs and outgoing directions;
+never guess a handedness or fabricate source position, brightness,
+mirror lengths or native hits. Multiple solutions and grazing cases
+remain explicit. Read `docs/PLANE-MIRROR-ANGULAR-QUERIES.md`.
+
 Do not compute outgoing answers merely to supply a required forward input.
 Use the supported inverse query where applicable. Do not invent brightness or
 picture coordinates for pure angular mathematics. Native simulation needs
