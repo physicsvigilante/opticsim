@@ -7,6 +7,7 @@ import {createRequire} from 'node:module';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {problemCapabilities,resolveProblemRequest} from '../src/problem-authoring.js';
+import {angularCapabilities} from '../src/planar-angle-queries.js';
 import {reviseScene,AuthoringError} from '../src/authoring.js';
 import {evaluateDocument} from './author-scene.mjs';
 import {reserveAuthoringOutput,writeEvidence} from './authoring-evidence.mjs';
@@ -32,7 +33,8 @@ function report(summary,context,details=null){
 async function main(context){
   const [command,...args]=process.argv.slice(2);
   if(command==='capabilities'&&!args.length){
-    console.log(JSON.stringify({authoring:problemCapabilities(),results:observableCapabilities()},null,2));return;
+    console.log(JSON.stringify({authoring:problemCapabilities(),results:observableCapabilities(),
+      conditionalAngularQueries:angularCapabilities()},null,2));return;
   }
   if(!['create','revise'].includes(command))throw Error(usage());
   const count=command==='revise'?2:1;
