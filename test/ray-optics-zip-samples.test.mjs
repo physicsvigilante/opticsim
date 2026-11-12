@@ -1,5 +1,5 @@
-// PRIVATE CI visual spot-check only: a bounded set of Problem PNGs.
-// No Solutions files are opened or printed; no filesystem extraction.
+// PRIVATE CI post-commit comparison only: three Solution PNGs after first answers were sealed.
+// First attempt is already immutable at evaluation/llm-authoring-pilot commit af6fc5dd; no filesystem extraction.
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -8,16 +8,11 @@ import {fileURLToPath} from 'node:url';
 const zip=readFileSync(fileURLToPath(new URL('../08_Ray_Optics_Explanations.zip',import.meta.url)));
 const root='08_Ray_Optics_Explanations/';
 const wanted=[
-'01_Reflection_at_Plane_Surfaces/Problems/002.png',
-'01_Reflection_at_Plane_Surfaces/Problems/003.png',
-'01_Reflection_at_Plane_Surfaces/Problems/004.png',
-'01_Reflection_at_Plane_Surfaces/Problems/007.png',
-'01_Reflection_at_Plane_Surfaces/Problems/010.png',
-'01_Reflection_at_Plane_Surfaces/Problems/012.png',
-'02_Reflection_at_Curved_Surfaces/Problems/003.png',
-'03_General_Refraction/Problems/002.png'
+'01_Reflection_at_Plane_Surfaces/Solutions/002.png',
+'01_Reflection_at_Plane_Surfaces/Solutions/004.png',
+'01_Reflection_at_Plane_Surfaces/Solutions/007.png'
 ].map(x=>root+x);
-test('spot-check held-out ray-optics Problem images only',()=>{
+test('inspect three answer-key images only after first-attempt commit',()=>{
  let end=-1;
  for(let i=zip.length-22;i>=Math.max(0,zip.length-22-65535);i--)
    if(zip.readUInt32LE(i)===0x06054b50){end=i;break;}
