@@ -1,0 +1,37 @@
+name: Quasi-static source motion checks
+on:
+  pull_request:
+    branches: [main, feature/curved-mirror-imaging]
+permissions:
+  contents: read
+jobs:
+  motion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - run: node scripts/build.mjs --test
+      - run: npm run build
+      - name: Preserve source and compiled native workspace
+        shell: bash
+        run: |
+          mkdir -p test-artifacts/motion-workspace
+          git ls-files -z | while IFS= read -r -d '' p; do
+            case "$p" in
+              *.js|*.mjs|*.json|*.html|*.css|*.md|*.yml|.gitignore)
+                mkdir -p "test-artifacts/motion-workspace/$(dirname "$p")"
+                cp "$p" "test-artifacts/motion-workspace/$p";;
+            esac
+          done
+          cp -r dist test-artifacts/motion-workspace/dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: motion-workspace
+          path: test-artifacts/motion-workspace/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
