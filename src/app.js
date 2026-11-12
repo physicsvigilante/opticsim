@@ -91,6 +91,23 @@ function update() {
   $('analysis-status').textContent = `Analysis: ${session.analysisStatus}. Native simulation: ${state.replaceAll('-', ' ')}.`;
   $('prediction').replaceChildren();
   if (!p) {
+    // The general image predictor belongs to a different scope from
+    // hash-bound conditional angular calculations carried in qualification.
+    // An incomplete native run does not erase a valid ideal-model calculation.
+    const calculations=qualificationUI.qualification?.calculations||[];
+    if(calculations.length&&session.document&&state!=='invalid'){
+      const revised=qualificationUI.qualification.edits.some(e=>e.kind==='physics');
+      $('analysis-status').textContent='General image analysis: '+
+        session.analysisStatus+'. Attached conditional angular calculation: '+
+        (revised?'historical after a physical edit':calculations[0].status)+
+        '. Native simulation: '+state.replaceAll('-', ' ')+'.';
+      $('prediction').textContent=revised?
+        'An earlier conditional angular result is preserved in Qualification, but the scene was physically revised. Recompute the angle for the current scene.':
+        'A separate conditional angular calculation is available in Qualification above. It is not a native ray observation or image detection.';
+      $('prediction-note').textContent='General image prediction and the attached ideal-model angular calculation use different methods. Native tracing is '+
+        state.replaceAll('-', ' ')+'. Its incomplete or missing ray branches are not described as successful native results.';
+      return;
+    }
     $('prediction').textContent = session.analysisStatus === 'failed' ? 'Analytical calculation failed.' :
       session.analysisStatus === 'unavailable' ? 'No reliable, route-independent analytical image prediction is available for this scene.' :
       'Prediction unavailable for the current edit or run state.';
