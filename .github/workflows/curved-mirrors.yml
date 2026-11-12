@@ -1,0 +1,46 @@
+name: Curved mirror checks
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  curved:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - run: node scripts/build.mjs --test
+      - name: Prepare source and pinned-core audit snapshot without Solutions
+        run: |
+          node --input-type=module <<'NODE'
+          import {execFileSync} from 'node:child_process';
+          import {mkdirSync,copyFileSync,readFileSync,writeFileSync,cpSync} from 'node:fs';
+          import {dirname} from 'node:path';
+          import {createHash} from 'node:crypto';
+          const root='test-artifacts/curved-workspace';
+          const paths=execFileSync('git',['ls-files','-z'],{encoding:'utf8'}).split('\0').filter(Boolean);
+          const hashes={};
+          for(const p of paths){
+            if(!/\.(js|mjs|json|md|html|css|yml)$/.test(p)&&p!=='.gitignore')continue;
+            if(p.split('/').includes('Solutions'))continue;
+            mkdirSync(dirname(root+'/'+p),{recursive:true});copyFileSync(p,root+'/'+p);
+            hashes[p]=createHash('sha256').update(readFileSync(p)).digest('hex');
+          }
+          mkdirSync(root+'/dist',{recursive:true});copyFileSync('dist/test-core.cjs',root+'/dist/test-core.cjs');
+          cpSync('vendor/ray-optics/src/core',root+'/pinned-native-core',{recursive:true});
+          writeFileSync(root+'/source-manifest.json',JSON.stringify({checkout:process.env.GITHUB_SHA,files:hashes},null,2));
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: curved-mirror-workspace
+          path: test-artifacts/curved-workspace/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
