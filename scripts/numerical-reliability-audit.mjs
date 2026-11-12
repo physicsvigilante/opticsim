@@ -48,6 +48,7 @@ async function probe(id,name,request,requests){
         .map(([id,m])=>[id,{interactions:m.interactions,reflected:m.reflected,
           transmitted:m.transmitted,invalidObservations:m.invalidObservations}])),
       requestedResults,interactionTrace:result.diagnostic.interactionTrace,
+      numericalFindings:result.numericalFindings,
       canonicalSha256:summary.canonicalSha256,
       incompleteResultsWithheld:!result.complete&&requestedResults.results.every(r=>r.status==='suppressed')};
     records.push(record);
