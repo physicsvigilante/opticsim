@@ -1,0 +1,529 @@
+{
+  "format": "opticsim-llm-pilot-v1",
+  "version": 1,
+  "warning": "REFERENCE FILE: not an LLM input. These are authored control fixtures, not independently evaluated LLM answers.",
+  "cases": [
+    {
+      "id": "C01",
+      "request": {
+        "lengthUnit": "cm",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -8,
+              "y": 3,
+              "brightness": 0.08
+            },
+            "emission": {
+              "mode": "full-circle"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "C02",
+      "request": {
+        "lengthUnit": "cm",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -28,
+              "y": 2,
+              "brightness": 0.08
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": 0,
+              "angleDeg": 18
+            }
+          },
+          {
+            "id": "D1",
+            "type": "ray-detector",
+            "parameters": {
+              "x": 16,
+              "y": 0,
+              "orientationDeg": 90,
+              "length": 14
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "C03",
+      "request": {
+        "lengthUnit": "cm",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -28,
+              "y": -5,
+              "brightness": 0.09
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": 10,
+              "angleDeg": 25
+            }
+          },
+          {
+            "id": "S2",
+            "type": "point-source",
+            "parameters": {
+              "x": -26,
+              "y": 6,
+              "brightness": 0.05
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": -7,
+              "angleDeg": 20
+            }
+          },
+          {
+            "id": "D1",
+            "type": "ray-detector",
+            "parameters": {
+              "x": 15,
+              "y": 4,
+              "orientationDeg": 90,
+              "length": 7
+            }
+          },
+          {
+            "id": "D2",
+            "type": "ray-detector",
+            "parameters": {
+              "x": 26,
+              "y": -2,
+              "orientationDeg": 90,
+              "length": 7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "C04",
+      "request": {
+        "lengthUnit": "cm",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -32,
+              "y": 3,
+              "brightness": 0.08
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": 0,
+              "angleDeg": 16
+            }
+          },
+          {
+            "id": "L1",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": 0,
+              "focalLength": 11,
+              "apertureHeight": 20
+            }
+          },
+          {
+            "id": "D1",
+            "type": "ray-detector",
+            "parameters": {
+              "x": 27,
+              "y": 0,
+              "orientationDeg": 90,
+              "length": 13
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "C05",
+      "request": {
+        "lengthUnit": "cm",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -40,
+              "y": -2,
+              "brightness": 0.12
+            },
+            "emission": {
+              "mode": "full-circle"
+            }
+          },
+          {
+            "id": "L1",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": -12,
+              "focalLength": -14,
+              "apertureHeight": 18
+            }
+          },
+          {
+            "id": "L2",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": 8,
+              "focalLength": 19,
+              "apertureHeight": 16
+            }
+          },
+          {
+            "id": "L3",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": 27,
+              "focalLength": 24,
+              "apertureHeight": 22
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "C06",
+      "request": {
+        "lengthUnit": "cm",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -22,
+              "y": 3,
+              "brightness": 0.06
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": 0,
+              "angleDeg": 22
+            }
+          },
+          {
+            "id": "M1",
+            "type": "plane-mirror",
+            "parameters": {
+              "x": 8,
+              "y": 0,
+              "orientationDeg": 110,
+              "length": 14
+            }
+          },
+          {
+            "id": "D1",
+            "type": "ray-detector",
+            "parameters": {
+              "x": -8,
+              "y": 12,
+              "orientationDeg": 90,
+              "length": 10
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "C07",
+      "request": {
+        "lengthUnit": "mm",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -240,
+              "y": 10,
+              "brightness": 0.07
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": 8,
+              "angleDeg": 24
+            }
+          },
+          {
+            "id": "M1",
+            "type": "plane-mirror",
+            "parameters": {
+              "x": 20,
+              "y": 0,
+              "orientationDeg": 100,
+              "length": 150
+            }
+          },
+          {
+            "id": "M2",
+            "type": "plane-mirror",
+            "parameters": {
+              "x": -140,
+              "y": 40,
+              "orientationDeg": 0,
+              "length": 120
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "C08",
+      "request": {
+        "lengthUnit": "cm",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -42,
+              "y": 1,
+              "brightness": 0.06
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": 0,
+              "angleDeg": 14
+            }
+          },
+          {
+            "id": "L1",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": -7,
+              "focalLength": 15,
+              "apertureHeight": 16
+            }
+          },
+          {
+            "id": "L2",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": 16,
+              "focalLength": -11,
+              "apertureHeight": 18
+            }
+          },
+          {
+            "id": "M1",
+            "type": "plane-mirror",
+            "parameters": {
+              "x": 37,
+              "y": 2,
+              "orientationDeg": 112,
+              "length": 15
+            }
+          },
+          {
+            "id": "D1",
+            "type": "ray-detector",
+            "parameters": {
+              "x": -25,
+              "y": 0,
+              "orientationDeg": 90,
+              "length": 8
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "C09",
+      "request": {
+        "lengthUnit": "cm",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -44,
+              "y": -4,
+              "brightness": 0.05
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": 0,
+              "angleDeg": 12
+            }
+          },
+          {
+            "id": "S2",
+            "type": "point-source",
+            "parameters": {
+              "x": -40,
+              "y": -1,
+              "brightness": 0.04
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": 0,
+              "angleDeg": 12
+            }
+          },
+          {
+            "id": "S3",
+            "type": "point-source",
+            "parameters": {
+              "x": -37,
+              "y": 2,
+              "brightness": 0.08
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": 0,
+              "angleDeg": 12
+            }
+          },
+          {
+            "id": "S4",
+            "type": "point-source",
+            "parameters": {
+              "x": -35,
+              "y": 5,
+              "brightness": 0.06
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": 0,
+              "angleDeg": 12
+            }
+          },
+          {
+            "id": "L1",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": 0,
+              "focalLength": 20,
+              "apertureHeight": 28
+            }
+          },
+          {
+            "id": "D1",
+            "type": "ray-detector",
+            "parameters": {
+              "x": -20,
+              "y": 0,
+              "orientationDeg": 90,
+              "length": 14
+            }
+          },
+          {
+            "id": "D2",
+            "type": "ray-detector",
+            "parameters": {
+              "x": 25,
+              "y": 1,
+              "orientationDeg": 90,
+              "length": 14
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "C10",
+      "request": {
+        "lengthUnit": "m",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -0.5,
+              "y": -0.03,
+              "brightness": 0.07
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": 0,
+              "angleDeg": 20
+            }
+          },
+          {
+            "id": "L1",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": -0.2,
+              "focalLength": 0.12,
+              "apertureHeight": 0.18
+            }
+          },
+          {
+            "id": "L2",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": 0.05,
+              "focalLength": -0.15,
+              "apertureHeight": 0.18
+            }
+          },
+          {
+            "id": "L3",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": 0.25,
+              "focalLength": 0.3,
+              "apertureHeight": 0.16
+            }
+          },
+          {
+            "id": "M1",
+            "type": "plane-mirror",
+            "parameters": {
+              "x": 0.45,
+              "y": 0.08,
+              "orientationDeg": 120,
+              "length": 0.12
+            }
+          },
+          {
+            "id": "M2",
+            "type": "plane-mirror",
+            "parameters": {
+              "x": -0.08,
+              "y": 0.27,
+              "orientationDeg": 0,
+              "length": 0.1
+            }
+          },
+          {
+            "id": "M3",
+            "type": "plane-mirror",
+            "parameters": {
+              "x": 0.15,
+              "y": -0.25,
+              "orientationDeg": 0,
+              "length": 0.08
+            }
+          },
+          {
+            "id": "D1",
+            "type": "ray-detector",
+            "parameters": {
+              "x": -0.35,
+              "y": 0,
+              "orientationDeg": 90,
+              "length": 0.12
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

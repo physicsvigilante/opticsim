@@ -22,6 +22,8 @@ jobs:
         run: node scripts/pack-demo.mjs
       - name: LLM authoring CLI with real native execution and revision guards
         run: node scripts/author-scene-acceptance.mjs
+      - name: Evaluate deterministic LLM pilot controls against native tracing
+        run: node scripts/llm-pilot-acceptance.mjs
       - run: node skills/sim-ro-image-to-scene/scripts/check-scene.mjs scenes/three-lenses.json scenes/four-lenses.json test/fixtures/multilens-extreme.json scenes/mixed-two-lens-two-mirror.json scenes/mixed-reverse-source.json scenes/mixed-detectors.json scenes/mixed-detectors-reverse.json scenes/single-lens-detector.json scenes/plane-mirror-detector.json scenes/multi-source-mixed.json scenes/multi-source-four.json scenes/general-source-detector.json scenes/general-two-source-lens.json scenes/general-mirror-pair.json scenes/general-source-only.json --report test-artifacts/image-to-scene/multi-lens/checks.json
       - name: Browser acceptance with preinstalled Chrome
         run: node scripts/browser-acceptance.mjs
@@ -59,4 +61,10 @@ jobs:
         with:
           name: llm-authoring-evidence
           path: test-artifacts/llm-authoring/
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: llm-pilot-evidence
+          path: test-artifacts/llm-evaluation/control/
           if-no-files-found: ignore

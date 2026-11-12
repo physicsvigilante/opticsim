@@ -1,0 +1,50 @@
+{
+  "format": "opticsim-llm-pilot-v1",
+  "version": 1,
+  "archive": {
+    "repository": "physicsvigilante/opticsim",
+    "branch": "evaluation/jee-problems",
+    "commit": "6883c12d431961156aee47b7b8c129231753878c",
+    "zipFile": "01_problems.zip",
+    "sha256": "e31c922fc940e5d8ffaf5d93b3f162d1992a7c8886bf138b8ea2158bc8320942"
+  },
+  "instructions": "Inspect only the designated Problems PNG in the ZIP. Do not read the corresponding Solutions PNG before submitting. Classify whether the *original requested result* is obtainable without changing physics: exact, illustration-only, or unsupported. Give a concrete explanation of what is and is not supported; do not invent numeric aperture, mirror length, motion or observer geometry.",
+  "cases": [
+    {
+      "id": "R01",
+      "problemPath": "14_Geometrical_Optics_Part1/01_Reflection_Plane_Mirror/Problems/asc_005.png"
+    },
+    {
+      "id": "R02",
+      "problemPath": "14_Geometrical_Optics_Part1/01_Reflection_Plane_Mirror/Problems/bmc_005.png"
+    },
+    {
+      "id": "R03",
+      "problemPath": "14_Geometrical_Optics_Part1/01_Reflection_Plane_Mirror/Problems/asc_004.png"
+    },
+    {
+      "id": "R04",
+      "problemPath": "14_Geometrical_Optics_Part1/01_Reflection_Plane_Mirror/Problems/asc_006.png"
+    },
+    {
+      "id": "R05",
+      "problemPath": "14_Geometrical_Optics_Part1/01_Reflection_Plane_Mirror/Problems/cnt_005.png"
+    },
+    {
+      "id": "R06",
+      "problemPath": "14_Geometrical_Optics_Part1/02_Reflection_Spherical_Mirror/Problems/asc_004.png"
+    },
+    {
+      "id": "R07",
+      "problemPath": "14_Geometrical_Optics_Part1/03_Refraction_Plane_Surface_1/Problems/asc_004.png"
+    },
+    {
+      "id": "R08",
+      "problemPath": "14_Geometrical_Optics_Part1/04_Refraction_Plane_Surface_2/Problems/bmc_004.png"
+    },
+    {
+      "id": "R09",
+      "problemPath": "14_Geometrical_Optics_Part1/05_Prism/Problems/asc_004.png"
+    }
+  ]
+}
