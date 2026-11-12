@@ -1,3 +1,4 @@
+import {QualifiedUI} from './qualified-ui.js';
 import { loadDocument, Simulator, diagnostics, nativeExport, observeSourceSet, observeMirrorSet, observeDetectorSet } from './adapter.js';
 import { parseSave, serializeSave, SAMPLING_PRESETS, samplingPreset, setSourceMode } from './contract.js';
 import { Session } from './session.js';
@@ -29,7 +30,9 @@ const session = new Session(doc => {
     sim.updateSimulation(false, false);
   } };
 }, update);
+const qualificationUI = new QualifiedUI(session, download);
 function update() {
+  qualificationUI.refresh();
   const state = session.state;
   $('status').textContent = state.replaceAll('-', ' ');
   $('status').dataset.state = state;
@@ -266,7 +269,7 @@ function readDraft() {
 }
 function commitDraft() {
   scheduled = undefined;
-  try { session.apply(readDraft()); } catch (error) { session.invalidate(error); }
+  try { apply(readDraft()); } catch (error) { session.invalidate(error); }
 }
 function queueEdit() {
   session.invalidate(Error('Editing parameters — waiting for a valid scene.'));
@@ -284,9 +287,13 @@ $('sampling').onchange = e => {
   if (!(e.target.value in SAMPLING_PRESETS)) return;
   const candidate = readDraft(); candidate.simulation.rayDensity = SAMPLING_PRESETS[e.target.value]; apply(candidate);
 };
-function apply(doc, rebuild = false) {
+function apply(doc, rebuild = false, imported = undefined) {
   cancelScheduled();
+  let tracked;
+  try { tracked = qualificationUI.prepare(doc, imported); }
+  catch (error) { session.invalidate(error); return false; }
   const accepted = session.apply(doc);
+  if (accepted) qualificationUI.commit(tracked);
   if (accepted && rebuild) controls();
   return accepted;
 }
@@ -303,14 +310,15 @@ $('load').addEventListener('change', async event => {
   cancelScheduled();
   const request = ++exampleRequest;
   session.invalidate(Error('Loading sandbox scene…'));
+  const loadingRevision = session.revision;
   try { if (file.size > 1024 * 1024) throw Error('Scene file exceeds 1 MB limit');
-    const doc = parseSave(await file.text());
-    if (request === exampleRequest && apply(doc, true)) {
+    const incoming = await qualificationUI.read(await file.text());
+    if (request === exampleRequest && loadingRevision === session.revision && apply(incoming.document, true, incoming)) {
       $('examples').value = '';
       setExampleLink(null); // A local save is not a shareable URL.
     }
   }
-  catch (error) { if (request === exampleRequest) session.invalidate(error); }
+  catch (error) { if (request === exampleRequest && loadingRevision === session.revision) session.invalidate(error); }
   event.target.value = '';
 });
 let exampleRequest = 0;
@@ -342,7 +350,7 @@ async function example(name) {
   session.invalidate(Error('Loading example scene…'));
   try { const response = await fetch(`scenes/${name}.json`); if (!response.ok) throw Error('Scene could not be loaded');
     const doc = parseSave(await response.text());
-    if (request === exampleRequest && apply(doc, true)) {
+    if (request === exampleRequest && apply(doc, true, {qualification:null, requests:[]})) {
       $('examples').value = name;
       setExampleLink(name);
     }
@@ -363,7 +371,12 @@ $('zoom').oninput = e => viewChange(p => { p.view.zoom = Number(e.target.value);
 for (const [id, dx] of [['pan-left', -100], ['pan-right', 100]]) $(id).onclick = () => viewChange(p => { p.view.x += dx; });
 function resize() {
   const rect = $('stage').getBoundingClientRect();
-  size = { width: Math.max(200, Math.round(rect.width)), height: Math.max(200, Math.round(rect.height)) };
+  const nextSize = { width: Math.max(200, Math.round(rect.width)), height: Math.max(200, Math.round(rect.height)) };
+  // ResizeObserver may notify after UI-only layout work even when the rounded
+  // drawing viewport is unchanged. Do not clear canvases or invent a new run.
+  if (nextSize.width === size.width && nextSize.height === size.height &&
+      canvases.every(canvas => canvas.width === nextSize.width && canvas.height === nextSize.height)) return;
+  size = nextSize;
   for (const canvas of canvases) { canvas.width = size.width; canvas.height = size.height; }
   if (session.document && session.state !== 'invalid') apply(session.document);
 }

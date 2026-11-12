@@ -1,0 +1,72 @@
+{
+  "format": "opticsim-five-problem-development-v1",
+  "protocol": {
+    "mode": "same-assistant-development-not-blind",
+    "independentModelCall": false,
+    "solutionImagesRead": false,
+    "selectionCommit": "04baefe73d9a05e6518fb74f6ce7a9e56e26d59b",
+    "selectionRule": "Lens Formula IDs 002,003,005,009,011 fixed before opening their images. Retain the resulting mix; do not cherry-pick for native success.",
+    "coverageCaution": "Five cases from one section are not representative. These files were newly opened in this trial; earlier project-wide exposure cannot be excluded.",
+    "archive": "08_Ray_Optics_Explanations.zip",
+    "archiveSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+    "problemRoot": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/",
+    "note": "First interpretation preserved before new workflow execution. Conditional mathematical deductions are assistant reasoning, not measured native results. No corresponding Solutions image was opened."
+  },
+  "cases": [
+    {
+      "id": "H1", "file": "002.png", "imageSha256": "44ae4cc22407f0b80a4dc8fb6b5777a7bb31dd43a30813f429040a5be0bf726a",
+      "question": "Convex lens gives an image of three times object size for object distances 16 cm and 8 cm. Find focal length.",
+      "requestedResult": "focal length from two magnification conditions",
+      "stated": ["convex lens", "absolute magnification 3 at distances 16 cm and 8 cm"],
+      "derived": ["Under thin-lens geometric optics, the farther position gives inverted real magnification -3 and the nearer position upright virtual magnification +3; both imply f=12 cm.", "Choose the lens at x=0 and incident propagation along +x. Two static demonstrations use source x=-16 and -8 cm."],
+      "unknowns": ["object height and whether it is a point emitter", "lens aperture", "emission", "relative brightness"],
+      "decision": "illustrative-forward-check-only",
+      "reason": "The requested inverse focal-length solution is not a native observable. Two separately declared representative point-source scenes can check conditional ideal magnifications after the derivation; they do not simulate a moving extended object.",
+      "authorAssumptions": ["Represent one object point by a luminous point at y=+1 cm only for illustration; object height/emissivity were not supplied.", "Use the documented opt-in aperture, emission and brightness choices; these are physical assumptions, not inferred facts."],
+      "attempts": [
+        {"id":"H1-real","request":{"lengthUnit":"cm","title":"H1: illustrative real-image configuration","components":[{"id":"S1","type":"point-source","parameters":{"x":-16,"y":1}},{"id":"L1","type":"ideal-lens","parameters":{"x":0,"focalLength":12}}]},"observables":[{"id":"image","kind":"ideal-image","componentId":"S1"}]},
+        {"id":"H1-virtual","request":{"lengthUnit":"cm","title":"H1: illustrative virtual-image configuration","components":[{"id":"S1","type":"point-source","parameters":{"x":-8,"y":1}},{"id":"L1","type":"ideal-lens","parameters":{"x":0,"focalLength":12}}]},"observables":[{"id":"image","kind":"ideal-image","componentId":"S1"}]}
+      ]
+    },
+    {
+      "id":"H2","file":"003.png","imageSha256":"09cd3f28f439f1ba314e42f41e4f8ce2eb99f5ae1c5a73f80658d956b6c072b1",
+      "question":"Plano-convex lens with convex radius 10 cm and focal length 30 cm; determine material refractive index.",
+      "requestedResult":"material refractive index",
+      "stated":["plano-convex geometry","convex radius 10 cm","focal length 30 cm"],
+      "derived":["The conditional thin-lens lensmaker relation in air would give n=1+10/30=4/3. This relation is not implemented by the current ideal-lens adapter."],
+      "unknowns":["surrounding medium and thickness assumptions not explicit","no light source specified"],
+      "decision":"unsupported","reason":"Current ideal-lens components store focal length, not material index or curved refracting surfaces. Do not substitute a fixed-focal-length scene for the requested material inference.","attempts":[]
+    },
+    {
+      "id":"H3","file":"005.png","imageSha256":"4255a77f32ebf523e18e8960adb818ad685d8db547ce3322b97615cb1a24e70e",
+      "question":"A glass biconvex lens has n=1.6 and focal length 10 cm in air. Find focal lengths in media n=1.5 and n=1.7.",
+      "requestedResult":"medium-dependent focal length",
+      "stated":["lens material index 1.6","f in air +10 cm","surrounding indices 1.5 and 1.7"],
+      "derived":["Assuming thin-lens lensmaker scaling, f_medium=10*(1.6-1)/(1.6/n_medium-1) cm gives +90 cm and -102 cm. This is an external conditional calculation, not current native capability."],
+      "unknowns":["exact surfaces/thickness","no source"],
+      "decision":"unsupported","reason":"A fixed ideal focal length cannot simulate changing refractive media. Entering the analytically derived focal lengths would illustrate an equivalent surrogate, not execute the original material problem.","attempts":[]
+    },
+    {
+      "id":"H4","file":"009.png","imageSha256":"9df31b9f5af847853cc031ee898b42676925b76ad630ef954102d0e1b869f998",
+      "question":"A convex lens 45 cm above an empty tank bottom forms an image 36 cm above the lens. With liquid depth 40 cm the image is 48 cm above the lens; find liquid index.",
+      "requestedResult":"liquid refractive index from changed image position",
+      "stated":["bottom-to-lens 45 cm","initial image distance +36 cm","liquid depth 40 cm","final image distance +48 cm"],
+      "derived":["The initial ideal thin-lens subproblem gives f=45*36/(45+36)=20 cm.","Choose +x along upward propagation, lens x=0, bottom point x=-45 cm, y=0. A rigid coordinate-frame choice is not a gravity model."],
+      "unknowns":["source emission and strength","finite aperture","liquid index is the inverse unknown"],
+      "decision":"unsupported-full-question-supported-empty-tank-subcase",
+      "reason":"The complete problem requires a plane refracting interface and inverse index determination, neither exposed by the current contract. Execute only the explicitly labelled empty-tank baseline; do not hide liquid refraction in a moved source.",
+      "authorAssumptions":["Treat the stated point as a luminous probe on the optical axis for the empty-tank illustration only.","Apply the documented opt-in aperture/emission/brightness choices."],
+      "attempts":[{"id":"H4-empty-only","request":{"lengthUnit":"cm","title":"H4: EMPTY TANK ONLY; liquid problem unsupported","components":[{"id":"S1","type":"point-source","parameters":{"x":-45,"y":0}},{"id":"L1","type":"ideal-lens","parameters":{"x":0,"focalLength":20}}]},"observables":[{"id":"empty-image","kind":"ideal-image","componentId":"S1"}]}]
+    },
+    {
+      "id":"H5","file":"011.png","imageSha256":"d0df07ac0f018b7865ec5f3c0516d41b7c4f13e27ea9853333fbb155028a57b7",
+      "question":"A convex lens f1 images a luminous point at the shortest possible distance; a weak concave lens f2 is placed in contact. Find image shift.",
+      "requestedResult":"symbolic shift after adding a contact lens",
+      "stated":["source distance greater than f1","image at shortest possible distance","concave lens of very large focal length f2 placed in contact"],
+      "derived":[],
+      "unknowns":["whether shortest distance means object-image separation or image-lens distance","focal-length sign convention for f2","no numeric lengths supplied"],
+      "decision":"needs-clarification-and-unsupported-contact-geometry",
+      "reason":"The numeric authoring contract cannot accept unresolved symbols and disallows coincident lens planes. Do not invent a separation or merge the two physical lenses silently. Clarify the optimization statement before a symbolic analytic reduction; no native scene is authored.","attempts":[]
+    }
+  ]
+}
