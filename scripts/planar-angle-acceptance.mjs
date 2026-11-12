@@ -10,6 +10,10 @@ const trials=JSON.parse(readFileSync('evaluation/planar-angular-v1/cases.json'))
 const folder=resolve('test-artifacts/llm-authoring/planar-angle-acceptance');
 mkdirSync(folder,{recursive:true});
 const sha=b=>createHash('sha256').update(b).digest('hex');
+const capabilities=spawnSync(process.execPath,['scripts/qualified-scene.mjs','capabilities'],{encoding:'utf8'});
+assert.equal(capabilities.status,0,capabilities.stderr);
+assert.deepEqual(JSON.parse(capabilities.stdout).conditionalAngularQueries.kinds,
+  ['critical-input-angle','branch-angles']);
 const report={format:'opticsim-planar-angle-acceptance-v1',
   originalProblemsPreviouslySeen:true,solutionsRead:false,independentModelBenchmark:false,
   attempts:[]};
