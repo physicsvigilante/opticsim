@@ -19,6 +19,7 @@ test('B05 inverse query solves critical input from explicitly provided media, no
  close(a.value.initialIncidenceAngleDeg,angle(1.3/1.6));
  close(a.value.criticalIncidenceAngleDeg,angle(1.3/1.8));
  close(a.value.sourceDirectionDeg,90-angle(1.3/1.6));
+ assert.match(a.value.decreasingInitialIncidence.target,/propagating transmission/);
  assert.equal(a.proposedForwardScene.schemaVersion,5);
  assert.equal(a.proposedForwardScene.physics.components.find(c=>c.id==='S1').emission.directionDeg,a.value.sourceDirectionDeg);
  assert.equal(a.intermediate.length,1);
@@ -129,4 +130,26 @@ test('no inverse solution is silently turned into a guessed physical value',()=>
  const y=structuredClone(q);y.approach='negative';
  const wrongSide=run(c,y);assert.equal(wrongSide.status,'unavailable');
  const all=angularCapabilities();assert.deepEqual(all.kinds,['critical-input-angle','branch-angles']);
+});
+
+test('angles are invariant under authored length units and consistent component order',()=>{
+ const a=input('B05'),q=query('B05'),reference=run(a,q);
+ for(const [unit,scale] of [['mm',10],['m',.01]]){
+  const copy=structuredClone(a);copy.lengthUnit=unit;
+  for(const c of copy.components){c.parameters.x*=scale;c.parameters.y*=scale;}
+  copy.components.reverse();
+  const result=run(copy,q);
+  close(result.value.initialIncidenceAngleDeg,reference.value.initialIncidenceAngleDeg);
+  close(result.value.criticalIncidenceAngleDeg,reference.value.criticalIncidenceAngleDeg);
+ }
+ const b=input('B06'),bq=query('B06'),ref=run(b,bq);
+ const rotated=structuredClone(b);for(const c of rotated.components){
+  const x=c.parameters.x,y=c.parameters.y;c.parameters.x=-y;c.parameters.y=x;
+  if(c.type==='planar-interface')c.parameters.normalDeg=180;
+  if(c.type==='point-source')c.emission.directionDeg+=90;
+ }
+ rotated.components.reverse();
+ const testResult=run(rotated,bq);
+ close(testResult.results[0].value.exitAngleDeg,ref.results[0].value.exitAngleDeg);
+ close(testResult.results[1].value.exitAngleDeg,ref.results[1].value.exitAngleDeg);
 });
