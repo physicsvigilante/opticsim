@@ -147,8 +147,10 @@ function solveCritical(request,query,l){
   record(query,['format','kind','sourceId','boundaryId','approach','tangentSide'],
     ['format','kind','sourceId','boundaryId','approach','tangentSide'],'critical inverse query');
   const travel=direction(query.approach),side=direction(query.tangentSide);
-  if(own(l.source.emission,'directionDeg'))
-    throw Error('Critical inverse requires directionDeg to be genuinely unknown, not overwritten');
+  if(own(l.source.emission,'directionDeg')||own(l.source.emission,'incidentAngleDeg'))
+    throw Error('Critical inverse requires the input incidence angle to be genuinely unknown, not overwritten');
+  if(own(l.source.emission,'approach')&&direction(l.source.emission.approach)!==travel)
+    throw Error('Conflicting approach directions between stated source and inverse query');
   const boundaryIndex=l.planes.findIndex(c=>c.id===query.boundaryId);
   if(boundaryIndex<0)throw Error('Target critical boundary ID does not exist');
   const start=l.startRegion;
