@@ -19,10 +19,14 @@ jobs:
       - run: npm test
       - name: Compare explicit native weak-branch numerical modes
         run: node scripts/numerical-reliability-audit.mjs
+      - name: Replay a qualified scene under explicitly selected native numerical modes
+        run: node scripts/native-numerical-acceptance.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: numerical-reliability-evidence
-          path: test-artifacts/llm-authoring/numerical-reliability/
+          path: |
+            test-artifacts/llm-authoring/numerical-reliability/
+            test-artifacts/llm-authoring/numerical-replay-acceptance/
           if-no-files-found: error
           retention-days: 14
