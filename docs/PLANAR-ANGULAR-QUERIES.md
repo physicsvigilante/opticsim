@@ -154,6 +154,17 @@ where calculated values are distinct from author assumptions and later
 physical revisions. This metadata is not an authenticity proof of the
 source question or an independent adjudication.
 
+The existing browser shows the actual **calculated initial/critical
+angle** or individual **calculated branch exit angles**, with method,
+query hash, conditions and any derived source-direction field. When
+a user edits the physical apparatus, the original result is labelled
+**historical** and must be recomputed; the old calculation is never
+silently promoted as a current native measurement. The general
+image-analysis panel explicitly identifies that it has a different
+scope from the attached conditional angular calculation, even if the
+native forward run is incomplete. Neither source brightness nor the
+native weak-ray policy is changed by this display.
+
 For **angular facts without native geometry**, the calculation succeeds
 without a qualified scene and explicitly lists missing native-only inputs.
 Requesting `--native-check` in that case records `not-run` and retains
