@@ -47,7 +47,8 @@ async function probe(id,name,request,requests){
       interfaceCounters:Object.fromEntries(Object.entries(result.diagnostic.interfacesById||{})
         .map(([id,m])=>[id,{interactions:m.interactions,reflected:m.reflected,
           transmitted:m.transmitted,invalidObservations:m.invalidObservations}])),
-      requestedResults,canonicalSha256:summary.canonicalSha256,
+      requestedResults,interactionTrace:result.diagnostic.interactionTrace,
+      canonicalSha256:summary.canonicalSha256,
       incompleteResultsWithheld:!result.complete&&requestedResults.results.every(r=>r.status==='suppressed')};
     records.push(record);
     writeEvidence(resolve(out.directory,name+'-'+mode+'.json'),JSON.stringify(record,null,2)+'\n');
