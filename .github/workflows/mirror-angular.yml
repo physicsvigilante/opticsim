@@ -1,0 +1,28 @@
+name: Plane-mirror angular inverse checks
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  mirror-angle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - run: npm test
+      - name: Verify sealed U1 follow-up and independent analytical controls
+        run: node scripts/mirror-angle-acceptance.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mirror-angular-evidence
+          path: test-artifacts/llm-authoring/mirror-angular-acceptance/
+          if-no-files-found: error
+          retention-days: 14
