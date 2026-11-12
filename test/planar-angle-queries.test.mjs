@@ -236,6 +236,10 @@ test('angular-only facts solve B05 without inventing brightness, geometry or nat
      {id:'I23',negativeIndex:1.8,positiveIndex:1.3}]};
  const snapshot=structuredClone(facts),r=run(facts,query('B05'));
  assert.equal(r.status,'conditional');
+ const alreadyKnown=structuredClone(facts);alreadyKnown.source.incidentAngleDeg=20;
+ assert.throws(()=>run(alreadyKnown,query('B05')),/genuinely unknown/);
+ const conflict=structuredClone(facts);conflict.source.approach='negative';
+ assert.throws(()=>run(conflict,query('B05')),/Conflicting approach/);
  close(r.value.initialIncidenceAngleDeg,angle(1.3/1.6));
  close(r.value.criticalIncidenceAngleDeg,angle(1.3/1.8));
  assert.equal(r.value.sourceDirectionDeg,null);
