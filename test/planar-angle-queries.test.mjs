@@ -228,3 +228,56 @@ test('invalid later events are validated even when an earlier event is physicall
  const bad=structuredClone(q);bad.branches.push({...q.branches[0],id:'other'});
  assert.equal(run(c.request,bad).status,'unavailable'); // all unavailable, never partial
 });
+
+test('angular-only facts solve B05 without inventing brightness, geometry or native reflection settings',()=>{
+ const facts={format:'opticsim-planar-angular-facts-v1',
+   source:{id:'S1',region:0},
+   interfaces:[{id:'I12',negativeIndex:1.6,positiveIndex:1.8},
+     {id:'I23',negativeIndex:1.8,positiveIndex:1.3}]};
+ const snapshot=structuredClone(facts),r=run(facts,query('B05'));
+ assert.equal(r.status,'conditional');
+ close(r.value.initialIncidenceAngleDeg,angle(1.3/1.6));
+ close(r.value.criticalIncidenceAngleDeg,angle(1.3/1.8));
+ assert.equal(r.value.sourceDirectionDeg,null);
+ assert.equal(r.proposedForwardScene,undefined);
+ assert.equal(r.native.status,'not-run');
+ assert.ok(r.noNativeReason.includes('brightness'));
+ assert.deepEqual(facts,snapshot);
+});
+test('angular-only ordered media solve both B06 branches with no invented drawing dimensions',()=>{
+ const facts={format:'opticsim-planar-angular-facts-v1',
+  source:{id:'S1',region:3,incidentAngleDeg:30,approach:'negative'},
+  interfaces:[{id:'I34',negativeIndex:1.45,positiveIndex:1.32},
+    {id:'I23',negativeIndex:1.32,positiveIndex:1.4},
+    {id:'I12',negativeIndex:1.4,positiveIndex:1.3},
+    {id:'I1A',negativeIndex:1.3,positiveIndex:1}]};
+ const result=run(facts,query('B06'));
+ assert.equal(result.status,'conditional');
+ close(result.results[0].value.exitAngleDeg,angle(1.3*.5/1.45));
+ close(result.results[1].value.exitAngleDeg,angle(1.3*.5/1));
+ assert.equal(result.results[1].events[0].nativeReflectionPolicy,
+  'unspecified; analytically conditional on physical Fresnel reflection');
+ assert.equal(result.canonicalForwardScene,undefined);
+ assert.ok(result.noNativeReason.includes('brightness'));
+});
+test('angular facts must state medium order, source region and angle but not unrelated native fields',()=>{
+ const base={format:'opticsim-planar-angular-facts-v1',
+  source:{id:'S1',region:0,incidentAngleDeg:30,approach:'positive'},
+  interfaces:[{id:'I',negativeIndex:1,positiveIndex:1.5}]};
+ const branch={format:'opticsim-planar-angle-query-v1',kind:'branch-angles',sourceId:'S1',
+  branches:[{id:'transmit',events:[{interfaceId:'I',action:'transmit'}]}]};
+ assert.equal(run(base,branch).status,'conditional');
+ const cases=[
+  {...base,source:{id:'S1',incidentAngleDeg:30,approach:'positive'}},
+  {...base,source:{...base.source,region:4}},
+  {...base,source:{...base.source,incidentAngleDeg:'30'}},
+  {...base,interfaces:[{id:'I',negativeIndex:1,positiveIndex:1.5,code:'eval()'}]},
+  {...base,interfaces:[{id:'I',negativeIndex:1,positiveIndex:0}]}
+ ];
+ for(const x of cases)assert.throws(()=>run(x,branch));
+ const noDirection=structuredClone(base);delete noDirection.source.approach;
+ assert.throws(()=>run(noDirection,branch),/explicit incidentAngleDeg and approach/);
+ const badOrder=structuredClone(base);
+ badOrder.interfaces.push({id:'J',negativeIndex:1.4,positiveIndex:1.2});
+ assert.throws(()=>run(badOrder,branch),/Inconsistent shared medium/);
+});
