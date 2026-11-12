@@ -1,0 +1,28 @@
+name: Original refraction problem pair
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  original-pair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - run: npm test
+      - name: Apply two sealed original Problems requests and labelled follow-ups
+        run: node scripts/original-refraction-pair.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-refraction-pair-evidence
+          path: test-artifacts/llm-authoring/original-refraction-pair/
+          if-no-files-found: error
+          retention-days: 14
