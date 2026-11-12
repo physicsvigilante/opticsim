@@ -1,0 +1,40 @@
+name: Original refraction problem pair
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  original-pair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - run: npm test
+      - name: Apply two sealed original Problems requests and labelled follow-ups
+        run: node scripts/original-refraction-pair.mjs
+      - name: Preserve findings and exact execution provenance
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync,copyFileSync,readdirSync} from 'node:fs';
+          import {createHash} from 'node:crypto';
+          const out='test-artifacts/llm-authoring/original-refraction-pair';
+          const files=[...readdirSync('src').filter(x=>x.endsWith('.js')).map(x=>'src/'+x),'scripts/qualified-scene.mjs','scripts/author-scene.mjs','scripts/build.mjs','upstream-pin.json','dist/test-core.cjs'];
+          const hashes=Object.fromEntries(files.map(p=>[p,createHash('sha256').update(readFileSync(p)).digest('hex')]));
+          copyFileSync('evaluation/original-refraction-pair-v1/README.md',out+'/README.md');
+          writeFileSync(out+'/execution-provenance.json',JSON.stringify({checkoutSha:process.env.GITHUB_SHA,runId:process.env.GITHUB_RUN_ID,node:process.version,upstream:JSON.parse(readFileSync('upstream-pin.json')),fileSha256:hashes},null,2)+'\n',{flag:'wx'});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-refraction-pair-evidence
+          path: test-artifacts/llm-authoring/original-refraction-pair/
+          if-no-files-found: error
+          retention-days: 14
