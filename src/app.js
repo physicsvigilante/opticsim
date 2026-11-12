@@ -371,7 +371,12 @@ $('zoom').oninput = e => viewChange(p => { p.view.zoom = Number(e.target.value);
 for (const [id, dx] of [['pan-left', -100], ['pan-right', 100]]) $(id).onclick = () => viewChange(p => { p.view.x += dx; });
 function resize() {
   const rect = $('stage').getBoundingClientRect();
-  size = { width: Math.max(200, Math.round(rect.width)), height: Math.max(200, Math.round(rect.height)) };
+  const nextSize = { width: Math.max(200, Math.round(rect.width)), height: Math.max(200, Math.round(rect.height)) };
+  // ResizeObserver may notify after UI-only layout work even when the rounded
+  // drawing viewport is unchanged. Do not clear canvases or invent a new run.
+  if (nextSize.width === size.width && nextSize.height === size.height &&
+      canvases.every(canvas => canvas.width === nextSize.width && canvas.height === nextSize.height)) return;
+  size = nextSize;
   for (const canvas of canvases) { canvas.width = size.width; canvas.height = size.height; }
   if (session.document && session.state !== 'invalid') apply(session.document);
 }
