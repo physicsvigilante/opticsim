@@ -62,7 +62,7 @@ export function capabilities() {
       ...(type==='planar-interface'?{booleanParameters:['partialReflection'],nativeType:'PlaneGlass',normal:'negative to positive side; degrees CCW in y-up'}:{}),
       counts:{...GENERAL_SCOPE[type]},
       ...(isCurved(type)?{nativeType:type==='ideal-curved-mirror'?'IdealMirror':'ArcMirror',model:type==='ideal-curved-mirror'?'ideal Gaussian mapping':'native circular local-normal reflection; analytical image is paraxial'}:{}),
-      ...(type==='point-source'?{emission:{mode:['full-circle','directional'],
+      ...(type==='point-source'?{emission:{mode:['full-circle','directional'],curvedSceneModes:['full-circle','directional','single-ray'],
         directionalFields:['directionDeg','angleDeg'],planarOnlyMode:'single-ray',singleRayFields:['directionDeg']}}:{})
     }])),
     bounds:COMPONENT_BOUNDS,
@@ -144,7 +144,7 @@ export function inspectAuthoringRequest(request){
     }
     if(!object(c.emission,path+'.emission',['mode','directionDeg','angleDeg'],['mode']))continue;
     if(own(c.emission,'mode')&&!['full-circle','directional','single-ray'].includes(c.emission.mode))
-      issues.push(issue(path+'.emission.mode','UNSUPPORTED_MODE','Expected full-circle, directional, or planar-only single-ray'));
+      issues.push(issue(path+'.emission.mode','UNSUPPORTED_MODE','Expected full-circle, directional, or schema-supported single-ray'));
     for(const key of ['directionDeg','angleDeg']){
       if(own(c.emission,key))number(key,c.emission[key],path+'.emission.'+key);
       else if(c.emission.mode==='directional'||c.emission.mode==='single-ray'&&key==='directionDeg')issues.push(issue(path+'.emission.'+key,
@@ -268,6 +268,12 @@ export function reviseScene(document,patch){
           issues.push(issue('$.changes','MISSING_VALUE',
             'Switching '+c.id+' to directional requires an explicit '+key+' in the same revision'));
     }
+  }
+  for(const c of next.physics.components.filter(c=>c.type==='point-source')){
+    const before=document.physics.components.find(x=>x.id===c.id);
+    if(before.emission.mode==='full-circle'&&c.emission.mode==='single-ray'&&
+       !seen.has(c.id+':emission:directionDeg'))
+      issues.push(issue('$.changes','MISSING_VALUE','Switching '+c.id+' to single-ray requires an explicit directionDeg in the same revision'));
   }
   if(issues.length)fail(issues);
   try{validate(next);}catch(error){fail([issue(error.path||'$',

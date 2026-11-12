@@ -23,13 +23,10 @@ For sequential **plane-mirror angular inverses**, the physical view
 and **unsigned consecutive line inclinations** only. Request
 `mirror-incidence-from-output-direction` with a reference mirror,
 `outgoingRelation: parallel|perpendicular`, and explicit
-`angleConvention: from-normal`. For the previously reviewed U1 case,
-two mirrors at 70 degrees with outgoing ray parallel to the first yield
-a **conditional 50-degree incidence from the first normal**. The
-deterministic solver enumerates inclination signs and outgoing directions;
-never guess a handedness or fabricate source position, brightness,
-mirror lengths or native hits. Multiple solutions and grazing cases
-remain explicit. Read `docs/PLANE-MIRROR-ANGULAR-QUERIES.md`.
+`angleConvention: from-normal`. The solver enumerates inclination signs
+and outgoing directions; never guess a handedness or fabricate source
+position, brightness, mirror lengths or native hits. Multiple solutions
+and grazing cases remain explicit. Read `docs/PLANE-MIRROR-ANGULAR-QUERIES.md`.
 
 Do not compute outgoing answers merely to supply a required forward input.
 Use the supported inverse query where applicable. Do not invent brightness or
@@ -50,3 +47,22 @@ as separate requests/reviews. Do not call an external model service, read a
 Solutions image, publish a site or merge a new PR without the appropriate
 separate authorization. Existing model, component and numerical restrictions
 remain authoritative.
+
+## Curved mirror image and instantaneous motion
+
+Read `docs/CURVED-MIRRORS.md` and live `curvedMirrors` capabilities.
+Use `opticsim-curved-mirror-facts-v1` with explicit `ideal-gaussian` or
+`spherical-paraxial` and `real-positive-local` sign convention. Request
+`curved-mirror-image` or `curved-mirror-image-velocity` through the same
+unified command. Do not supply arbitrary focal length, brightness or aperture
+merely to calculate scale-free magnification: a stated u/f ratio plus curvature
+is sufficient. Velocity needs known height and object motion, stationary
+mirror, fixed focal length and time unit; transverse motion includes
+changing magnification. Focal infinity is not a finite velocity.
+
+Native scenes distinguish `ideal-curved-mirror` from
+`circular-arc-mirror`: all geometry and brightness are explicit, scenes
+use v6, and numerical circular rays can aberrate. Their measured reflection
+counts are not detected images. Keep local transverse height distinct
+from global y. Later physical edits make attached calculations historical;
+recalculate using the new facts rather than presenting old values as current.

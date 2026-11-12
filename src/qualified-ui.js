@@ -6,6 +6,7 @@ import {evaluateObservables} from './observables.js';
 import {sceneHash,canonicalJSON} from './qualified-utils.js';
 import {fitRequestedView,formatRequestedResult} from './result-preview.js';
 const $=id=>document.getElementById(id);
+const scalar=n=>Number.isFinite(n)?Number(n.toPrecision(8)).toString():'not finite';
 export class QualifiedUI {
   constructor(session,download){
     const button=document.createElement('button');button.id='fit-results';button.disabled=true;
@@ -112,11 +113,14 @@ export class QualifiedUI {
         }
       }
       if(calc.kind.startsWith('curved-mirror-')&&computed){
+        const prefix=historical?'Historical calculated':'Calculated';
         lines.push((historical?'Historical ':'')+'Curved mirror image: '+computed.imageKind+
-          '; v = '+computed.imageDistance+' '+computed.lengthUnit+'; m = '+computed.magnification+'.');
-        if(computed.imageHeight!==null)lines.push('Calculated image height: '+computed.imageHeight+' '+computed.lengthUnit+'.');
-        if(computed.velocity)lines.push('Calculated image velocity: axial '+computed.velocity.axial+
-          ', transverse '+computed.velocity.transverse+' '+computed.velocityUnit+'. '+computed.axes);
+          (computed.imageKind==='at-infinity'?'; no finite image distance or magnification.':
+          '; v = '+scalar(computed.imageDistance)+' '+computed.lengthUnit+'; m = '+scalar(computed.magnification)+'.'));
+        if(Number.isFinite(computed.imageHeight))lines.push(prefix+' local transverse image height: '+scalar(computed.imageHeight)+' '+computed.lengthUnit+'.');
+        if(computed.globalPositionMm)lines.push(prefix+' global position: x = '+scalar(computed.globalPositionMm.x)+', y = '+scalar(computed.globalPositionMm.y)+' mm.');
+        if(computed.velocity)lines.push(prefix+' image velocity: axial '+scalar(computed.velocity.axial)+
+          ', transverse '+scalar(computed.velocity.transverse)+' '+computed.velocityUnit+'. '+computed.axes);
       }
       for(const field of calc.computedFields){
         lines.push('Derived '+field.componentId+'.'+field.section+'.'+field.key+
@@ -133,7 +137,7 @@ export class QualifiedUI {
     if(!this.requests.length){
       $('fit-results').disabled=!['completed','completed-with-warnings'].includes(s.state);
       $('observable-results').textContent=(this.qualification?.calculations?.length?
-        'Conditional angular calculations are recorded in Qualification above (historical after physical edits). No native requested-result readouts are loaded. Native ray tracing and its completion status are separate.':
+        'Conditional calculations are recorded in Qualification above (historical after physical edits). No native requested-result readouts are loaded. Native ray tracing and its completion status are separate.':
         'No explicit result requests loaded. This view shows native tracing only.');
       return;
     }

@@ -79,6 +79,7 @@ async function main(){
   let s=await until(state,s=>s.native==='completed'&&s.qualification==='calculated'&&s.details.includes('Curved mirror image'),'ideal mirror import');
   assert.match(s.prediction,/conditional curved-mirror calculation/);
   assert.match(s.details,/v = 150/);assert.match(s.details,/Ideal Gaussian mirror/);
+  assert.match(s.details,/local transverse image height/);assert.match(s.details,/global position: x = -150, y = -2.5 mm/);
   assert.equal(await evaluate('document.getElementById("M1-radius")===null'),true);
   check('Ideal native mirror and Gaussian calculation remain explicitly labelled');await shot('ideal-curved-mirror');
   await evaluate('(()=>{const e=document.getElementById("M1-focalLength");e.value="120";e.dispatchEvent(new Event("input",{bubbles:true}));e.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true}));})()');
