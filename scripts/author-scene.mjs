@@ -1,36 +1,30 @@
-// Opticsim LLM authoring CLI. The LLM chooses physics; this routine prepares
-// strict v4 scene data and delegates actual execution to the existing checker.
-// No remote API, no extra ray tracer, no unapproved publication.
+// Opticsim CLI: interpret physics outside this routine, then execute the pinned
+// native checker. Saved attempts use fresh, non-overwriting evidence bundles.
 import {createRequire} from 'node:module';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
-import {readFileSync,mkdirSync,writeFileSync} from 'node:fs';
-import {resolve,dirname,sep} from 'node:path';
+import {readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {capabilities,prepareScene,reviseScene,AuthoringError} from '../src/authoring.js';
 import {problemCapabilities,resolveProblemRequest} from '../src/problem-authoring.js';
 import {serializeSave} from '../src/contract.js';
 import {checkCandidate} from '../skills/sim-ro-image-to-scene/scripts/check-scene.mjs';
+import {reserveAuthoringOutput,writeEvidence} from './authoring-evidence.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
 const hash=text=>createHash('sha256').update(text).digest('hex');
 const maxInputBytes=1024*1024;
-const safeRead=path=>{
+function readInput(path){
   const bytes=readFileSync(resolve(path));
   if(bytes.length>maxInputBytes)throw new AuthoringError([{
     path:'$',code:'INPUT_TOO_LARGE',message:'Input JSON exceeds the 1 MB document limit'
   }]);
+  return bytes;
+}
+function parseInput(bytes){
   try{return JSON.parse(bytes.toString('utf8'));}
   catch(error){throw new AuthoringError([{path:'$',code:'INVALID_JSON',message:error.message}]);}
-};
-function outputPaths(prefix){
-  if(!prefix)return null;
-  const target=resolve(prefix),allowed=resolve(root,'test-artifacts/llm-authoring')+sep;
-  if(!target.startsWith(allowed)||target.endsWith(sep))
-    throw new AuthoringError([{path:'--out',code:'INVALID_OUTPUT',
-      message:'Output must be a directory beneath this repo test-artifacts/llm-authoring/'}]);
-  return {directory:target,scene:resolve(target,'scene.ray-optics-2d.json'),
-    report:resolve(target,'report.json')};
 }
 export function evaluateDocument(doc,core) {
   const sceneText=serializeSave(doc),run=checkCandidate(sceneText,core);
@@ -58,118 +52,115 @@ export function evaluateDocument(doc,core) {
     }:null,
     measurementState,analysis:{status:run.analysis.status,reason:run.analysis.reason},
     executionPassed:run.executionPassed,
-    interpretation:'not-assessed-by-engine'
+    interpretation:'not-assessed-by-engine',questionSupport:'not-assessed-by-engine'
   };
   return {summary,report:run,sceneText};
 }
 function usage() {
   return 'Usage:\n'+
     '  node scripts/author-scene.mjs capabilities|problem-capabilities\n'+
-    '  node scripts/author-scene.mjs problem <request.json> [--illustrate] [--out test-artifacts/llm-authoring/<name>]\n'+
-    '  node scripts/author-scene.mjs evaluate <request.json> [--out test-artifacts/llm-authoring/<name>]\n'+
-    '  node scripts/author-scene.mjs revise <scene.json> <changes.json> [--out test-artifacts/llm-authoring/<name>]\n'+
-    'The evaluate/revise commands build the pinned native test core and return structured diagnostics.\n';
+    '  node scripts/author-scene.mjs problem <request.json> [--illustrate] [--out test-artifacts/llm-authoring/<fresh-name>]\n'+
+    '  node scripts/author-scene.mjs evaluate <request.json> [--out test-artifacts/llm-authoring/<fresh-name>]\n'+
+    '  node scripts/author-scene.mjs revise <scene.json> <changes.json> [--out test-artifacts/llm-authoring/<fresh-name>]\n'+
+    'All accepted commands use the same pinned native core. Existing output directories are refused.\n';
 }
-function main(){
+function record(summary,details,sceneText,context){
+  summary.command=context.command;
+  if(context.inputSha256)summary.inputSha256=context.inputSha256;
+  if(context.changesSha256)summary.changesSha256=context.changesSha256;
+  const output=context.output;
+  if(output){
+    summary.outputs={input:output.input,report:output.report,
+      ...(context.changesSha256?{changes:output.changes}:{}),
+      ...(sceneText?{scene:output.scene}:{})};
+    if(sceneText)writeEvidence(output.scene,sceneText);
+    writeEvidence(output.report,JSON.stringify({
+      format:'opticsim-authoring-evidence-v1',summary,details:details??null
+    },null,2)+'\n');
+    context.reportWritten=true;
+  }
+  process.stdout.write(JSON.stringify(summary,null,2)+'\n');
+}
+function main(context){
   const [command,...args]=process.argv.slice(2);
-  if(command==='capabilities'&&args.length===0){
-    process.stdout.write(JSON.stringify(capabilities(),null,2)+'\n');return;
+  context.command=command;
+  if(['capabilities','problem-capabilities'].includes(command)&&args.length===0){
+    process.stdout.write(JSON.stringify(command==='capabilities'?capabilities():problemCapabilities(),null,2)+'\n');return;
   }
-  if(command==='problem-capabilities'&&args.length===0){
-    process.stdout.write(JSON.stringify(problemCapabilities(),null,2)+'\n');return;
+  if(!['problem','evaluate','revise'].includes(command))throw new Error(usage());
+  const count=command==='revise'?2:1;
+  if(args.length<count)throw new Error(usage());
+  let illustration=false,outPrefix=null;
+  for(let i=count;i<args.length;i++){
+    if(command==='problem'&&args[i]==='--illustrate'&&!illustration)illustration=true;
+    else if(args[i]==='--out'&&outPrefix===null&&i+1<args.length)outPrefix=args[++i];
+    else throw new Error(usage());
   }
+  const bytes=readInput(args[0]),changes=command==='revise'?readInput(args[1]):null;
+  context.inputSha256=hash(bytes);
+  if(changes)context.changesSha256=hash(changes);
+  // Reserve before any native work. Keep original input bytes even when JSON
+  // parsing or preparation fails; do not repair or regenerate those bytes.
+  context.output=reserveAuthoringOutput(outPrefix,root);
+  if(context.output){
+    writeEvidence(context.output.input,bytes);
+    if(changes)writeEvidence(context.output.changes,changes);
+  }
+  const request=parseInput(bytes);
+  let prepared;
   if(command==='problem'){
-    if(!args.length)throw new Error(usage());
-    let illustration=false,outPrefix=null;
-    for(let i=1;i<args.length;i++){
-      if(args[i]==='--illustrate'&&!illustration)illustration=true;
-      else if(args[i]==='--out'&&outPrefix===null&&i+1<args.length)
-        outPrefix=args[++i];
-      else throw new Error(usage());
-    }
-    const output=outputPaths(outPrefix);
-    const problem=resolveProblemRequest(safeRead(args[0]),{illustration});
-    const qualification={
-      status:problem.status,illustrationOptIn:illustration,
-      choices:problem.choices,issues:problem.issues,
-      interpretation:problem.interpretation,
-      physicalFidelity:problem.physicalFidelity
-    };
-    if(!problem.prepared){
-      // Missing essential physics or unsupported optics: no build, native call,
-      // scene JSON or fabricated image. Keep the diagnostic report reviewable.
-      const summary={accepted:false,problem:qualification,issues:problem.issues,
-        native:{status:'not-run'},interpretation:'not-assessed-by-engine'};
-      if(output){
-        mkdirSync(output.directory,{recursive:true});
-        writeFileSync(output.report,JSON.stringify({summary},null,2)+'\n');
-        summary.outputs={report:output.report};
-      }
-      process.stdout.write(JSON.stringify(summary,null,2)+'\n');
+    const problem=resolveProblemRequest(request,{illustration});
+    const {prepared:resolved,...qualification}=problem;
+    context.problem={...qualification,illustrationOptIn:illustration};
+    if(!resolved){
+      record({accepted:false,problem:context.problem,issues:problem.issues,
+        native:{status:'not-run'},executionPassed:false,
+        interpretation:'not-assessed-by-engine',questionSupport:'not-assessed-by-engine'},null,null,context);
       process.exitCode=1;return;
     }
-    execFileSync(process.execPath,[resolve(root,'scripts/build.mjs'),'--test'],
-      {cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']});
-    const core=createRequire(import.meta.url)(resolve(root,'dist/test-core.cjs'));
-    const result=evaluateDocument(problem.prepared.document,core);
-    const summary={...result.summary,problem:qualification,
-      preparation:problem.prepared.preparation};
-    if(output){
-      mkdirSync(output.directory,{recursive:true});
-      writeFileSync(output.scene,result.sceneText);
-      writeFileSync(output.report,JSON.stringify({summary,details:result.report},null,2)+'\n');
-      summary.outputs={scene:output.scene,report:output.report};
-    }else summary.document=problem.prepared.document;
-    process.stdout.write(JSON.stringify(summary,null,2)+'\n');
-    if(!summary.executionPassed)process.exitCode=1;
-    return;
-  }
-  if(!['evaluate','revise'].includes(command))throw new Error(usage());
-  const count=command==='evaluate'?1:2;
-  if(args.length!==count&&!(args.length===count+2&&args[count]==='--out'))
-    throw new Error(usage());
-  const output=outputPaths(args.length===count+2?args[count+1]:null);
-  let prepared;
-  if(command==='evaluate')prepared=prepareScene(safeRead(args[0]));
-  else {
-    const base=safeRead(args[0]),edit=safeRead(args[1]);
-    if(!edit||typeof edit!=='object'||Array.isArray(edit)||
-       !Object.hasOwn(edit,'expectedSha256'))
+    prepared=resolved;
+  }else if(command==='evaluate')prepared=prepareScene(request);
+  else{
+    const edit=parseInput(changes);
+    if(!edit||typeof edit!=='object'||Array.isArray(edit)||!Object.hasOwn(edit,'expectedSha256'))
       throw new AuthoringError([{path:'$.expectedSha256',code:'MISSING_REVISION',
         message:'A revision hash is required for optimistic concurrency'}]);
-    const actual=hash(serializeSave(base));
+    const actual=hash(serializeSave(request));
     if(edit.expectedSha256!==actual)
       throw new AuthoringError([{path:'$.expectedSha256',code:'STALE_REVISION',
         message:'The authored scene has changed; reload before applying this edit'}]);
-    const {expectedSha256, ...changeSet}=edit;
-    prepared=reviseScene(base,changeSet);
+    const {expectedSha256,...changeSet}=edit;
+    prepared=reviseScene(request,changeSet);
   }
-  // Prepare and validate before building; missing/unsupported physics must
-  // not cause an expensive native run or produce a fabricated "fixed" scene.
   execFileSync(process.execPath,[resolve(root,'scripts/build.mjs'),'--test'],
     {cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']});
   const core=createRequire(import.meta.url)(resolve(root,'dist/test-core.cjs'));
+  context.nativeStarted=true;
   const result=evaluateDocument(prepared.document,core);
   const summary={...result.summary,
-    ...(command==='evaluate'?{preparation:prepared.preparation}:
-      {revision:{changesApplied:prepared.changesApplied}})};
-  if(output){
-    mkdirSync(output.directory,{recursive:true});
-    writeFileSync(output.scene,result.sceneText);
-    writeFileSync(output.report,JSON.stringify({summary,details:result.report},null,2)+'\n');
-    summary.outputs={scene:output.scene,report:output.report};
-  }else{
-    summary.document=prepared.document;
-  }
-  process.stdout.write(JSON.stringify(summary,null,2)+'\n');
+    ...(context.problem?{problem:context.problem}:{}),
+    ...(command==='revise'?{revision:{changesApplied:prepared.changesApplied,
+      priorAssumptions:'unknown-from-scene-alone; retain the original qualification report'}}:
+      {preparation:prepared.preparation})};
+  if(!context.output)summary.document=prepared.document;
+  record(summary,result.report,result.sceneText,context);
   if(!summary.executionPassed)process.exitCode=1;
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
-  try{main();}catch(error){
+  const context={};
+  try{main(context);}catch(error){
     const issues=error instanceof AuthoringError?error.issues:
       [{path:error.path||'$',code:error.code||'EXECUTION_ERROR',message:error.message}];
-    process.stdout.write(JSON.stringify({accepted:false,issues,
-      native:{status:'not-run'},interpretation:'not-assessed-by-engine'},null,2)+'\n');
+    const summary={accepted:false,issues,executionPassed:false,
+      native:{status:context.nativeStarted?'failed':'not-run'},
+      interpretation:'not-assessed-by-engine',questionSupport:'not-assessed-by-engine',
+      ...(context.problem?{problem:context.problem}:{})};
+    try{record(summary,null,null,context);}catch(writeError){
+      // Never overwrite a partially written report. Surface storage failure
+      // rather than implying that complete evidence has been saved.
+      summary.evidenceWriteError=String(writeError.message);
+      process.stdout.write(JSON.stringify(summary,null,2)+'\n');
+    }
     process.exitCode=1;
   }
 }
