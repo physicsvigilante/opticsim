@@ -1,0 +1,138 @@
+{
+  "format": "opticsim-real-problem-development-trial-v1",
+  "attempt": {
+    "model": "GPT-6",
+    "mode": "assisted-development-not-blind",
+    "independentModelCall": false,
+    "priorRelatedReviewVisible": true,
+    "exposedToSolutionImages": false,
+    "modelApiInvoked": false,
+    "scoringClaim": "No independent blind authoring accuracy can be calculated from this development trial."
+  },
+  "input": {
+    "repository": "physicsvigilante/opticsim",
+    "branch": "main",
+    "archive": "08_Ray_Optics_Explanations.zip",
+    "sha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+    "root": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/"
+  },
+  "cases": [
+    {
+      "id": "L01",
+      "file": "014.png",
+      "classification": "native-forward-plus-conditional-analysis",
+      "question": "Two convergent lenses of focal lengths 20 cm and 10 cm, separated by 30 cm; point object 30 cm before the first. Find image distance from the second.",
+      "stated": [
+        "f1=+20 cm",
+        "f2=+10 cm",
+        "lens separation=30 cm",
+        "object distance to L1=30 cm"
+      ],
+      "derived": [
+        "Fix lens L1 at x=0 and L2 at x=+30 cm; object at x=-30 cm",
+        "First image at x=+60 cm (30 cm right of L2, virtual object for L2)",
+        "Final ideal image at x=37.5 cm, which is +7.5 cm right of L2"
+      ],
+      "illustrativeChoices": [
+        "Choose a single point emitter on the optical axis (y=0); the question does not state an object's transverse extent",
+        "Choose 20 cm aperture for each ideal lens, finite full-circle ray sampling, relative source brightness 0.08; none is supplied by the question"
+      ],
+      "requestKey": "L01",
+      "analysisPolicy": "Run general native tracing; additionally apply existing ideal-thin-lens-geometric analytical model only because the accepted components satisfy its one-source ordered coaxial lens scope. Do not call the native trace an image-position detector."
+    },
+    {
+      "id": "L02",
+      "file": "001.png",
+      "classification": "inverse-analytical-plus-illustrative-native",
+      "question": "Two point sources 24 cm apart; find lens position for a converging lens of focal length 9 cm so their images coincide.",
+      "stated": [
+        "Source separation=24 cm",
+        "Converging focal length f=+9 cm"
+      ],
+      "derived": [
+        "Choose sources at x=0 and x=+24 cm (translation-invariant coordinates)",
+        "Lens can be at x=6 cm or x=18 cm, between sources",
+        "The common ideal image is respectively at x=-12 cm or x=+36 cm"
+      ],
+      "illustrativeChoices": [
+        "Point-source y=0 for both, illustrative 20 cm lens aperture, full-circle emission and relative brightness 0.08 for each",
+        "Current native two-source detector data have no per-source image provenance; both candidate scenes are examples to visualize after the inverse derivation"
+      ],
+      "requestKeys": [
+        "L02-left",
+        "L02-right"
+      ],
+      "analysisPolicy": "Independent thin-lens algebra derives the two positions. Validate and execute both native candidate scenes, but do not claim general tracing analytically proves identical image locations."
+    },
+    {
+      "id": "L03",
+      "file": "007.png",
+      "classification": "derived-equivalent-not-direct-native",
+      "question": "Converging lens f=+5 cm in contact with diverging lens f=-10 cm. Find combined focal length.",
+      "stated": [
+        "Two zero-separation thin lenses with f1=+5 cm and f2=-10 cm"
+      ],
+      "derived": [
+        "Paraxial powers add: 1/f_eff=1/5-1/10=1/10 cm^-1",
+        "Effective focal length f_eff=+10 cm"
+      ],
+      "illustrativeChoices": [],
+      "requestKeys": [],
+      "nonExecutionReason": "The validator rejects coincident ideal-lens planes. One equivalent lens f=+10 cm is a disclosed analytical reduction, not a native two-lens contact simulation; the question supplies no point source."
+    },
+    {
+      "id": "L04",
+      "file": "021.png",
+      "classification": "derived-collimated-beam-not-direct-native",
+      "question": "Three lenses f=+10 cm, -20 cm, +9 cm; gaps 15 cm and 5 cm. Find the point where a parallel incoming beam converges after the third lens.",
+      "stated": [
+        "f1=+10 cm",
+        "f2=-20 cm",
+        "f3=+9 cm",
+        "d12=15 cm",
+        "d23=5 cm",
+        "exact parallel incident beam"
+      ],
+      "derived": [
+        "Paraxial ABCD matrix from just before L1 to just after L3 has C=0",
+        "An exactly collimated input leaves exactly collimated: there is no finite convergence point (at infinity) in the ideal paraxial model"
+      ],
+      "illustrativeChoices": [],
+      "requestKeys": [],
+      "nonExecutionReason": "Current authorable point sources have finite positions and angular cones; a true parallel beam at infinity is not available. A distant point emitter would be only an approximation."
+    },
+    {
+      "id": "L05",
+      "file": "022.png",
+      "classification": "unsupported-material-law",
+      "question": "Plano-concave lens with intensity-dependent material index mu=mu0+aI; determine intensity when f=2r.",
+      "stated": [
+        "Refractive index depends on incident light intensity",
+        "mu=mu0+a I, a>0",
+        "focal length condition f=2r"
+      ],
+      "derived": [],
+      "illustrativeChoices": [],
+      "requestKeys": [],
+      "nonExecutionReason": "The current ideal lens takes a prescribed focal length and has no intensity-dependent refractive index or nonlinear material interaction. Do not invent a lens or calculated intensity to make native execution succeed."
+    },
+    {
+      "id": "L06",
+      "file": "027.png",
+      "classification": "analytical-offaxis-not-direct-native",
+      "question": "Two equal-focal-length convergent lenses separated along x by 3f, but the second lens optical axis is displaced vertically by d (d much less than f); incoming beam is parallel. Find focus coordinates relative to first lens centre.",
+      "stated": [
+        "Both lenses have focal length f",
+        "Second lens at x=3f with axis centre y=d",
+        "Parallel incoming light; d much smaller than f"
+      ],
+      "derived": [
+        "Paraxial focal location after lens 2: x=5f, y=2d relative to the first lens centre",
+        "For an initial ray height h: after L1 slope -h/f, at L2 y=-2h, after L2 slope (h+d)/f; at x=5f the ray height becomes 2d"
+      ],
+      "illustrativeChoices": [],
+      "requestKeys": [],
+      "nonExecutionReason": "Current ideal-lens authoring requires each lens vertically centred at y=0; the current source contract also lacks an exact collimated beam. No approximate/fake aligned scene is offered."
+    }
+  ]
+}

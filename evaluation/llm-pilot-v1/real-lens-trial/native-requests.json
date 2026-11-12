@@ -1,0 +1,132 @@
+{
+  "format": "opticsim-real-problem-native-requests-v1",
+  "provenance": "LLM-authored illustrative native scenes. Nonphysical values are explicitly recorded in attempt.json. No solution PNGs consulted.",
+  "cases": [
+    {
+      "key": "L01",
+      "request": {
+        "title": "Lens Formula #14 — illustrative finite rays",
+        "lengthUnit": "cm",
+        "runPolicy": "preview-v1",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -30,
+              "y": 0,
+              "brightness": 0.08
+            },
+            "emission": {
+              "mode": "full-circle"
+            }
+          },
+          {
+            "id": "L1",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": 0,
+              "focalLength": 20,
+              "apertureHeight": 20
+            }
+          },
+          {
+            "id": "L2",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": 30,
+              "focalLength": 10,
+              "apertureHeight": 20
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": "L02-left",
+      "request": {
+        "title": "Lens Formula #1 — first derived lens position",
+        "lengthUnit": "cm",
+        "runPolicy": "preview-v1",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": 0,
+              "y": 0,
+              "brightness": 0.08
+            },
+            "emission": {
+              "mode": "full-circle"
+            }
+          },
+          {
+            "id": "S2",
+            "type": "point-source",
+            "parameters": {
+              "x": 24,
+              "y": 0,
+              "brightness": 0.08
+            },
+            "emission": {
+              "mode": "full-circle"
+            }
+          },
+          {
+            "id": "L1",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": 6,
+              "focalLength": 9,
+              "apertureHeight": 20
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": "L02-right",
+      "request": {
+        "title": "Lens Formula #1 — second derived lens position",
+        "lengthUnit": "cm",
+        "runPolicy": "preview-v1",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": 0,
+              "y": 0,
+              "brightness": 0.08
+            },
+            "emission": {
+              "mode": "full-circle"
+            }
+          },
+          {
+            "id": "S2",
+            "type": "point-source",
+            "parameters": {
+              "x": 24,
+              "y": 0,
+              "brightness": 0.08
+            },
+            "emission": {
+              "mode": "full-circle"
+            }
+          },
+          {
+            "id": "L1",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": 18,
+              "focalLength": 9,
+              "apertureHeight": 20
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

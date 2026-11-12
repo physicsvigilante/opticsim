@@ -1,0 +1,95 @@
+{
+  "format": "opticsim-llm-pilot-v1",
+  "version": 1,
+  "sourceModel": "general-component-tracing",
+  "instructions": "Read only these prompts and the capabilities() interface. For each case, return a JSON authoring request using the existing component names and physical fields. Do not add unstated optical components or infer physical values. Do not read the reference file before submitting.",
+  "cases": [
+    {
+      "id": "C01",
+      "prompt": "In 2D with x right and y up, use centimetres. A single point source S1 is at (-8, +3) cm, has relative brightness 0.08, and emits in all directions (full-circle). There are no lenses, mirrors or detectors. Author the optical arrangement.",
+      "tags": [
+        "free-space",
+        "full-circle"
+      ]
+    },
+    {
+      "id": "C02",
+      "prompt": "Use centimetres and x-right/y-up. A point source S1 at (-28, +2) cm has brightness 0.08 and emits a symmetric cone along +x (0°) with a full opening of 18°. A passive detector D1 is centred at (+16, 0) cm, is 14 cm long, and has a vertical surface tangent of +90°. No lenses or mirrors.",
+      "tags": [
+        "source",
+        "detector",
+        "no-optical-surfaces"
+      ]
+    },
+    {
+      "id": "C03",
+      "prompt": "All distances are centimetres in an x-right/y-up coordinate frame. S1: position (-28,-5), relative brightness 0.09, directional emission at +10° and full cone opening 25°. S2: position (-26,+6), brightness 0.05, directional emission at -7° with full opening 20°. Put vertical detectors D1 and D2 at (15,+4) and (26,-2) respectively; both have tangent orientation +90° and length 7 cm. No optical surfaces.",
+      "tags": [
+        "two-sources",
+        "two-detectors"
+      ]
+    },
+    {
+      "id": "C04",
+      "prompt": "Make an x-right/y-up arrangement, using cm. S1 is at (-32,3), relative brightness 0.08, and emits towards +x at 0° with full opening 16°. L1 is a vertical, y-centred ideal converging lens at x=0 with focal length +11 cm and aperture height 20 cm. Place vertical passive detector D1 at (27,0), tangent +90°, length 13 cm. Use native tracing rather than making any analytical image claim.",
+      "tags": [
+        "lens",
+        "detector"
+      ]
+    },
+    {
+      "id": "C05",
+      "prompt": "All coordinates and lengths in centimetres, x-right/y-up. A full-circle source S1 at (-40,-2) has brightness 0.12. Three y-centred vertical thin lenses: L1 x=-12, focal length -14, aperture height 18; L2 x=+8, focal length +19, aperture height 16; L3 x=+27, focal length +24, aperture height 22. Do not add a mirror, detector or another emitter.",
+      "tags": [
+        "three-lens",
+        "diverging",
+        "no-mirror"
+      ]
+    },
+    {
+      "id": "C06",
+      "prompt": "Use cm in the x-right/y-up frame. S1 is a point source at (-22,3), relative brightness 0.06, with direction 0° (toward +x) and full opening angle 22°. M1 is a finite two-sided plane mirror centred at (8,0), with surface tangent 110° counterclockwise from +x and length 14 cm. D1 is a passive vertical detector centred at (-8,12) with tangent 90° and length 10 cm.",
+      "tags": [
+        "oblique-mirror",
+        "detector"
+      ]
+    },
+    {
+      "id": "C07",
+      "prompt": "Use millimetres throughout, with x right and y up. S1 at (-240,+10) mm has relative brightness 0.07, emits direction +8° in a symmetric cone of full width 24°. Place M1 centred at (+20,0) mm, tangent orientation +100°, finite length 150 mm; and M2 centred at (-140,+40) mm, tangent 0°, finite length 120 mm. Both are two-sided plane mirrors, not refracting interfaces. No lenses or detectors.",
+      "tags": [
+        "two-mirrors",
+        "mm",
+        "non-intersecting"
+      ]
+    },
+    {
+      "id": "C08",
+      "prompt": "Use cm and x-right/y-up. S1: (-42,+1), relative brightness 0.06, emission direction 0°, opening angle 14°. Two y-centred vertical ideal lenses: L1 at x=-7 cm with focal length +15 cm and aperture height 16 cm, L2 at x=+16 cm with focal length -11 cm and aperture height 18 cm. Add a finite plane mirror M1 at (37,2) cm, surface tangent 112°, length 15 cm. Place vertical detector D1 at (-25,0) cm, tangent +90°, length 8 cm.",
+      "tags": [
+        "two-lens",
+        "mirror",
+        "detector"
+      ]
+    },
+    {
+      "id": "C09",
+      "prompt": "In centimetres, choose x right and y up. Four independent directional point sources point to +x with angle 0° and full cone opening 12°: S1=(-44,-4), brightness 0.05; S2=(-40,-1), brightness 0.04; S3=(-37,+2), brightness 0.08; S4=(-35,+5), brightness 0.06. One vertical, y-centred ideal lens L1 at x=0 has focal length +20 cm, aperture height 28 cm. Two passive vertical detectors, each +90° tangent and length 14 cm, are D1 centred (-20,0) and D2 centred (+25,+1). No mirrors.",
+      "tags": [
+        "four-sources",
+        "lens",
+        "two-detectors"
+      ]
+    },
+    {
+      "id": "C10",
+      "prompt": "Use **metres** for all positions, focal lengths, apertures and segment lengths, with x-right/y-up and angles in degrees. S1 at (-0.50,-0.03) has brightness 0.07 and emits toward +x (0°), full cone opening 20°. Vertical, y-centred ideal lenses: L1 x=-0.20, f=+0.12, aperture=0.18; L2 x=+0.05, f=-0.15, aperture=0.18; L3 x=+0.25, f=+0.30, aperture=0.16. Finite two-sided plane mirrors: M1 centre (0.45,0.08), tangent 120°, length 0.12; M2 centre (-0.08,0.27), tangent 0°, length 0.10; M3 centre (0.15,-0.25), tangent 0°, length 0.08. Passive detector D1 centre (-0.35,0), tangent 90°, length 0.12. No other components.",
+      "tags": [
+        "three-lens",
+        "three-mirror",
+        "metres",
+        "detector"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "format": "opticsim-prospective-eight-postkey-v1",
+  "firstAttemptCommit": "af6fc5dd1ad2fbb2aa8260dc0c283df3a9abdf05",
+  "source": "08_Ray_Optics_Explanations.zip",
+  "keyOpenedAfterSealingOnly": [
+    "01_Reflection_at_Plane_Surfaces/Solutions/002.png",
+    "01_Reflection_at_Plane_Surfaces/Solutions/004.png",
+    "01_Reflection_at_Plane_Surfaces/Solutions/007.png"
+  ],
+  "interpretationReviewNotExternalBlinded": true,
+  "findings": [
+    {
+      "id": "F01",
+      "key": "x=4 cm from foot D below A",
+      "attempt": "x=4 cm",
+      "assessment": "agreement",
+      "note": "Same incidence location and units."
+    },
+    {
+      "id": "F03",
+      "key": "Mirror angle θ=60°, accumulated deviation δ=240° CCW (equivalently net direction change 120° CW)",
+      "attempt": "θ=60°, net direction change magnitude 120°",
+      "assessment": "partial-convention-omission",
+      "note": "Angle is correct. Attempt reports net smaller angular change but omitted accumulated directed 240° CCW requested by the key. Both 240° CCW and -120° CW yield the same final direction, but accumulated deflection and principal signed direction change must be distinguished."
+    },
+    {
+      "id": "F04",
+      "key": "Listed distances 20,60,80,100,140 cm",
+      "attempt": "Five nearest IMAGE distances 20,60,80,80,100 cm",
+      "assessment": "answer-key-ambiguity",
+      "note": "The key's own diagram explicitly marks two distinct images each 80 cm from the object. Counting five physical virtual images gives 20,60,80,80,100. Counting five distinct distance values gives 20,60,80,100,140. The prompt says five images, not five distinct distances. Flag disagreement, do not score automatically."
+    }
+  ],
+  "otherCases": {
+    "count": 5,
+    "answersReviewed": false,
+    "assessment": "scope classification not independently graded"
+  },
+  "status": "not-a-blind-independent-llm-accuracy-score",
+  "action": "Retain both image-instance and distinct-distance interpretations and manually adjudicate ambiguity before scoring any model."
+}

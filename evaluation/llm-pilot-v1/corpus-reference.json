@@ -1,0 +1,52 @@
+{
+  "format": "opticsim-llm-pilot-v1",
+  "version": 1,
+  "warning": "Human-reviewed preliminary scope references, NOT a native simulation score and NOT evidence an independent LLM was tested.",
+  "cases": [
+    {
+      "id": "R01",
+      "scope": "illustration-only",
+      "reviewerNote": "The two inclined mirror segments share vertex A, which the current general validator rejects as an intersecting contact. Triple reflection is native-capable only for a non-touching illustrative alteration with explicit assumptions; no inverse-angle solver."
+    },
+    {
+      "id": "R02",
+      "scope": "illustration-only",
+      "reviewerNote": "Two parallel reflecting segments and point source are natively traceable; mirror finite length is not stated, and image-series enumeration requested by the question is not provided."
+    },
+    {
+      "id": "R03",
+      "scope": "illustration-only",
+      "reviewerNote": "The finite mirror and point source can be represented for an illustrative wall-detector crossing plot, but a continuous illuminated spot length on an unspecified wall is not measured."
+    },
+    {
+      "id": "R04",
+      "scope": "unsupported",
+      "reviewerNote": "Velocity of a plane-mirror image under mirror motion requires a time-dependent optical model absent from a static native scene."
+    },
+    {
+      "id": "R05",
+      "scope": "unsupported",
+      "reviewerNote": "Minimum mirror size for seeing an entire wall requires extended-object visibility, observer modelling and a minimization objective not supported by the point-source detector model."
+    },
+    {
+      "id": "R06",
+      "scope": "unsupported",
+      "reviewerNote": "Convex spherical mirror reflection cannot be represented by a plane mirror or ideal thin lens without changing the physics."
+    },
+    {
+      "id": "R07",
+      "scope": "unsupported",
+      "reviewerNote": "Two media with explicit refractive indices separated by a planar refractive interface are outside the current authoring component set."
+    },
+    {
+      "id": "R08",
+      "scope": "unsupported",
+      "reviewerNote": "Water-filled concave spherical mirror combines curved mirror reflection and refractive-index interface; both are absent from the authoring contract."
+    },
+    {
+      "id": "R09",
+      "scope": "unsupported",
+      "reviewerNote": "Equilateral refracting prism and internal reflection require an explicit prism/interface and refractive index model, not a plane mirror or ideal lens."
+    }
+  ]
+}
