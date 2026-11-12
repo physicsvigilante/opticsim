@@ -84,6 +84,17 @@ export class QualifiedUI {
     $('qualification-note').textContent=info.text+' Native completion is not question correctness. Raw sandbox/native exports omit this history.';
     const lines=(info.assumptions||[]).map(a=>a.componentId+'.'+a.key+': assumed '+a.value+' '+a.unit+
       (a.changed?' -> currently '+a.current+' (edited)':'')+'. '+a.purpose);
+    for(const calc of info.calculated||[]){
+      lines.push('Calculated ('+calc.kind+', '+calc.status+'): '+calc.method+
+        '; query SHA-256 '+calc.querySha256+'. Ideal-model result, not native detection.');
+      for(const field of calc.computedFields){
+        lines.push('Derived '+field.componentId+'.'+field.section+'.'+field.key+
+          ': '+field.value+' '+field.unit+
+          (field.changed?' -> currently '+field.current+' (physically revised)':'')+
+          '. '+field.purpose);
+      }
+      for(const condition of calc.conditions)lines.push('Calculation condition: '+condition);
+    }
     for(const note of info.declaredAssumptions||[])lines.push('Author assumption: '+note);
     for(const unknown of info.unknowns||[])lines.push('Unresolved: '+unknown);
     if(info.requestedResult)lines.unshift('Requested question result: '+info.requestedResult);
