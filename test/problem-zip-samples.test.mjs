@@ -10,14 +10,17 @@ const buf=readFileSync(fileURLToPath(new URL('../01_problems.zip',import.meta.ur
 const root='14_Geometrical_Optics_Part1/';
 const wanted=[
 '01_Reflection_Plane_Mirror/Problems/asc_004.png',
+'01_Reflection_Plane_Mirror/Problems/asc_005.png',
+'01_Reflection_Plane_Mirror/Problems/asc_006.png',
+'01_Reflection_Plane_Mirror/Problems/asc_007.png',
+'01_Reflection_Plane_Mirror/Problems/asc_008.png',
 '01_Reflection_Plane_Mirror/Problems/bmc_004.png',
+'01_Reflection_Plane_Mirror/Problems/bmc_005.png',
+'01_Reflection_Plane_Mirror/Problems/bmc_006.png',
+'01_Reflection_Plane_Mirror/Problems/bmc_007.png',
+'01_Reflection_Plane_Mirror/Problems/cnt_004.png',
 '01_Reflection_Plane_Mirror/Problems/cnt_005.png',
-'02_Reflection_Spherical_Mirror/Problems/asc_004.png',
-'02_Reflection_Spherical_Mirror/Problems/dmt_004.png',
-'03_Refraction_Plane_Surface_1/Problems/asc_004.png',
-'04_Refraction_Plane_Surface_2/Problems/bmc_004.png',
-'05_Prism/Problems/asc_004.png',
-'05_Prism/Problems/cnt_004.png'
+'01_Reflection_Plane_Mirror/Problems/cnt_006.png'
 ].map(n=>root+n);
 test('selected corpus images are PNGs; emit bounded private visual samples',()=>{
  let end=-1;
