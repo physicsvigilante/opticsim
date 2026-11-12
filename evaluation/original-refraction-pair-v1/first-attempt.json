@@ -1,0 +1,68 @@
+{
+  "format": "opticsim-original-refraction-pair-v1",
+  "engineBaseline": "1b961a51259feea88c7ad0b8635ba4567bb54144",
+  "context": "Same-assistant development application to two previously reviewed original Problems images, not independent or blind evaluation. First interpretation was recorded before execution. No Solutions read.",
+  "archiveName": "08_Ray_Optics_Explanations.zip",
+  "archiveSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+  "interpretationPath": "authoring/original-refraction-pair/interpretation.md",
+  "cases": [
+    {
+      "id": "B05",
+      "problemPath": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/001.png",
+      "imageSha256": "df2fad74e2e23469ad32e09efc894b2673f2504b11a30c988c0643d6b9730796",
+      "request": {
+        "lengthUnit": "cm",
+        "title": "B05 original critical-incidence question — input direction unresolved",
+        "components": [
+          {"id":"S1","type":"point-source","parameters":{"x":-10,"y":-10,"brightness":1},"emission":{"mode":"single-ray"}},
+          {"id":"I12","type":"planar-interface","parameters":{"x":0,"y":0,"normalDeg":90,"negativeIndex":1.6,"positiveIndex":1.8,"partialReflection":true}},
+          {"id":"I23","type":"planar-interface","parameters":{"x":0,"y":10,"normalDeg":90,"negativeIndex":1.8,"positiveIndex":1.3,"partialReflection":true}}
+        ]
+      },
+      "observables": [
+        {"id":"incidence12","kind":"interface-incidence-angle","componentId":"I12"},
+        {"id":"incidence23","kind":"interface-incidence-angle","componentId":"I23"},
+        {"id":"transmission23","kind":"interface-transmission-angle","componentId":"I23"},
+        {"id":"event23","kind":"interface-first-event","componentId":"I23"},
+        {"id":"criticalInput","kind":"critical-input-angle","componentId":"I23"}
+      ],
+      "interpretation": {
+        "requestedResult": "Find theta in medium 1 such that incidence at I23 is critical, and decide whether decreasing theta allows transmission into medium 3.",
+        "stated": ["Parallel interfaces; indices 1.60, 1.80, 1.30; critical incidence at the second interface."],
+        "derived": ["With y-up and normals +y, source direction from +x equals 90 degrees minus theta; theta is unresolved."],
+        "assumptions": ["Homogeneous isotropic nondispersive lossless ray optics.","Source (-10,-10) cm and interfaces y=0 and 10 cm are illustrative coordinates, not labelled distances.","One native single ray with relative power 1 represents the shown ray; no absolute radiometry is inferred.","Full Fresnel partial reflections retained in the initial unresolved request."],
+        "unknowns": ["The requested theta/source direction is not supplied. A forward simulator cannot infer it from a critical-incidence condition using the current result contract."]
+      }
+    },
+    {
+      "id": "B06",
+      "problemPath": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/006.png",
+      "imageSha256": "a330ac2c9eecf3e83a848eb76d475fde72876138974e5320a4b9a4a5fb5f8b0c",
+      "request": {
+        "lengthUnit": "cm",
+        "title": "B06 original branched refraction question — full Fresnel first attempt",
+        "components": [
+          {"id":"S1","type":"point-source","parameters":{"x":-10,"y":25,"brightness":1},"emission":{"mode":"single-ray","directionDeg":-60}},
+          {"id":"I34","type":"planar-interface","parameters":{"x":0,"y":0,"normalDeg":90,"negativeIndex":1.45,"positiveIndex":1.32,"partialReflection":true}},
+          {"id":"I23","type":"planar-interface","parameters":{"x":0,"y":10,"normalDeg":90,"negativeIndex":1.32,"positiveIndex":1.4,"partialReflection":true}},
+          {"id":"I12","type":"planar-interface","parameters":{"x":0,"y":20,"normalDeg":90,"negativeIndex":1.4,"positiveIndex":1.3,"partialReflection":true}},
+          {"id":"I1A","type":"planar-interface","parameters":{"x":0,"y":30,"normalDeg":90,"negativeIndex":1.3,"positiveIndex":1,"partialReflection":true}}
+        ]
+      },
+      "observables": [
+        {"id":"theta4","kind":"interface-transmission-angle","componentId":"I34"},
+        {"id":"theta5","kind":"interface-transmission-angle","componentId":"I1A"},
+        {"id":"split","kind":"interface-first-event","componentId":"I12"},
+        {"id":"bottomEvent","kind":"interface-first-event","componentId":"I34"},
+        {"id":"airEvent","kind":"interface-first-event","componentId":"I1A"}
+      ],
+      "interpretation": {
+        "requestedResult": "Find theta4 in medium 4 on the downward transmitted branch and theta5 in air on the separately reflected-then-transmitted branch.",
+        "stated": ["Initial incidence theta1=30 degrees; n1=1.3, n2=1.4, n3=1.32, n4=1.45; upper exterior labelled AIR."],
+        "derived": ["Single ray direction -60 degrees from +x represents 30 degrees to the downward normal.","The figure branches at I12: the primary transmitted branch goes downward and the reflected branch goes toward air. No bottom mirror or second source is implied."],
+        "assumptions": ["Air is idealized as index 1; the image does not give its numeric index.","Interfaces y=0,10,20,30 cm and source (-10,25) cm are illustrative placements, not measured thicknesses.","Homogeneous isotropic nondispersive lossless media; one native single ray with unit relative power.","All native Fresnel partial reflections are retained in this first request. Weak-branch truncation must remain incomplete, not repaired."],
+        "unknowns": ["The prose is ambiguous about route sequence; this interpretation follows the two branches visibly drawn in the figure."]
+      }
+    }
+  ]
+}
