@@ -76,3 +76,63 @@ Original first-attempt input bytes and independent mode records are preserved.
 
 A low-energy ray may be the *only* branch needed to answer the user's
 question. Retaining numerical fidelity is distinct from measuring energy.
+
+## Reproduced native results
+
+These values come from the pinned native simulator on the two already reviewed
+original problems, not from new blind model inference.
+
+| Probe | Native default | Native linear |
+|---|---|---|
+| B06 full Fresnel, unchanged original scene | Incomplete; I12 reflected branch dropped; air interface has 0 interactions; truncation 0.0048077301 | Incomplete; required I12 reflection retained and air interface reached 3 times; truncation about 0.0000707941 |
+| B06 I12 Fresnel retained; partial reflections elsewhere explicitly omitted | Incomplete; required reflected branch dropped | Completed: I12 reflection retained, air interface reached; theta4 about 26.63311875 deg and theta5 about 40.54160187 deg |
+| B05 exact externally derived critical angle, both partial-reflection policies off | Incomplete, truncated relative brightness 1 | Incomplete, identical grazing behavior |
+| B05 +/-0.001 degree input probes | Complete on either side, with explicit angular-only approximation | Complete on either side; same first-event angles |
+
+The B06 completed variant is **not full Fresnel physics**. Neglecting
+secondary reflections at I23, I34 and the air boundary is explicitly
+recorded as an additional assumption; merely choosing linear does not
+make the original complete. Default-mode results were never overwritten.
+
+## Localized B05 exact-critical numerical mechanism
+
+The bounded read-only native event trace identifies an almost tangential
+transmission at I23, with its outgoing normal-direction component
+approximately 3.49463e-8. The same ray then intersects **I23 again**
+after just 7.15535e-6 mm and reverses its small normal component. It
+subsequently alternates between I12 and I23, with native boundary
+intersections millions to billions of millimetres away, before the
+configured depth limit truncates the run. Default and linear modes
+show the same trajectory and failure.
+
+The replay emits diagnostic codes **NEAR_TANGENT_SAME_INTERFACE_REHIT**
+and **EXTREME_GRAZING_TRAVEL**; they are not accepted physical results
+and they do not change native behavior. The short self-rehit explains the
+observed loop sequence but is not yet an independently proven minimal
+upstream bug root cause. Neither changing color mode nor raising the
+brightness would fix the geometric near-grazing issue.
+
+## General qualified-scene replay
+
+A caller can compare one trusted, hash-verified v5 planar-media qualified
+scene without creating a new physical scene:
+
+~~~sh
+node scripts/native-numerical-replay.mjs input.qualified.json --mode default --out test-artifacts/llm-authoring/my-default-replay
+node scripts/native-numerical-replay.mjs input.qualified.json --mode linear --out test-artifacts/llm-authoring/my-linear-replay
+~~~
+
+The CLI refuses reused output directories and preserves the exact
+original input bytes, its hash and qualification identity. A report
+records the noncanonical native mode, bounded diagnostics, native
+status, explicit numerical findings and requested results. Exit 0
+means the *variant* finished; exit 2 means incomplete/stopped, with
+requested results withheld; exit 1 means invalid input/setup. A completed
+variant does **not** establish correctness of the source question or
+replace the original native execution. A B06 example is checked in
+CI by scripts/native-numerical-acceptance.mjs.
+
+Production canonical v5 scenes, native exports and the browser still use
+the pinned default mode. There is no silent policy selection,
+automatic second attempt, changed ray source or requested-result
+completeness exception.
