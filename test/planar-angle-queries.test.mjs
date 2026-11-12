@@ -174,3 +174,57 @@ test('a critical condition requiring 90-degree initial grazing is not a reachabl
  assert.match(a.reason,/finite normal component/);
  assert.equal(a.proposedForwardScene,undefined);
 });
+
+test('near-critical rays are numerically indeterminate, not falsely absent or propagating',()=>{
+ const c=structuredClone(fixtures.synthetic.middleBranches),p=c.request.components.find(x=>x.id==='S2');
+ const boundary=c.request.components.find(x=>x.id==='A');
+ const critical=angle(1.2/1.6);
+ const q={format:'opticsim-planar-angle-query-v1',kind:'branch-angles',sourceId:'S2',
+   branches:[{id:'out',events:[{interfaceId:'A',action:'transmit'}]}]};
+ for(const shift of [-1e-11,1e-11]){
+  p.emission.directionDeg=180-(critical+shift);
+  const r=run(c.request,q);
+  assert.equal(r.status,'numerically-indeterminate');
+  assert.equal(r.results[0].status,'numerically-indeterminate');
+  assert.equal(r.results[0].reasonCode,'NEAR_CRITICAL_NUMERIC');
+  assert.equal(r.results[0].value,null);
+ }
+ p.emission.directionDeg=180-(critical-1e-5);
+ const below=run(c.request,q);
+ assert.equal(below.results[0].status,'conditional');
+ assert.ok(below.results[0].value.exitAngleDeg<90);
+ p.emission.directionDeg=180-(critical+1e-5);
+ const above=run(c.request,q);
+ assert.equal(above.status,'unavailable');
+ assert.equal(above.results[0].reasonCode,'TOTAL_INTERNAL_REFLECTION');
+ // Partial-reflection disabling does not disable the physical TIR branch.
+ boundary.parameters.partialReflection=false;
+ q.branches=[{id:'tir',events:[{interfaceId:'A',action:'reflect'}]}];
+ const reflected=run(c.request,q);
+ assert.equal(reflected.status,'conditional');
+ assert.equal(reflected.results[0].events[0].reflectionKind,'total-internal-reflection');
+});
+test('nearly tangent identity transmission is not a critical-angle rejection',()=>{
+ const c=structuredClone(fixtures.synthetic.middleBranches);
+ c.request.components.find(x=>x.id==='A').parameters.negativeIndex=1.6;
+ c.request.components.find(x=>x.id==='A').parameters.partialReflection=false;
+ c.request.components.find(x=>x.id==='S2').emission.directionDeg=90.0001;
+ const q={format:'opticsim-planar-angle-query-v1',kind:'branch-angles',sourceId:'S2',
+   branches:[{id:'identity',events:[{interfaceId:'A',action:'transmit'}]}]};
+ const result=run(c.request,q);
+ assert.equal(result.status,'conditional');
+ assert.ok(Math.abs(result.results[0].value.exitAngleDeg-89.9999)<1e-7);
+});
+test('invalid later events are validated even when an earlier event is physically impossible',()=>{
+ const c=structuredClone(fixtures.synthetic.middleBranches);
+ c.request.components.find(x=>x.id==='S2').emission.directionDeg=120;
+ const q={format:'opticsim-planar-angle-query-v1',kind:'branch-angles',sourceId:'S2',
+   branches:[{id:'no-transmission',events:[
+    {interfaceId:'A',action:'transmit'},{interfaceId:'B',action:'eval'}
+   ]}]};
+ assert.throws(()=>run(c.request,q),/Expected declared reflect or transmit/);
+ q.branches[0].events[1]={interfaceId:'B',action:'reflect'};
+ assert.equal(run(c.request,q).status,'unavailable');
+ const bad=structuredClone(q);bad.branches.push({...q.branches[0],id:'other'});
+ assert.equal(run(c.request,bad).status,'unavailable'); // all unavailable, never partial
+});
