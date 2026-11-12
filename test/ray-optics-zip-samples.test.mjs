@@ -8,13 +8,14 @@ import {fileURLToPath} from 'node:url';
 const zip=readFileSync(fileURLToPath(new URL('../08_Ray_Optics_Explanations.zip',import.meta.url)));
 const root='08_Ray_Optics_Explanations/';
 const wanted=[
-'07_Lens_Formula/Problems/017.png',
-'07_Lens_Formula/Problems/018.png',
-'07_Lens_Formula/Problems/021.png',
-'07_Lens_Formula/Problems/022.png',
-'07_Lens_Formula/Problems/023.png',
-'07_Lens_Formula/Problems/025.png',
-'07_Lens_Formula/Problems/026.png'
+'01_Reflection_at_Plane_Surfaces/Problems/002.png',
+'01_Reflection_at_Plane_Surfaces/Problems/003.png',
+'01_Reflection_at_Plane_Surfaces/Problems/004.png',
+'01_Reflection_at_Plane_Surfaces/Problems/007.png',
+'01_Reflection_at_Plane_Surfaces/Problems/010.png',
+'01_Reflection_at_Plane_Surfaces/Problems/012.png',
+'02_Reflection_at_Curved_Surfaces/Problems/003.png',
+'03_General_Refraction/Problems/002.png'
 ].map(x=>root+x);
 test('spot-check held-out ray-optics Problem images only',()=>{
  let end=-1;
