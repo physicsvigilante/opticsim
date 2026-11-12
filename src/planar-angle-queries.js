@@ -102,8 +102,8 @@ function solveCritical(request,query,l){
   if(incidentIndex<=outgoingIndex)
     return {...base(query.kind),...invalid('The selected boundary is not a higher-to-lower-index critical interface.'),assumptions:assumptions()};
   const initialAngle=asinAngle(outgoingIndex/initialIndex),criticalAngle=asinAngle(outgoingIndex/incidentIndex);
-  if(initialAngle===null||criticalAngle===null)
-    return {...base(query.kind),...invalid('The required transverse index invariant exceeds the initial medium index; no propagating initial ray exists.'),assumptions:assumptions()};
+  if(initialAngle===null||criticalAngle===null||initialAngle>=90-1e-9)
+    return {...base(query.kind),...invalid('The required invariant is not below the initial medium index, so no ray with a finite normal component reaches the target.'),assumptions:assumptions()};
   // All intervening media must propagate a ray with invariant n_out.
   const intermediate=[];
   for(let r=start;r!==incidentRegion;r+=travel){
