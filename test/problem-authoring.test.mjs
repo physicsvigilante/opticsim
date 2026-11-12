@@ -1,9 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
-import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
-import {resolveProblemRequest,problemCapabilities} from '../src/problem-authoring.js';
+import {resolveProblemRequest} from '../src/problem-authoring.js';
 import {prepareScene} from '../src/authoring.js';
 import {validate} from '../src/contract.js';
 
@@ -105,6 +104,8 @@ test('CLI offers discoverable minimal-authoring policy without native setup',()=
   assert.equal(cli.status,0,cli.stderr);
   const c=JSON.parse(cli.stdout);
   assert.equal(c.problemAuthoring.optInFlag,'--illustrate');
-  assert.equal(c.problemAuthoring.statuses.length,4);
+  assert.deepEqual(c.problemAuthoring.statuses,
+    ['fully-specified','illustrative','needs-information','unsupported','invalid-input']);
+  assert.equal(c.problemAuthoring.interfaceVersion,2);
   assert.equal(c.componentTypes['ideal-lens'].parameters.includes('focalLength'),true);
 });
