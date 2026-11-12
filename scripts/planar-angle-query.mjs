@@ -60,7 +60,7 @@ function calculatedQualification(scene,request,query,result,inputSha256,querySha
 function rejected(out,inputSha256,querySha256,error){
   const report={format:'opticsim-planar-angular-evidence-v1',status:'rejected',
     stage:'input-or-analysis-validation',native:{status:'not-run',observations:null},
-    originalInputSha256:inputSha256,queryInputSha256,
+    originalInputSha256:inputSha256,queryInputSha256:querySha256,
     issues:[{code:error?.code||'ANALYTICAL_QUERY_REJECTED',message:String(error?.message||error)}],
     questionSupport:'not-assessed-by-engine'};
   writeEvidence(out.report,JSON.stringify(report,null,2)+'\n');
@@ -85,7 +85,7 @@ export async function runAngleQueryEvidence({requestBytes,queryBytes,outputPath,
   }catch(error){return rejected(out,inputSha256,querySha256,error);}
   const scene=result.proposedForwardScene||result.canonicalForwardScene||null;
   const analysis={format:'opticsim-planar-analytical-result-v1',
-    originalInputSha256:inputSha256,queryInputSha256,
+    originalInputSha256:inputSha256,queryInputSha256:querySha256,
     status:result.status,method:result.method,results:result,
     native:{status:'not-run',observations:null},questionSupport:'not-assessed-by-engine'};
   // DURABLE BEFORE optional native build and before packaging.
@@ -120,7 +120,7 @@ export async function runAngleQueryEvidence({requestBytes,queryBytes,outputPath,
   }
   const report={format:'opticsim-planar-angular-evidence-v1',
     status:exitCode===2?'analysed-with-infrastructure-limitation':'analysed',
-    originalInputSha256:inputSha256,queryInputSha256,
+    originalInputSha256:inputSha256,queryInputSha256:querySha256,
     physicalSceneMutated:false,method:'conditional-analytical',
     results:result,portableQualifiedScene:portable,
     ...(scene?{derivedForwardSceneSha256:hash(serializeSave(scene))}:{}),
