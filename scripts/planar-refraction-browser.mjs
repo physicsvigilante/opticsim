@@ -91,7 +91,17 @@ async function main(){
   await upload(b.initial);await until(state,s=>s.status==='completed'&&s.results?.length===4,'restore');await evaluate('document.getElementById("fit-results").click()');await until(state,s=>s.status==='completed'&&!s.fitDisabled,'fit');check('presentation fit retains current interface results');
   assert.deepEqual(report.errors,[]);
  }catch(e){report.errors.push(e.stack);throw e;}
- finally{await writeFile(join(out,'report.json'),JSON.stringify(report,null,2)+'\n');cdp?.close();browser.kill();server.kill();await rm(profile,{recursive:true,force:true});}
+ finally{
+  cdp?.close();browser.kill();server.kill();
+  try{
+   // Chrome may still write profile data after receiving SIGTERM. Wait for
+   // both processes to exit before removing the isolated test profile.
+   await until(async()=>[browser,server].every(p=>p.exitCode!==null||p.signalCode!==null),Boolean,'test process shutdown');
+   await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:200});
+   report.cleanup={status:'completed'};
+  }catch(error){report.errors.push('Cleanup failed: '+error.message);throw error;}
+  finally{await writeFile(join(out,'report.json'),JSON.stringify(report,null,2)+'\n');}
+ }
  console.log('Planar refraction browser PASS: '+report.checks.length+' checks, '+report.screenshots.length+' native screenshots.');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});
