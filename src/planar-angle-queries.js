@@ -4,7 +4,9 @@
 import {prepareScene,inspectAuthoringRequest,AuthoringError} from './authoring.js';
 import {interfaceNormal,signedSide} from './planar-media.js';
 import {isRecord} from './qualified-utils.js';
+import {COMPONENT_BOUNDS} from './contract.js';
 export const ANGLE_QUERY_FORMAT='opticsim-planar-angle-query-v1';
+export const ANGLE_FACTS_FORMAT='opticsim-planar-angular-facts-v1';
 export const ANGLE_RESULT_FORMAT='opticsim-planar-angle-result-v1';
 const RAD=Math.PI/180;
 const own=(x,k)=>Object.prototype.hasOwnProperty.call(x,k);
@@ -27,7 +29,59 @@ function uncertain(reason,reasonCode='NEAR_CRITICAL_NUMERIC'){return {status:'nu
 // Distinguish physical branch absence from floating-point uncertainty. The
 // uncertainty band is not a claim that every nearby value is exactly critical.
 const CRITICAL_UNCERTAINTY=2e-12;
+// Reduced, closed-form fact view for ideal angular questions. A list order is
+// a stated negative-to-positive medium order, not inferred drawing geometry.
+// No brightness, thickness, source position or native reflection policy is
+// introduced merely to calculate an angular relation.
+function angularFactsLayout(request,sourceId){
+  record(request,['format','source','interfaces'],['format','source','interfaces'],'planar angular facts');
+  record(request.source,['id','region','incidentAngleDeg','approach'],
+    ['id','region'],'angular source');
+  token(request.source.id,'source ID');
+  if(request.source.id!==sourceId)throw Error('Unknown angular source ID');
+  if(!Array.isArray(request.interfaces)||request.interfaces.length<1||request.interfaces.length>4)
+    throw Error('Expected 1–4 ordered parallel interfaces');
+  if(!Number.isInteger(request.source.region)||request.source.region<0||
+    request.source.region>request.interfaces.length)
+    throw Error('Angular source region must be an existing medium index (0..number of interfaces)');
+  if(own(request.source,'incidentAngleDeg')&&
+     (!Number.isFinite(request.source.incidentAngleDeg)||
+      request.source.incidentAngleDeg<0||request.source.incidentAngleDeg>=90))
+    throw Error('Incident angle must be finite, nonnegative, and below 90 degrees');
+  if(own(request.source,'approach'))direction(request.source.approach);
+  const idSet=new Set([sourceId]);
+  const planes=[];
+  for(const input of request.interfaces){
+    record(input,['id','negativeIndex','positiveIndex','partialReflection'],
+      ['id','negativeIndex','positiveIndex'],'ordered planar interface');
+    token(input.id,'interface ID');
+    if(idSet.has(input.id))throw Error('Duplicate source/interface ID');
+    idSet.add(input.id);
+    for(const key of ['negativeIndex','positiveIndex']){
+      const n=input[key],bounds=COMPONENT_BOUNDS.refractiveIndex;
+      if(typeof n!=='number'||!Number.isFinite(n)||n<bounds[0]||n>bounds[1])
+        throw Error('Explicit refractive index must be finite in [1,4]');
+    }
+    if(own(input,'partialReflection')&&typeof input.partialReflection!=='boolean')
+      throw Error('Optional native partialReflection policy must be boolean');
+    planes.push({id:input.id,parameters:{
+      negativeIndex:input.negativeIndex,positiveIndex:input.positiveIndex,
+      ...(own(input,'partialReflection')?{partialReflection:input.partialReflection}:{})
+    }});
+  }
+  for(let i=1;i<planes.length;i++){
+    if(planes[i-1].parameters.positiveIndex!==planes[i].parameters.negativeIndex)
+      throw Error('Inconsistent shared medium index between adjacent interfaces');
+  }
+  return {source:{id:sourceId,emission:{
+      ...(own(request.source,'incidentAngleDeg')?{incidentAngleDeg:request.source.incidentAngleDeg}:{}),
+      ...(own(request.source,'approach')?{approach:request.source.approach}:{})
+    }},planes,regions:[planes[0].parameters.negativeIndex,...planes.map(p=>p.parameters.positiveIndex)],
+    normal:{x:1,y:0},startRegion:request.source.region,hasForwardGeometry:false,
+    noNativeReason:'Angular facts deliberately omit source brightness, source/interface locations and global interface orientation. A native scene cannot be created until those are explicitly provided.'};
+}
 function layout(request,sourceId){
+  if(request?.format===ANGLE_FACTS_FORMAT)return angularFactsLayout(request,sourceId);
   record(request,['lengthUnit','title','runPolicy','components'],['lengthUnit','components'],'scene request');
   if(!['mm','cm','m'].includes(request.lengthUnit))throw Error('Explicit lengthUnit must be mm, cm or m');
   if(!Array.isArray(request.components)||request.components.length>8)throw Error('Expected at most eight scene components for the angular model');
@@ -75,7 +129,7 @@ function layout(request,sourceId){
   for(let i=1;i<distances.length;i++)if((distances[i]-distances[i-1])*scale<.01)
     throw Error('Parallel interface planes must be separated by at least 0.01 mm');
   const startRegion=distances.filter(x=>x<signedPosition).length;
-  return {source,planes,regions,normal,startRegion};
+  return {source,planes,regions,normal,startRegion,hasForwardGeometry:true};
 }
 function base(kind){
   return {format:ANGLE_RESULT_FORMAT,kind,method:'conditional-analytical',
@@ -123,12 +177,16 @@ function solveCritical(request,query,l){
   const t={x:-l.normal.y,y:l.normal.x},a=initialAngle*RAD;
   const dx=travel*l.normal.x*Math.cos(a)+side*t.x*Math.sin(a);
   const dy=travel*l.normal.y*Math.cos(a)+side*t.y*Math.sin(a);
-  const sourceDirectionDeg=Math.atan2(dy,dx)/RAD;
-  const derived=structuredClone(request);
-  derived.components.find(c=>c.id===query.sourceId).emission.directionDeg=sourceDirectionDeg;
-  // The calculated value is the only filled physical field. Canonical
-  // validation checks all original supplied geometry and indices; no native run.
-  const prepared=prepareScene(derived);
+  // A facts-only input has no global optical orientation. Source direction
+  // exists only in the local normal/tangent frame until authoring is supplied.
+  const sourceDirectionDeg=l.hasForwardGeometry?Math.atan2(dy,dx)/RAD:null;
+  let prepared=null;
+  if(l.hasForwardGeometry){
+    const derived=structuredClone(request);
+    derived.components.find(c=>c.id===query.sourceId).emission.directionDeg=sourceDirectionDeg;
+    // Validation is strict only when a forward scene is explicitly possible.
+    prepared=prepareScene(derived);
+  }
   return {...base(query.kind),status:'conditional',
     value:{initialIncidenceAngleDeg:initialAngle,criticalIncidenceAngleDeg:criticalAngle,
       sourceDirectionDeg,initialIndex,criticalIncidentIndex:incidentIndex,
@@ -139,22 +197,32 @@ function solveCritical(request,query,l){
         qualification:'Assuming the same homogeneous parallel media and no additional intervening obstruction.'},
       angleConvention:'unsigned degrees from plane normal; critical outgoing ray is grazing'},
     targetBoundaryId:query.boundaryId,intermediate,
+    requiredForNativeScene:prepared?[]:['Explicit source brightness and position, normal/plane coordinates, and a chosen native reflection policy.'],
     resultMethod:'conservation of n*sin(angle) across parallel transmitted boundaries; critical angle at target',
-    assumptions:assumptions(),derivedOnly:[{componentId:query.sourceId,section:'emission',key:'directionDeg',
-      value:sourceDirectionDeg,purpose:'computed inverse answer, NOT supplied source problem data'}],
-    proposedForwardScene:prepared.document,preparation:prepared.preparation,
+    assumptions:assumptions(),derivedOnly:prepared?[{componentId:query.sourceId,section:'emission',key:'directionDeg',
+      value:sourceDirectionDeg,purpose:'computed inverse answer, NOT supplied source problem data'}]:[],
+    ...(prepared?{proposedForwardScene:prepared.document,preparation:prepared.preparation}:{noNativeReason:l.noNativeReason}),
     nativeCaveat:'Proposed forward scene has not been executed; PhyDemo may truncate at exact critical incidence.'};
 }
 function branchResults(request,query,l){
   record(query,['format','kind','sourceId','branches'],['format','kind','sourceId','branches'],'branch query');
-  const prepared=prepareScene(request),theta=l.source.emission.directionDeg;
-  if(!Number.isFinite(theta))throw Error('Branch analysis requires a stated single-ray direction');
+  const prepared=l.hasForwardGeometry?prepareScene(request):null;
+  let along,initialAngle;
+  if(l.hasForwardGeometry){
+    const theta=l.source.emission.directionDeg;
+    if(!Number.isFinite(theta))throw Error('Branch analysis requires a stated single-ray direction');
+    const dir={x:Math.cos(theta*RAD),y:Math.sin(theta*RAD)};
+    along=dir.x*l.normal.x+dir.y*l.normal.y;
+    if(Math.abs(along)<1e-12)throw Error('Source ray is parallel to all boundaries; no finite crossing can be derived');
+    initialAngle=Math.atan2(Math.abs(dir.x*l.normal.y-dir.y*l.normal.x),Math.abs(along))/RAD;
+  }else{
+    initialAngle=l.source.emission.incidentAngleDeg;
+    if(!Number.isFinite(initialAngle)||!l.source.emission.approach)
+      throw Error('Facts-only branch analysis requires an explicit incidentAngleDeg and approach direction');
+    along=direction(l.source.emission.approach);
+  }
   if(!Array.isArray(query.branches)||query.branches.length<1||query.branches.length>4)
     throw Error('Expected 1–4 explicitly declared analytical branches');
-  const dir={x:Math.cos(theta*RAD),y:Math.sin(theta*RAD)};
-  const along=dir.x*l.normal.x+dir.y*l.normal.y;
-  if(Math.abs(along)<1e-12)throw Error('Source ray is parallel to all boundaries; no finite crossing can be derived');
-  const initialAngle=Math.atan2(Math.abs(dir.x*l.normal.y-dir.y*l.normal.x),Math.abs(along))/RAD;
   const initialIndex=l.regions[l.startRegion],transverse=initialIndex*Math.sin(initialAngle*RAD);
   // Structural validity is independent of whether an early branch is
   // physically unavailable. Validate every field and ID before ray algebra.
@@ -224,7 +292,9 @@ function branchResults(request,query,l){
     initial:{sourceId:query.sourceId,incidenceAngleDeg:initialAngle,index:initialIndex,
       region:l.startRegion,transverseIndexInvariant:transverse},
     results,assumptions:assumptions(),
-    canonicalForwardScene:prepared.document,preparation:prepared.preparation,
+    ...(prepared?{canonicalForwardScene:prepared.document,preparation:prepared.preparation}:
+      {noNativeReason:l.noNativeReason,
+        requiredForNativeScene:['Explicit source brightness and position, normal/plane coordinates, and a chosen native reflection policy.']}),
     nativeCaveat:'The native run has not been executed and can omit weak Fresnel branches.'};
 }
 export function analyzePlanarAngleQuery(request,query){
@@ -238,17 +308,20 @@ export function analyzePlanarAngleQuery(request,query){
   const sourceIndex=Array.isArray(request?.components)?
     request.components.findIndex(c=>c?.id===query.sourceId&&c?.type==='point-source'):-1;
   const unknownPath='$.components['+sourceIndex+'].emission.directionDeg';
-  const issues=inspectAuthoringRequest(request).filter(e=>!(query.kind==='critical-input-angle'&&
-    e.path===unknownPath&&e.code==='MISSING_VALUE'));
-  if(issues.length)throw new AuthoringError(issues);
+  if(request?.format!==ANGLE_FACTS_FORMAT){
+    const issues=inspectAuthoringRequest(request).filter(e=>!(query.kind==='critical-input-angle'&&
+      e.path===unknownPath&&e.code==='MISSING_VALUE'));
+    if(issues.length)throw new AuthoringError(issues);
+  }
   const l=layout(request,query.sourceId);
   return query.kind==='critical-input-angle'?solveCritical(request,query,l):branchResults(request,query,l);
 }
 export function angularCapabilities(){
-  return {format:ANGLE_QUERY_FORMAT,kinds:['critical-input-angle','branch-angles'],
-    physicalInput:'existing v5 minimal authoring request with explicit single-ray source and 1–4 parallel refractive boundaries',
+  return {format:ANGLE_QUERY_FORMAT,factsFormat:ANGLE_FACTS_FORMAT,
+    kinds:['critical-input-angle','branch-angles'],
+    physicalInput:'Either an existing complete v5 minimal authoring request, or ordered planar angular facts with source medium and relevant angles; brightness/coordinates are only required to propose a native scene',
     critical:'requires missing source direction plus explicit approach and tangentSide; solves one critical target via transmissions only',
     branches:'known source direction plus 1–4 conditional branches of 1–8 ordered reflect/transmit events by actual interface ID',
-    noGuessing:'Indices, source, interface geometry, reflection policy, unknown status and branch choices are never inferred',
+    noGuessing:'Media indices, source medium, branch decisions and unknown status are never inferred. Native scene geometry/brightness must be supplied before forward execution; a reflection policy is required only for native preparation.',
     claims:'conditional ideal-model angles only; never native Fresnel power, native branch detection or complete question correctness'};
 }
