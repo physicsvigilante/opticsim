@@ -1,0 +1,154 @@
+{
+  "format": "opticsim-mirror-angular-followup-v1",
+  "context": "A separate post-trial correction candidate for already viewed U1. Same-assistant development evidence, not a new original first attempt or blind evaluation. Original first-attempt.json remains unchanged; no Solutions are read.",
+  "source": {
+    "caseId": "U1",
+    "originalTrial": "evaluation/unified-workflow-v1/first-attempt.json",
+    "originalTrialCanonicalSha256": "9e43d4300832d543ecb9cca3610f3756ecbbc3a74667f3116e84db9ad828b4d6",
+    "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/015.png",
+    "imageSha256": "878622457b75a9e3c547e08967ed86ac1cd4904a7c9e12e29e16f753f32b2743"
+  },
+  "interpretation": {
+    "requestedResult": "Find theta, conventionally measured from the first mirror normal, when a ray reflects from M1 then M2 and leaves parallel to M1.",
+    "stated": [
+      "Two ideal plane mirrors have unsigned inclination 70 degrees.",
+      "The ray reflects first at M1 then M2.",
+      "The final ray is parallel to M1."
+    ],
+    "assumptions": [
+      "Theta is the conventional unsigned angle of incidence from the first mirror normal.",
+      "Angular relationships are conditional on actual intersections with the physical mirror segments, whose positions and lengths are unspecified."
+    ],
+    "unknowns": [
+      "The sign of the second mirror inclination and direction along the outgoing parallel line are not stated; both must be enumerated."
+    ]
+  },
+  "request": {
+    "format": "opticsim-problem-v1",
+    "physical": {
+      "format": "opticsim-plane-mirror-angular-facts-v1",
+      "mirrorIds": [
+        "M1",
+        "M2"
+      ],
+      "consecutiveInclinationsDeg": [
+        70
+      ]
+    },
+    "requests": [
+      {
+        "id": "original-theta",
+        "kind": "mirror-incidence-from-output-direction",
+        "referenceMirrorId": "M1",
+        "outgoingRelation": "parallel",
+        "angleConvention": "from-normal"
+      }
+    ],
+    "interpretation": {
+      "source": {
+        "caseId": "U1",
+        "path": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/015.png",
+        "sha256": "878622457b75a9e3c547e08967ed86ac1cd4904a7c9e12e29e16f753f32b2743"
+      },
+      "requestedResult": "Find incident angle from the first mirror normal under two specular reflections, final ray parallel to first mirror.",
+      "stated": [
+        "Two plane mirrors at an unsigned inclination of 70 degrees.",
+        "The ray reflects from the first mirror then the second and leaves parallel to the first."
+      ],
+      "assumptions": [
+        "Theta follows the conventional angle-from-normal definition.",
+        "The ordered reflection hits occur; finite geometry is not given."
+      ],
+      "unknowns": [
+        "Unsigned inclination and outgoing direction require enumeration instead of guessing a side."
+      ]
+    },
+    "verifyNative": false
+  },
+  "additionalCases": [
+    {
+      "id": "two-mirror-30",
+      "physical": {
+        "format": "opticsim-plane-mirror-angular-facts-v1",
+        "mirrorIds": [
+          "A",
+          "B"
+        ],
+        "consecutiveInclinationsDeg": [
+          30
+        ]
+      },
+      "query": {
+        "format": "opticsim-plane-mirror-angular-query-v1",
+        "kind": "mirror-incidence-from-output-direction",
+        "referenceMirrorId": "A",
+        "outgoingRelation": "parallel",
+        "angleConvention": "from-normal"
+      }
+    },
+    {
+      "id": "two-mirror-45",
+      "physical": {
+        "format": "opticsim-plane-mirror-angular-facts-v1",
+        "mirrorIds": [
+          "A",
+          "B"
+        ],
+        "consecutiveInclinationsDeg": [
+          45
+        ]
+      },
+      "query": {
+        "format": "opticsim-plane-mirror-angular-query-v1",
+        "kind": "mirror-incidence-from-output-direction",
+        "referenceMirrorId": "A",
+        "outgoingRelation": "parallel",
+        "angleConvention": "from-normal"
+      }
+    },
+    {
+      "id": "four-mirror-ambiguous",
+      "physical": {
+        "format": "opticsim-plane-mirror-angular-facts-v1",
+        "mirrorIds": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "consecutiveInclinationsDeg": [
+          10,
+          20,
+          30
+        ]
+      },
+      "query": {
+        "format": "opticsim-plane-mirror-angular-query-v1",
+        "kind": "mirror-incidence-from-output-direction",
+        "referenceMirrorId": "A",
+        "outgoingRelation": "parallel",
+        "angleConvention": "from-normal"
+      }
+    },
+    {
+      "id": "coincident-grazing",
+      "physical": {
+        "format": "opticsim-plane-mirror-angular-facts-v1",
+        "mirrorIds": [
+          "A",
+          "B"
+        ],
+        "consecutiveInclinationsDeg": [
+          0
+        ]
+      },
+      "query": {
+        "format": "opticsim-plane-mirror-angular-query-v1",
+        "kind": "mirror-incidence-from-output-direction",
+        "referenceMirrorId": "A",
+        "outgoingRelation": "parallel",
+        "angleConvention": "from-normal"
+      }
+    }
+  ]
+}
