@@ -153,3 +153,15 @@ test('angles are invariant under authored length units and consistent component 
  close(testResult.results[0].value.exitAngleDeg,ref.results[0].value.exitAngleDeg);
  close(testResult.results[1].value.exitAngleDeg,ref.results[1].value.exitAngleDeg);
 });
+
+test('missing physical brightness, unknown indices and near-boundary sources are not disguised by inverse solution',()=>{
+ const c=input('B05'),q=query('B05');
+ delete c.components.find(x=>x.id==='S1').parameters.brightness;
+ assert.throws(()=>run(c,q),/brightness/);
+ const missing=input('B05');delete missing.components.find(x=>x.id==='I12').parameters.negativeIndex;
+ assert.throws(()=>run(missing,q),/negativeIndex/);
+ const near=input('B05');
+ near.components.find(x=>x.id==='S1').parameters.y=-0.0001; // cm, only 0.001 mm from I12
+ assert.throws(()=>run(near,q),/0.01 mm/);
+ const original=input('B05');assert.equal(Object.hasOwn(original.components.find(x=>x.id==='S1').emission,'directionDeg'),false);
+});
