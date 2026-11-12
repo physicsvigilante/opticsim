@@ -285,3 +285,24 @@ test('angular facts must state medium order, source region and angle but not unr
  badOrder.interfaces.push({id:'J',negativeIndex:1.4,positiveIndex:1.2});
  assert.throws(()=>run(badOrder,branch),/Inconsistent shared medium/);
 });
+
+test('critical uncertainty policy agrees with independent 80-digit physical-side oracle',()=>{
+ const fixture=JSON.parse(readFileSync(new URL('../evaluation/planar-angular-v1/high-precision-critical.json',import.meta.url)));
+ const c=structuredClone(fixtures.synthetic.middleBranches);
+ const source=c.request.components.find(x=>x.id==='S2');
+ const q={format:'opticsim-planar-angle-query-v1',kind:'branch-angles',sourceId:'S2',
+   branches:[{id:'out',events:[{interfaceId:'A',action:'transmit'}]}]};
+ for(const sample of fixture.cases){
+   const ratioDelta=Number(sample.ratioMinusOne);
+   assert.equal(Math.sign(ratioDelta),sample.physical==='transmission'?-1:
+     sample.physical==='total-internal-reflection'?1:0);
+   source.emission.directionDeg=180-(Number(fixture.criticalAngleDeg)+Number(sample.offsetDeg));
+   const result=run(c.request,q);
+   assert.equal(result.status,sample.expectedStatus,'offset '+sample.offsetDeg);
+   assert.equal(result.results[0].status,sample.expectedStatus);
+   if(sample.expectedStatus==='numerically-indeterminate'){
+     assert.equal(result.results[0].reasonCode,'NEAR_CRITICAL_NUMERIC');
+     assert.equal(result.results[0].value,null);
+   }
+ }
+});
