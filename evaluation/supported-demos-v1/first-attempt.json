@@ -1,0 +1,88 @@
+{
+  "format": "opticsim-supported-demos-v1",
+  "baselineCommit": "e54e5f33771cab28b03ca19843086b6526ed7f5b",
+  "methodology": {
+    "purpose": "Supported end-to-end demonstrations and authoring-burden measurement",
+    "inputOrigin": "Synthetic experiment prompts authored for this development exercise, not original JEE questions",
+    "author": "Same project assistant; not an independent model evaluation",
+    "externalModelInvoked": false,
+    "answersIncludedInRequests": false,
+    "policy": "Seal this file before execution. Do not edit first attempts to match results. Record any correction separately. The engine supplies outputs; later regression oracles are not part of inference."
+  },
+  "cases": [
+    {
+      "id": "D1-single-lens",
+      "prompt": "Use centimetres and x-right/y-up. S1 is a luminous point at (-30,2), relative native brightness 0.08, emitting in all directions. L1 is a vertical ideal thin lens centred on y=0 at x=0, focal length +12 and finite aperture height 12. No other components. Use preview-v1 sampling. Ask the engine for the conditional ideal image position and transverse magnification of S1, and for its actual sampled emission count. Do not calculate the answer in the authoring request or supply an image coordinate.",
+      "revisionPrompt": "Keep everything else unchanged and set the focal length of L1 to +18 cm. Recalculate the same requested results and preserve the initial evidence.",
+      "request": {
+        "lengthUnit": "cm", "title": "D1 - single lens", "runPolicy": "preview-v1",
+        "components": [
+          {"id":"S1","type":"point-source","parameters":{"x":-30,"y":2,"brightness":0.08},"emission":{"mode":"full-circle"}},
+          {"id":"L1","type":"ideal-lens","parameters":{"x":0,"focalLength":12,"apertureHeight":12}}
+        ]
+      },
+      "observables": [
+        {"id":"image","kind":"ideal-image","componentId":"S1"},
+        {"id":"emission","kind":"source-emissions","componentId":"S1"}
+      ],
+      "interpretation": {
+        "requestedResult": "Conditional ideal image position and transverse magnification, plus actual sampled emission count.",
+        "stated": ["Source position, relative brightness and full-circle emission are specified.","Lens position, focal length and finite aperture are specified.","Use the named preview-v1 numerical run policy."],
+        "derived": [], "assumptions": [], "unknowns": []
+      },
+      "revisionChanges": [{"id":"L1","section":"parameters","key":"focalLength","value":18,"unit":"cm"}]
+    },
+    {
+      "id": "D2-two-lens",
+      "prompt": "Use centimetres and x-right/y-up. S1 is a luminous point at (-40,2), relative native brightness 0.08, emitting in all directions. Two vertical, y-centred ideal thin lenses: L1 at x=0 with focal length +15 and aperture height 18; L2 at x=40 with focal length +10 and aperture height 16. No mirrors or detectors. Use preview-v1 sampling. Ask the engine for the conditional final image position and transverse magnification for rays through both lenses, and actual source emission count. Do not precompute image positions or add an intermediate source.",
+      "revisionPrompt": "Move L2 to x=50 cm without changing either focal length, either aperture, or the source. Recalculate the same requested results using the same components.",
+      "request": {
+        "lengthUnit":"cm", "title":"D2 - two-lens composition", "runPolicy":"preview-v1",
+        "components": [
+          {"id":"S1","type":"point-source","parameters":{"x":-40,"y":2,"brightness":0.08},"emission":{"mode":"full-circle"}},
+          {"id":"L1","type":"ideal-lens","parameters":{"x":0,"focalLength":15,"apertureHeight":18}},
+          {"id":"L2","type":"ideal-lens","parameters":{"x":40,"focalLength":10,"apertureHeight":16}}
+        ]
+      },
+      "observables": [
+        {"id":"image","kind":"ideal-image","componentId":"S1"},
+        {"id":"emission","kind":"source-emissions","componentId":"S1"}
+      ],
+      "interpretation": {
+        "requestedResult":"Conditional final image and transverse magnification for the complete two-lens train, plus native source emission count.",
+        "stated":["Both lenses and their positions, focal lengths and apertures are given.","One luminous point source with explicit brightness and full-circle emission is given.","Use preview-v1; no prescribed native ray route."],
+        "derived":[], "assumptions":[], "unknowns":[]
+      },
+      "revisionChanges":[{"id":"L2","section":"parameters","key":"x","value":50,"unit":"cm"}]
+    },
+    {
+      "id":"D3-mirror-detector",
+      "prompt":"Use centimetres and x-right/y-up. S1 is a point source at (-20,0), relative native brightness 0.06, with a symmetric directional cone centred on +x (direction 0 degrees), full opening 24 degrees. M1 is a finite two-sided plane mirror centred at (0,0), tangent orientation +45 degrees, length 16. D1 is a passive detector centred at (0,15), tangent orientation 0 degrees, length 18. No lens. Use preview-v1 sampling. Report actual sampled source emissions, mirror interactions, detector crossings and signed relative native detector power. Do not claim watts, unique-ray attribution, continuous throughput or a detected image.",
+      "revisionPrompt":"Move only detector D1 to x=20 cm, leaving its y=15 cm, tangent and length unchanged. Rerun and compare actual counts and signed relative native power with the original run; zero crossings is a valid measurement.",
+      "request": {
+        "lengthUnit":"cm", "title":"D3 - mirror and detector", "runPolicy":"preview-v1",
+        "components":[
+          {"id":"S1","type":"point-source","parameters":{"x":-20,"y":0,"brightness":0.06},"emission":{"mode":"directional","directionDeg":0,"angleDeg":24}},
+          {"id":"M1","type":"plane-mirror","parameters":{"x":0,"y":0,"orientationDeg":45,"length":16}},
+          {"id":"D1","type":"ray-detector","parameters":{"x":0,"y":15,"orientationDeg":0,"length":18}}
+        ]
+      },
+      "observables":[
+        {"id":"emission","kind":"source-emissions","componentId":"S1"},
+        {"id":"reflection","kind":"mirror-reflections","componentId":"M1"},
+        {"id":"crossings","kind":"detector-crossings","componentId":"D1"},
+        {"id":"power","kind":"detector-signed-power","componentId":"D1"}
+      ],
+      "interpretation":{
+        "requestedResult":"Actual sampled native counts and signed relative detector power before and after moving the detector.",
+        "stated":["All source, mirror and detector geometry is specified.","Mirror and detector orientations are surface tangents in y-up coordinates.","Relative brightness, cone direction/opening and preview-v1 sampling are explicitly specified."],
+        "derived":[], "assumptions":[], "unknowns":[]
+      },
+      "revisionChanges":[{"id":"D1","section":"parameters","key":"x","value":20,"unit":"cm"}]
+    }
+  ],
+  "negativeControls":[
+    {"id":"missing-focal-length","deriveFrom":"D1-single-lens","mutation":"Remove L1.parameters.focalLength; do not opt into illustration or repair."},
+    {"id":"unsupported-quantity","deriveFrom":"D1-single-lens","observable":{"id":"index","kind":"refractive-index","componentId":"L1"}}
+  ]
+}
