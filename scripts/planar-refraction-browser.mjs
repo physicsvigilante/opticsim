@@ -4,14 +4,10 @@ import assert from 'node:assert/strict';
 import {spawn,spawnSync} from 'node:child_process';
 import {createServer} from 'node:net';
 import {mkdir,mkdtemp,readFile,readdir,rm,writeFile} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
-const smoke=false;
-const qualified=true;
-const basePath=process.env.OPTICSIM_BASE_PATH || (smoke ? '/opticsim/' : '/');
 const out=join(root,'test-artifacts','browser-planar-refraction');
 const downloads=join(out,'downloads');
 const sleep=ms=>new Promise(ok=>setTimeout(ok,ms)), timeout=20000;
@@ -53,7 +49,7 @@ async function main(){
  const profile=await mkdtemp(join(out,'profile-')),port=await freePort(),origin='http://127.0.0.1:'+port;
  const server=spawn(process.execPath,['scripts/serve.mjs'],{cwd:root,env:{...process.env,PORT:String(port)},stdio:'ignore'});
  const browser=spawn(bin,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--window-size=1440,960','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:'ignore'});
- const report={browser:version,checks:[],screenshots:[],errors:[]};let cdp;
+ const report={browser:version,checks:[],screenshots:[],presentationChecks:[],errors:[]};let cdp;
  try{
   await until(async()=>(await fetch(origin)).status,x=>x===200,'server');
   const debug=await until(async()=>Number((await readFile(join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0]),x=>x>0,'Chrome');
@@ -64,7 +60,17 @@ async function main(){
   const evaluate=async expression=>{const r=await cdp.send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result?.value;};
   const state=()=>evaluate('({title:document.getElementById("title").textContent,status:document.getElementById("status").dataset.state,error:document.getElementById("error").textContent,results:JSON.parse(document.getElementById("observable-results").dataset.results||"null"),text:document.getElementById("observable-results").textContent,saveDisabled:document.getElementById("save-qualified").disabled,fitDisabled:document.getElementById("fit-results").disabled})');
   const upload=async path=>{const dom=await cdp.send('DOM.getDocument',{depth:-1});const input=await cdp.send('DOM.querySelector',{nodeId:dom.root.nodeId,selector:'#load'});await cdp.send('DOM.setFileInputFiles',{nodeId:input.nodeId,files:[path]});};
-  const shot=async name=>{const r=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});await writeFile(join(out,name+'.png'),Buffer.from(r.data,'base64'));report.screenshots.push(name+'.png');};
+  const shot=async name=>{
+    // Native interactions can occur outside an apparatus-only camera. A declared
+    // zoom-only edit frames this synthetic demonstration; it is not a ray repair.
+    const before=await state();
+    await evaluate('(()=>{const e=document.getElementById("zoom");e.value="0.8";e.dispatchEvent(new Event("input",{bubbles:true}));})()');
+    const after=await until(state,s=>s.title===before.title&&s.status==='completed'&&s.results?.length===before.results.length&&!s.fitDisabled,'presentation rerun');
+    assert.deepEqual(after.results,before.results,'Zoom must not change native observations');
+    report.presentationChecks.push({name,zoom:0.8,unchangedRequestedResults:true});
+    const r=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
+    await writeFile(join(out,name+'.png'),Buffer.from(r.data,'base64'));report.screenshots.push(name+'.png');
+  };
   const check=name=>report.checks.push({name,status:'pass'});
   const acceptance=JSON.parse(await readFile(join(root,'test-artifacts/llm-authoring/planar-refraction/acceptance.json'),'utf8')),b=acceptance.browserBundles;
   await cdp.send('Page.navigate',{url:origin});await until(state,s=>s.status==='completed','initial page');
