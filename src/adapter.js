@@ -30,7 +30,11 @@ export function compile(doc, width = 1200, height = 700) {
   const { view } = doc.presentation;
   return { idMap: new Map(doc.physics.components.map((c, i) => [c.id, i])),
     native: { version: 5, name: doc.presentation.title, objs: doc.physics.components.map(c => compilers[c.type](c, doc)),
-      width, height, scale: view.zoom, origin: { x: width / 2 - view.x * view.zoom, y: height / 2 + view.y * view.zoom },
+      // Pinned Scene.loadJSON uses viewport sizes rounded UP to 100 CSS pixels.
+      // Match its serialization convention to prevent an unintended scale/origin
+      // adjustment; the camera origin still uses the actual canvas dimensions.
+      width: Math.ceil(width / 100) * 100, height: Math.ceil(height / 100) * 100,
+      scale: view.zoom, origin: { x: width / 2 - view.x * view.zoom, y: height / 2 + view.y * view.zoom },
       mode: doc.presentation.mode, showGrid: doc.presentation.grid, gridSize: 50,
       lockObjs: true, rayModeDensity: doc.simulation.rayDensity, maxRayDepth: doc.simulation.maxRayDepth,
       simulateColors: false, colorMode: 'default', lengthScale: 1 } };

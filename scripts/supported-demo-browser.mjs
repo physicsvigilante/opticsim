@@ -172,6 +172,7 @@ async function main(){
     const lastLens=demos.cases[1],lastAttempt=attempts.cases[1];
     const lastBundle=await parseQualifiedBundle(await readFile(join(demoRoot,lastLens.revised.bundle),'utf8'));
     await cdp.send('Emulation.setDeviceMetricsOverride',{width:900,height:800,deviceScaleFactor:1,mobile:false});
+    await until(ui,s=>s.width<900&&s.height<451&&s.state==='completed','narrow viewport native resize');
     await upload(join(demoRoot,lastLens.revised.bundle));
     await current(lastAttempt.request.title,'revised',lastLens.revised.results);
     await fitAndCheck(lastLens.id,'resized-fit',lastBundle,lastLens.revised.results,lastAttempt.request.title,'revised');
