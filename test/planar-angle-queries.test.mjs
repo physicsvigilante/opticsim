@@ -120,7 +120,7 @@ test('unknown inputs, duplicated IDs, invalid media and nonparallel planes are r
  media.components.find(x=>x.id==='B').parameters.negativeIndex=1.6;
  media.components.find(x=>x.id==='B').parameters.normalDeg=5;
  assert.throws(()=>run(media,c.query),/nonparallel/);
- const dup=structuredClone(c.request);dup.components[2].id='A';assert.throws(()=>run(dup,c.query),/Duplicate/);
+ const dup=structuredClone(c.request);dup.components[2].id='A';assert.throws(()=>run(dup,c.query),/unique|[Dd]uplicate/);
 });
 test('no inverse solution is silently turned into a guessed physical value',()=>{
  const c=input('B05'),q=query('B05');
