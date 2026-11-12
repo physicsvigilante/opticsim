@@ -87,6 +87,25 @@ export class QualifiedUI {
     for(const calc of info.calculated||[]){
       lines.push('Calculated ('+calc.kind+', '+calc.status+'): '+calc.method+
         '; query SHA-256 '+calc.querySha256+'. Ideal-model result, not native detection.');
+      const computed=calc.resultValue;
+      const historical=info.physicsEdited;
+      if(calc.kind==='critical-input-angle'&&computed){
+        if(Number.isFinite(computed.initialIncidenceAngleDeg))
+          lines.push((historical?'Historical calculated':'Calculated')+
+            ' initial incidence: '+computed.initialIncidenceAngleDeg+' degrees from normal.');
+        if(Number.isFinite(computed.criticalIncidenceAngleDeg))
+          lines.push('Calculated target critical incidence: '+computed.criticalIncidenceAngleDeg+
+            ' degrees from normal'+(historical?' (historical after physical edit)':'')+'.');
+      }
+      if(calc.kind==='branch-angles'){
+        for(const branch of computed?.branches||[]){
+          lines.push((historical?'Historical calculated':'Calculated')+' branch '+branch.id+
+            ': '+(Number.isFinite(branch.value?.exitAngleDeg)?
+              branch.value.exitAngleDeg+' degrees from normal':
+              branch.status+(branch.reasonCode?' ('+branch.reasonCode+')':''))+
+            (historical?' (physical scene since revised)':'')+'.');
+        }
+      }
       for(const field of calc.computedFields){
         lines.push('Derived '+field.componentId+'.'+field.section+'.'+field.key+
           ': '+field.value+' '+field.unit+
