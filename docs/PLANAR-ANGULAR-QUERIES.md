@@ -9,12 +9,39 @@ index, claims native evidence, or silently repairs incomplete native runs.
 
 ## Inputs
 
-Input 1 is the ordinary **minimal LLM scene request** with explicit lengths,
-source brightness and 1–4 parallel planar interfaces using the already
-supported v5 component types. It must have exactly one native single-ray
-emitter and no other optical apparatus in this first analytical scope.
-All media indices and partial-reflection choices remain explicit; no
-supporting lens, boundary or replacement source is invented.
+Input 1 can be either a **complete, existing minimal v5 scene request**
+or a narrow **analytical-only ordered-media facts record**. The former
+requires source brightness, all geometry and the native Fresnel policy
+because it can compile to PhyDemo. The latter requires only indices,
+medium ordering, source medium and relevant incidence information—**not**
+brightness, artificial layer thicknesses, picture coordinates or a
+chosen numerical reflection mode. Analytical-only facts never compile
+to a native scene by themselves.
+
+The facts format is `opticsim-planar-angular-facts-v1`:
+~~~json
+{
+  "format": "opticsim-planar-angular-facts-v1",
+  "source": {"id": "S1", "region": 0},
+  "interfaces": [
+    {"id": "I12", "negativeIndex": 1.6, "positiveIndex": 1.8},
+    {"id": "I23", "negativeIndex": 1.8, "positiveIndex": 1.3}
+  ]
+}
+~~~
+The array order is **explicit negative-to-positive medium order**.
+Region 0 is before the first interface, region 1 lies between the
+first two, etc. For branch queries, additionally state
+`source.incidentAngleDeg` (unsigned from the normal, 0–90° exclusive)
+and `source.approach` (`positive` or `negative`). For inverse critical
+queries, the incidence is intentionally **absent**; a contradictory
+provided incidence is rejected. The query itself specifies propagation
+and tangent-side signs. Indices remain finite in [1,4], with exactly
+matching shared-media values. A policy `partialReflection` may be
+specified as a boolean, but it is **not required for pure angular
+mathematics**. If absent, Fresnel reflection is labelled conditional
+and never claimed as a chosen native simulation policy. No other optical
+components are silently removed from a complete scene request.
 
 Input 2 is this separate query:
 
@@ -77,12 +104,23 @@ direction. No finite-power transmitted ray or native completion is inferred.
 ~~~
 
 Events are **conditional analytical branch hypotheses**, not instructions
-to the native simulator. The validator enforces the actual next interface,
-adjacent index consistency, the current medium, propagation direction,
-the Fresnel reflection policy, impossible transmission under TIR,
-and zero-reflection equal-index limits. It does not assume a weak native
-branch was retained. A requested transmitted ray at an exact-critical
-boundary is marked unavailable. No arbitrary code, user formula,
+to the native simulator. Every bounded branch/event is validated for
+structure *before* physical feasibility is evaluated, even when an earlier
+event would be unavailable. The solver enforces the actual next interface,
+adjacent index consistency, source medium, propagation direction, any
+**explicitly chosen** transmitted-only policy, TIR, and equal-index identity
+transmission. Missing native Fresnel policy never becomes a fabricated
+native setting. It does not assume a weak native branch was retained.
+
+Near the mathematical critical boundary, an uncertainty interval yields
+`numerically-indeterminate` with **no outgoing numerical value**, rather
+than falsely classifying the branch as physically absent or transmitted.
+Above the resolved critical threshold, TIR reflection remains possible
+even with `partialReflection:false`, because that option omits *partial*
+Fresnel reflection, not TIR. A truly critical transmitted direction is
+only a grazing limit, not evidence of a propagating finite-power ray.
+Aggregate result status distinguishes all conditional, all unavailable,
+all indeterminate and mixed outcomes. No arbitrary code, user formula,
 generic ray-route script or symbolic algebra is evaluated.
 
 The interface accepts 1–4 branches with 1–8 bounded events each. The
@@ -101,12 +139,28 @@ node scripts/planar-angle-query.mjs b06.request.json b06.query.json --out test-a
 ~~~
 
 Use a **new** output directory on each attempt. The CLI saves exact
-original request/query bytes, SHA-256s and the report. On a valid inverse
-solution it also saves a derived forward scene, labelled as derived.
-The scene is **not** a new original first request or a qualified
-evidence package; provenance is in the surrounding report. The optional
-native check runs the pinned, **unchanged** engine as a separate observation
-and can be incomplete without invalidating a conditional mathematical result.
+original request/query bytes and SHA-256s. It then writes
+`analytical-result.json` **before** attempting any optional native build,
+so a native setup failure cannot erase a successful conditional answer.
+All rejected analytical inputs write a structured `report.json`
+containing an error and `native: not-run`, with no phantom physical scene.
+
+When a complete forward scene is possible, the CLI saves a normal
+hash-bound `derived-forward-scene.qualified.json` package. Its
+`qualification.calculations` includes the original parsed request,
+typed query, both raw input hashes, method, conditional result and any
+computed source-direction field. It imports into the existing browser,
+where calculated values are distinct from author assumptions and later
+physical revisions. This metadata is not an authenticity proof of the
+source question or an independent adjudication.
+
+For **angular facts without native geometry**, the calculation succeeds
+without a qualified scene and explicitly lists missing native-only inputs.
+Requesting `--native-check` in that case records `not-run` and retains
+the analytical result. If a native build fails, the result and portable
+package remain saved; the report records the native failure separately
+(exit 2). Native incomplete runs retain their original suppression.
+No new physical values or fake rays are inserted to obtain a passing run.
 
 ## Original and independent development cases
 
@@ -140,7 +194,9 @@ accuracy benchmark.
 
 This milestone covers unsigned ideal Snell angles for 1–4 parallel
 planar boundaries; one source; normal-incidence, reflection, transmitted
-and internal-reflection branches. It is not a general arbitrary-geometry
+and internal-reflection branches. Native scene creation requires separate
+complete numerical/geometry inputs, and the canonical scene schema is
+unchanged. It is not a general arbitrary-geometry
 inverse solver, analytical power/throughput solver, arbitrary equation
 evaluation system, path detector or full optical model.
 
