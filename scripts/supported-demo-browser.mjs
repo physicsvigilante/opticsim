@@ -100,6 +100,10 @@ async function main(){
     }
     await cdp.send('Page.navigate',{url:origin+'/'});await until(ui,s=>s.state==='completed','browser ready');
     for(const c of demos.cases){
+      // Chrome may reuse the suggested filename rather than add a suffix.
+      // Separate per-demo download folders preserve all export evidence.
+      const caseDownloads=join(downloads,c.id);await mkdir(caseDownloads,{recursive:true});
+      await cdp.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:caseDownloads,eventsEnabled:true});
       const attempt=attempts.cases.find(x=>x.id===c.id);
       const first=await parseQualifiedBundle(await readFile(join(demoRoot,c.initial.bundle),'utf8'));
       const next=await parseQualifiedBundle(await readFile(join(demoRoot,c.revised.bundle),'utf8'));
@@ -116,10 +120,10 @@ async function main(){
       await evaluate('(()=>{const e=document.getElementById('+JSON.stringify(change.id+'-'+change.key)+');e.value='+JSON.stringify(String(value))+';e.dispatchEvent(new Event("input",{bubbles:true}));e.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true}));})()');
       await current(attempt.request.title,'revised',c.revised.results);
       report.checks.push({name:c.id+' one physical edit recalculates results',result:'pass'});
-      const previous=new Set(await readdir(downloads));await evaluate('document.getElementById("save-qualified").click()');
+      const previous=new Set(await readdir(caseDownloads));await evaluate('document.getElementById("save-qualified").click()');
       const saved=await until(async()=>{
-        for(const name of (await readdir(downloads)).filter(n=>!previous.has(n)&&n.endsWith('.json'))){
-          const path=join(downloads,name),bundle=await parseQualifiedBundle(await readFile(path,'utf8'));
+        for(const name of (await readdir(caseDownloads)).filter(n=>!previous.has(n)&&n.endsWith('.json'))){
+          const path=join(caseDownloads,name),bundle=await parseQualifiedBundle(await readFile(path,'utf8'));
           if(bundle.scene.presentation.title===attempt.request.title)return {path,bundle};
         }return null;
       },x=>!!x,'fresh qualified download');
