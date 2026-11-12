@@ -61,7 +61,7 @@ async function main(){
     const r=await cdp.send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});
     if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result?.value;
   };
-  const state=()=>evaluate('({native:document.getElementById("status").dataset.state,qualification:document.getElementById("qualification-status").dataset.state,details:document.getElementById("qualification-details").textContent,saveDisabled:document.getElementById("save-qualified").disabled})');
+  const state=()=>evaluate('({native:document.getElementById("status").dataset.state,qualification:document.getElementById("qualification-status").dataset.state,details:document.getElementById("qualification-details").textContent,prediction:document.getElementById("prediction").textContent,analysisStatus:document.getElementById("analysis-status").textContent,saveDisabled:document.getElementById("save-qualified").disabled})');
   const upload=async filepath=>{
     const dom=await cdp.send('DOM.getDocument',{depth:-1});
     const input=await cdp.send('DOM.querySelector',{nodeId:dom.root.nodeId,selector:'#load'});
@@ -80,11 +80,17 @@ async function main(){
   await upload(original);
   let s=await until(state,s=>s.native==='incomplete'&&s.qualification==='calculated'&&s.details.includes('Derived S1.emission.directionDeg'),'B05 qualified calculation');
   assert.match(s.details,/query SHA-256/);assert.equal(s.saveDisabled,false);
+  assert.match(s.details,/Calculated initial incidence: 54\.3409/);
+  assert.match(s.prediction,/separate conditional angular calculation/);
+  assert.match(s.analysisStatus,/General image analysis:/);
+  assert.doesNotMatch(s.prediction,/Prediction unavailable/);
   check('B05 calculated direction and query provenance remain visible despite incomplete native ray tracing');
   await shot('inverse-calculated-before-edit');
   const originalDirection=rawBundle.scene.physics.components.find(x=>x.id==='S1').emission.directionDeg;
   await evaluate('(()=>{const e=document.getElementById("S1-directionDeg");if(!e||e.disabled)throw Error("Calculated source field not editable");e.value="35.1";e.dispatchEvent(new Event("input",{bubbles:true}));e.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true}));})()');
   s=await until(state,s=>s.qualification==='revised'&&s.details.includes('physically revised'),'physical edit');
+  assert.match(s.details,/Historical calculated initial incidence/);
+  assert.match(s.prediction,/physically revised/);
   check('Edited direction explicitly differs from the historically calculated direction');
   await evaluate('document.getElementById("save-qualified").click()');
   const filename=await until(async()=>{const xs=await readdir(downloads);return xs.find(x=>x.endsWith('.json'));},Boolean,'qualified export');
@@ -101,6 +107,9 @@ async function main(){
   await upload(b06);
   s=await until(state,s=>s.qualification==='calculated'&&s.details.includes('Calculated (branch-angles, conditional)'),'B06 qualified branch calculation');
   assert.equal(s.saveDisabled,false);
+  assert.match(s.details,/Calculated branch theta4: 26\.6331/);
+  assert.match(s.details,/Calculated branch theta5: 40\.5416/);
+  assert.match(s.prediction,/separate conditional angular calculation/);
   check('B06 analytical branches remain labelled as calculations despite incomplete native Fresnel tracing');
   await shot('branch-calculated');
  }catch(e){report.errors.push(e.stack);throw e;}
