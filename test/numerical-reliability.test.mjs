@@ -21,6 +21,11 @@ test('diagnostic default matches canonical B06 native run and never mutates scen
   assert.equal(replay.observations,null);
   assert.equal(replay.diagnostic.interfacesById.I1A.interactions,0);
   assert.deepEqual(scene,original);
+  const trace=replay.diagnostic.interactionTrace;
+  assert.equal(trace.coordinateConvention,'x-right-y-up');
+  assert.equal(trace.totalEvents,Object.values(replay.diagnostic.interfacesById).reduce((n,m)=>n+m.interactions,0));
+  assert.ok(trace.entries.length<=32);
+  assert.ok(trace.entries.every(e=>e.incidentDistanceMm>=0&&e.incomingDirection));
 });
 test('supported non-default native mode retains B06 required weak reflection as diagnostic evidence',()=>{
   const scene=doc(b06().request);
@@ -51,5 +56,7 @@ test('exact-critical diagnostic never silently promotes a partial run into accep
     assert.ok(['completed','completed-with-warnings','incomplete','failed','stopped'].includes(r.status));
     if(!r.complete)assert.equal(r.observations,null);
     assert.equal(r.nativeSceneColorMode,mode);
+    assert.ok(r.diagnostic.interactionTrace.entries.some(e=>e.interfaceId==='I23'));
+    assert.ok(r.diagnostic.interactionTrace.entries.length<=32);
   }
 });
