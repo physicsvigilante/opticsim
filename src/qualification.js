@@ -128,6 +128,7 @@ export function qualificationSummary(doc,q){
   const physicsEdited=q.edits.some(e=>e.kind==='physics');
   const calculated=(q.calculations||[]).map(c=>({
     kind:c.kind,method:c.method,status:c.status,querySha256:c.querySha256,
+    resultValue:structuredClone(c.resultValue),
     computedFields:c.computedFields.map(f=>{
       const current=doc.physics.components.find(x=>x.id===f.componentId)?.[f.section]?.[f.key];
       return {...f,current:current??null,changed:current!==f.value};
