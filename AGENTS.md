@@ -1,7 +1,7 @@
 # ray-optics-2d
 
 - This workspace is an independent local 2D optics project. No mechanics or 3D integration.
-- Baseline: PRs #7 (general authoring), #10 (evaluation runner) and #13 (minimal problem preparation) were merged on 2026-11-12. Preparation is not an image interpreter or proof of independent model accuracy. Read `README.md`, `docs/MINIMAL-PROBLEM-AUTHORING.md`, `PROPOSAL.md`, `PLANE-MIRROR-PROPOSAL.md`, `LENS-MIRROR-PROPOSAL.md`, and `upstream-pin.json` for boundaries and evidence.
+- Baseline: PRs #7 (general authoring), #10 (evaluation runner) and #13 (minimal problem preparation) were merged on 2026-11-12. Preparation is not an image interpreter or proof of independent model accuracy. Read `README.md`, `docs/MINIMAL-PROBLEM-AUTHORING.md`, `docs/QUALIFIED-AUTHORING.md`, `PROPOSAL.md`, `PLANE-MIRROR-PROPOSAL.md`, `LENS-MIRROR-PROPOSAL.md`, and `upstream-pin.json` for boundaries and evidence.
 - Reuse pinned PhyDemo optics and rendering. Do not rewrite ray tracing or modify upstream core without separate approval.
 - Milestone 5 builds a standalone static **browser** distribution using the
   exact native core and strict scenes. The package may contain only reviewed
@@ -67,7 +67,27 @@
 - Authoring CLI output directories must be fresh, non-symlink paths inside
   `test-artifacts/llm-authoring/`. Preserve original input bytes and hashes
   alongside the scene and report. Do not silently overwrite prior evidence.
-  Canonical scene JSON alone does not preserve physical-assumption provenance;
-  the browser currently does not load the sidecar. Do not claim otherwise.
+  Canonical scene JSON alone does not preserve physical-assumption provenance.
+  Use `scripts/qualified-scene.mjs` and the portable qualified package to carry
+  assumptions and edit history through browser preview and qualified revisions.
+  Raw sandbox/native exports omit this history and must show unknown provenance
+  when reimported. Never attach the previously loaded scene's qualification.
+- `src/observables.js` accepts explicit companion result requests, not another
+  apparatus DSL. Native observations require complete hash-matching execution.
+  Existing single-source analytical models may be applied to an analysis copy
+  only after their exact scope validates; do not change the native scene, remove
+  components, prescribe ray paths, or call a conditional image a detected image.
+  Unknown result kinds are unavailable; stale/incomplete results are suppressed.
+- Qualified package hashes detect mismatches, not authenticity or truth. Author
+  evidence notes are unverified text. Preserve original applied assumptions and
+  later physical/numerical/presentation edits separately; never upgrade an
+  illustrative origin to stated physics. Keep all async browser work revision-
+  guarded and bound metadata sizes/history. Raw imports clear qualification.
+- The five-problem record under `evaluation/qualified-workflow-v1/` is a sealed
+  same-assistant development attempt, not an independent model evaluation.
+  Do not edit `first-attempt.json`; add later reviews separately. Read only its
+  specified Problems entries, never Solutions without a separate protocol.
+  Replaying its three illustrative configurations in CI is software validation,
+  not three successful answers to the original inverse/material questions.
 - Image authoring uses the explicitly invoked repo skill `skills/sim-ro-image-to-scene/SKILL.md`. Keep provenance outside strict sandbox JSON, prefer labels over pixels, withhold scenes for essential unknowns/conflicts, and reject unsupported arrangements. The Node checker rebuilds/reuses the current core; execution success does not certify interpretation. Generated reports/previews stay in ignored `test-artifacts/image-to-scene/`.
 - After approval, routine implementation and focused testing may proceed within the agreed milestone. Ask before scope expansion, upstream physics changes, writes outside this workspace, committing, or pushing. Keep caches/build outputs inside this workspace where configurable.

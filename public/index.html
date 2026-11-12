@@ -14,11 +14,7 @@
 <p class="example-link-note"><a id="example-link" hidden href="">Share starting example</a> <span class="muted">Link opens the unedited example; use Save sandbox to preserve your changes.</span></p>
 <div class="actions"><button id="save-qualified" disabled>Save qualified package</button><button id="save" disabled>Save sandbox</button><label class="button">Open scene / qualified package<input id="load" type="file" accept=".json,application/json"></label><button id="export" disabled>Export PhyDemo JSON</button></div>
 <h2>Physical parameters</h2><p id="parameter-guidance" class="muted">Lengths in mm. x points right; y points up.</p>
-<section class="qualification-panel" aria-label="Physical assumptions and requested results">
-<h2 id="qualification-status" data-state="unknown">Qualification: unknown</h2>
-<p id="qualification-note">No qualification loaded.</p><p id="qualification-error" role="alert"></p>
-<pre id="qualification-details"></pre><h3>Requested results</h3><pre id="observable-results"></pre>
-</section>
+
 <div id="controls"></div>
 <p id="physical-note" class="muted">Edit physical values here; the canvas is a simulation view.</p>
 </aside>
@@ -31,6 +27,11 @@
 <div id="error" role="alert" hidden></div><pre id="warnings"></pre>
 <p id="brightness-note" class="muted"></p>
 <p id="reflection-note" class="muted"></p>
+<section class="qualification-panel" aria-label="Physical assumptions and requested results">
+<h2 id="qualification-status" data-state="unknown">Qualification: unknown</h2>
+<p id="qualification-note">No qualification loaded.</p><p id="qualification-error" role="alert"></p>
+<pre id="qualification-details"></pre><h3>Requested results</h3><pre id="observable-results"></pre>
+</section>
 <section class="analysis"><span class="eyebrow">ANALYTICAL PREDICTION</span><p id="analysis-status" class="muted"></p><div id="prediction"></div><p id="prediction-note" class="muted">Calculated independently from the authored optical parameters.</p></section>
 </section>
 </main>
