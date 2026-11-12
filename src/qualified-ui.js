@@ -123,7 +123,13 @@ export class QualifiedUI {
     for(const unknown of info.unknowns||[])lines.push('Unresolved: '+unknown);
     if(info.requestedResult)lines.unshift('Requested question result: '+info.requestedResult);
     $('qualification-details').textContent=lines.join('\n');
-    if(!this.requests.length){$('fit-results').disabled=!['completed','completed-with-warnings'].includes(s.state);$('observable-results').textContent='No explicit result requests loaded. This view shows native tracing only.';return;}
+    if(!this.requests.length){
+      $('fit-results').disabled=!['completed','completed-with-warnings'].includes(s.state);
+      $('observable-results').textContent=(this.qualification?.calculations?.length?
+        'Conditional angular calculations are recorded in Qualification above (historical after physical edits). No native requested-result readouts are loaded. Native ray tracing and its completion status are separate.':
+        'No explicit result requests loaded. This view shows native tracing only.');
+      return;
+    }
     if(!s.document||!['completed','completed-with-warnings'].includes(s.state)){
       $('observable-results').textContent='Requested results suppressed until this revision completes.';return;
     }
