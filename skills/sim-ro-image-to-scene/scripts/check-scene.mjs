@@ -34,11 +34,12 @@ export function checkCandidate(text, core) {
     const emission = core.observeSourceSet(candidate, loaded.scene, loaded.idMap);
     const reflections = core.observeMirrorSet(candidate, loaded.scene, loaded.idMap);
     const detectors = core.observeDetectorSet(candidate, loaded.scene, loaded.idMap);
+    const interfaces = core.observeInterfaceSet?.(candidate, loaded.scene, loaded.idMap);
     const simulator = new core.Simulator(loaded.scene, null, null, null, null, null, false, candidate.simulation.processedRayLimit);
     return {
       cancel() { simulator.shouldSimulatorStop = true; },
       run(notify) {
-        for (const event of ['simulationComplete', 'simulationStop']) simulator.on(event, () => notify(event, core.diagnostics(loaded.scene, simulator, emission, reflections, detectors)));
+        for (const event of ['simulationComplete', 'simulationStop']) simulator.on(event, () => notify(event, core.diagnostics(loaded.scene, simulator, emission, reflections, detectors, interfaces)));
         simulator.updateSimulation();
       }
     };

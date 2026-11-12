@@ -10,7 +10,12 @@ test('model prompts include the full live contract, not a lossy copy without obs
   for(const messages of [author,scope]){
     const contract=JSON.parse(messages[0].content.split('CAPABILITIES: ')[1]);
     assert.deepEqual(contract,capabilities());
-    assert.deepEqual(contract.observations,['emissionsById','reflectionsById','detectorsById']);
+    assert.deepEqual(contract.observations,['emissionsById','reflectionsById','detectorsById','interfacesById']);
+    assert.equal(contract.schemaVersion,4);
+    assert.equal(contract.planarMedia.schemaVersion,5);
+    assert.equal(contract.planarMedia.model,'planar-media-tracing');
+    assert.deepEqual(contract.componentTypes['planar-interface'].booleanParameters,['partialReflection']);
+    assert.equal(contract.componentTypes['point-source'].emission.planarOnlyMode,'single-ray');
     assert.ok(contract.limitations.includes('no source-specific detector provenance'));
   }
 });

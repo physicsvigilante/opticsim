@@ -4,9 +4,13 @@ import i18next from '../vendor/ray-optics/node_modules/i18next/dist/esm/i18next.
 import en from '../vendor/ray-optics/locales/en/simulator.json';
 import { validate, mirrorEndpoints } from './contract.js';
 i18next.init({ lng: 'en', resources: { en: { simulator: en } }, initImmediate: false, interpolation: { escapeValue: false } });
+import {compileInterface,observeInterfaceSet} from './planar-media.js';
+export {observeInterfaceSet};
 const compilers = {
+  'planar-interface':compileInterface,
   'point-source': c => {
     const { x, y, brightness } = c.parameters;
+    if(c.emission.mode==='single-ray'){const a=c.emission.directionDeg*Math.PI/180;return {type:'SingleRay',p1:{x,y:-y},p2:{x:x+20*Math.cos(a),y:-y-20*Math.sin(a)},brightness};}
     if (c.emission.mode === 'full-circle') return { type: 'PointSource', x, y: -y, brightness };
     const theta = c.emission.directionDeg * Math.PI / 180;
     return { type: 'AngleSource', p1: { x, y: -y },
@@ -125,8 +129,8 @@ export function observeDetectorSet(doc, scene, idMap) {
       signedPower:Number.isFinite(entry.detector.power)?entry.detector.power:null}
   ]));}};
 }
-export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, detectorMeter = null) {
-  const errors = [scene.error, simulator.error, ...scene.objs.map(o => o.getError())].filter(Boolean);
+export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, detectorMeter = null, interfaceMeter = null) {
+  const errors = [...(interfaceMeter?.errors||[]),scene.error, simulator.error, ...scene.objs.map(o => o.getError())].filter(Boolean);
   const warnings = [scene.warning, simulator.warning, ...scene.objs.map(o => o.getWarning())].filter(Boolean);
   const emissionsById=meter?.byId ?? null;
   const sourceCount=emissionsById ? Object.keys(emissionsById).length : 0;
@@ -138,7 +142,8 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
     emissionsById,
     reflections: mirrorMeter?.reflections ?? null,
     reflectionsById: mirrorMeter?.byId ?? null,
-    detectorsById: detectorMeter?.byId ?? null };
+    detectorsById: detectorMeter?.byId ?? null,
+    interfacesById: interfaceMeter?.byId ?? null };
 }
 export function classifyRun(event, data) {
   return data.errors.length ? 'failed' : event === 'simulationStop' ? 'stopped' :

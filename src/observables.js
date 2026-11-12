@@ -4,6 +4,12 @@ import {validate} from './contract.js';
 import {predict} from './analysis.js';
 import {sceneHash,isRecord,boundedText} from './qualified-utils.js';
 const kinds=Object.freeze({
+  'interface-interactions':{type:'planar-interface',unit:'sampled interactions'},
+  'interface-incidence-angle':{type:'planar-interface',unit:'degrees from normal; first native encounter'},
+  'interface-transmission-angle':{type:'planar-interface',unit:'degrees from normal; first native encounter'},
+  'interface-reflection-angle':{type:'planar-interface',unit:'degrees from normal; first native encounter'},
+  'interface-tir-count':{type:'planar-interface',unit:'native TIR interactions'},
+  'interface-first-event':{type:'planar-interface',unit:'native event; directions y-up; power relative'},
   'source-emissions':{type:'point-source',unit:'sampled rays'},
   'mirror-reflections':{type:'plane-mirror',unit:'sampled interactions'},
   'detector-crossings':{type:'ray-detector',unit:'sampled crossings'},
@@ -56,7 +62,8 @@ export async function evaluateObservables(doc,requests,execution){
   const fresh=execution?.canonicalSha256===canonicalSha256;
   const complete=fresh&&execution.executionPassed===true&&
     ['completed','completed-with-warnings'].includes(execution.native?.status);
-  const warnings=execution?.native?.warnings||[];
+  const warnings=[...(execution?.native?.warnings||[]),...doc.physics.components.filter(c=>c.type==='planar-interface'&&!c.parameters.partialReflection)
+    .map(c=>c.id+': explicit transmitted-only approximation omits Fresnel partial reflections; native TIR remains active.')];
   const results=requests.map(r=>{
     const base={...r,status:'unavailable',value:null,method:null,unit:null,reason:null};
     if(!Object.hasOwn(kinds,r.kind))return {...base,reason:'Requested quantity is not exposed by the current result contract.'};
@@ -74,6 +81,16 @@ export async function evaluateObservables(doc,requests,execution){
       }catch(error){return {...base,reason:'Analytical calculation unavailable: '+error.message};}
     }
     const o=execution.observations;
+    if(spec.type==='planar-interface'){
+      const meter=o?.interfacesById?.[r.componentId],event=meter?.first;
+      const value=r.kind==='interface-interactions'?meter?.interactions:r.kind==='interface-tir-count'?meter?.totalInternalReflections:
+        r.kind==='interface-first-event'?event:r.kind==='interface-incidence-angle'?event?.incidentAngleDeg:
+        r.kind==='interface-transmission-angle'?event?.transmittedAngleDeg:event?.reflectedAngleDeg;
+      if(value==null||r.kind!=='interface-first-event'&&!Number.isFinite(value))return {...base,unit:spec.unit,
+        reason:!event?'No native encounter was recorded.':'The first native encounter has no requested outgoing branch ('+event.outcome+').'};
+      return {...base,status:warnings.length?'qualified':'available',value,method:'native-observation',unit:spec.unit,warnings,
+        limitation:'First encounter is simulation-order dependent, not source attribution or a whole ray path. Angles use actual native directions; no missing branch is invented.'};
+    }
     const value=r.kind==='source-emissions'?o?.emissionsById?.[r.componentId]?.emitted:
       r.kind==='mirror-reflections'?o?.reflectionsById?.[r.componentId]:
       r.kind==='detector-crossings'?o?.detectorsById?.[r.componentId]?.crossings:
