@@ -3,11 +3,22 @@ import {parseSave,validate} from './contract.js';
 import {bundleFormat,parseQualifiedBundle,createQualifiedBundle,
   recordQualifiedEdit,qualificationSummary} from './qualification.js';
 import {evaluateObservables} from './observables.js';
-import {sceneHash} from './qualified-utils.js';
+import {sceneHash,canonicalJSON} from './qualified-utils.js';
+import {fitRequestedView,formatRequestedResult} from './result-preview.js';
 const $=id=>document.getElementById(id);
 export class QualifiedUI {
   constructor(session,download){
+    const button=document.createElement('button');button.id='fit-results';button.disabled=true;
+    button.textContent='Fit apparatus and requested results';
+    const note=document.createElement('p');note.id='fit-note';note.className='muted';note.setAttribute('role','status');
+    const stage=$('stage');stage.before(button,note);
+    this.applyView=doc=>{
+      const tracked=this.prepare(doc);
+      if(!this.session.apply(doc))return false;
+      this.commit(tracked);$('zoom').value=doc.presentation.view.zoom;return true;
+    };this.currentResults=null;this.resultRevision=null;this.fitState=null;this.fitSequence=0;
     this.session=session;this.download=download;this.qualification=null;this.requests=[];this.sequence=0;
+    $('fit-results').onclick=()=>this.fit().catch(e=>{$('fit-note').textContent=e.message;});
     $('save-qualified').onclick=()=>this.save().catch(e=>{$('qualification-error').textContent=e.message;});
   }
   async read(text){
@@ -36,8 +47,35 @@ export class QualifiedUI {
     if(revision!==s.revision)throw Error('Scene changed during export; export the current revision again');
     this.download(JSON.stringify(bundle,null,2)+'\n','scene.qualified.json');
   }
+  async fit(){
+    const s=this.session,canvas=$('light');
+    if(!s.document||!['completed','completed-with-warnings'].includes(s.state))throw Error('Fit requires a completed current run');
+    if(this.requests.length&&this.resultRevision!==s.revision)throw Error('Requested results are not current yet');
+    const revision=s.revision,width=canvas.width,height=canvas.height;
+    const sequence=++this.fitSequence;$('fit-results').disabled=true;
+    const fitted=await fitRequestedView(s.document,this.currentResults,width,height);
+    if(revision!==s.revision||width!==canvas.width||height!==canvas.height)throw Error('Scene or viewport changed during fit; retry on the current view');
+    if(!this.applyView(fitted.document))throw Error('Presentation edit was not accepted');
+    // The fit belongs to the exact document and viewport, not a run counter.
+    // Re-running the same scene (including a redundant UI refresh) is harmless;
+    // changed physics, view or dimensions invalidates this explanation below.
+    this.fitState={document:canonicalJSON(s.document),width,height,note:fitted.note};
+    $('fit-note').dataset.fitSequence=String(sequence);
+    $('fit-note').textContent=fitted.note;
+  }
   refresh(){
     const s=this.session,sequence=++this.sequence;
+    this.currentResults=null;this.resultRevision=null;
+    delete $('observable-results').dataset.results;
+    $('fit-results').disabled=true;
+    if(this.fitState){
+      const same=s.document&&this.fitState.document===canonicalJSON(s.document)&&
+        this.fitState.width===$('light').width&&this.fitState.height===$('light').height;
+      if(!same||s.state==='invalid'){
+        this.fitState=null;$('fit-note').textContent='';
+        delete $('fit-note').dataset.fitSequence;
+      }else $('fit-note').textContent=this.fitState.note;
+    }
     $('save-qualified').disabled=!this.qualification||!s.document||s.state==='invalid';
     const info=s.document?qualificationSummary(s.document,this.qualification):{status:'unknown',text:'No accepted scene.'};
     if(s.state==='invalid'&&this.qualification){info.status='suspended';info.text='Current edit/import is invalid. Historical assumptions below belong to the last accepted scene, not a current result.';}
@@ -50,7 +88,7 @@ export class QualifiedUI {
     for(const unknown of info.unknowns||[])lines.push('Unresolved: '+unknown);
     if(info.requestedResult)lines.unshift('Requested question result: '+info.requestedResult);
     $('qualification-details').textContent=lines.join('\n');
-    if(!this.requests.length){$('observable-results').textContent='No explicit result requests loaded. This view shows native tracing only.';return;}
+    if(!this.requests.length){$('fit-results').disabled=!['completed','completed-with-warnings'].includes(s.state);$('observable-results').textContent='No explicit result requests loaded. This view shows native tracing only.';return;}
     if(!s.document||!['completed','completed-with-warnings'].includes(s.state)){
       $('observable-results').textContent='Requested results suppressed until this revision completes.';return;
     }
@@ -62,11 +100,14 @@ export class QualifiedUI {
           emissionsById:data?.emissionsById,reflectionsById:data?.reflectionsById,detectorsById:data?.detectorsById}};
       const results=await evaluateObservables(doc,requests,execution);
       if(sequence!==this.sequence||revision!==s.revision)return;
-      $('observable-results').textContent=results.results.map(r=>
-        r.id+' — '+r.status+'; '+(r.method||'no method')+'\n'+
-        (r.reason||JSON.stringify(r.value))+(r.unit?'\nUnits: '+r.unit:'')+
-        (r.assumptions?'\nConditions: '+r.assumptions.join(' '):'')+
-        (r.warnings?.length?'\nWarnings: '+r.warnings.join(' '):'')).join('\n\n');
+      this.currentResults=results;this.resultRevision=revision;
+      $('observable-results').dataset.results=JSON.stringify(results.results);
+      $('fit-results').disabled=false;
+      $('observable-results').textContent=results.results.map(formatRequestedResult).join('\n\n');
+      if(s.analysisStatus==='unavailable'&&results.results.some(r=>r.status==='conditional'&&r.kind==='ideal-image')){
+        $('prediction').textContent='A conditional image prediction is available in Requested results above.';
+        $('prediction-note').textContent='The general scene does not assert a unique optical route. The requested analytical result uses a validated restricted model and its stated illumination/route conditions; it is not a native image detection.';
+      }
     })().catch(error=>{
       if(sequence===this.sequence&&revision===s.revision)$('observable-results').textContent='Requested results unavailable: '+error.message;
     });

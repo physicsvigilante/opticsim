@@ -1,0 +1,28 @@
+{
+  "archiveName": "08_Ray_Optics_Explanations.zip",
+  "archiveSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+  "selectionRule": "Sort sections; take first, quarter, middle, three-quarter and last sections; first and middle Problems PNG of each. Fixed before opening images. Development capability review, not an accuracy benchmark.",
+  "solutionsRead": false,
+  "sections": [
+    {"section":"08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces","count":15},
+    {"section":"08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces","count":13},
+    {"section":"08_Ray_Optics_Explanations/03_General_Refraction","count":12},
+    {"section":"08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR","count":10},
+    {"section":"08_Ray_Optics_Explanations/05_Prism","count":15},
+    {"section":"08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces","count":13},
+    {"section":"08_Ray_Optics_Explanations/07_Lens_Formula","count":27},
+    {"section":"08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments","count":9}
+  ],
+  "cases": [
+    {"id":"B01","problemPath":"08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/001.png","imageSha256":"bc419ed8858e6674a6b1061c0387f8e19ff6e12508b5991af5411d4da3be35c5"},
+    {"id":"B02","problemPath":"08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/008.png","imageSha256":"d98c915ffb363dcc2814191ca014ba1964e921977eca632e8b6ed17120bcb146"},
+    {"id":"B03","problemPath":"08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/001.png","imageSha256":"fbd68cb0d4ed0478f3c3f0b8b0dbec4e1086046e37934788968fa6156b45913b"},
+    {"id":"B04","problemPath":"08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/007.png","imageSha256":"512656b8d3711783be9bb571086609872e7618c390b296a121d8d8c50f9b9f4c"},
+    {"id":"B05","problemPath":"08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/001.png","imageSha256":"df2fad74e2e23469ad32e09efc894b2673f2504b11a30c988c0643d6b9730796"},
+    {"id":"B06","problemPath":"08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/006.png","imageSha256":"a330ac2c9eecf3e83a848eb76d475fde72876138974e5320a4b9a4a5fb5f8b0c"},
+    {"id":"B07","problemPath":"08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/001.png","imageSha256":"495dea7c51d58b1d1a3e241b4bf8bb88d66051a234ae52459fd4291a2fef8ec7"},
+    {"id":"B08","problemPath":"08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/007.png","imageSha256":"2f95c58717b644ca282fc22957899410c3e3c02d2c753eabfaa815682728380c"},
+    {"id":"B09","problemPath":"08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/001.png","imageSha256":"4f1989a03095631e93a853c3330c224ab72238cd0c6c2862505b0062bdbf05a5"},
+    {"id":"B10","problemPath":"08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/005.png","imageSha256":"71951962c0b0171a2819a8895112d6dc57bac488bad1f280ecbc5bb3efad83c1"}
+  ]
+}

@@ -6,7 +6,9 @@ import {createServer} from 'node:net';
 import {mkdir,mkdtemp,readFile,readdir,rm,writeFile} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {parseQualifiedBundle} from '../src/qualification.js';
+import {parseQualifiedBundle,createQualifiedBundle,recordQualifiedEdit} from '../src/qualification.js';
+import {reviseScene} from '../src/authoring.js';
+import {apparatusPoints,formatRequestedResult} from '../src/result-preview.js';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const demoRoot=resolve(root,process.argv[2]||'test-artifacts/llm-authoring/supported-demos');
 const out=join(demoRoot,'browser'),downloads=join(out,'downloads');
@@ -39,12 +41,13 @@ async function connect(url){
     ws.send(JSON.stringify({id,method,params}));
   })};
 }
-function checkResults(text,expected){
+function checkResults(text,expected,structured){
+  assert.deepEqual(structured,expected);
   const blocks=text.split('\n\n');
   for(const r of expected){
     const block=blocks.find(b=>b.startsWith(r.id+' — '));assert.ok(block,'Missing result '+r.id);
-    assert.equal(block.split('\n')[0],r.id+' — '+r.status+'; '+r.method);
-    assert.deepEqual(JSON.parse(block.split('\n')[1]),r.value);
+    assert.equal(block.split('\n')[0],r.id+' — '+r.status+'; '+(r.method||'no method'));
+    assert.equal(block,formatRequestedResult(r));
   }
 }
 async function main(){
@@ -75,7 +78,7 @@ async function main(){
       const r=await cdp.send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});
       if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result?.value;
     };
-    const ui=()=>evaluate('({title:document.getElementById("title").textContent,state:document.getElementById("status").dataset.state,qualification:document.getElementById("qualification-status").dataset.state,results:document.getElementById("observable-results").textContent,error:document.getElementById("error").textContent,disabled:document.getElementById("save-qualified").disabled,width:document.getElementById("light").width,height:document.getElementById("light").height})');
+    const ui=()=>evaluate('({title:document.getElementById("title").textContent,state:document.getElementById("status").dataset.state,qualification:document.getElementById("qualification-status").dataset.state,results:document.getElementById("observable-results").textContent,structuredResults:JSON.parse(document.getElementById("observable-results").dataset.results||"null"),fitDisabled:document.getElementById("fit-results").disabled,fitNote:document.getElementById("fit-note").textContent,fitSequence:document.getElementById("fit-note").dataset.fitSequence||null,error:document.getElementById("error").textContent,disabled:document.getElementById("save-qualified").disabled,width:document.getElementById("light").width,height:document.getElementById("light").height})');
     const upload=async path=>{
       const dom=await cdp.send('DOM.getDocument',{depth:-1});
       const input=await cdp.send('DOM.querySelector',{nodeId:dom.root.nodeId,selector:'#load'});
@@ -83,20 +86,47 @@ async function main(){
     };
     const current=(title,qualification,results)=>until(ui,s=>{
       if(s.title!==title||s.state!=='completed'||s.qualification!==qualification||s.disabled||s.error)return false;
-      try{checkResults(s.results,results);return true;}catch{return false;}
+      try{checkResults(s.results,results,s.structuredResults);return true;}catch{return false;}
     },title+' '+qualification+' results');
     const shot=async name=>{
       const r=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
       await writeFile(join(out,name+'.png'),Buffer.from(r.data,'base64'));report.screenshots.push(name+'.png');
     };
     function viewport(id,phase,bundle,state,results){
-      const image=results.find(r=>r.kind==='ideal-image');if(!image)return false;
+      const image=results.find(r=>r.kind==='ideal-image');if(!Number.isFinite(image?.value?.x))return false;
       const v=bundle.scene.presentation.view;
       const pixel={x:state.width/2+(image.value.x-v.x)*v.zoom,y:state.height/2-(image.value.y-v.y)*v.zoom};
       report.viewportChecks.push({id,phase,canvas:{width:state.width,height:state.height},view:v,
         conditionalImagePixel:pixel,inside:pixel.x>=0&&pixel.x<=state.width&&pixel.y>=0&&pixel.y<=state.height,
         meaning:'Screen location of a conditional analytical coordinate, not native image detection.'});
       return true;
+    }
+    async function fitAndCheck(id,phase,original,results,title,qualification,includeImage=true){
+      const beforeFit=await until(ui,s=>!s.fitDisabled&&s.state==='completed','fit ready');
+      await evaluate('document.getElementById("fit-results").click()');
+      // Do not mistake the pre-click completed run for completion of async fit.
+      await until(ui,s=>s.fitSequence!==null&&s.fitSequence!==beforeFit.fitSequence&&
+        s.fitNote.includes('No physics or sampling changed'),'fit explanation');
+      const fitted=await current(title,qualification,results);
+      const directory=join(downloads,id,phase);await mkdir(directory,{recursive:true});
+      await cdp.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:directory,eventsEnabled:true});
+      await evaluate('document.getElementById("save-qualified").click()');
+      const saved=await until(async()=>{
+        const name=(await readdir(directory)).find(n=>n.endsWith('.json'));
+        return name?parseQualifiedBundle(await readFile(join(directory,name),'utf8')):null;
+      },x=>!!x,'fitted package export');
+      assert.deepEqual(saved.scene.physics,original.scene.physics);assert.deepEqual(saved.scene.simulation,original.scene.simulation);
+      assert.deepEqual(saved.qualification.origin,original.qualification.origin);assert.deepEqual(saved.qualification.assumptions,original.qualification.assumptions);
+      assert.equal(saved.qualification.edits.filter(e=>e.kind==='physics').length,original.qualification.edits.filter(e=>e.kind==='physics').length);
+      if(JSON.stringify(saved.scene.presentation.view)!==JSON.stringify(original.scene.presentation.view))assert.equal(saved.qualification.edits.at(-1).kind,'presentation');
+      const v=saved.scene.presentation.view,padding=Math.min(48,fitted.width*.12,fitted.height*.12);
+      const image=results.find(r=>r.kind==='ideal-image'&&r.status==='conditional')?.value;
+      for(const p of [...apparatusPoints(saved.scene),...(includeImage&&image&&Number.isFinite(image.x)?[image]:[])]){
+        assert.ok(Math.abs((p.x-v.x)*v.zoom)<=fitted.width/2-padding+1e-5,'x fits with padding');
+        assert.ok(Math.abs((p.y-v.y)*v.zoom)<=fitted.height/2-padding+1e-5,'y fits with padding');
+      }
+      viewport(id,phase,saved,fitted,results);
+      report.checks.push({name:id+' '+phase+' preserves physics, results, provenance and fits with padding',result:'pass'});
     }
     await cdp.send('Page.navigate',{url:origin+'/'});await until(ui,s=>s.state==='completed','browser ready');
     for(const c of demos.cases){
@@ -109,16 +139,15 @@ async function main(){
       const next=await parseQualifiedBundle(await readFile(join(demoRoot,c.revised.bundle),'utf8'));
       await upload(join(demoRoot,c.initial.bundle));
       const loaded=await current(attempt.request.title,'fully-specified',c.initial.results);
-      if(viewport(c.id,'initial',first,loaded,c.initial.results)){
-        // Explicit presentation-only adjustment for screenshots, recorded in
-        // export history. Never alter the sealed physical first request.
-        await evaluate('(()=>{const z=document.getElementById("zoom");z.value="0.6";z.dispatchEvent(new Event("input",{bubbles:true}));})()');
-        await current(attempt.request.title,'fully-specified',c.initial.results);
-      }
+      viewport(c.id,'initial',first,loaded,c.initial.results);
+      await fitAndCheck(c.id,'initial-fit',first,c.initial.results,attempt.request.title,'fully-specified');
+      await cdp.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:caseDownloads,eventsEnabled:true});
       report.checks.push({name:c.id+' initial package and current results',result:'pass'});await shot(c.id+'-initial');
       const change=attempt.revisionChanges[0],value=next.scene.physics.components.find(x=>x.id===change.id)[change.section][change.key];
       await evaluate('(()=>{const e=document.getElementById('+JSON.stringify(change.id+'-'+change.key)+');e.value='+JSON.stringify(String(value))+';e.dispatchEvent(new Event("input",{bubbles:true}));e.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true}));})()');
       await current(attempt.request.title,'revised',c.revised.results);
+      await fitAndCheck(c.id,'revised-fit',next,c.revised.results,attempt.request.title,'revised');
+      await cdp.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:caseDownloads,eventsEnabled:true});
       report.checks.push({name:c.id+' one physical edit recalculates results',result:'pass'});
       const previous=new Set(await readdir(caseDownloads));await evaluate('document.getElementById("save-qualified").click()');
       const saved=await until(async()=>{
@@ -139,6 +168,28 @@ async function main(){
       const revised=await current(attempt.request.title,'revised',c.revised.results);
       viewport(c.id,'revised',next,revised,c.revised.results);
       report.checks.push({name:c.id+' CLI-revised package matches browser physical results',result:'pass'});
+    }
+    const lastLens=demos.cases[1],lastAttempt=attempts.cases[1];
+    const lastBundle=await parseQualifiedBundle(await readFile(join(demoRoot,lastLens.revised.bundle),'utf8'));
+    await cdp.send('Emulation.setDeviceMetricsOverride',{width:900,height:800,deviceScaleFactor:1,mobile:false});
+    await until(ui,s=>s.width<900&&s.height<451&&s.state==='completed','narrow viewport native resize');
+    await upload(join(demoRoot,lastLens.revised.bundle));
+    await current(lastAttempt.request.title,'revised',lastLens.revised.results);
+    await fitAndCheck(lastLens.id,'resized-fit',lastBundle,lastLens.revised.results,lastAttempt.request.title,'revised');
+    await shot('result-aware-narrow-viewport');
+    await evaluate('(()=>{const e=document.getElementById("L1-focalLength");e.value="0";e.dispatchEvent(new Event("input",{bubbles:true}));})()');
+    await until(ui,s=>s.state==='invalid'&&s.fitDisabled&&s.structuredResults===null,'invalid edit suppresses fit and structured results');
+    report.checks.push({name:'invalid edit clears result data and disables fit',result:'pass'});
+    const originalLens=await parseQualifiedBundle(await readFile(join(demoRoot,demos.cases[0].initial.bundle),'utf8'));
+    for(const variant of [{id:'infinite',f:300,note:'infinite or unavailable'}, {id:'beyond-camera',f:299.999,note:'camera bounds'}, {id:'unavailable',f:120,multiple:true,note:'exactly one source'}]){
+      const doc=reviseScene(originalLens.scene,{changes:[{id:'L1',section:'parameters',key:'focalLength',value:variant.f,unit:'mm'}]}).document;
+      if(variant.multiple){const second=structuredClone(doc.physics.components[0]);second.id='S2';second.parameters.y=100;doc.physics.components.push(second);}
+      const bundle=await createQualifiedBundle(doc,recordQualifiedEdit(originalLens.scene,doc,originalLens.qualification),originalLens.observables);
+      const path=join(out,variant.id+'.qualified.json');await writeFile(path,JSON.stringify(bundle));await upload(path);
+      const loaded=await until(ui,s=>s.state==='completed'&&s.structuredResults!==null,'fallback scene');
+      await fitAndCheck(variant.id,'fallback-fit',bundle,loaded.structuredResults,doc.presentation.title,'revised',false);
+      assert.ok((await ui()).fitNote.includes(variant.note),variant.id+' explanatory exclusion');
+      report.checks.push({name:variant.id+' fits apparatus without inventing a finite image',result:'pass'});
     }
     assert.deepEqual(javascriptErrors,[]);assert.deepEqual(badResponses,[]);
     assert.ok(requests.every(url=>url.startsWith(origin+'/')),'Unexpected external browser request');

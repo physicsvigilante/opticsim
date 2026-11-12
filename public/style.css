@@ -24,3 +24,7 @@
 .qualification-panel p, .qualification-panel pre { font-size: .8rem; line-height: 1.45; }
 .qualification-panel pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 20rem; overflow-y: auto; }
 #qualification-error { color: #a82525; }
+
+/* Results changing height must not move the optical viewport via scrollbars. */
+html{scrollbar-gutter:stable}
+#fit-note{min-height:1.7em;overflow-wrap:anywhere}
