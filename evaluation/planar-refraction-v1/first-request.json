@@ -1,0 +1,87 @@
+{
+  "context": "Recorded synthetic development input, following local native exploration; not a blind first attempt, independent model evaluation, or measured material specimen.",
+  "prompt": "Trace one native ray from (-10 cm,0) towards an infinite vertical boundary at x=0. Use negative-side index 1 and positive-side index 1.5, native Fresnel partial reflections enabled, direction +30 degrees. Report actual first incidence, transmitted/reflected angles and branch record. Then vary the source direction over 0,15,30,45,60 degrees from the same baseline. Do not supply computed answers.",
+  "request": {
+    "lengthUnit": "cm",
+    "title": "Planar boundary — explicit indices 1 to 1.5",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -10,
+          "y": 0,
+          "brightness": 1
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 30
+        }
+      },
+      {
+        "id": "I1",
+        "type": "planar-interface",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "normalDeg": 0,
+          "negativeIndex": 1,
+          "positiveIndex": 1.5,
+          "partialReflection": true
+        }
+      }
+    ]
+  },
+  "observables": [
+    {
+      "id": "incidence",
+      "kind": "interface-incidence-angle",
+      "componentId": "I1"
+    },
+    {
+      "id": "transmission",
+      "kind": "interface-transmission-angle",
+      "componentId": "I1"
+    },
+    {
+      "id": "reflection",
+      "kind": "interface-reflection-angle",
+      "componentId": "I1"
+    },
+    {
+      "id": "event",
+      "kind": "interface-first-event",
+      "componentId": "I1"
+    }
+  ],
+  "sweep": {
+    "parameter": {
+      "id": "S1",
+      "section": "emission",
+      "key": "directionDeg"
+    },
+    "values": [
+      0,
+      15,
+      30,
+      45,
+      60
+    ],
+    "plot": {
+      "observableId": "transmission",
+      "field": "value"
+    }
+  },
+  "interpretation": {
+    "requestedResult": "Native first interface angles and branch observations; no image or inverse-material inference.",
+    "stated": [
+      "All geometry, indices, intensity and Fresnel choice are explicit in this synthetic experiment."
+    ],
+    "derived": [],
+    "assumptions": [
+      "Two homogeneous isotropic nondispersive media; no absorption, phase, travel time or wave effects.",
+      "An ideal native single ray is an explicitly chosen emitter, not an approximation silently substituted for a specified source."
+    ],
+    "unknowns": []
+  }
+}

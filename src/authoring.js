@@ -10,7 +10,7 @@ const policies=Object.freeze({
   'dense-v1':Object.freeze({rayDensity:SAMPLING_PRESETS.dense,maxRayDepth:8,processedRayLimit:10000})
 });
 const prefixes=Object.freeze({
-  'point-source':'source','ideal-lens':'lens','plane-mirror':'mirror','ray-detector':'detector'
+  'point-source':'source','ideal-lens':'lens','plane-mirror':'mirror','ray-detector':'detector','planar-interface':'interface'
 });
 const lengthKeys=new Set(LENGTH_PARAMETERS);
 const own=(value,key)=>Object.prototype.hasOwnProperty.call(value,key);
@@ -39,6 +39,7 @@ function physicalNumber(value,path) {
   return value;
 }
 function canonicalValue(key,value,scale,path) {
+  if(key==='partialReflection'){if(typeof value!=='boolean')fail([issue(path,'INVALID_VALUE','Expected an explicit boolean')]);return value;}
   return physicalNumber(value,path)*(lengthKeys.has(key)?scale:1);
 }
 export class AuthoringError extends Error {
@@ -50,21 +51,23 @@ export class AuthoringError extends Error {
 export function capabilities() {
   return {
     interfaceVersion:1,canonicalFormat:'ray-optics-2d',schemaVersion:4,
+    planarMedia:{schemaVersion:5,model:'planar-media-tracing',interfaces:'1–4 parallel consistently oriented planes; matching adjacent indices',sources:'1–4 single-ray emitters',lenses:'unsupported',indices:'absolute positive indices [1,4], normalized as native ratios',partialReflection:'required boolean; false explicitly neglects Fresnel partial reflection, not TIR'},
     model:'general-component-tracing',nativeUpstreamCommit:UPSTREAM,
     lengthUnits:Object.keys(lengthScales),coordinates:'x-right-y-up',
     lengthParameters:[...lengthKeys],
     componentTypes:Object.fromEntries(COMPONENT_TYPES.map(type=>[type,{
       parameters:componentParameterNames(type),
+      ...(type==='planar-interface'?{booleanParameters:['partialReflection'],nativeType:'PlaneGlass',normal:'negative to positive side; degrees CCW in y-up'}:{}),
       counts:{...GENERAL_SCOPE[type]},
       ...(type==='point-source'?{emission:{mode:['full-circle','directional'],
-        directionalFields:['directionDeg','angleDeg']}}:{})
+        directionalFields:['directionDeg','angleDeg'],planarOnlyMode:'single-ray',singleRayFields:['directionDeg']}}:{})
     }])),
     bounds:COMPONENT_BOUNDS,
     runPolicies:Object.fromEntries(Object.entries(policies).map(([id,value])=>[id,{...value}])),
     requiredInput:['lengthUnit','components'],optionalInput:['title','runPolicy'],
     physicalPolicy:'All physical parameter values are required. Full-circle inactive angles are explicitly filled, not measured. No optical component or missing physical information is invented.',
     opticalGeometry:'Thin ideal lenses are vertical and centred at y=0. Mirror and detector orientationDeg is the tangent in y-up coordinates. Native surfaces must not intersect or overlap.',
-    observations:['emissionsById','reflectionsById','detectorsById'],
+    observations:['emissionsById','reflectionsById','detectorsById','interfacesById'],
     limitations:['native finite-ray sampling','signed relative detector power is not watts',
       'no image prediction for unconstrained general tracing','no source-specific detector provenance']
   };
@@ -95,13 +98,15 @@ export function inspectAuthoringRequest(request){
     return issues;
   }
   const number=(key,value,path)=>{
+    if(key==='partialReflection'){if(typeof value!=='boolean')issues.push(issue(path,'INVALID_VALUE','Expected explicit boolean'));return;}
     if(typeof value!=='number'||!Number.isFinite(value)){
       issues.push(issue(path,'INVALID_VALUE','Expected a finite numeric value, not text or an unlabelled expression'));return;
     }
     if(lengthKeys.has(key)&&scale===null)return;
     const n=value*(lengthKeys.has(key)?scale:1),b=COMPONENT_BOUNDS;
     const bounds=key==='brightness'?b.brightness:
-      key==='orientationDeg'?b.orientationDeg:key==='directionDeg'?b.directionDeg:
+      ['negativeIndex','positiveIndex'].includes(key)?b.refractiveIndex:
+      key==='normalDeg'?b.orientationDeg:key==='orientationDeg'?b.orientationDeg:key==='directionDeg'?b.directionDeg:
       key==='angleDeg'?b.openingAngleDeg:
       ['length','apertureHeight'].includes(key)?b.positiveLengthMm:b.coordinateMm;
     if(!Number.isFinite(n)||n<bounds[0]||n>bounds[1]||
@@ -134,11 +139,11 @@ export function inspectAuthoringRequest(request){
       issues.push(issue(path+'.emission','MISSING_VALUE','Source emission must be explicitly specified'));continue;
     }
     if(!object(c.emission,path+'.emission',['mode','directionDeg','angleDeg'],['mode']))continue;
-    if(own(c.emission,'mode')&&!['full-circle','directional'].includes(c.emission.mode))
-      issues.push(issue(path+'.emission.mode','UNSUPPORTED_MODE','Expected full-circle or directional'));
+    if(own(c.emission,'mode')&&!['full-circle','directional','single-ray'].includes(c.emission.mode))
+      issues.push(issue(path+'.emission.mode','UNSUPPORTED_MODE','Expected full-circle, directional, or planar-only single-ray'));
     for(const key of ['directionDeg','angleDeg']){
       if(own(c.emission,key))number(key,c.emission[key],path+'.emission.'+key);
-      else if(c.emission.mode==='directional')issues.push(issue(path+'.emission.'+key,
+      else if(c.emission.mode==='directional'||c.emission.mode==='single-ray'&&key==='directionDeg')issues.push(issue(path+'.emission.'+key,
         'MISSING_VALUE','Directional emission requires the explicit physical angle'));
     }
   }
@@ -152,6 +157,7 @@ function camera(components) {
     if(c.type==='point-source')vertices.push({x:p.x,y:p.y});
     else if(c.type==='ideal-lens')vertices.push({x:p.x,y:-p.apertureHeight/2},
       {x:p.x,y:p.apertureHeight/2});
+    else if(c.type==='planar-interface')vertices.push({x:p.x,y:p.y});
     else vertices.push(...mirrorEndpoints(p));
   }
   const xs=vertices.map(v=>v.x),ys=vertices.map(v=>v.y);
@@ -186,10 +192,11 @@ export function prepareScene(request) {
     }
     return result;
   });
+  const planar=components.some(c=>c.type==='planar-interface');
   const doc={
-    format:'ray-optics-2d',schemaVersion:4,adapterVersion:4,upstreamCommit:UPSTREAM,
+    format:'ray-optics-2d',schemaVersion:planar?5:4,adapterVersion:planar?5:4,upstreamCommit:UPSTREAM,
     physics:{lengthUnit:'mm',coordinates:'x-right-y-up',
-      model:'general-component-tracing',components},
+      model:planar?'planar-media-tracing':'general-component-tracing',components},
     presentation:{title,view:camera(components),mode:'rays',grid:false},
     simulation:{...policies[policyName]}
   };
@@ -204,6 +211,7 @@ export function prepareScene(request) {
       ...(own(request,'title')?[]:['presentation.title']),
       ...(own(request,'runPolicy')?[]:['simulation.runPolicy']),
       'presentation.view','presentation.mode','presentation.grid',
+      ...components.filter((c,i)=>c.type==='point-source'&&c.emission.mode==='single-ray'&&!own(request.components[i].emission,'angleDeg')).map(c=>c.id+'.inactiveConeAngle'),
       ...components.filter((c,i)=>c.type==='point-source'&&
         c.emission.mode==='full-circle'&&
         ['directionDeg','angleDeg'].some(key=>!own(request.components[i].emission,key)))
@@ -234,7 +242,7 @@ export function reviseScene(document,patch){
     if(seen.has(identity)){issues.push(issue(path,'DUPLICATE_CHANGE','Update a field only once per revision'));continue;}
     seen.add(identity);
     if(change.section==='emission'&&change.key==='mode'){
-      if(own(change,'unit')||!['full-circle','directional'].includes(change.value))
+      if(own(change,'unit')||!(document.schemaVersion===5?['single-ray']:['full-circle','directional']).includes(change.value))
         issues.push(issue(path+'.value','INVALID_MODE','Expected full-circle or directional without units'));
       else component.emission.mode=change.value;
       continue;

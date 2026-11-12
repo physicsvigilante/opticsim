@@ -17,6 +17,10 @@ export function formatRequestedResult(r){
         `Global image position: x = ${number(p.x)} mm; y = ${number(p.y)} mm.\n`+
         (finite(p.magnification)?`Magnification: ${number(p.magnification)} (dimensionless).\n`:'')+
         `Image type: ${kind}. Not a native image detection.`;
+    }else if(r.kind==='interface-first-event'){
+      const p=r.value;value=`First native encounter: ${p.outcome}. ${p.from} side, index ${number(p.incidentIndex)} → ${number(p.destinationIndex)}.\n`+
+        `Incidence: ${number(p.incidentAngleDeg)}°; transmission: ${number(p.transmittedAngleDeg)}°; reflection: ${number(p.reflectedAngleDeg)}°.\n`+
+        `Recorded outgoing branches: ${p.branches.map(b=>b.kind+' ('+number(b.relativePower)+' relative power)').join(', ')||'none'}.`;
     }else value=`${number(r.value)} ${r.unit||''}`;
   }
   return `${r.id} — ${r.status}; ${r.method||'no method'}\n${label}\n${value}`+

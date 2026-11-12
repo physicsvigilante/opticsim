@@ -97,7 +97,7 @@ export class QualifiedUI {
     (async()=>{
       const execution={canonicalSha256:await sceneHash(doc),executionPassed:true,
         native:{status,warnings:data?.warnings||[]},observations:{
-          emissionsById:data?.emissionsById,reflectionsById:data?.reflectionsById,detectorsById:data?.detectorsById}};
+          emissionsById:data?.emissionsById,reflectionsById:data?.reflectionsById,detectorsById:data?.detectorsById,interfacesById:data?.interfacesById}};
       const results=await evaluateObservables(doc,requests,execution);
       if(sequence!==this.sequence||revision!==s.revision)return;
       this.currentResults=results;this.resultRevision=revision;
