@@ -7,6 +7,7 @@ import {createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 const first=JSON.parse(readFileSync('evaluation/original-refraction-pair-v1/first-attempt.json'));
 const trials=JSON.parse(readFileSync('evaluation/planar-angular-v1/cases.json'));
+const reduced=JSON.parse(readFileSync('evaluation/planar-angular-v1/reduced-facts.json'));
 const folder=resolve('test-artifacts/llm-authoring/planar-angle-acceptance');
 mkdirSync(folder,{recursive:true});
 const sha=b=>createHash('sha256').update(b).digest('hex');
@@ -34,7 +35,19 @@ function run(name,request,query,{native=false,status='conditional'}={}){
  assert.equal(result.queryInputSha256,sha(readFileSync(queries)));
  assert.equal(result.results.native.status,'not-run');
  assert.equal(result.forwardNativeCheck?.status||'not-run',native?'incomplete':'not-run');
- if(status==='conditional')assert.ok(existsSync(resolve(out,'derived-forward-scene.ray-optics-2d.json')));
+ assert.ok(existsSync(resolve(out,'analytical-result.json')));
+ const hasScene=Boolean(result.results.proposedForwardScene||result.results.canonicalForwardScene);
+ if(hasScene){
+   assert.equal(result.portableQualifiedScene.status,'created',JSON.stringify(result.portableQualifiedScene));
+   const bundle=JSON.parse(readFileSync(resolve(out,'derived-forward-scene.qualified.json')));
+   assert.equal(bundle.format,'opticsim-qualified-scene-v1');
+   assert.equal(bundle.qualification.calculations[0].querySha256,result.queryInputSha256);
+   assert.deepEqual(bundle.qualification.calculations[0].query,query);
+   assert.equal(bundle.qualification.origin.inputSha256,result.originalInputSha256);
+ }else{
+   assert.equal(result.portableQualifiedScene.status,'not-applicable');
+   assert.ok(!existsSync(resolve(out,'derived-forward-scene.qualified.json')));
+ }
  report.attempts.push({name,resultStatus:result.results.status,nativeStatus:result.forwardNativeCheck?.status||'not-run',
    actualResult:result.results.results?.map(x=>({id:x.id,status:x.status,angleDeg:x.value?.exitAngleDeg}))||
     result.results.value,requestSha256:result.originalInputSha256,querySha256:result.queryInputSha256});
@@ -51,9 +64,10 @@ assert.ok(Math.abs(r[1].value.exitAngleDeg-40.5416018735)<1e-8);
 assert.equal(b06.forwardNativeCheck.actualObservations,null);
 run('reverse-critical',trials.synthetic.reverseCritical.request,trials.synthetic.reverseCritical.query);
 run('middle-branches',trials.synthetic.middleBranches.request,trials.synthetic.middleBranches.query);
+for(const c of reduced.cases)run(c.id,c.input,c.query);
 const impossible=get('B05');
 impossible.components.find(x=>x.id==='I12').parameters.negativeIndex=1;
 const blocked=run('impossible-critical',impossible,trials.original.B05,{status:'unavailable'});
 assert.equal(blocked.results.proposedForwardScene,undefined);
 save('acceptance.json',{...report,status:'pass',cases:report.attempts.length});
-console.log('Planar angular analysis acceptance PASS: B05/B06 conditional answers, unchanged native incompleteness, two independent cases and unavailable control.');
+console.log('Planar angular analysis acceptance PASS: B05/B06 conditional answers and reduced facts, portable provenance, unchanged native incompleteness, two independent cases and unavailable control.');
