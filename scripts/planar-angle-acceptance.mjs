@@ -21,8 +21,8 @@ function run(name,request,query,{native=false,status='conditional'}={}){
  const out=resolve(folder,name);
  const args=['scripts/planar-angle-query.mjs',input,queries,'--out',out];
  if(native)args.push('--native-check');
- const process=spawnSync(process.execPath,args,{encoding:'utf8',timeout:90000});
- assert.equal(process.status,0,process.stdout+process.stderr);
+ const child=spawnSync(process.execPath,args,{encoding:'utf8',timeout:90000});
+ assert.equal(child.status,0,child.stdout+child.stderr);
  const result=JSON.parse(readFileSync(resolve(out,'report.json')));
  assert.equal(result.results.status,status);
  assert.equal(result.physicalSceneMutated,false);
