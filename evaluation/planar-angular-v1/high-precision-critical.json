@@ -1,0 +1,41 @@
+{
+  "format": "opticsim-critical-reference-v1",
+  "reference": "Independent 80-decimal-place mpmath sin/asin computation; used only in tests, not in production analytical solver.",
+  "nIncident": "1.6",
+  "nDestination": "1.2",
+  "criticalAngleDeg": "48.590377890729140661519497813074279258215948851271461629942502259805",
+  "boundary": "lower-index transmitted branch, incidence positive from normal",
+  "cases": [
+    {
+      "offsetDeg": "-0.00001",
+      "ratioMinusOne": "-0.00000015392358712098283086263565442567997688781514320951170549527120278163",
+      "physical": "transmission",
+      "expectedStatus": "conditional"
+    },
+    {
+      "offsetDeg": "-0.00000000001",
+      "ratioMinusOne": "-0.00000000000015392357189012785386158891030860659695110235493182781320970933712935",
+      "physical": "transmission",
+      "expectedStatus": "numerically-indeterminate"
+    },
+    {
+      "offsetDeg": "0",
+      "ratioMinusOne": "0",
+      "physical": "critical-limit",
+      "expectedStatus": "numerically-indeterminate"
+    },
+    {
+      "offsetDeg": "0.00000000001",
+      "ratioMinusOne": "0.00000000000015392357189009739211961023944867192259624179205350316660313663490744",
+      "physical": "total-internal-reflection",
+      "expectedStatus": "numerically-indeterminate"
+    },
+    {
+      "offsetDeg": "0.00001",
+      "ratioMinusOne": "0.00000015392355665924085219185304622835629879302242311518645714932676741266",
+      "physical": "total-internal-reflection",
+      "expectedStatus": "unavailable"
+    }
+  ],
+  "notes": "High precision determines mathematical side of criticality; the double-precision engine deliberately withholds a physical classification inside its uncertainty band rather than claiming the sign is known."
+}
