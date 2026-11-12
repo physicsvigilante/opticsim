@@ -1,0 +1,20 @@
+{
+  "lengthUnit": "cm",
+  "components": [
+    {
+      "id": "S1",
+      "type": "point-source",
+      "parameters": {
+        "x": -25,
+        "y": 2
+      }
+    },
+    {
+      "id": "L1",
+      "type": "ideal-lens",
+      "parameters": {
+        "x": 0
+      }
+    }
+  ]
+}

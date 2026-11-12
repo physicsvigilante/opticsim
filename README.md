@@ -394,3 +394,14 @@ were applied. Broader upstream optional test/gallery dependencies were omitted.
 `.gitignore` excludes local upstream/dependencies, builds, caches, temporary
 files, and generated test artifacts; authored scenes and tests remain trackable.
 Implementation changes require separate approval before committing or pushing.
+
+## Minimal problem-to-scene authoring (Milestone 7 draft)
+
+The strict LLM authoring interface remains unchanged. For incomplete textbook
+arrangements, `node scripts/author-scene.mjs problem <request.json>` returns
+explicit missing/unsupported issues without running native physics. An optional
+`--illustrate` allows only three documented, labeled display choices (source
+relative brightness, finite ideal-lens aperture and unspecified full-circle
+emission). Its provenance stays in the report, not the canonical scene JSON;
+valid native execution does not certify correct question interpretation.
+See [minimal problem authoring guide](docs/MINIMAL-PROBLEM-AUTHORING.md).
