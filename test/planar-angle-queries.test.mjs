@@ -165,3 +165,12 @@ test('missing physical brightness, unknown indices and near-boundary sources are
  assert.throws(()=>run(near,q),/0.01 mm/);
  const original=input('B05');assert.equal(Object.hasOwn(original.components.find(x=>x.id==='S1').emission,'directionDeg'),false);
 });
+
+test('a critical condition requiring 90-degree initial grazing is not a reachable boundary solution',()=>{
+ const c=input('B05');
+ c.components.find(x=>x.id==='I12').parameters.negativeIndex=1.3;
+ const a=run(c,query('B05'));
+ assert.equal(a.status,'unavailable');
+ assert.match(a.reason,/finite normal component/);
+ assert.equal(a.proposedForwardScene,undefined);
+});
