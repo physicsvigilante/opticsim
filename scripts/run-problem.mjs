@@ -68,11 +68,13 @@ export async function runProblemEvidence({inputBytes,outputPath,execute=executeN
       if(!execution?.summary||execution.summary.canonicalSha256!==await sceneHash(plan.scene))
         throw Error('Native evidence does not match the planned scene hash');
       native={...execution.summary.native,executionPassed:execution.summary.executionPassed};
-      persist('native-evidence.json',execution);
     }catch(error){
       native={status:'failed',executionPassed:false,reason:error.message};
       execution={summary:{canonicalSha256:await sceneHash(plan.scene),native,executionPassed:false,observations:null}};
     }
+    // Storage failure is infrastructure failure, never relabelled as failed optics.
+    // The durable plan/math still exist; do not claim final evidence was saved.
+    persist('native-evidence.json',execution);
     const observed=await evaluateObservables(plan.scene,plan.nativeRequests,execution.summary);
     const map=new Map(observed.results.map(r=>[r.id,r]));
     results=results.map(r=>map.get(r.id)||r);
@@ -81,7 +83,8 @@ export async function runProblemEvidence({inputBytes,outputPath,execute=executeN
   const status=invalid?'invalid-input':coverage.status;
   const report={format:'opticsim-problem-report-v1',inputSha256,status,coverage,
     dispatch:{calculationRequests:plan.calculations.length,nativeRequested:plan.native.required,
-      nativeCalls:plan.native.canRun?1:0,repairs:0,externalModelCalls:0},
+      nativeCalls:plan.native.canRun?1:0,nativeCallDefinition:'executor attempts, including setup failure',
+      repairs:0,externalModelCalls:0},
     preparation:plan.preparation,diagnostics:plan.diagnostics,
     interpretation:plan.request.interpretation??null,interpretationAssessment:plan.interpretation,
     native,results,portable,questionSupport:'not-assessed-by-engine'};
