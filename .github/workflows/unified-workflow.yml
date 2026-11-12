@@ -2,12 +2,8 @@ name: Unified problem workflow checks
 on:
   pull_request:
     branches: [main]
-    paths:
-      - '.github/workflows/unified-workflow.yml'
-      - 'src/**'
-      - 'scripts/**'
-      - 'test/**'
-      - 'evaluation/unified-workflow-v1/**'
+  push:
+    branches: [main]
 permissions:
   contents: read
 jobs:
@@ -20,55 +16,30 @@ jobs:
         with:
           node-version: '24.19.0'
       - run: npm run setup
-      - run: node scripts/build.mjs --test
-      - name: Prepare source snapshot and prespecified Problems-only inputs
+      - run: npm test
+      - name: Run five synthetic and existing integration controls
+        run: node scripts/unified-problem-acceptance.mjs
+      - name: Replay six sealed original-image first attempts without repairs
+        run: node scripts/unified-original-trial.mjs
+      - name: Preserve source fingerprints and separate review
         shell: bash
         run: |
           node --input-type=module <<'NODE'
-          import {execFileSync} from 'node:child_process';
-          import {mkdirSync,copyFileSync,readFileSync,writeFileSync,existsSync} from 'node:fs';
-          import {dirname} from 'node:path';
-          import {readProblemPng,sha256} from './evaluation/llm-pilot-v1/independent-inference.mjs';
-          const out='test-artifacts/unified-workspace';
-          const files=execFileSync('git',['ls-files','-z'],{encoding:'utf8'}).split('\0').filter(Boolean);
-          const textFiles=files.filter(p=>/\.(js|mjs|json|md|html|css|yml)$/.test(p)||p==='.gitignore');
-          // Search filenames mentioned in earlier records without opening any reference image.
-          const prior=textFiles.filter(p=>!p.startsWith('evaluation/unified-workflow-v1/')&&!p.endsWith('unified-workflow.yml'))
-            .map(p=>readFileSync(p,'utf8')).join('\n');
-          const archiveName='08_Ray_Optics_Explanations.zip',archive=readFileSync(archiveName);
-          const archiveSha256=sha256(archive);
-          if(archiveSha256!=='03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939')throw Error('Archive identity changed');
-          const entries=execFileSync('unzip',['-Z1',archiveName],{encoding:'utf8'}).split('\n').filter(p=>/\/Problems\/\d+\.png$/.test(p));
-          const sections=['01_','02_','03_','04_','07_','08_'];
-          const cases=sections.map((prefix,i)=>{
-            const candidates=entries.filter(p=>p.split('/')[1].startsWith(prefix)&&!prior.includes(p)).sort();
-            if(!candidates.length)throw Error('No unmentioned Problem in fixed section '+prefix);
-            const problemPath=candidates.at(-1),image=readProblemPng(archive,problemPath);
-            const id='U'+(i+1);
-            mkdirSync(out+'/trial-inputs',{recursive:true});writeFileSync(out+'/trial-inputs/'+id+'.png',image);
-            return {id,problemPath,imageSha256:sha256(image),priorFullPathMention:false};
-          });
-          const selection={format:'opticsim-unified-selection-v1',engineBaseline:'a8a3e201fdb92d624bfa39f69c11505a92ff9a4f',archiveName,archiveSha256,
-            rule:'Before opening images, choose highest lexically numbered Problems PNG not mentioned by full path in earlier tracked source/docs, in each fixed section 01,02,03,04,07,08. No replacement after viewing. This cannot certify absence of all prior exposure.',
-            context:'Same-assistant prospective development trial; not blind or independent model accuracy.',solutionsRead:false,cases};
-          if(existsSync('evaluation/unified-workflow-v1/selection.json')){
-            const sealed=JSON.parse(readFileSync('evaluation/unified-workflow-v1/selection.json'));
-            if(JSON.stringify(sealed.cases)!==JSON.stringify(cases))throw Error('Fixed problem sample changed');
-          }
-          writeFileSync(out+'/trial-inputs/selection.json',JSON.stringify(selection,null,2)+'\n');
-          const manifest={checkoutSha:process.env.GITHUB_SHA,runId:process.env.GITHUB_RUN_ID,files:{}};
-          for(const p of textFiles){
-            if(p.split('/').includes('Solutions'))continue;
-            mkdirSync(dirname(out+'/'+p),{recursive:true});copyFileSync(p,out+'/'+p);manifest.files[p]=sha256(readFileSync(p));
-          }
-          mkdirSync(out+'/dist',{recursive:true});copyFileSync('dist/test-core.cjs',out+'/dist/test-core.cjs');
-          manifest.files['dist/test-core.cjs']=sha256(readFileSync('dist/test-core.cjs'));
-          writeFileSync(out+'/source-manifest.json',JSON.stringify(manifest,null,2)+'\n');
+          import {readFileSync,writeFileSync,copyFileSync} from 'node:fs';
+          import {createHash} from 'node:crypto';
+          const out='test-artifacts/llm-authoring/unified-original-trial';
+          const files=['src/problem-workflow.js','scripts/run-problem.mjs','scripts/planar-angle-query.mjs','src/planar-angle-queries.js','src/adapter.js','src/observables.js','upstream-pin.json','dist/test-core.cjs'];
+          const hashes=Object.fromEntries(files.map(p=>[p,createHash('sha256').update(readFileSync(p)).digest('hex')]));
+          writeFileSync(out+'/execution-provenance.json',JSON.stringify({checkoutSha:process.env.GITHUB_SHA,runId:process.env.GITHUB_RUN_ID,node:process.version,sourceSha256:hashes},null,2)+'\n',{flag:'wx'});
+          copyFileSync('evaluation/unified-workflow-v1/REVIEW.md',out+'/REVIEW.md');
+          copyFileSync('docs/UNIFIED-PROBLEM-WORKFLOW.md',out+'/GUIDE.md');
           NODE
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: unified-workflow-workspace
-          path: test-artifacts/unified-workspace/
-          include-hidden-files: true
+          name: unified-workflow-evidence
+          path: |
+            test-artifacts/llm-authoring/unified-acceptance/
+            test-artifacts/llm-authoring/unified-original-trial/
           if-no-files-found: error
-          retention-days: 3
+          retention-days: 14

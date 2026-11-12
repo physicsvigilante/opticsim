@@ -38,7 +38,7 @@ function compactCalculation(result){
     }))??[]
   };
 }
-function calculatedQualification(scene,request,query,result,inputSha256,querySha256){
+export function calculatedQualification(scene,request,query,result,inputSha256,querySha256){
   const originalUnknown=result.kind==='critical-input-angle';
   const interpretation={requestedResult:'Calculate conditional planar-media angular quantities ('+result.kind+').',
     stated:['Original author input and typed query are preserved with SHA-256 references in calculation provenance.'],
