@@ -51,6 +51,7 @@ const report={
   nativeStatus:replay.status,
   complete:replay.complete,
   nativeDiagnostics:replay.diagnostic,
+  numericalFindings:replay.numericalFindings,
   requestedResults:results,
   qualificationOrigin:bundle.qualification?.origin||null,
   approximationWarning:'This is an explicit native numerical color-mode variant; results are diagnostic, not a replacement for the original default-mode run or a certified source-question answer.',
