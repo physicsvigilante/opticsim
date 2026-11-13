@@ -1,0 +1,86 @@
+{
+  "format": "opticsim-prospective-selection-v2",
+  "frozenEngineCommit": "954662c4e0a8c189492da91410a020e646ca2cd0",
+  "archiveSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+  "policySha256": "aad7b77b51823f68f27b0f9353e1cfd91212f737ca86f3e223490a49d53f44d4",
+  "exposureRegisterSha256": "c42f146069babeb3f37170639a1b846519bf012639db810203e64f16e4c0658b",
+  "solutionsRead": false,
+  "imagesViewedBeforeSelection": false,
+  "automaticRepairs": 0,
+  "externalModelCalls": 0,
+  "claim": "same-assistant prospective development only, not independently certified",
+  "cases": [
+    {
+      "id": "P01",
+      "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/006.png",
+      "uncompressedBytes": 57938,
+      "sectionCount": 15,
+      "eligibleCount": 15,
+      "priorMentionCount": 3,
+      "rankSha256": "11af6388891dcfad5b7d19b6dfbe0d1fe5ec9f4248996d856a37b16856885482"
+    },
+    {
+      "id": "P02",
+      "problemPath": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/010.png",
+      "uncompressedBytes": 55525,
+      "sectionCount": 13,
+      "eligibleCount": 13,
+      "priorMentionCount": 3,
+      "rankSha256": "0b5b158a3cf1429aa4317a18574ccc423390663a2e8144b09e7e41bfb5d44093"
+    },
+    {
+      "id": "P03",
+      "problemPath": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/008.png",
+      "uncompressedBytes": 96872,
+      "sectionCount": 12,
+      "eligibleCount": 12,
+      "priorMentionCount": 1,
+      "rankSha256": "0bdf2701556d8fd92e28b411352184dbaf244cfc9fb2c21f054c3a0a3155c05a"
+    },
+    {
+      "id": "P04",
+      "problemPath": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/008.png",
+      "uncompressedBytes": 135359,
+      "sectionCount": 10,
+      "eligibleCount": 10,
+      "priorMentionCount": 3,
+      "rankSha256": "462977990902cc5f8bfe5f51fd35ac307317f3674297d78c2ef4ac64631851a0"
+    },
+    {
+      "id": "P05",
+      "problemPath": "08_Ray_Optics_Explanations/05_Prism/Problems/012.png",
+      "uncompressedBytes": 63853,
+      "sectionCount": 15,
+      "eligibleCount": 15,
+      "priorMentionCount": 1,
+      "rankSha256": "22bc0a92d3c85659aa3026237268006c2e325bb3e79bd523159e831ef704f501"
+    },
+    {
+      "id": "P06",
+      "problemPath": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/004.png",
+      "uncompressedBytes": 182425,
+      "sectionCount": 13,
+      "eligibleCount": 13,
+      "priorMentionCount": 3,
+      "rankSha256": "12f2e09c454b9c4d7372783e931f33290811eaff94835d78c4bf4fda393306b9"
+    },
+    {
+      "id": "P07",
+      "problemPath": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/020.png",
+      "uncompressedBytes": 99179,
+      "sectionCount": 27,
+      "eligibleCount": 27,
+      "priorMentionCount": 2,
+      "rankSha256": "0f000da74c529433fa81d42a0bb643efa55d881bc37016b737d9f0eed1f329d6"
+    },
+    {
+      "id": "P08",
+      "problemPath": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/007.png",
+      "uncompressedBytes": 82091,
+      "sectionCount": 9,
+      "eligibleCount": 9,
+      "priorMentionCount": 3,
+      "rankSha256": "692ab2fbbd1ee2bc71d587a15619ff0fbea51d46f42491f8e3b30446f468672f"
+    }
+  ]
+}

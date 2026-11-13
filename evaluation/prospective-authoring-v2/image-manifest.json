@@ -1,0 +1,56 @@
+{
+  "format": "opticsim-prospective-image-manifest-v2",
+  "selectionSha256": "a405aa2924a9c5a24c5652a180ce08f78a80bb33a94351043927b3519bdd13ab",
+  "solutionsRead": false,
+  "externalModelCalls": 0,
+  "records": [
+    {
+      "id": "P01",
+      "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/006.png",
+      "pngSha256": "83414cbcb3396371ed04c501ac3e13c716732ddf423fd083e9cedb883aa5827c",
+      "bytes": 57938
+    },
+    {
+      "id": "P02",
+      "problemPath": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/010.png",
+      "pngSha256": "073a971a9eaca6a664e6f509e8b3d6e4428cd736ad80fe81b0fa0bc8e2092947",
+      "bytes": 55525
+    },
+    {
+      "id": "P03",
+      "problemPath": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/008.png",
+      "pngSha256": "8a1224fe9205a10cead4e1d8934be503c54d62b999491bc193c38402af4cc923",
+      "bytes": 96872
+    },
+    {
+      "id": "P04",
+      "problemPath": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/008.png",
+      "pngSha256": "5ae13777d1e85e4030c679aa1d3e5be0135a06b29113e82ccef2f0d97d556c0d",
+      "bytes": 135359
+    },
+    {
+      "id": "P05",
+      "problemPath": "08_Ray_Optics_Explanations/05_Prism/Problems/012.png",
+      "pngSha256": "a1371db5446af3e2858847ddbcb5ad39c55fe42de377fc98b1b067c1ad60ea42",
+      "bytes": 63853
+    },
+    {
+      "id": "P06",
+      "problemPath": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/004.png",
+      "pngSha256": "e0b938a74df9e6d302ee63a259164b9cfe31fe65b01a93e708774a3e5b404989",
+      "bytes": 182425
+    },
+    {
+      "id": "P07",
+      "problemPath": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/020.png",
+      "pngSha256": "26982ca24f70b6c009b9c82477fb1962be8a41f49ef9cc53306f5ae23d4eacc2",
+      "bytes": 99179
+    },
+    {
+      "id": "P08",
+      "problemPath": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/007.png",
+      "pngSha256": "6796e7f7b92bf1a5f10c6823ad44c459c18f72309eb5a5ba7ac0d2768ce04a81",
+      "bytes": 82091
+    }
+  ]
+}
