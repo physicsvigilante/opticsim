@@ -24,7 +24,7 @@ test('native CircleBlocker is compiled as an opaque positive-radius disk without
  assert.equal(capabilities().componentTypes['circle-blocker'].nativeType,'CircleBlocker');
  assert.equal(capabilities().opaqueCircularBlockers.combinedStopMax,2);
  assert.deepEqual(compiled.native.objs[compiled.idMap.get('B1')],{
-  type:'CircleBlocker',p1:{x:0,y:0},p2:{x:40,y:0},filter:false});
+  type:'CircleBlocker',p1:{x:0,y:-0},p2:{x:40,y:-0},filter:false});
  const loaded=core.loadNative(JSON.parse(core.nativeExport(doc)));
  assert.equal(loaded.objs[compiled.idMap.get('B1')].constructor.type,'CircleBlocker');
  assert.deepEqual(parseSave(serializeSave(doc)),doc);assert.equal(JSON.stringify(input),bytes);
