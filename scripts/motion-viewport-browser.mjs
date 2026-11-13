@@ -83,6 +83,7 @@ async function main(){
   report.checks.push({name:'Fit resets zoom and pan to the selected automatic camera preset',status:'pass'});
   // Drag real pointer over the canvas; native ray counts and package hashes
   // must remain unchanged when only the view centre changes.
+  await evaluate("document.getElementById('native-stage').scrollIntoView({block:'center',behavior:'instant'})");
   const rect=await evaluate("(()=>{const r=document.getElementById('native-stage').getBoundingClientRect();return {x:r.left+r.width*.5,y:r.top+r.height*.5};})()");
   await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:rect.x,y:rect.y});
   await cdp.send('Input.dispatchMouseEvent',{type:'mousePressed',x:rect.x,y:rect.y,button:'left',buttons:1,clickCount:1});
