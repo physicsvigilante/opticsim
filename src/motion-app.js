@@ -224,7 +224,7 @@ function ui(p){
  }
  currentIndex=p.index;nativeCamera=native.displayCamera??null;
  const d=native.diagnostics,complete=['completed','completed-with-warnings'].includes(native.status);
- $('native-counts').textContent=complete?d.emitted+' emitted · '+d.reflections+' reflections · '+d.processed+' segments':
+ $('native-counts').textContent=complete?d.emitted+' emitted · '+(d.reflections===null?'no mirrors':d.reflections+' reflections')+' · '+d.processed+' segments':
   'No completed native observations. '+(native.error||native.issues?.join('; ')||'Frame is incomplete.');
  $('object-value').textContent=frame.object?pair(frame.object.positionMm)+' cm':'Invalid source position';
  const im=frame.analysis?.image,vel=frame.analysis?.kinematics;
@@ -326,7 +326,11 @@ async function load(value){
  for(const id of ['play','pause','reset','time','save-motion','save-frame','save-report'])$(id).disabled=true;
  try{
   const candidate=await prepareMotionExperiment(await value);if(token!==loadGeneration)return;
-  model=candidate;viewSubjects=collectMotionView(model);$('camera-mode').value='motion';
+  model=candidate;viewSubjects=collectMotionView(model);
+  // A lens image can diverge near its focal plane: whole-motion fit would
+  // shrink the native lens/ray apparatus to a few pixels. Start in an
+  // explicitly labelled current-frame view; Whole motion remains selectable.
+  $('camera-mode').value=model.baseline.scene.physics.model==='ideal-thin-lens-geometric'?'frame':'motion';
   $('example').value=model.baseline.scene.physics.components.some(c=>c.type==='ideal-lens')?'lens':model.baseline.scene.physics.components.some(c=>c.type==='circular-arc-mirror')?'circular':'ideal';
   player=new MotionPlayer({model,render,onState:ui});
   $('time').max=model.times.length-1;$('speed').value='0.1';player.setSpeed(.1);
