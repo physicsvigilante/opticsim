@@ -12,16 +12,18 @@ const kinds=Object.freeze({
   'interface-first-event':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric'],unit:'native event; directions y-up; power relative'},
   'interface-face-events':{type:['triangular-prism','polygon-dielectric'],unit:'bounded first native encounter and total count per finite face'},
   'source-emissions':{type:'point-source',unit:'sampled rays'},
+  'blocker-absorptions':{type:'line-blocker',unit:'sampled absorbed rays'},
   'mirror-reflections':{type:['plane-mirror','ideal-curved-mirror','circular-arc-mirror'],unit:'sampled interactions'},
   'detector-crossings':{type:'ray-detector',unit:'sampled crossings'},
   'detector-signed-power':{type:'ray-detector',unit:'relative native units; not watts'},
   'ideal-image':{type:'point-source',unit:'mm; magnification dimensionless'}
 });
 export function observableCapabilities(){
-  return {format:'opticsim-observables-v1',maxRequests:16,kinds,
+  return {format:'opticsim-observables-v1',maxRequests:16,kinds:structuredClone(kinds),
     limits:['Native counts are sampled, not continuous coverage.',
       'Ideal image is conditional analysis, never native image detection.',
       'A requested result does not certify interpretation of its source question.',
+      'Blocker absorption is a sampled native incident count; a zero detector count is not proof of continuous shadow or invisibility.',
       'Circular dielectric angles are relative to the local normal at the first actual native hit, not a whole path or detected image.']};
 }
 export function validateObservables(requests){
@@ -59,6 +61,9 @@ function conditionalImage(doc){
   return {reason:'No existing analytical model satisfies this complete arrangement. No component is removed or replaced.'};
 }
 export async function evaluateObservables(doc,requests,execution){
+  // Bind all reads to one invocation before the asynchronous scene hash.
+  // A caller may begin the next revision while the digest is outstanding.
+  [doc,requests,execution]=structuredClone([doc,requests,execution]);
   validate(doc);validateObservables(requests);
   const canonicalSha256=await sceneHash(doc);
   const fresh=execution?.canonicalSha256===canonicalSha256;
@@ -93,7 +98,8 @@ export async function evaluateObservables(doc,requests,execution){
       return {...base,status:warnings.length?'qualified':'available',value,method:'native-observation',unit:spec.unit,warnings,
         limitation:'First encounter (per face when requested) is simulation-order dependent, not source attribution or a whole ray path. Angles use actual native directions; no missing branch is invented.'};
     }
-    const value=r.kind==='source-emissions'?o?.emissionsById?.[r.componentId]?.emitted:
+    const value=r.kind==='blocker-absorptions'?o?.blockersById?.[r.componentId]?.absorptions:
+      r.kind==='source-emissions'?o?.emissionsById?.[r.componentId]?.emitted:
       r.kind==='mirror-reflections'?o?.reflectionsById?.[r.componentId]:
       r.kind==='detector-crossings'?o?.detectorsById?.[r.componentId]?.crossings:
       o?.detectorsById?.[r.componentId]?.signedPower;

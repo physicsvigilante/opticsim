@@ -132,3 +132,5 @@
   ambiguous corners must suppress accepted readings. New v9 cannot leak into
   historical v4–v8 scopes; no change to PhyDemo core or numerical cutoffs.
   See `docs/POLYGON-DIELECTRIC.md`.
+
+- The fully opaque `line-blocker` is accepted only in v4 general-component-tracing, with explicit centre/tangent orientation/length and at most two disjoint segments. Compile directly to pinned PhyDemo `Blocker` with `filter:false`. Native `isAbsorbed:true` calls, not a custom ray tracer, determine bounded sampled counts; incomplete/stale/invalid runs suppress accepted results. Do not infer continuous shadows, observer visibility, 3D circular discs, filtered wavelengths, or JEE answers. Leave dedicated refractive/mirror/lens scene scopes and core pin unchanged. See docs/OPAQUE-LINE-BLOCKER.md.

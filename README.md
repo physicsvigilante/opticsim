@@ -4,6 +4,10 @@ A standalone-browser-capable optical bench powered by PhyDemo Ray Optics Simulat
 pinned to **811f508d2b070898c241a568b0c167dcb8645251**. Browser runtime resources
 are local. No LLM request is needed to open, simulate, or edit supported scenes.
 
+## Finite opaque blockers — native absorbed-ray measurements
+
+General component scenes now accept up to two explicit finite `line-blocker` elements, using native PhyDemo `Blocker` absorption. Each blocker has an authored center, surface orientation and length, and can compose with supported general sources, lenses, plane mirrors and passive detectors. `blocker-absorptions` counts actual sampled hits, not continuous shadow or invisibility. See [finite opaque blocker scope](docs/OPAQUE-LINE-BLOCKER.md) and [the synthetic source–blocker–detector example](examples/blocker-detector.json). The static viewer has a `blocker-detector` example; no JEE disc geometry is inferred.
+
 ## Convex four-vertex dielectric — native finite glass
 
 The same LLM-authorable Opticsim contract can now specify **one stationary

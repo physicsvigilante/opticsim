@@ -20,6 +20,10 @@ jobs:
       - run: npm run build
       - name: Package isolated browser demo (no source/test bundles)
         run: node scripts/pack-demo.mjs
+      - name: Native finite opaque stop and immutable position sweep
+        run: node scripts/opaque-line-blocker-acceptance.mjs
+      - name: Opaque blocker browser edits, detector readings and qualified exports
+        run: node scripts/opaque-line-blocker-browser.mjs
       - name: LLM authoring CLI with real native execution and revision guards
         run: node scripts/author-scene-acceptance.mjs
       - name: Evaluate deterministic LLM pilot controls against native tracing
@@ -45,6 +49,14 @@ jobs:
         with:
           name: hosted-browser-evidence
           path: test-artifacts/browser-hosted-smoke/
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: opaque-blocker-evidence
+          path: |
+            test-artifacts/llm-authoring/opaque-line-blocker/
+            test-artifacts/browser-opaque-line-blocker/
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
