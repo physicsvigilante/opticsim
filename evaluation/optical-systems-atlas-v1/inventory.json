@@ -1,0 +1,623 @@
+{
+  "format": "opticsim-jee-systems-atlas-inventory-v1",
+  "sourceArchiveSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+  "sourceCommit": "d33b45226348d9b0c701f2a3e8b86dd1285de2d0",
+  "metadataVerifiedFromExactArchive": true,
+  "imageReadScope": "Only the 40 preselected Problems PNG files; 74 others inventoried by directory metadata only.",
+  "scannedRecords": 114,
+  "chapters": 8,
+  "reviewedCount": 40,
+  "notReviewedCount": 74,
+  "inventory": [
+    {
+      "path": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/001.png",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A01"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/002.png",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/003.png",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/004.png",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A02"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/005.png",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/006.png",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/007.png",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/008.png",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A03"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/009.png",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/010.png",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/011.png",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A04"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/012.png",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/013.png",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/014.png",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/015.png",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A05"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/001.png",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A06"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/002.png",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/003.png",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/004.png",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A07"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/005.png",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/006.png",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/007.png",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A08"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/008.png",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/009.png",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/010.png",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A09"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/011.png",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/012.png",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/013.png",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A10"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/001.png",
+      "chapter": "03_General_Refraction",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A11"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/002.png",
+      "chapter": "03_General_Refraction",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/003.png",
+      "chapter": "03_General_Refraction",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A12"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/004.png",
+      "chapter": "03_General_Refraction",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/005.png",
+      "chapter": "03_General_Refraction",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/006.png",
+      "chapter": "03_General_Refraction",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A13"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/007.png",
+      "chapter": "03_General_Refraction",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/008.png",
+      "chapter": "03_General_Refraction",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/009.png",
+      "chapter": "03_General_Refraction",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A14"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/010.png",
+      "chapter": "03_General_Refraction",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/011.png",
+      "chapter": "03_General_Refraction",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/012.png",
+      "chapter": "03_General_Refraction",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A15"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/001.png",
+      "chapter": "04_Total_Internal_Reflection_TIR",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A16"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/002.png",
+      "chapter": "04_Total_Internal_Reflection_TIR",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/003.png",
+      "chapter": "04_Total_Internal_Reflection_TIR",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A17"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/004.png",
+      "chapter": "04_Total_Internal_Reflection_TIR",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/005.png",
+      "chapter": "04_Total_Internal_Reflection_TIR",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A18"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/006.png",
+      "chapter": "04_Total_Internal_Reflection_TIR",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/007.png",
+      "chapter": "04_Total_Internal_Reflection_TIR",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A19"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/008.png",
+      "chapter": "04_Total_Internal_Reflection_TIR",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/009.png",
+      "chapter": "04_Total_Internal_Reflection_TIR",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/010.png",
+      "chapter": "04_Total_Internal_Reflection_TIR",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A20"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/05_Prism/Problems/001.png",
+      "chapter": "05_Prism",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A21"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/05_Prism/Problems/002.png",
+      "chapter": "05_Prism",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/05_Prism/Problems/003.png",
+      "chapter": "05_Prism",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/05_Prism/Problems/004.png",
+      "chapter": "05_Prism",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A22"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/05_Prism/Problems/005.png",
+      "chapter": "05_Prism",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/05_Prism/Problems/006.png",
+      "chapter": "05_Prism",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/05_Prism/Problems/007.png",
+      "chapter": "05_Prism",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/05_Prism/Problems/008.png",
+      "chapter": "05_Prism",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A23"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/05_Prism/Problems/009.png",
+      "chapter": "05_Prism",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/05_Prism/Problems/010.png",
+      "chapter": "05_Prism",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/05_Prism/Problems/011.png",
+      "chapter": "05_Prism",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A24"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/05_Prism/Problems/012.png",
+      "chapter": "05_Prism",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/05_Prism/Problems/013.png",
+      "chapter": "05_Prism",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/05_Prism/Problems/014.png",
+      "chapter": "05_Prism",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/05_Prism/Problems/015.png",
+      "chapter": "05_Prism",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A25"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/001.png",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A26"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/002.png",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/003.png",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/004.png",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A27"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/005.png",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/006.png",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/007.png",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A28"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/008.png",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/009.png",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/010.png",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A29"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/011.png",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/012.png",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/013.png",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A30"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/001.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A31"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/002.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/003.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/004.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/005.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/006.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/007.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A32"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/008.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/009.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/010.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/011.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/012.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/013.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/014.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A33"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/015.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/016.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/017.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/018.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/019.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/020.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A34"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/021.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/022.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/023.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/024.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/025.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/026.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/027.png",
+      "chapter": "07_Lens_Formula",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A35"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/001.png",
+      "chapter": "08_Aberrations_Human_Eye_Optical_Instruments",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A36"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/002.png",
+      "chapter": "08_Aberrations_Human_Eye_Optical_Instruments",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/003.png",
+      "chapter": "08_Aberrations_Human_Eye_Optical_Instruments",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A37"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/004.png",
+      "chapter": "08_Aberrations_Human_Eye_Optical_Instruments",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/005.png",
+      "chapter": "08_Aberrations_Human_Eye_Optical_Instruments",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A38"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/006.png",
+      "chapter": "08_Aberrations_Human_Eye_Optical_Instruments",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/007.png",
+      "chapter": "08_Aberrations_Human_Eye_Optical_Instruments",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A39"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/008.png",
+      "chapter": "08_Aberrations_Human_Eye_Optical_Instruments",
+      "reviewStatus": "not-reviewed"
+    },
+    {
+      "path": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/009.png",
+      "chapter": "08_Aberrations_Human_Eye_Optical_Instruments",
+      "reviewStatus": "reviewed",
+      "atlasCaseId": "A40"
+    }
+  ]
+}

@@ -1,0 +1,250 @@
+{
+  "format": "opticsim-jee-systems-atlas-selection-v1",
+  "sourceSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+  "baselineMain": "52accb717b10b75792a484b8a8c6b285c5770e59",
+  "selectedBeforeImageReading": true,
+  "selectedCount": 40,
+  "method": "For each of 8 chapters, sort all Problems PNG paths ascending and select five fixed indices floor(k*(N-1)/4), k=0,...,4. Selection committed before reading selected PNG contents; no replacement after review. Previously exposed cases may overlap, and no blind/unseen claim.",
+  "cases": [
+    {
+      "id": "A01",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "selectionRank": 0,
+      "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/001.png"
+    },
+    {
+      "id": "A02",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "selectionRank": 1,
+      "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/004.png"
+    },
+    {
+      "id": "A03",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "selectionRank": 2,
+      "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/008.png"
+    },
+    {
+      "id": "A04",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "selectionRank": 3,
+      "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/011.png"
+    },
+    {
+      "id": "A05",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "selectionRank": 4,
+      "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/015.png"
+    },
+    {
+      "id": "A06",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "selectionRank": 0,
+      "problemPath": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/001.png"
+    },
+    {
+      "id": "A07",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "selectionRank": 1,
+      "problemPath": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/004.png"
+    },
+    {
+      "id": "A08",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "selectionRank": 2,
+      "problemPath": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/007.png"
+    },
+    {
+      "id": "A09",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "selectionRank": 3,
+      "problemPath": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/010.png"
+    },
+    {
+      "id": "A10",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "selectionRank": 4,
+      "problemPath": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/013.png"
+    },
+    {
+      "id": "A11",
+      "chapter": "03_General_Refraction",
+      "selectionRank": 0,
+      "problemPath": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/001.png"
+    },
+    {
+      "id": "A12",
+      "chapter": "03_General_Refraction",
+      "selectionRank": 1,
+      "problemPath": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/003.png"
+    },
+    {
+      "id": "A13",
+      "chapter": "03_General_Refraction",
+      "selectionRank": 2,
+      "problemPath": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/006.png"
+    },
+    {
+      "id": "A14",
+      "chapter": "03_General_Refraction",
+      "selectionRank": 3,
+      "problemPath": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/009.png"
+    },
+    {
+      "id": "A15",
+      "chapter": "03_General_Refraction",
+      "selectionRank": 4,
+      "problemPath": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/012.png"
+    },
+    {
+      "id": "A16",
+      "chapter": "04_Total_Internal_Reflection_TIR",
+      "selectionRank": 0,
+      "problemPath": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/001.png"
+    },
+    {
+      "id": "A17",
+      "chapter": "04_Total_Internal_Reflection_TIR",
+      "selectionRank": 1,
+      "problemPath": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/003.png"
+    },
+    {
+      "id": "A18",
+      "chapter": "04_Total_Internal_Reflection_TIR",
+      "selectionRank": 2,
+      "problemPath": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/005.png"
+    },
+    {
+      "id": "A19",
+      "chapter": "04_Total_Internal_Reflection_TIR",
+      "selectionRank": 3,
+      "problemPath": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/007.png"
+    },
+    {
+      "id": "A20",
+      "chapter": "04_Total_Internal_Reflection_TIR",
+      "selectionRank": 4,
+      "problemPath": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/010.png"
+    },
+    {
+      "id": "A21",
+      "chapter": "05_Prism",
+      "selectionRank": 0,
+      "problemPath": "08_Ray_Optics_Explanations/05_Prism/Problems/001.png"
+    },
+    {
+      "id": "A22",
+      "chapter": "05_Prism",
+      "selectionRank": 1,
+      "problemPath": "08_Ray_Optics_Explanations/05_Prism/Problems/004.png"
+    },
+    {
+      "id": "A23",
+      "chapter": "05_Prism",
+      "selectionRank": 2,
+      "problemPath": "08_Ray_Optics_Explanations/05_Prism/Problems/008.png"
+    },
+    {
+      "id": "A24",
+      "chapter": "05_Prism",
+      "selectionRank": 3,
+      "problemPath": "08_Ray_Optics_Explanations/05_Prism/Problems/011.png"
+    },
+    {
+      "id": "A25",
+      "chapter": "05_Prism",
+      "selectionRank": 4,
+      "problemPath": "08_Ray_Optics_Explanations/05_Prism/Problems/015.png"
+    },
+    {
+      "id": "A26",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "selectionRank": 0,
+      "problemPath": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/001.png"
+    },
+    {
+      "id": "A27",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "selectionRank": 1,
+      "problemPath": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/004.png"
+    },
+    {
+      "id": "A28",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "selectionRank": 2,
+      "problemPath": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/007.png"
+    },
+    {
+      "id": "A29",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "selectionRank": 3,
+      "problemPath": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/010.png"
+    },
+    {
+      "id": "A30",
+      "chapter": "06_Refraction_at_Curved_Surfaces",
+      "selectionRank": 4,
+      "problemPath": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/013.png"
+    },
+    {
+      "id": "A31",
+      "chapter": "07_Lens_Formula",
+      "selectionRank": 0,
+      "problemPath": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/001.png"
+    },
+    {
+      "id": "A32",
+      "chapter": "07_Lens_Formula",
+      "selectionRank": 1,
+      "problemPath": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/007.png"
+    },
+    {
+      "id": "A33",
+      "chapter": "07_Lens_Formula",
+      "selectionRank": 2,
+      "problemPath": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/014.png"
+    },
+    {
+      "id": "A34",
+      "chapter": "07_Lens_Formula",
+      "selectionRank": 3,
+      "problemPath": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/020.png"
+    },
+    {
+      "id": "A35",
+      "chapter": "07_Lens_Formula",
+      "selectionRank": 4,
+      "problemPath": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/027.png"
+    },
+    {
+      "id": "A36",
+      "chapter": "08_Aberrations_Human_Eye_Optical_Instruments",
+      "selectionRank": 0,
+      "problemPath": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/001.png"
+    },
+    {
+      "id": "A37",
+      "chapter": "08_Aberrations_Human_Eye_Optical_Instruments",
+      "selectionRank": 1,
+      "problemPath": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/003.png"
+    },
+    {
+      "id": "A38",
+      "chapter": "08_Aberrations_Human_Eye_Optical_Instruments",
+      "selectionRank": 2,
+      "problemPath": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/005.png"
+    },
+    {
+      "id": "A39",
+      "chapter": "08_Aberrations_Human_Eye_Optical_Instruments",
+      "selectionRank": 3,
+      "problemPath": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/007.png"
+    },
+    {
+      "id": "A40",
+      "chapter": "08_Aberrations_Human_Eye_Optical_Instruments",
+      "selectionRank": 4,
+      "problemPath": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/009.png"
+    }
+  ]
+}

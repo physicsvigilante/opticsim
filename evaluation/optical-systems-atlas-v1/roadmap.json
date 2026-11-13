@@ -1,0 +1,284 @@
+{
+  "format": "opticsim-jee-systems-atlas-roadmap-v1",
+  "interpretation": "Ordered engineering suggestions, not a statistical model ranking or independent human review; counts are nonexclusive tags across the frozen 40-image sample.",
+  "scope": "Simulation-first, object/composition primitives prioritized; analytical request solvers are optional reusable secondary capabilities.",
+  "baseCommit": "52accb717b10b75792a484b8a8c6b285c5770e59",
+  "pinnedPhyDemo": "811f508d2b070898c241a568b0c167dcb8645251",
+  "noAutomaticImplementation": true,
+  "sourceModesDeferredByOwner": true,
+  "priorities": [
+    {
+      "rank": 1,
+      "id": "convex-polygon-glass",
+      "gap": "glass-regions",
+      "title": "General finite 2D dielectric polygons",
+      "native": "Glass polygonal boundary; reuse native v8 prism path/first-event observer",
+      "readiness": "design-next",
+      "risk": "medium-high: vertices, corner hits, medium membership",
+      "llmBurden": "Three to six explicit vertices and both material indices only; no native path grammar",
+      "acceptance": "One 4-vertex rectangular region with one finite ray and per-face observations; native entry/exit and TIR; invalid/self-crossing/overlap refused. A17 is a shape inspiration, not an answered original question.",
+      "dependencies": [],
+      "reviewedCaseCount": 7,
+      "sampleCaseIds": [
+        "A14",
+        "A17",
+        "A19",
+        "A20",
+        "A26",
+        "A27",
+        "A28"
+      ]
+    },
+    {
+      "rank": 2,
+      "id": "opaque-stops-screens",
+      "gap": "opaque-screen",
+      "title": "Opaque stops, finite apertures and passive screens",
+      "native": "Blocker; CircleBlocker; Aperture; existing Detector",
+      "readiness": "design-next",
+      "risk": "medium: ray sampling and visibility/spot interpretations",
+      "llmBurden": "Geometrically stated blocker or aperture dimensions; no unseen stop radius",
+      "acceptance": "Blocked vs unblocked native sample-ray crossings, immutable edits, detector labels and all invalid/incomplete suppression; A18 visibility remains unavailable until richer source/observer measurement.",
+      "dependencies": [],
+      "reviewedCaseCount": 2,
+      "sampleCaseIds": [
+        "A14",
+        "A18"
+      ]
+    },
+    {
+      "rank": 3,
+      "id": "bounded-ray-provenance",
+      "gap": "ray-provenance",
+      "title": "Bounded source/branch event lineage",
+      "native": "Native source start and incident callbacks",
+      "readiness": "research",
+      "risk": "high: native branch IDs, Fresnel truncation, source attribution",
+      "llmBurden": "No authored path allowed; tracker derives events only from native rays",
+      "acceptance": "One single-ray multi-face/multi-mirror scene with actual source-to-incident events; verify branching/late callbacks; never connect unrelated first events.",
+      "dependencies": [
+        "convex-polygon-glass"
+      ],
+      "reviewedCaseCount": 7,
+      "sampleCaseIds": [
+        "A02",
+        "A04",
+        "A05",
+        "A13",
+        "A17",
+        "A21",
+        "A25"
+      ]
+    },
+    {
+      "rank": 4,
+      "id": "observer-image-geometry",
+      "gap": "apparent-image",
+      "title": "Observer and qualified apparent-image geometry",
+      "native": "Existing Scene observer rendering and native detectors as distinct ideas",
+      "readiness": "research",
+      "risk": "high: virtual image inference, paraxial vs 3D apparent-depth claims",
+      "llmBurden": "State observer position and explicit physical media; don't infer an emitting bubble or 3D eye",
+      "acceptance": "Compare one planar and one curved surface against independent paraxial or ray-convergence oracle, retain unavailable outcome for ambiguous image formation.",
+      "dependencies": [
+        "convex-polygon-glass"
+      ],
+      "reviewedCaseCount": 10,
+      "sampleCaseIds": [
+        "A09",
+        "A11",
+        "A12",
+        "A18",
+        "A26",
+        "A27",
+        "A28",
+        "A29",
+        "A30",
+        "A36"
+      ]
+    },
+    {
+      "rank": 5,
+      "id": "refraction-beam-sources",
+      "gap": "beam-sources",
+      "title": "Directional fans and true parallel beams in refractive scenes",
+      "native": "Beam; AngleSource; PointSource",
+      "readiness": "deferred-by-owner",
+      "risk": "medium-high: sampling, Fresnel weak branches and source-dependent power",
+      "llmBurden": "Explicit beam width/orientation/brightness and ray density separate from optics",
+      "acceptance": "Controlled native beam spot/TIR tests with complete-run gates and stable variance under density; do not silently treat many single rays as continuous light.",
+      "dependencies": [
+        "convex-polygon-glass",
+        "opaque-stops-screens"
+      ],
+      "reviewedCaseCount": 9,
+      "sampleCaseIds": [
+        "A14",
+        "A17",
+        "A18",
+        "A19",
+        "A20",
+        "A25",
+        "A29",
+        "A35",
+        "A40"
+      ]
+    },
+    {
+      "rank": 6,
+      "id": "decentered-optical-trains",
+      "gap": "offaxis-lens",
+      "title": "Decentered and subsequently tilted thin lens trains",
+      "native": "IdealLens finite endpoints support nonzero y center",
+      "readiness": "later",
+      "risk": "medium: ABCD coordinate offsets and finite aperture collisions",
+      "llmBurden": "Explicit transverse lens centres and orientations as physical facts",
+      "acceptance": "Two shifted ideal lenses with independent paraxial ray-direction oracle, order-invariant native build; no fake parallel source.",
+      "dependencies": [],
+      "reviewedCaseCount": 1,
+      "sampleCaseIds": [
+        "A35"
+      ]
+    },
+    {
+      "rank": 7,
+      "id": "extended-luminous-objects",
+      "gap": "extended-object",
+      "title": "Extended objects as bounded groups of physical points",
+      "native": "PointSource; multi-source support",
+      "readiness": "later",
+      "risk": "medium: emitted vs nonemitting shape, image identification",
+      "llmBurden": "Explicit object point/segment shape; no arbitrary samples invented as question facts",
+      "acceptance": "Triangle or quadrilateral object points with qualified conditional image mapping; unchanged native per-source emission counts.",
+      "dependencies": [
+        "observer-image-geometry"
+      ],
+      "reviewedCaseCount": 3,
+      "sampleCaseIds": [
+        "A03",
+        "A06",
+        "A09"
+      ]
+    },
+    {
+      "rank": 8,
+      "id": "instrument-models",
+      "gap": "instrument",
+      "title": "Microscope, telescope and simplified eye models",
+      "native": "IdealLens lens trains and Detector",
+      "readiness": "later",
+      "risk": "high: angular magnification, accommodation and nearpoint/tube-length conventions",
+      "llmBurden": "Physical instrument definitions and observer assumptions must be stated",
+      "acceptance": "A declared simplified two-lens instrument with independently checked angular magnification and observer assumptions; preserve unavailable if conventions absent.",
+      "dependencies": [
+        "observer-image-geometry",
+        "decentered-optical-trains"
+      ],
+      "reviewedCaseCount": 5,
+      "sampleCaseIds": [
+        "A36",
+        "A37",
+        "A38",
+        "A39",
+        "A40"
+      ]
+    },
+    {
+      "rank": 9,
+      "id": "mirror-enclosures",
+      "gap": "mirror-enclosure",
+      "title": "Shared-corner finite mirror sets",
+      "native": "Mirror",
+      "readiness": "later",
+      "risk": "medium: simultaneous endpoints and rays at corners",
+      "llmBurden": "Explicit enclosure vertices, not four hand-tuned line segments",
+      "acceptance": "Quadrilateral mirror enclosure with verified finite reflections and no fabricated image count.",
+      "dependencies": [
+        "bounded-ray-provenance"
+      ],
+      "reviewedCaseCount": 2,
+      "sampleCaseIds": [
+        "A03",
+        "A04"
+      ]
+    },
+    {
+      "rank": 10,
+      "id": "nonlinear-source-motion",
+      "gap": "general-motion",
+      "title": "General time functions for moving sources",
+      "native": "Reuse immutable quasi-static MotionPlayer",
+      "readiness": "later",
+      "risk": "medium: time sampling, bounds, expression security",
+      "llmBurden": "Explicit supported trajectory type and parameters; no arbitrary executable formula",
+      "acceptance": "Sinusoidal axial source motion with sampled native frames, baseline hashes and independent image kinematics checks.",
+      "dependencies": [],
+      "reviewedCaseCount": 2,
+      "sampleCaseIds": [
+        "A08",
+        "A40"
+      ]
+    },
+    {
+      "rank": 11,
+      "id": "physical-material-lenses",
+      "gap": "material-lens",
+      "title": "Material-index, thick lenses and immersed lenses",
+      "native": "SphericalLens and Glass",
+      "readiness": "later",
+      "risk": "high: curved surfaces, dispersion, exterior medium, lensmaker scope",
+      "llmBurden": "Explicit radii/medium indices and physical thickness where required",
+      "acceptance": "Two lenses differing only by refractive index, independently checked paraxial response, no missing shape dimensions invented.",
+      "dependencies": [
+        "convex-polygon-glass"
+      ],
+      "reviewedCaseCount": 1,
+      "sampleCaseIds": [
+        "A34"
+      ]
+    },
+    {
+      "rank": 12,
+      "id": "prism-angular-queries",
+      "gap": "prism-analytics",
+      "title": "Reduced prism deviation and index inverse observables",
+      "native": "Existing native triangular Glass for optional forward verification",
+      "readiness": "secondary-analysis",
+      "risk": "low-medium: multiple branches and grazing critical boundaries",
+      "llmBurden": "Only refracting angle, incidence/deviation/index facts supplied; no synthetic native coordinates",
+      "acceptance": "Prism angular constraints with separate symbolic/conditional provenance; no trial of JEE original answers during coding.",
+      "dependencies": [],
+      "reviewedCaseCount": 5,
+      "sampleCaseIds": [
+        "A21",
+        "A22",
+        "A23",
+        "A24",
+        "A25"
+      ]
+    },
+    {
+      "rank": 13,
+      "id": "gradient-index-media",
+      "gap": "graded-index",
+      "title": "Safe restricted graded-index material families",
+      "native": "GrinGlass; CurveGrinGlass",
+      "readiness": "high-risk-later",
+      "risk": "high: expression/integration stability and invalid index domains",
+      "llmBurden": "Named physical index profile, never arbitrary executable expression",
+      "acceptance": "One bounded positive-index y-dependent profile tested against independent integrator; no silent numerical fallback.",
+      "dependencies": [
+        "convex-polygon-glass"
+      ],
+      "reviewedCaseCount": 1,
+      "sampleCaseIds": [
+        "A15"
+      ]
+    }
+  ],
+  "numericalSafety": [
+    "Native PhyDemo remains unmodified and selected optical objects may be exposed only after exact geometry/scope validation.",
+    "Every candidate requires strict no-invention authoring, actual native intersection and independent physics tests, stale/incomplete suppression, browser acceptance and qualified export.",
+    "Selection/relative counts are evidence of sampled capability needs; no JEE answer coverage or independent-model accuracy is estimated."
+  ]
+}

@@ -4,6 +4,16 @@ A standalone-browser-capable optical bench powered by PhyDemo Ray Optics Simulat
 pinned to **811f508d2b070898c241a568b0c167dcb8645251**. Browser runtime resources
 are local. No LLM request is needed to open, simulate, or edit supported scenes.
 
+## JEE Optical Systems Atlas — capability discovery, not problem solving
+
+The [Optical Systems Atlas](evaluation/optical-systems-atlas-v1/README.md)
+indexes all 114 *Problems* images in the pinned eight-chapter Ray Optics
+archive, visually reviews 40 preselected examples and ranks reusable optical
+objects/compositions that Opticsim does not yet expose. It does **not** read
+Solutions, rerun sealed authoring studies, score textbook answers, or modify
+native physics. Candidate systems include bounded polygonal glass and opaque
+screens. Beam sources for refractive systems remain deferred by the owner.
+
 ## Private independent-model authoring assessment (manual only)
 
 A separately reviewable, **local-only** held-out protocol is available at
