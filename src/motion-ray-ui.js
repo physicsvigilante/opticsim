@@ -3,7 +3,8 @@
 import {motionRayControls} from './motion-ray-controls.js';
 const $=id=>document.getElementById(id);
 const ids=['ray-brightness','ray-brightness-slider','ray-sampling','ray-custom-density',
- 'ray-source-mode','ray-direction','ray-opening','ray-view','ray-grid','ray-depth','ray-limit'];
+ 'ray-source-mode','ray-direction','ray-opening','ray-view','ray-grid','ray-depth','ray-limit',
+ 'mirror-aperture-cm','mirror-aperture-slider'];
 const numeric=id=>{
  const raw=$(id).value.trim(),value=raw?Number(raw):NaN;
  if(!Number.isFinite(value))throw Error('A finite number is required for '+id);
@@ -47,6 +48,22 @@ export class MotionRayUI{
   $('ray-grid').checked=v.grid;
   $('ray-depth').value=v.maxRayDepth;
   $('ray-limit').value=v.processedRayLimit;
+  // Only the browser label uses cm; canonical optical geometry stays in mm.
+  const apertureCm=v.mirrorApertureHeightMm/10;
+  $('mirror-aperture-cm').value=String(apertureCm);
+  const slider=$('mirror-aperture-slider');
+  // Quick adjustment is 1–20 cm for typical scenes, but a valid imported
+  // mirror need not fit that range; preserve its precise authored size.
+  slider.min=String(apertureCm<1?Math.max(.1,Math.floor(apertureCm*10)/10):1);
+  slider.max=String(Math.max(20,Math.ceil(apertureCm*2)/2));
+  slider.step=apertureCm<1?'0.1':'0.5';
+  slider.value=String(apertureCm);
+  $('mirror-aperture-kind').textContent=v.mirrorType==='circular-arc-mirror'?
+   'Circular arc · local-normal native reflection':'Ideal Gaussian curved mirror';
+  $('mirror-aperture-note').textContent=
+   'Quick slider is typically 1–20 cm; precise number accepts any supported size. '+
+   'This changes the reflecting surface, not zoom. Focal length/radius and source motion remain unchanged. '+
+   'Circular geometry and full source trajectory may impose stricter bounds.';
   const edits=model.baseline.qualification.edits.length;
   $('ray-control-note').textContent='Brightness and emission are physical; density and limits affect native ray sampling; grid and extended view are presentation. '+
    (v.emissionMode==='single-ray'?'One exact ray: density will not make a cone. ':
@@ -93,5 +110,16 @@ export class MotionRayUI{
   $('ray-grid').onchange=()=>this.apply({grid:$('ray-grid').checked});
   $('ray-depth').onchange=()=>this.submitNumber('ray-depth','maxRayDepth');
   $('ray-limit').onchange=()=>this.submitNumber('ray-limit','processedRayLimit');
+  // One existing native geometry parameter; the shared validator rejects
+  // source-path collisions and unsupported circular minor arcs.
+  const editAperture=id=>{
+   try{this.apply({mirrorApertureHeightMm:numeric(id)*10});}
+   catch(error){this.error(error);this.sync();}
+  };
+  $('mirror-aperture-slider').oninput=()=>{
+   $('mirror-aperture-cm').value=$('mirror-aperture-slider').value;
+  };
+  $('mirror-aperture-slider').onchange=()=>editAperture('mirror-aperture-slider');
+  $('mirror-aperture-cm').onchange=()=>editAperture('mirror-aperture-cm');
  }
 }
