@@ -39,7 +39,13 @@ async function main(){
   let s=await until(state,s=>s.state==='completed'&&s.index==='0','initial native frame');
   assert.equal(s.error,null);assert.match(s.velocity,/-56\.5685/);assert.match(s.velocity,/-14\.1421/);assert.match(s.assumptions,/constant/i);
   check('U2 initial native frame and separate analytical velocity with explicit assumptions');await shot('motion-initial');
-  await evaluate('document.getElementById("play").click()');await until(state,s=>Number(s.index)>=2,'play advances');
+  // Headless Chrome can hide the tab while another debugger target is active.
+  // Bring this real page to the foreground before testing timer-driven Play;
+  // never weaken the requirement that it genuinely advances native frames.
+  await cdp.send('Page.bringToFront');
+  await until(()=>evaluate('document.hidden'),hidden=>hidden===false,'visible Chrome playback tab');
+  await evaluate('document.getElementById("play").click()');
+  await until(state,s=>Number(s.index)>=2,'play advances');
   await evaluate('document.getElementById("pause").click()');await sleep(150);const paused=await state();await sleep(400);assert.equal((await state()).index,paused.index);
   check('play advances sequential native frames and pause prevents later time advancement');
   await seek(30);s=await until(state,s=>s.state==='completed'&&s.index==='30','scrub');assert.match(s.time,/0\.250/);assert.match(s.object,/-24\.1161/);
