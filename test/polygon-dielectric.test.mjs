@@ -203,3 +203,32 @@ test('shared qualified save, physical revisions and Fit preserve all four vertic
  const fitted=await fitRequestedView(changed,await evaluateObservables(changed,queries,run(changed)),390,320);
  assert.deepEqual(fitted.document.physics,changed.physics);
 });
+
+test('oblique native entry and exit obey independently checked signed Snell law',()=>{
+ const d=build(i=>{src(i).parameters.y=0;src(i).emission.directionDeg=15;}),s=run(d),m=meter(s);
+ assert.equal(s.native.status,'completed');
+ assert.equal(m.interactions,2);assert.equal(m.invalidObservations,0);
+ for(const e of [m.faces['face-12'].first,m.faces['face-34'].first]){
+  const b=e.branches.find(x=>x.kind==='transmitted');
+  assert.ok(b);near(e.incidentIndex*cross(e.incidentDirection,e.outwardNormal),
+   e.destinationIndex*cross(b.direction,e.outwardNormal));
+ }
+ near(m.faces['face-12'].first.incidentAngleDeg,15,1e-8);
+ near(m.faces['face-12'].first.transmittedAngleDeg,Math.asin(Math.sin(15*Math.PI/180)/1.5)*180/Math.PI,1e-8);
+ near(m.faces['face-34'].first.transmittedAngleDeg,15,1e-7);
+});
+test('reversed ray starts at another face; interface normals and index order follow actual native travel',()=>{
+ const d=build(i=>{src(i).parameters.x=20;src(i).parameters.y=0;src(i).emission.directionDeg=180;});
+ const s=run(d),m=meter(s);
+ assert.equal(s.native.status,'completed');assert.equal(m.interactions,2);
+ assert.equal(m.faces['face-34'].first.from,'outside');
+ assert.equal(m.faces['face-12'].first.from,'inside');
+ near(m.faces['face-34'].first.outwardNormal.x,1);near(m.faces['face-12'].first.outwardNormal.x,-1);
+});
+test('multiple independent native sources aggregate face counts without inventing route attribution',()=>{
+ const d=build(i=>{const source=structuredClone(src(i));source.id='S2';source.parameters.y=-1;i.components.push(source);}),s=run(d),m=meter(s);
+ assert.equal(s.native.status,'completed');assert.equal(s.native.emitted,2);
+ assert.equal(m.interactions,4);
+ assert.equal(m.faces['face-12'].interactions,2);assert.equal(m.faces['face-34'].interactions,2);
+ assert.equal(m.faces['face-34'].first.sourceId,undefined);
+});
