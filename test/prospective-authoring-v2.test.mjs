@@ -41,7 +41,7 @@ test('previously committed original-question selection and first-attempt records
  }
 });
 test('each frozen image hash matches the selected original Problems-only ZIP member',()=>{
- const archive=readFileSync(new URL('../08_Ray_Optics_Explanations.zip',dir));
+ const archive=readFileSync(new URL('../../08_Ray_Optics_Explanations.zip',dir));
  assert.equal(sha(archive),selection.archiveSha256);
  for(const row of manifest.records){
   const image=readProblemPng(archive,row.problemPath);
