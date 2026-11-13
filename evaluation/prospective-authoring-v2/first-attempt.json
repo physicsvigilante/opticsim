@@ -1,0 +1,321 @@
+{
+  "format": "opticsim-prospective-first-attempt-v2",
+  "frozenEngineCommit": "954662c4e0a8c189492da91410a020e646ca2cd0",
+  "selectionSha256": "a405aa2924a9c5a24c5652a180ce08f78a80bb33a94351043927b3519bdd13ab",
+  "context": "First interpretations are committed before deterministic replay. A same-chat assistant read only the eight selected Problems PNGs after the sealed selection commit 4f14cd6a85eae29777fa22677a90f40638ef56fb. No Solutions, reference answers, native simulations, repairs or external model calls were used to author these requests. Not an independent held-out benchmark.",
+  "authorType": "same-chat-assistant",
+  "modelSelfReported": "GPT-6",
+  "independentEvaluator": false,
+  "externalModelCalls": 0,
+  "solutionsRead": false,
+  "referenceAnswersRead": false,
+  "automaticRepairs": 0,
+  "allFirstAttemptsSealedBeforeExecution": true,
+  "cases": [
+    {
+      "id": "P01",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": null,
+        "requests": [
+          {
+            "id": "original-quantity",
+            "kind": "multiple-plane-mirror-net-deviation"
+          }
+        ],
+        "interpretation": {
+          "source": {
+            "caseId": "P01",
+            "path": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/006.png",
+            "sha256": "83414cbcb3396371ed04c501ac3e13c716732ddf423fd083e9cedb883aa5827c"
+          },
+          "requestedResult": "Calculate the angular deviation between the original incident direction and outgoing ray after three successive reflections.",
+          "stated": [
+            "Two plane mirrors M1 (horizontal) and M2 are drawn with an inclination marked 30 degrees.",
+            "An incident horizontal ray from the right strikes M2 first; a 50 degree angle is marked near its dashed normal.",
+            "The ray is stated to undergo three successive reflections."
+          ],
+          "derived": [],
+          "assumptions": [],
+          "unknowns": [
+            "The exact meaning/consistency of both drawn angular labels is not independently resolved from the schematic.",
+            "No registered three-reflection forward deviation operation; existing mirror angular inverse does not compute this requested quantity.",
+            "No fully dimensioned mirror segments or physical source emission properties are specified for native verification."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "firstScopeAssessment": "Unsupported forward net-deviation query under registered operations; do not replace with an inverse two-mirror query.",
+      "solutionsRead": false,
+      "firstAttemptMethod": "single same-assistant image reading, no reference answers and no execution"
+    },
+    {
+      "id": "P02",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": null,
+        "requests": [
+          {
+            "id": "original-quantity",
+            "kind": "curved-mirror-extended-object-image-shape"
+          }
+        ],
+        "interpretation": {
+          "source": {
+            "caseId": "P02",
+            "path": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/010.png",
+            "sha256": "073a971a9eaca6a664e6f509e8b3d6e4428cd736ad80fe81b0fa0bc8e2092947"
+          },
+          "requestedResult": "State the shape of the complete image of quadrilateral ABED in a concave mirror.",
+          "stated": [
+            "The curved mirror is concave, with pole P, focus F and centre of curvature C marked.",
+            "An extended four-vertex object ABED lies beyond C; base AD is on the axis and BE slopes upward."
+          ],
+          "derived": [],
+          "assumptions": [],
+          "unknowns": [
+            "Current curved-mirror image query maps one point source; it does not determine the whole extended-object polygon and qualitative shape.",
+            "Numerical positions/heights and focal length are not supplied; this does not justify an illustrative native apparatus."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "firstScopeAssessment": "Extended-object image-shape synthesis is not a registered operation; native point-source tracing cannot be claimed to answer the original shape question.",
+      "solutionsRead": false,
+      "firstAttemptMethod": "single same-assistant image reading, no reference answers and no execution"
+    },
+    {
+      "id": "P03",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": null,
+        "requests": [
+          {
+            "id": "original-quantity",
+            "kind": "spherical-dielectric-refraction-symbolic-proof"
+          }
+        ],
+        "interpretation": {
+          "source": {
+            "caseId": "P03",
+            "path": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/008.png",
+            "sha256": "8a1224fe9205a10cead4e1d8934be503c54d62b999491bc193c38402af4cc923"
+          },
+          "requestedResult": "Prove cos((beta-alpha)/2)=mu*cos(beta/2) for a ray traversing a refracting sphere.",
+          "stated": [
+            "A sphere has refractive index mu.",
+            "The transmitted ray enters and leaves at surface points corresponding to radii separated by beta.",
+            "Alpha is the total angular deviation of the ray through the sphere."
+          ],
+          "derived": [],
+          "assumptions": [],
+          "unknowns": [
+            "Current native dielectric interfaces are restricted to planar media, not two curved sphere boundaries.",
+            "There is no general symbolic-proof engine for spherical refraction."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "firstScopeAssessment": "Unsupported curved-dielectric symbolic derivation. Do not substitute a parallel slab or numerical approximation.",
+      "solutionsRead": false,
+      "firstAttemptMethod": "single same-assistant image reading, no reference answers and no execution"
+    },
+    {
+      "id": "P04",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": null,
+        "requests": [
+          {
+            "id": "original-quantity",
+            "kind": "tir-opaque-disc-visibility-height"
+          }
+        ],
+        "interpretation": {
+          "source": {
+            "caseId": "P04",
+            "path": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/008.png",
+            "sha256": "5ae13777d1e85e4030c679aa1d3e5be0135a06b29113e82ccef2f0d97d556c0d"
+          },
+          "requestedResult": "Find the maximum liquid height at which a source at the vessel bottom cannot be seen from above, with a floating opaque disc.",
+          "stated": [
+            "A point source S is at the bottom of a liquid-filled vessel.",
+            "The liquid has refractive index 5/3.",
+            "An opaque floating disc has radius 1 cm and its centre is vertically above S.",
+            "The liquid is gradually drained and the observer views from above."
+          ],
+          "derived": [],
+          "assumptions": [],
+          "unknowns": [
+            "The height is the requested unknown, not permission to choose a demonstration depth.",
+            "The registered model lacks a finite opaque disc/observer visibility constraint and an inverse height query.",
+            "Native planar refraction alone does not certify zero visibility for the whole observer region."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "firstScopeAssessment": "Unsupported coupled TIR/occlusion/observer inverse visibility operation; no arbitrary disc or camera geometry is authored.",
+      "solutionsRead": false,
+      "firstAttemptMethod": "single same-assistant image reading, no reference answers and no execution"
+    },
+    {
+      "id": "P05",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": null,
+        "requests": [
+          {
+            "id": "original-quantity",
+            "kind": "nonparallel-prism-exit-deviation"
+          }
+        ],
+        "interpretation": {
+          "source": {
+            "caseId": "P05",
+            "path": "08_Ray_Optics_Explanations/05_Prism/Problems/012.png",
+            "sha256": "a1371db5446af3e2858847ddbcb5ad39c55fe42de377fc98b1b067c1ad60ea42"
+          },
+          "requestedResult": "Find angle delta between the incident and emergent ray for a 30 degree glass prism with normal entrance.",
+          "stated": [
+            "Prism refracting angle is 30 degrees.",
+            "An incident ray is perpendicular to the first prism face.",
+            "Glass has refractive index 1.5."
+          ],
+          "derived": [],
+          "assumptions": [],
+          "unknowns": [
+            "The refractive index of the external surrounding medium is not stated explicitly (air is conventional, not supplied as a native fact).",
+            "Existing native planar-media scene supports parallel interfaces, not the finite wedge/prism and its exit ray.",
+            "No registered original prism-deviation analytical query."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "firstScopeAssessment": "Unsupported nonparallel prism departure/deviation query. Do not replace the wedge with parallel media.",
+      "solutionsRead": false,
+      "firstAttemptMethod": "single same-assistant image reading, no reference answers and no execution"
+    },
+    {
+      "id": "P06",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": null,
+        "requests": [
+          {
+            "id": "original-quantity",
+            "kind": "spherical-paperweight-apparent-distance"
+          }
+        ],
+        "interpretation": {
+          "source": {
+            "caseId": "P06",
+            "path": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/004.png",
+            "sha256": "e0b938a74df9e6d302ee63a259164b9cfe31fe65b01a93e708774a3e5b404989"
+          },
+          "requestedResult": "Calculate the apparent table-to-observer distance viewed through a spherical glass paperweight.",
+          "stated": [
+            "A sphere of glass refractive index 1.6 and radius 5 cm is cut by a plane 2 cm from the centre.",
+            "The flat cut surface is on the table; the figure marks the curved cap height as 3 cm.",
+            "The observer lies directly above the axis, 8 cm above the tabletop."
+          ],
+          "derived": [],
+          "assumptions": [],
+          "unknowns": [
+            "Curved glass-air refraction and an observer-conditioned apparent-image query are not registered.",
+            "Cannot use a flat interface or an ideal thin lens in place of the spherical cap."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "firstScopeAssessment": "Unsupported spherical dielectric apparent-distance operation; the geometrical 3 cm cap height is not the sought apparent distance.",
+      "solutionsRead": false,
+      "firstAttemptMethod": "single same-assistant image reading, no reference answers and no execution"
+    },
+    {
+      "id": "P07",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": null,
+        "requests": [
+          {
+            "id": "part-1",
+            "kind": "lensmaker-focal-length-ratio"
+          },
+          {
+            "id": "part-2",
+            "kind": "lensmaker-immersed-lens-action"
+          }
+        ],
+        "interpretation": {
+          "source": {
+            "caseId": "P07",
+            "path": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/020.png",
+            "sha256": "26982ca24f70b6c009b9c82477fb1962be8a41f49ef9cc53306f5ae23d4eacc2"
+          },
+          "requestedResult": "(a) Find the focal-length ratio for identical double-convex lenses of refractive indices 1.5 and 1.7; (b) state each lens's effect on parallel axial rays when immersed in a liquid of index 1.62.",
+          "stated": [
+            "Two geometrically identical double-convex lenses are made from materials of refractive indices 1.5 and 1.7.",
+            "The immersion liquid has refractive index 1.62.",
+            "Part (a) asks for the ratio of focal lengths and part (b) for ray convergence/divergence in the liquid."
+          ],
+          "derived": [],
+          "assumptions": [],
+          "unknowns": [
+            "The ideal-thin-lens component stores focal length, not glass index, radii and ambient-index lensmaker parameters.",
+            "Neither material-index focal-ratio nor immersion-dependent lens type is a registered quantity.",
+            "Do not invent focal lengths or lens aperture for a native illustration."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "firstScopeAssessment": "Both material-index/lensmaker quantities are unsupported by current deterministic analysis and native contract.",
+      "solutionsRead": false,
+      "firstAttemptMethod": "single same-assistant image reading, no reference answers and no execution"
+    },
+    {
+      "id": "P08",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": null,
+        "requests": [
+          {
+            "id": "original-quantity",
+            "kind": "microscope-magnifying-power"
+          }
+        ],
+        "interpretation": {
+          "source": {
+            "caseId": "P08",
+            "path": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/007.png",
+            "sha256": "6796e7f7b92bf1a5f10c6823ad44c459c18f72309eb5a5ba7ac0d2768ce04a81"
+          },
+          "requestedResult": "Calculate microscope magnifying power in normal adjustment (final image at infinity).",
+          "stated": [
+            "Objective focal length is 4 mm and eyepiece focal length is 25 mm.",
+            "Microscope tube length is 16 cm.",
+            "Final image is formed at infinity; least distance of distinct vision is 25 cm."
+          ],
+          "derived": [],
+          "assumptions": [],
+          "unknowns": [
+            "Tube length convention and objective/eyepiece instrument interpretation must be established for a faithful result.",
+            "No microscope magnifying-power observable or angular-magnification instrument operation is registered.",
+            "Two ideal lenses in a native scene do not themselves certify microscope magnification without object/observer data."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "firstScopeAssessment": "Instrument magnifying-power query unsupported by current registered result contracts. No source position or aperture is invented.",
+      "solutionsRead": false,
+      "firstAttemptMethod": "single same-assistant image reading, no reference answers and no execution"
+    }
+  ]
+}

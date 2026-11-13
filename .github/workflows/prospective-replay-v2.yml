@@ -1,0 +1,27 @@
+name: Prospective original authoring first-attempt replay
+on:
+  push:
+    branches: [feature/prospective-authoring-v2]
+    paths:
+      - evaluation/prospective-authoring-v2/first-attempt.json
+permissions:
+  contents: read
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: node --check evaluation/prospective-authoring-v2/replay.mjs
+      - name: Check sealed first attempt and run deterministic dispatcher with no native substitutions
+        run: node evaluation/prospective-authoring-v2/replay.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sealed-prospective-authoring-evidence
+          path: test-artifacts/llm-authoring/prospective-v2/
+          if-no-files-found: error
+          retention-days: 7
