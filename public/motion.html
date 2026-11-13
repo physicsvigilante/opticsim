@@ -22,6 +22,17 @@
 <label>Native ray view <select id="ray-view" disabled><option value="rays">Rays</option><option value="extended">Extended rays</option></select></label>
 <label class="ray-check"><input id="ray-grid" type="checkbox" disabled> Show native grid</label>
 </div>
+<div class="mirror-aperture-control">
+ <div class="mirror-aperture-heading">
+  <label for="mirror-aperture-cm">Mirror aperture height (cm) — physical size</label>
+  <span id="mirror-aperture-kind">Validated curved mirror</span>
+ </div>
+ <div class="mirror-aperture-inputs">
+  <input id="mirror-aperture-cm" type="number" min="0.1" step="any" disabled aria-label="Mirror aperture height in centimetres">
+  <input id="mirror-aperture-slider" type="range" min="1" max="20" step="0.5" disabled aria-label="Mirror aperture height quick slider in centimetres">
+ </div>
+ <p id="mirror-aperture-note">Adjust the physical reflecting aperture, not the camera zoom. Focal length and curvature stay fixed; incompatible sizes are rejected.</p>
+</div>
 <details class="ray-advanced"><summary>Native ray processing limits</summary><div class="ray-fields">
 <label>Maximum ray depth <input id="ray-depth" type="number" min="0" max="8" step="1" disabled></label>
 <label>Processed-ray limit <input id="ray-limit" type="number" min="1" max="10000" step="1" disabled></label>
