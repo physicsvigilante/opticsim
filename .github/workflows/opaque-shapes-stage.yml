@@ -21,6 +21,7 @@ jobs:
           echo '74c7db5ee656283c4da7d953a42443dee767cb8c047b878520b46a1c393a2f34  /tmp/opaque-next.patch.xz' | sha256sum --check
           xz -dc /tmp/opaque-next.patch.xz > /tmp/opaque-next.patch
           echo '0144d3948bbe7c165e4ef393f55ba94eb639842689c712c44a9915ca6bad564a  /tmp/opaque-next.patch' | sha256sum --check
+          git fetch --no-tags --depth=1 origin ffba26e185ac4f2eadaba64eec07dbd4fb5c5dcf
           git checkout --detach ffba26e185ac4f2eadaba64eec07dbd4fb5c5dcf
           git apply --check /tmp/opaque-next.patch
           git apply /tmp/opaque-next.patch
