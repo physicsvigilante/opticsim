@@ -1,15 +1,18 @@
 name: Quasi-static source motion checks
 on:
   pull_request:
-    branches: [main, feature/curved-mirror-imaging]
+    branches: [main]
   push:
-    branches: [feature/quasi-static-source-motion]
+    branches: [main]
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   motion:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
       - name: Verify browser runtime
@@ -18,8 +21,16 @@ jobs:
         with:
           node-version: '24.19.0'
       - run: npm run setup
-      - run: npm test
+      - name: Full Node suite and exact checkout evidence
+        shell: bash
+        run: |
+          mkdir -p test-artifacts/ci-source-motion
+          { git rev-parse HEAD; node --version; google-chrome --version; sha256sum upstream-pin.json; } > test-artifacts/ci-source-motion/runtime.txt
+          npm test | tee test-artifacts/ci-source-motion/node-test.log
       - run: node scripts/motion-acceptance.mjs
+      - run: node scripts/motion-lens-acceptance.mjs
+      - name: Replay preserved PR 29 first attempts without repair
+        run: node scripts/lens-prospective-review.mjs
       - run: npm run build:motion
       - run: node scripts/pack-motion.mjs
       - run: node scripts/motion-browser.mjs
@@ -30,14 +41,17 @@ jobs:
         with:
           name: source-motion-evidence
           path: |
+            test-artifacts/ci-source-motion/
             test-artifacts/llm-authoring/source-motion/
+            test-artifacts/llm-authoring/lens-motion/
+            test-artifacts/llm-authoring/lens-prospective/
             test-artifacts/browser-source-motion/
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         if: success()
         with:
           name: opticsim-moving-source-demo
           path: test-artifacts/motion-demo/
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7

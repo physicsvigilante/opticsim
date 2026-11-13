@@ -1,105 +1,113 @@
-# Moving-source thin-lens extension — reuse existing optics, not a new player
+# Moving-source thin lens — shared motion, not another player
 
-This is a deliberately narrow next capability after merging curved mirrors
-(PR #27) and bounded source motion (PR #28).
+PR #30 is the consolidated candidate after the merged curved-mirror and
+source-motion foundations (#27 and #28). Read `LENS-CONSOLIDATION.md` for
+what was retained from the overlapping PR #29 and the separate evaluation
+records. No second motion implementation needs to be merged.
 
-## Source-independent framework
+## Supported scope
 
-The **same** `opticsim-motion-experiment-v1` envelope, immutable
-`frame(i)/sampleAt(t)`, signed and qualified source velocity, native
-PhyDemo Simulator, playback, camera, density, brightness, source-cone controls,
-aperture editor, static snapshot and experiment export/reopen can operate
-with either of two **separately validated** optical families:
+The same `opticsim-motion-experiment-v1` envelope, immutable sampling,
+qualified source velocity, pinned PhyDemo Simulator, playback, camera,
+brightness/density/source controls, aperture editor, static snapshot and
+experiment save/reopen serve two separately validated families:
 
-- v6 `curved-mirror-tracing`: one stationary ideal/circular curved mirror,
+- v6 curved-mirror tracing: one stationary ideal/circular curved mirror,
   one uniformly translating source, optional passive detectors; unchanged.
-- v4 `ideal-thin-lens-geometric`: **exactly one** stationary ideal lens and
-  one uniformly translating point source, with no other optical elements.
-  Existing strict scene validation keeps the source on the left of the
-  lens plane. The entire affine path is checked, not just sampled frames.
+- v4 ideal-thin-lens geometric: exactly one stationary ideal lens and one
+  uniformly translating point source, no additional optical elements or
+  detectors. The source stays left of the lens throughout its affine path.
 
-This does **not** turn the v4 lens scene into the unrestricted
-`general-component-tracing` model to apply a favorable image equation,
-remove a mirror, or assume a ray route. Multi-lens, returning, moving-lens,
-moving-detector, refraction-media and crossing the actual lens plane are
-unsupported by this motion extension.
+This does not relabel a general tracing scene to obtain a favorable image
+formula or remove any supplied component. Multi-lens motion, returning rays,
+moving lenses/detectors, media, and crossing the physical lens plane remain
+unsupported. Crossing the focal plane is allowed; it is not a lens collision.
 
-## Computation
+## Separate conditional analytical calculation
 
-The canonical `predict(doc)` ABCD calculation in `src/analysis.js` is
-the source of the thin-lens image point. It gives image distance, signed
-magnification, real/virtual image and focal infinity using exactly the
-same numerical indeterminacy policy as the existing static lens analyzer.
-
-For the stationary lens at x=L and source at x=x_o, y=y_o, with
-focal length f (signed) and source velocity v_x,v_y, the positive
-object distance is u=L-x_o. All lengths are canonical millimetres.
-The derived finite image is x_i=L+f*u/(u-f), y_i=m*y_o, where
-m=-f/(u-f). Differentiate **without assuming y_o=0**:
+`src/motion-thin-lens.js` reuses the existing `predict(doc)` ABCD image
+prediction. For lens x=L, source (x_o,y_o), fixed signed f and source velocity
+(v_x,v_y), define u=L-x_o, m=-f/(u-f). In canonical millimetres and seconds:
 
 ```text
-dx_i/dt = (f/(u-f))² * v_x
-dm/dt   = -f*v_x/(u-f)²
-dy_i/dt = m*v_y + y_o*dm/dt
+x_i       = L + f*u/(u-f)
+y_i       = m*y_o
+dx_i/dt   = (f/(u-f))^2 * v_x
+dm/dt     = -f*v_x/(u-f)^2
+dy_i/dt   = m*v_y + y_o*dm/dt
 ```
 
-The last term is essential for an off-axis moving source; finite
-differences independently test both velocity components. Focus u=f has
-an image **at infinity** with no finite image-point velocity, and no
-finite marker is drawn. When the existing ABCD calculation classifies a
-state unavailable/ill-conditioned, this extension cannot upgrade it.
+The transverse product-rule term is essential off axis. Finite differences
+check both velocity components on both sides of focus and for negative f.
+This is quasi-static ideal image kinematics, not native image detection,
+time-of-flight optics or non-paraxial lens aberration.
 
-A **positive-focal-length** lens may pass from a finite real image through
-focal infinity to a finite virtual image while the source stays on the
-same side of the lens. The mathematical image guide is explicitly
-conditional, not a native detected ray intersection. PhyDemo still traces
-only physical rays; brightness, aperture and sample density can affect
-native illumination without moving the analytical image point.
+At the exactly represented u=f condition, the image is at infinity and has
+no finite position or image-point velocity. The existing static ABCD analyzer
+uses a tolerance band. A nonzero u-f inside that band is instead labelled
+`numerically-indeterminate` by the motion adapter; it is NOT asserted to be
+exact infinity. Both position and velocity are withheld. The adapter never
+rescues a static unavailable result with a different finite formula. No static
+numerical threshold or native core code is changed.
 
-## Synthetic demonstration (not an original question)
+## Explicit synthetic demonstration
 
-`examples/moving-lens.json` explicitly supplies every physical value
-for a software-control example: x_o=-28 cm, y_o=+1 cm, L=0,
-f=+20 cm, lens aperture 12 cm, 0.3 relative source brightness,
-40° directional cone pointing right, and uniform velocity
-(+4,+1.2) cm/s for 3 seconds over 61 samples.
+`examples/moving-lens.json` declares every input: x_o=-28 cm, y_o=+1 cm,
+L=0, f=+20 cm, aperture 12 cm, relative source brightness 0.3, a 40-degree
+right-going cone, and velocity (+4,+1.2) cm/s for 3 seconds, 61 samples.
 
-| Time | u | Conditional image | Image velocity |
+| Time | Object distance | Conditional image | Image velocity |
 |---|---|---|---|
-| t=0 | 28 cm | real, (+70,-2.5) cm, m=-2.5 | (+25,-4.25) cm/s |
-| t=2 s | 20 cm | at infinity; no finite image or speed | unavailable |
-| t=3 s | 16 cm | virtual, (-80,+23) cm, m=+5 | (+100,-17) cm/s |
+| 0 s | 28 cm | real, (+70,-2.5) cm, m=-2.5 | (+25,-4.25) cm/s |
+| 2 s | 20 cm | at infinity, no finite marker | unavailable |
+| 3 s | 16 cm | virtual, (-80,+23) cm, m=+5 | (+100,-17) cm/s |
 
-The example is **entirely synthetic** and does not claim to answer or
-transcribe an unseen problem. The LLM should not infer any of its
-numerical choices for another question; the verified provenance marks
-its original request illustrative.
+These are illustrative software inputs, never inferred facts for a textbook
+question. The lens example opens in Current frame camera mode because a
+whole-motion fit near focus can make the apparatus tiny. U2 mirrors retain
+Whole motion by default. Camera changes do not alter physical facts.
 
-## Verification and compatibility
+## Shared controls and backward compatibility
 
-The original U2 motion example and all mirror observations are retained.
-A lens example is chosen by an explicit dropdown; compatible previously
-saved motion packages reopen unchanged using their original canonical
-schema and hash-bound baseline. All component geometry is validated
-before and after the declared motion. Native rays, image calculations,
-camera, and optional manual source/aperture edits remain distinct.
+The generic `opticalApertureHeightMm` field edits the existing aperture for
+either family; `opticId` and `opticType` identify it. The historical
+`mirrorApertureHeightMm` alias still works for curved mirrors only and rejects
+lens use. Supplying both aperture fields is rejected rather than choosing one.
+This avoids teaching an LLM to describe a lens as a mirror. UI element IDs
+remain stable; the same panel adapts its label and sends the generic field.
 
-The new Node regressions compare exact known real, focal and virtual
-results, both signed and negative focal length, off-axis velocity
-finite differences, source-side crossing rejection even between two
-sampled frames, and actual pinned PhyDemo native runs.
+Lens v4 emission supports full-circle and directional, not v6 single-ray.
+`motionRayControlCapabilities().sourceModesBySchema` makes that distinction
+explicit. Existing qualified packages do not store these convenience field
+names; their canonical scene and hash-bound motion schema are unchanged.
+Physical revisions retain original assumptions and qualified edit history.
 
-The dedicated CI workflow also runs the *previous* motion tests and
-the original 122 U2 native samples and camera/browser regressions.
-It adds 61 synthetic native lens snapshots and direct-browser lens
-example and save/reopen checks. Passing these development checks is
-not a held-out evaluation of LLM problem comprehension.
+## Verification and evidence
 
-## Next validation milestone
+The consolidated `.github/workflows/source-motion.yml` runs the full Node
+suite, original 122 U2 native samples, 61 lens samples, all three existing
+motion browser suites, and the historical PR #29 trial replay. There is no
+second duplicate lens-motion workflow or simultaneous feature-branch push
+run. It runs on main-targeted PRs and main pushes; obsolete PR runs can be
+cancelled, but main runs are not. Motion artifacts are retained for 7 days.
 
-Only after this extension passes should a new, **unseen** question be
-selected under a recorded no-solutions protocol. Record its first
-LLM interpretation and missing facts *before* inspecting any answers;
-allow deterministic error/unavailable outcomes, and do not fabricate
-apparatus data to make the native simulator run. The current synthetic
-control and previously viewed U2 must not be counted as unseen solves.
+Node tests observe actual per-instance `IdealLens.onRayIncident` calls at
+real, focal and virtual samples and delegate unchanged to the pinned native
+implementation. Emitted-ray counts alone are not the lens-hit assertion.
+Browser tests also inspect native canvas pixels. Tests retain source-side
+checks, camera/player reuse, real/virtual/infinite behavior, near-focus
+suppression, diverging lenses, tamper rejection and qualified save/reopen.
+
+```sh
+npm run setup
+npm test
+node scripts/motion-acceptance.mjs
+node scripts/motion-lens-acceptance.mjs
+npm run build:motion
+npm start
+```
+
+Open the existing `motion.html` page and select the synthetic lens option.
+The built portable demo remains offline; no Pages publication or external
+inference is enabled by this milestone. Passing software checks is not an
+independent accuracy result on unseen questions.
