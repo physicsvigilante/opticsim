@@ -1,0 +1,29 @@
+{
+  "title": "Synthetic moving object through a stationary ideal thin lens",
+  "originalQuestion": "Synthetic control, not an original textbook question: show a point source crossing the focal plane of an ideal thin lens under explicitly imposed uniform motion.",
+  "request": {
+    "lengthUnit": "cm",
+    "title": "Explicit moving thin-lens illustration — real, infinite, virtual images",
+    "runPolicy": "dense-v1",
+    "components": [
+      {"id":"S1","type":"point-source","parameters":{"x":-20,"y":1,"brightness":0.05},"emission":{"mode":"directional","directionDeg":0,"angleDeg":50}},
+      {"id":"L1","type":"ideal-lens","parameters":{"x":0,"focalLength":10,"apertureHeight":8}}
+    ]
+  },
+  "motion": {
+    "format":"opticsim-source-motion-v1",
+    "sourceId":"S1",
+    "law":"constant-velocity",
+    "velocity":{"x":12,"y":2,"unit":"cm/s"},
+    "durationSeconds":1,
+    "samples":61,
+    "continuationAssumption":"Synthetic demonstration: constant object velocity of (+12,+2) cm/s for exactly 1 second; not inferred from an original image or text."
+  },
+  "interpretation": {
+    "requestedResult":"Demonstrate bounded lens-motion snapshots with real/virtual/infinite Gaussian image states, separate from actual native rays.",
+    "stated":["Synthetic scene: stationary vertical ideal thin lens x=0, focal length +10 cm and finite aperture 8 cm.","A source begins at x=-20 cm, y=+1 cm and moves in global x-right/y-up at (+12,+2) cm/s for one second."],
+    "derived":["The pure deterministic engine computes every sampled source position and conditional lens image location and instantaneous velocity.","The source crosses the lens focal plane at t=5/6 seconds while staying left of the lens."],
+    "assumptions":["This is a deliberately synthetic test scene, not a recovered textbook apparatus or a score on unseen original problems.","Source brightness 0.05 and a 50-degree right-going emission cone are explicit illustrative physical settings.","The lens is stationary, ideal/paraxial, and has unchanged focal length; finite native rays can miss its aperture.","Quasi-static independent PhyDemo runs, not finite light-travel-time propagation or native image detection."],
+    "unknowns":["A synthetic demonstration does not establish the interpretation of any original question."]
+  }
+}
