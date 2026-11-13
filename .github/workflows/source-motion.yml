@@ -20,6 +20,7 @@ jobs:
       - run: npm run setup
       - run: npm test
       - run: node scripts/motion-acceptance.mjs
+      - run: node scripts/lens-motion-acceptance.mjs
       - run: npm run build:motion
       - run: node scripts/pack-motion.mjs
       - run: node scripts/motion-browser.mjs
