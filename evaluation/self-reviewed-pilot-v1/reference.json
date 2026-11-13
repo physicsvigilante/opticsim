@@ -1,0 +1,194 @@
+{
+  "format": "opticsim-self-reviewed-reference-v1",
+  "author": "GPT-6, same assistant after initial-attempt freeze",
+  "independentlyReviewed": false,
+  "numberOfIndependentReviewers": 0,
+  "firstAttemptFreezeCommit": "4ee53964751721bf4307ebef1c7de23a9c642486",
+  "sourceOfFacts": "manual rereading of public synthetic question prompts after freeze; same assistant and therefore not blinded",
+  "cases": [
+    {
+      "id": "SELF01",
+      "classification": "supported",
+      "expectedPhysical": {
+        "lengthUnit": "mm",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -200,
+              "y": 0,
+              "brightness": 0.08
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": 0,
+              "angleDeg": 20
+            }
+          },
+          {
+            "id": "B1",
+            "type": "circle-blocker",
+            "parameters": {
+              "x": 0,
+              "y": 0,
+              "radius": 40
+            }
+          },
+          {
+            "id": "D1",
+            "type": "ray-detector",
+            "parameters": {
+              "x": 100,
+              "y": 0,
+              "orientationDeg": 90,
+              "length": 80
+            }
+          }
+        ]
+      },
+      "requestKinds": [
+        "source-emissions",
+        "blocker-absorptions",
+        "detector-crossings"
+      ],
+      "requiredComponentIds": [
+        "S1",
+        "B1",
+        "D1"
+      ],
+      "expectedTargets": [
+        {
+          "kind": "source-emissions",
+          "componentId": "S1"
+        },
+        {
+          "kind": "blocker-absorptions",
+          "componentId": "B1"
+        },
+        {
+          "kind": "detector-crossings",
+          "componentId": "D1"
+        }
+      ],
+      "expectedPreflight": "native-ready",
+      "reviewNote": "Exact parameters from synthetic source-and-circular-blocker prompt. No claim about continuous shadow.",
+      "expectedNative": {
+        "emitted": 6,
+        "absorptions": 6,
+        "crossings": 0
+      }
+    },
+    {
+      "id": "SELF02",
+      "classification": "supported",
+      "expectedPhysical": {
+        "lengthUnit": "mm",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -200,
+              "y": 0,
+              "brightness": 0.08
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": 0,
+              "angleDeg": 20
+            }
+          },
+          {
+            "id": "B1",
+            "type": "finite-aperture",
+            "parameters": {
+              "x": 0,
+              "y": 0,
+              "orientationDeg": 90,
+              "length": 80,
+              "openingLength": 30
+            }
+          },
+          {
+            "id": "L1",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": 0,
+              "focalLength": 100,
+              "apertureHeight": 20
+            }
+          },
+          {
+            "id": "D1",
+            "type": "ray-detector",
+            "parameters": {
+              "x": 100,
+              "y": 0,
+              "orientationDeg": 90,
+              "length": 80
+            }
+          }
+        ]
+      },
+      "requestKinds": [
+        "source-emissions",
+        "blocker-absorptions",
+        "detector-crossings"
+      ],
+      "requiredComponentIds": [
+        "S1",
+        "B1",
+        "L1",
+        "D1"
+      ],
+      "expectedTargets": [
+        {
+          "kind": "source-emissions",
+          "componentId": "S1"
+        },
+        {
+          "kind": "blocker-absorptions",
+          "componentId": "B1"
+        },
+        {
+          "kind": "detector-crossings",
+          "componentId": "D1"
+        }
+      ],
+      "expectedPreflight": "native-ready",
+      "reviewNote": "Lens lies within the specified transparent aperture gap; native engine chooses actual rays. No continuous throughput expected.",
+      "expectedNative": {
+        "emitted": 6
+      }
+    },
+    {
+      "id": "SELF03",
+      "classification": "missing",
+      "expectedPhysical": null,
+      "requestKinds": [
+        "blocker-absorptions",
+        "detector-crossings"
+      ],
+      "requiredComponentIds": [
+        "S1",
+        "B1",
+        "D1"
+      ],
+      "expectedTargets": [
+        {
+          "kind": "blocker-absorptions",
+          "componentId": "B1"
+        },
+        {
+          "kind": "detector-crossings",
+          "componentId": "D1"
+        }
+      ],
+      "expectedPreflight": "blocked",
+      "expectedFirstStatus": "needs-information",
+      "missingField": "B1.parameters.radius",
+      "reviewNote": "Original question withholds the circle radius; no geometry or absorption count can be faithfully inferred."
+    }
+  ]
+}
