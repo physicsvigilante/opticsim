@@ -4,8 +4,8 @@ This feature adds **time as a bounded scene parameter**, not a new ray tracer.
 For each requested time t, the deterministic engine calculates
 `sourcePosition(t) = baselinePosition + velocity * t`, validates the complete
 scene, and runs the unchanged pinned PhyDemo core again. Positions are evaluated
-from the original baseline, never integrated cumulatively. The mirror, aperture,
-emission pattern, brightness and numerical policy do not change with time.
+from the original baseline, never integrated cumulatively. The stationary optical element, its aperture, source emission pattern,
+brightness and numerical policy do not change with time.
 
 ## Reusable layers (not a U2-specific trajectory solver)
 
@@ -36,8 +36,8 @@ hard-coded textbook pictures or add an arbitrary equation interpreter.
 
 This first implementation is intentionally *not* general motion dynamics.
 It currently handles one translating source at constant velocity with one
-stationary ideal/circular mirror, and it makes no claim about light-travel-time
-effects. We can extend that scope gradually as independently checked examples
+stationary ideal/circular curved mirror **or** one stationary ideal thin lens.
+It makes no claim about light-travel-time effects. We can extend that scope gradually as independently checked examples
 reveal recurring requirements.
 
 ## What is actually being animated
@@ -120,6 +120,24 @@ for one evaluated time, retaining its assumptions and a derived-position
 record. The regular static app opens that snapshot; it cannot replay the
 experiment. **Save frame evidence** preserves the separate current analytical
 and native outcomes. Retain the experiment package to reproduce playback.
+
+## Shared motion across mirrors and lenses
+
+An existing canonical v4 `ideal-thin-lens-geometric` scene with one source and
+one ideal lens can now use the *same* immutable time sampler, native PhyDemo
+executor, camera, playback and qualified export. Only the physical-scene
+validator and a separate, explicitly ideal Gaussian image/velocity adapter are
+extended. The built-in lens example is synthetic, clearly identified as
+such, and crosses from a finite real image through focal infinity to a finite
+virtual image. No new ray tracer or independent GUI is involved.
+
+In the shared collapsible controls, the aperture label changes automatically
+between **Mirror aperture** and **Lens aperture**. The single-ray source mode
+remains unavailable for canonical v4 lens scenes, as required by the existing
+schema; v6 curved-mirror single rays remain supported. Controls for brightness,
+density, direction, finite aperture and native limits retain qualified edit
+history. Details, formula derivatives and testing are in
+`docs/THIN-LENS-MOTION.md`.
 
 ## Light-source and ray controls (shared with the static editor)
 
@@ -231,8 +249,10 @@ a complete frame. Storage errors abort rather than being called optics errors.
 
 ## Deliberate first-version limits
 
-One source and one stationary ideal/circular curved mirror, with optional
-passive detectors, are supported. At most 241 time samples cover a positive
+One source and one stationary ideal/circular curved mirror (canonical v6) **or**
+one stationary ideal thin lens (canonical v4), with optional passive detectors,
+are supported. Read `docs/THIN-LENS-MOTION.md` for its narrower single-lens
+geometry, real/virtual/infinite image rules, and unchanged ray-control semantics. At most 241 time samples cover a positive
 interval of at most 10 seconds. Native limits are at most 10000 processed
 segments per frame and maximum depth 8, matching the existing canonical validator.
 A conservative continuous-path check
@@ -270,5 +290,6 @@ The correction audit in `CORRECTION-AUDIT.md` additionally covers asynchronous
 input mutation, invalid direction confirmation, stale-result export, rejected
 imports, real canvas clearing, and hidden-control rendering.
 
-This work is a draft stacked on PR #27. Neither #27 nor this new PR is merged
-by implementing this prototype. No earlier original problem record is changed.
+The curved-mirror and source-motion foundations (PRs #27 and #28) are now
+integrated on `main`. The thin-lens reuse milestone remains a separate draft
+review branch. No earlier original problem record is changed.
