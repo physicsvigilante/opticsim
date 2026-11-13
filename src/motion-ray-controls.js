@@ -20,18 +20,19 @@ const integer=(v,low,high,name)=>{
 };
 const sourceOf=scene=>{
  const sources=scene.physics.components.filter(c=>c.type==='point-source');
- if(scene.schemaVersion!==6||sources.length!==1)throw Error('Motion ray controls require the accepted single-source curved v6 scene');
+ if(sources.length!==1||!((scene.schemaVersion===6&&scene.physics.model==='curved-mirror-tracing')||
+   (scene.schemaVersion===4&&scene.physics.model==='ideal-thin-lens-geometric')))
+  throw Error('Motion source controls require one accepted single-source mirror or lens scene');
  return sources[0];
 };
-const mirrorOf=scene=>{
- const mirrors=scene.physics.components.filter(c=>isCurved(c.type));
- if(scene.schemaVersion!==6||mirrors.length!==1)
-  throw Error('Motion mirror aperture requires the accepted single-curved-mirror v6 scene');
- return mirrors[0];
+const opticOf=scene=>{
+ const optics=scene.physics.components.filter(c=>isCurved(c.type)||c.type==='ideal-lens');
+ if(optics.length!==1)throw Error('Motion aperture control needs exactly one optical element');
+ return optics[0];
 };
 export function motionRayControls(scene){
  validate(scene);
- const source=sourceOf(scene),mirror=mirrorOf(scene),p=source.parameters,emission=source.emission,s=scene.simulation;
+ const source=sourceOf(scene),mirror=opticOf(scene),p=source.parameters,emission=source.emission,s=scene.simulation;
  return {sourceId:source.id,brightness:p.brightness,densityPreset:samplingPreset(s.rayDensity),
   rayDensity:s.rayDensity,emissionMode:emission.mode,directionDeg:emission.directionDeg,
   angleDeg:emission.angleDeg,maxRayDepth:s.maxRayDepth,processedRayLimit:s.processedRayLimit,
@@ -49,7 +50,7 @@ export function motionRayControlCapabilities(){
   sourceModes:['full-circle','directional','single-ray'],
   nativeLimits:{maxRayDepth:{min:0,max:8},processedRayLimit:{min:1,max:10000}},
   presentationModes:['rays','extended'],
-  meaning:'Brightness, source emission and the physical mirror aperture are optical properties; sampling and limits change native numerical rays; ray/extended mode and grid are presentation. None is a native image detector.',
+  meaning:'Brightness, source emission and physical optical aperture are optical properties; sampling and limits change native numerical rays; ray/extended mode and grid are presentation. None is a native image detector.',
   provenance:'Each accepted edit creates a new qualified baseline and SHA-bound motion experiment. Original author input and prior edits remain preserved.'};
 }
 export function editMotionRayScene(scene,change){
@@ -59,7 +60,7 @@ export function editMotionRayScene(scene,change){
   throw Error('Expected one or more supported existing ray-control fields');
  if(own(change,'densityPreset')&&own(change,'rayDensity'))
   throw Error('Choose a density preset or an explicit custom density, not both');
- const prev=sourceOf(scene),mirror=mirrorOf(scene),previousMode=prev.emission.mode;
+ const prev=sourceOf(scene),mirror=opticOf(scene),previousMode=prev.emission.mode;
  if(own(change,'brightness'))finite(change.brightness,0.01,1,'Source brightness');
  if(own(change,'mirrorApertureHeightMm'))finite(change.mirrorApertureHeightMm,1,10000,'Mirror aperture height (mm)');
  if(own(change,'rayDensity'))finite(change.rayDensity,SAMPLING_PRESETS.sparse,1,'Native ray density');
@@ -69,7 +70,7 @@ export function editMotionRayScene(scene,change){
  if(own(change,'angleDeg'))finite(change.angleDeg,1,180,'Directional cone opening');
  if(own(change,'maxRayDepth'))integer(change.maxRayDepth,0,8,'Maximum native ray depth');
  if(own(change,'processedRayLimit'))integer(change.processedRayLimit,1,10000,'Native segment limit');
- if(own(change,'emissionMode')&&!['full-circle','directional','single-ray'].includes(change.emissionMode))
+ if(own(change,'emissionMode')&&!(scene.schemaVersion===6?['full-circle','directional','single-ray']:['full-circle','directional']).includes(change.emissionMode))
   throw Error('Unsupported native source emission mode');
  if(previousMode==='full-circle'&&change.emissionMode==='single-ray'&&!own(change,'directionDeg'))
   throw Error('Switching from full circle to one ray requires an explicitly supplied direction');
