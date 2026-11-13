@@ -121,6 +121,49 @@ record. The regular static app opens that snapshot; it cannot replay the
 experiment. **Save frame evidence** preserves the separate current analytical
 and native outcomes. Retain the experiment package to reproduce playback.
 
+## Light-source and ray controls (shared with the static editor)
+
+Expand **Light & ray controls** in the portable viewer. These controls operate
+on the *same canonical fields* as the normal Opticsim editor, not on a second
+drawing-only brightness or sampling system:
+
+- **Source brightness:** editable number plus native-style range, 0.01–1,
+  stored as the source's real relative brightness. It is a physical
+  experimental setting, not display exposure.
+- **Sampling density:** Sparse (0.048), Medium (0.2), Dense (1) or an exact
+  bounded custom density. This modifies the number of rays sampled by
+  PhyDemo and can change observed reflections, diagnostics and truncation.
+- **Source mode and cone:** full circle, directional cone, or one exact ray;
+  authored direction in degrees and directional opening angle 1–180°.
+  A single ray remains one ray even with Dense sampling. A change from
+  full circle to single-ray requires an explicitly entered direction.
+  As in the static editor, changing from non-directional to directional
+  initially selects Medium sampling unless the user explicitly changes it.
+- **View:** native Rays/Extended and grid display are presentation fields;
+  they must never be confused with illumination physics.
+- **Advanced limits:** native maximum ray depth and processed-segment budget,
+  using the original canonical bounds. Lower limits can lead to incomplete
+  native results; they never license claiming a complete ray observation.
+
+Edits are explicit **experiment revisions**. The viewer validates the
+entire accepted v6 optical scene, records the exact changed physical,
+numerical or presentation fields using the existing qualified edit log,
+creates a new integrity-bound baseline and motion experiment, and
+re-simulates the currently selected time. The motion law, object trajectory,
+mirror geometry, original problem interpretation and original input hash
+are preserved. Invalid edits are rejected without rewriting the last
+accepted experiment. **Save experiment** and reopen round-trip the altered
+brightness, density, source mode and qualification history; a static
+snapshot carries the same history.
+
+This is a reusable control adapter over validated scene fields. It does
+not special-case the U2 question, calculate native image detections, alter
+upstream physics or silently convert a physical brightness edit into a
+cosmetic zoom or color change. No arbitrary editable physics expression is
+accepted. In problems where a detector or partial Fresnel reflection is
+important, changing brightness and sampling can affect numerical/native
+readouts, so their choice must be visible in the evidence.
+
 ## Minimal bounded motion declaration
 
 ```json
