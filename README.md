@@ -4,6 +4,20 @@ A standalone-browser-capable optical bench powered by PhyDemo Ray Optics Simulat
 pinned to **811f508d2b070898c241a568b0c167dcb8645251**. Browser runtime resources
 are local. No LLM request is needed to open, simulate, or edit supported scenes.
 
+## Convex four-vertex dielectric — native finite glass
+
+The same LLM-authorable Opticsim contract can now specify **one stationary
+strictly convex four-vertex glass region** with four explicit physical
+vertices, inside/outside refractive indices and a required Fresnel policy.
+It compiles to pinned native PhyDemo `Glass`, with 1–4 exactly directed rays
+and up to two external passive detectors; v9 is deliberately isolated from
+earlier scene schemas. Existing per-interface and per-face native observations,
+qualified editing and exports, immutable sweeps, and the main viewer are reused.
+See [polygon-dielectric geometry and constraints](docs/POLYGON-DIELECTRIC.md),
+the [synthetic problem request](examples/polygon-dielectric.json), and the
+`polygon-dielectric` viewer example. This is 2D software validation, not a
+claim that an original JEE square-glass question was solved.
+
 ## JEE Optical Systems Atlas — capability discovery, not problem solving
 
 The [Optical Systems Atlas](evaluation/optical-systems-atlas-v1/README.md)
