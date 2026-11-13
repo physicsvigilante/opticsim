@@ -51,7 +51,7 @@ test('capability consumers cannot mutate the internal observation type registry'
  try{
   published.kinds['blocker-absorptions'].type='point-source';
   published.kinds['interface-interactions'].type.push('line-blocker');
-  assert.equal(observableCapabilities().kinds['blocker-absorptions'].type,'line-blocker');
+  assert.deepEqual(observableCapabilities().kinds['blocker-absorptions'].type,['line-blocker','circle-blocker']);
   assert.ok(!observableCapabilities().kinds['interface-interactions'].type.includes('line-blocker'));
  }finally{Object.assign(published.kinds,old);}
 });

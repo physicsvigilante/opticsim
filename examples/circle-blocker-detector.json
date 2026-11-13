@@ -1,0 +1,80 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "Synthetic circular opaque stop: native sampled absorption",
+    "runPolicy": "preview-v1",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -200,
+          "y": 0,
+          "brightness": 0.08
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 0,
+          "angleDeg": 20
+        }
+      },
+      {
+        "id": "B1",
+        "type": "circle-blocker",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "radius": 40
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 100,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 80
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "absorbed",
+      "kind": "blocker-absorptions",
+      "componentId": "B1"
+    },
+    {
+      "id": "emitted",
+      "kind": "source-emissions",
+      "componentId": "S1"
+    },
+    {
+      "id": "crossings",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "power",
+      "kind": "detector-signed-power",
+      "componentId": "D1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Native circle-blocker absorptions and downstream detector crossings from a declared synthetic 2D opaque stop",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "Synthetic test, not reconstructed from a JEE problem.",
+      "Perfectly opaque two-dimensional circular boundary using pinned native CircleBlocker, not a 3D sphere.",
+      "Six sampled preview rays do not prove continuous shadow or observer invisibility."
+    ],
+    "unknowns": [
+      "Continuous shadow, observer visibility, 3D geometry and original JEE answers are not inferred."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}

@@ -55,7 +55,7 @@ function update() {
   const mixed = session.document?.physics.model === 'lens-mirror-return-geometric';
   const mirror = session.document?.physics.components.some(c => c.type === 'plane-mirror'||isCurved(c.type));
   const hasOptics = session.document?.physics.components.some(c =>
-    c.type==='ideal-lens'||c.type==='plane-mirror'||c.type==='line-blocker'||c.type==='circular-dielectric'||c.type==='triangular-prism'||c.type==='polygon-dielectric'||isCurved(c.type));
+    c.type==='ideal-lens'||c.type==='plane-mirror'||c.type==='line-blocker'||c.type==='circle-blocker'||c.type==='circular-dielectric'||c.type==='triangular-prism'||c.type==='polygon-dielectric'||isCurved(c.type));
   const partial = !['completed', 'completed-with-warnings'].includes(state);
   const perMirror = d?.reflectionsById ? Object.entries(d.reflectionsById)
     .map(([id,count])=>id+': '+count).join(' · ') : '';
@@ -69,7 +69,7 @@ function update() {
       (Number.isFinite(reading.brightnessScale) ? ' · native brightness scale '+format(reading.brightnessScale) : '')
     ).join('  |  ');
   $('stats').textContent = d ? `${d.emitted} rays emitted · ${d.processed} segments processed${d.reflections != null ? ` · ${d.reflections} native reflections${partial ? ' (partial run)' : ''}${perMirror ? ' (' + perMirror + ')' : ''}` : ''} · truncated brightness ${d.truncation.toPrecision(3)} · undefined brightness ${d.undefinedBehavior.toPrecision(3)}` : session.document ? `Native emission pending · ${session.document.simulation.processedRayLimit} segment limit` : 'Loading scene';
-  const blockers = session.document?.physics.components.some(c=>c.type==='line-blocker');
+  const blockers = session.document?.physics.components.some(c=>['line-blocker','circle-blocker'].includes(c.type));
   const detectors = session.document?.physics.components.some(c=>c.type==='ray-detector');
   $('detector-readouts').hidden = !detectors || state==='invalid';
   $('detector-readouts').textContent = !detectors ? '' :
@@ -174,9 +174,9 @@ function controls() {
   const circular = session.document.physics.model === 'circular-dielectric-tracing';
   const curved = session.document.physics.model === 'curved-mirror-tracing';
   const general = session.document.physics.model === 'general-component-tracing';
-   const hasLineBlockers = session.document.physics.components.some(c=>c.type==='line-blocker');
+   const hasLineBlockers = session.document.physics.components.some(c=>['line-blocker','circle-blocker'].includes(c.type));
   const tracing = general || session.document.physics.model === 'mixed-lens-mirror-tracing';
-  const labels = { x1:'Vertex 1 x',y1:'Vertex 1 y',x2:'Vertex 2 x',y2:'Vertex 2 y',x3:'Vertex 3 x',y3:'Vertex 3 y',x4:'Vertex 4 x',y4:'Vertex 4 y',radius:circular?'Circle radius (positive)':'Signed curvature radius',insideIndex:'Inside refractive index',outsideIndex:'Outside refractive index',normalDeg:'Normal direction',negativeIndex:'Negative-side index',positiveIndex:'Positive-side index',x: 'Position x', y: 'Position y', focalLength: 'Focal length', apertureHeight: 'Aperture height', orientationDeg: 'Surface orientation', length: 'Length' };
+  const labels = { x1:'Vertex 1 x',y1:'Vertex 1 y',x2:'Vertex 2 x',y2:'Vertex 2 y',x3:'Vertex 3 x',y3:'Vertex 3 y',x4:'Vertex 4 x',y4:'Vertex 4 y',radius:circular?'Circle radius (positive)':general?'Circle blocker radius (positive)':'Signed curvature radius',insideIndex:'Inside refractive index',outsideIndex:'Outside refractive index',normalDeg:'Normal direction',negativeIndex:'Negative-side index',positiveIndex:'Positive-side index',x: 'Position x', y: 'Position y', focalLength: 'Focal length', apertureHeight: 'Aperture height', orientationDeg: 'Surface orientation', length: 'Length' };
   for (const component of session.document.physics.components) {
     const fieldset = document.createElement('fieldset');
     const legend = document.createElement('legend'); legend.textContent = component.id;
@@ -191,16 +191,16 @@ function controls() {
         bindings.push({id:component.id,section:'parameters',key,input});input.onchange=()=>{cancelScheduled();commitDraft();};continue;
       }
       const slider = key === 'brightness' ? { min: 0.01, max: 1, step: 0.01 } :
-        ['plane-mirror','line-blocker','ray-detector'].includes(component.type) ?
-        { min: key === 'length' ? 1 : key === 'orientationDeg' ? -180 : -10000, max: key === 'orientationDeg' ? 180 : 10000, step: 1 } : null;
+        ['plane-mirror','line-blocker','circle-blocker','ray-detector'].includes(component.type) ?
+        { min: ['length','radius'].includes(key) ? 1 : key === 'orientationDeg' ? -180 : -10000, max: key === 'orientationDeg' ? 180 : 10000, step: 1 } : null;
       const fixed = mixed && component.type === 'plane-mirror' && ['y', 'orientationDeg'].includes(key);
       addNumber(component.type === 'point-source' && key === 'brightness' && !multipleSources ?
         $('source-parameters') : fieldset, component.id, 'parameters', key,
         key === 'brightness' ? 'Brightness (relative)' : `${labels[key]} (${['orientationDeg','normalDeg'].includes(key) ? '°' : ['negativeIndex','positiveIndex','insideIndex','outsideIndex'].includes(key)?'dimensionless':'mm'})`, value, slider, fixed);
     }
-    if (component.type === 'line-blocker') {
+    if (['line-blocker','circle-blocker'].includes(component.type)) {
       const note=document.createElement('p');note.className='muted';
-      note.textContent='Fully opaque native finite absorber. Each actual ray hit terminates in PhyDemo; absorption counts are sampled, not a proof of a continuous shadow.';fieldset.append(note);
+      note.textContent='Fully opaque native '+(component.type==='circle-blocker'?'2D circular boundary':'finite line')+' absorber. Each actual ray hit terminates in PhyDemo; sampled absorption counts do not prove a continuous shadow.';fieldset.append(note);
     }
     if (component.type === 'plane-mirror') {
       const note = document.createElement('p'); note.className = 'muted';
