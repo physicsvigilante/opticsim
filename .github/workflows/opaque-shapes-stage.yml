@@ -1,0 +1,77 @@
+name: Opaque shapes isolated native and browser candidate (temporary)
+on:
+  push:
+    branches: ['review/opaque-shapes-transfer']
+    paths: ['.github/workflows/opaque-shapes-stage.yml']
+permissions:
+  contents: write
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Verify patch source bytes, apply on exact merged baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .opaque-transfer/part0{0,1,2,3,4}.b64 | base64 -d > /tmp/opaque-next.patch.xz
+          echo '74c7db5ee656283c4da7d953a42443dee767cb8c047b878520b46a1c393a2f34  /tmp/opaque-next.patch.xz' | sha256sum --check
+          xz -dc /tmp/opaque-next.patch.xz > /tmp/opaque-next.patch
+          echo '0144d3948bbe7c165e4ef393f55ba94eb639842689c712c44a9915ca6bad564a  /tmp/opaque-next.patch' | sha256sum --check
+          git checkout --detach ffba26e185ac4f2eadaba64eec07dbd4fb5c5dcf
+          git apply --check /tmp/opaque-next.patch
+          git apply /tmp/opaque-next.patch
+          git diff --check
+          echo 'Verified source diff:'
+          git status --short
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - name: Build exact pinned PhyDemo
+        run: npm run setup
+      - name: Run entire Node physics, authoring, and blocker suite
+        shell: bash
+        run: |
+          mkdir -p test-artifacts/opaque-shapes-checks
+          node --version > test-artifacts/opaque-shapes-checks/runtime.txt
+          npm test | tee test-artifacts/opaque-shapes-checks/tests.log
+      - name: Build existing browser
+        run: npm run build
+      - name: Native circular stop, aperture, and invalid opening sweep
+        run: node scripts/opaque-shapes-acceptance.mjs
+      - name: Chrome optical circles and aperture edits, qualified reports
+        run: node scripts/opaque-shapes-browser.mjs
+      - name: Existing line blocker native regression
+        run: node scripts/opaque-line-blocker-acceptance.mjs
+      - name: Existing polygon native regression
+        run: node scripts/polygon-dielectric-acceptance.mjs
+      - name: Strict static packaging
+        run: node scripts/pack-demo.mjs
+      - name: Commit only validated source files to separate branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'Opticsim review'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          count=$(git diff --cached --name-only | wc -l)
+          test "$count" -eq 21
+          echo "Staged $count source paths"
+          git diff --cached --name-only
+          git commit -m 'Add native circular stops and bounded finite apertures with qualified sampling'
+          echo "SHA $(git rev-parse HEAD)"
+          git push origin HEAD:refs/heads/review/opaque-shapes-tested
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: opaque-shapes-isolated-evidence
+          path: |
+            test-artifacts/opaque-shapes-checks/
+            test-artifacts/llm-authoring/opaque-shapes/
+            test-artifacts/browser-opaque-shapes/
+          if-no-files-found: ignore
+          retention-days: 7
