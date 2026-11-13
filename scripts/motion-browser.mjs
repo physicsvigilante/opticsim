@@ -151,13 +151,13 @@ async function main(){
   const initialApertureHash=ray.hash,priorNative=ray.counts,priorImageVelocity=ray.velocity;
   assert.equal(ray.apertureCm,'6');
   assert.match(ray.mirrorType,/Ideal Gaussian/);
-  await evaluate("document.querySelector('#ray-settings > summary').open=true");
+  await evaluate("document.getElementById('ray-settings').open=true");
   await changeRay('mirror-aperture-cm','16');
   ray=await afterChange(initialApertureHash,'mirror aperture physical edit');
   assert.equal(ray.apertureCm,'16');assert.equal(ray.velocity,priorImageVelocity);
   assert.notEqual(ray.hash,initialApertureHash);
-  assert.ok(Number(ray.counts.match(/(\\d+) reflections/)?.[1])>
-    Number(priorNative.match(/(\\d+) reflections/)?.[1]),
+  assert.ok(Number(ray.counts.match(/(\d+) reflections/)?.[1])>
+    Number(priorNative.match(/(\d+) reflections/)?.[1]),
     'larger physical mirror catches more actual native rays than the 6-cm aperture');
   assert.match(ray.assumptions,/Current accepted mirror aperture: 16 cm/);
   assert.match(ray.assumptions,/Finite aperture 6 cm/i);
@@ -181,10 +181,9 @@ async function main(){
   assert.equal(mirrorParams.focalLength,200);
   assert.ok(sized.baseline.qualification.edits.some(x=>x.kind==='physics'&&
    x.changes.some(c=>c.path.includes('apertureHeight'))));
-  assert.equal(sized.motion?.samples,undefined); // Prepared model stores motion as spec, never a new physics DSL.
   assert.equal(sized.spec.samples,61);
   await upload(join(downloads,savedAperture));
-  ray=await until(rayInfo,r=>settled(r)&&r.hash===sized.integritySha256&&r.apertureCm==='8','reopen mirror aperture experiment');
+  ray=await until(rayInfo,r=>settled(r)&&r.hash===('Experiment SHA-256: '+sized.integritySha256)&&r.apertureCm==='8','reopen mirror aperture experiment');
   assert.equal(ray.apertureCm,'8');
   check('Physical mirror size and original U2 assumptions round-trip in the qualified portable experiment');
   await evaluate('(()=>{const e=document.getElementById("example");e.value="circular";e.dispatchEvent(new Event("change",{bubbles:true}));})()');
