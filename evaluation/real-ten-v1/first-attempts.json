@@ -1,0 +1,108 @@
+{
+  "format": "opticsim-real-ten-first-attempts-v1",
+  "author": "ChatGPT assistant in this conversation; model label is not an independently authenticated API identity",
+  "selectionFreezeCommit": "57eeaecd0605556f7f301a4acf11bc7ae0df31e6",
+  "selectionSha256": "4be3b58d62b767bb87cecc33a73b92a89673017ecc2bfefe6c30937b0bddb51e",
+  "sourceArchiveSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+  "sourceImageWorkflowRun": 43492864134,
+  "solutionsOpened": false,
+  "independentModel": false,
+  "independentReviewers": 0,
+  "externalProviderCalls": 0,
+  "repairs": 0,
+  "captureMethod": "One structured first attempt per original selected image, committed before source Solutions extraction. Manual mathematics is separate from registered Opticsim results and native simulation.",
+  "cases": [
+    {
+      "id": "R01",
+      "problemSha256": "3c6b58b222bc9b9a612f9079743b6c1483b1276d2bf09e34156637fa0254fed1",
+      "attemptNumber": 1,
+      "facts": ["Horizontal reflecting plane; A is 5 cm above it; B is 20 cm above it; projections of A and B are separated by 20 cm."],
+      "manualAnswer": {"status":"derived","value":{"distanceFromAFootCm":4,"distanceFromBFootCm":16},"reasoning":"Reflect B below the mirror. The segment from A=(0,5) to B'=(20,-20) crosses y=0 at x=20*5/(5+20)=4 cm.","assumptions":["The mirror includes the calculated strike point."]},
+      "nativeAuthoring": {"status":"withheld","reason":"The original task is an inverse reflection-point query. No registered query computes it; finite mirror endpoints and native source settings are not specified. A construction ray is not an authored finite emission cone."},
+      "engineRequest": {"format":"opticsim-problem-v1","physical":null,"requests":[{"id":"strike","kind":"mirror-reflection-point"}],"illustration":false,"verifyNative":false},
+      "exposureNote": "This geometry resembles previously discussed reflection-point examples; no unseen-problem claim."
+    },
+    {
+      "id": "R02",
+      "problemSha256": "47d80adcdea19ad8b09fab1c8a82e0152b4bec2ee3d9636767d4ca8dd36299b7",
+      "attemptNumber": 1,
+      "facts": ["Stationary plane mirror at 60 degrees to horizontal; projectile launched with speed v at angle alpha; image velocity is measured relative to projectile; collision excluded."],
+      "manualAnswer": {"status":"conditional","value":{"time":"v*(sin(alpha)-sqrt(3)*cos(alpha))/g = 2*v*sin(alpha-60deg)/g"},"reasoning":"Image-minus-object velocity is -2 times the object's velocity component normal to the mirror. It vanishes when projectile velocity is parallel to the mirror: v*sin(alpha)-g*t=sqrt(3)*v*cos(alpha).","assumptions":["Uniform downward gravity; no drag; stationary ideal reflecting plane."],"conditions":["For the usual 0..90-degree launch range, a positive time requires alpha>60 degrees; alpha=60 gives t=0; alpha<60 gives no nonnegative solution before landing."]},
+      "nativeAuthoring": {"status":"withheld","reason":"Symbolic projectile motion and moving-observer relative-image kinematics are outside the stationary optical/source-motion contract; do not introduce mechanics or replace the requested time with ray counts."},
+      "engineRequest": {"format":"opticsim-problem-v1","physical":null,"requests":[{"id":"rest-time","kind":"relative-image-rest-time"}],"illustration":false,"verifyNative":false}
+    },
+    {
+      "id": "R03",
+      "problemSha256": "41f7d043b39fe741f2624c6b8ca34638441bd220e5ed8285583b2cbfc368d1ed",
+      "attemptNumber": 1,
+      "facts": ["Real object 2.5 m from mirror; erect image with magnification +4; requested mirror type and radius."],
+      "manualAnswer": {"status":"derived","value":{"mirror":"concave","focalLengthM":3.3333333333333335,"radiusM":6.666666666666667,"virtualImageDistanceM":10},"reasoning":"In real-positive mirror coordinates u=2.5 m and m=-v/u=+4, so v=-10 m. 1/f=1/u+1/v=0.3/m, hence f=10/3 m and R=20/3 m. Erect magnification greater than one requires concave, object inside focus.","assumptions":["Gaussian/paraxial spherical-mirror approximation."]},
+      "nativeAuthoring": {"status":"withheld","reason":"The reduced curved-mirror solver is forward-only and requires focal length. Inverting magnification is not a registered result. A boy is not silently replaced by a numeric native emitter; aperture/brightness/emission remain unspecified."},
+      "engineRequest": {"format":"opticsim-problem-v1","physical":null,"requests":[{"id":"radius","kind":"mirror-radius-from-magnification"}],"illustration":false,"verifyNative":false},
+      "derivedVerification": {"purpose":"Forward consistency check using the manually derived focal length; NOT an engine solution to the inverse question and NOT a native simulation.","request":{"format":"opticsim-problem-v1","physical":{"format":"opticsim-curved-mirror-facts-v1","model":"spherical-paraxial","signConvention":"real-positive-local","lengthUnit":"m","focalLength":3.3333333333333335,"objectDistance":2.5},"requests":[{"id":"forward-check","kind":"curved-mirror-image"}],"illustration":false,"verifyNative":false}}
+    },
+    {
+      "id": "R04",
+      "problemSha256": "df266d459684c6b014ae1b872065dd06504c66cae93cbec1c9ff18ea51366fe7",
+      "attemptNumber": 1,
+      "facts": ["Upward-facing concave mirror radius 40 cm; pole 30 cm below plane water surface; water index 4/3; incident rays parallel to vertical axis from air."],
+      "manualAnswer": {"status":"conditional","value":{"firstRealFocusAbovePoleCm":20,"finalVirtualImageBelowSurfaceCm":7.5,"finalImageAbovePoleCm":22.5},"reasoning":"Normal entry does not bend the incident parallel rays. The mirror first focuses at R/2=20 cm above its pole, 10 cm below water surface. Rays reaching air diverge as though from depth 10/(4/3)=7.5 cm; that is 22.5 cm above the pole.","assumptions":["Paraxial optics and air index approximately one; final image means the image of the emergent rays in air, not the earlier real focus within water."]},
+      "nativeAuthoring": {"status":"withheld","reason":"The current curved-mirror family cannot compose with the refractive plane in the same accepted scene. No existing final-image observable covers this complete system; do not remove the water interface."},
+      "engineRequest": {"format":"opticsim-problem-v1","physical":null,"requests":[{"id":"final-image","kind":"immersed-mirror-final-image"}],"illustration":false,"verifyNative":false}
+    },
+    {
+      "id": "R05",
+      "problemSha256": "fea695bcf5797efc4376851e35060695f561e84f900d8cdd7cda16d090d079d6",
+      "attemptNumber": 1,
+      "facts": ["Point source at central bottom under 20 cm water of index 4/3; centred floating rubber ring radius a; ceiling 2 cm above surface; part (a) a=15 cm; part (b) asks largest ring radius producing a shadow."],
+      "manualAnswer": {"status":"conditional","value":{"shadowRadiusCm":17.666666666666668,"ringRadiusThresholdCm":22.677868380553633,"shadowRadiusExact":"53/3 cm","thresholdExact":"60/sqrt(7) cm"},"reasoning":"For a=15, sin(i)=15/sqrt(15^2+20^2)=3/5. Snell gives sin(r)=4/5 and tan(r)=4/3; ceiling radius is 15+2*(4/3)=53/3. Escape requires i below critical with sin(c)=3/4, so a<20*tan(c)=60/sqrt(7).","assumptions":["Axisymmetric thin opaque ring, geometrical optics, air index one, sufficiently wide ceiling."],"conditions":["60/sqrt(7) is a limiting supremum: at equality the refracted ray is horizontal and does not reach the elevated ceiling at a finite radius."]},
+      "nativeAuthoring": {"status":"withheld","reason":"A 3D ring and continuous shadow boundary are not a 2D opaque disk or sampled detector count. The critical-angle subcalculation exists, but it does not supply the original requested shadow/ring radius result."},
+      "engineRequest": {"format":"opticsim-problem-v1","physical":null,"requests":[{"id":"shadow","kind":"ring-shadow-radius"},{"id":"threshold","kind":"maximum-ring-radius"}],"illustration":false,"verifyNative":false}
+    },
+    {
+      "id": "R06",
+      "problemSha256": "55c60b361421736a0cbc59e61d4063ddf8f93d60694371cb96d45705e734093f",
+      "attemptNumber": 1,
+      "facts": ["Prism index 1.5, apex angle 60 degrees, condition of minimum deviation; face AC is 'polished'; ask net deviation in air and after placing in water of index 4/3."],
+      "manualAnswer": {"status":"conditional-interpretation","value":{"airDeviationDeg":157.1807557814583,"waterDeviationWithMinimumResetDeg":128.45773265562514,"waterDeviationAtUnchangedIncidenceDeg":157.1807557814583},"reasoning":"Treat polished AC as reflecting and the drawn prism as equilateral. Under the minimum-deviation incident condition, internal angle is 30 degrees, i=asin(1.5*sin30)=asin(3/4). The ray reflects at AC and exits BC, giving deviation 60+2*i. If minimum deviation is re-established in water, replace relative index by (1.5)/(4/3)=9/8: i=asin(9/16). With the incident direction instead held fixed, the equilateral reflection geometry gives the same net deviation 60+2*i as in air.","assumptions":["'Polished' means mirror-reflecting/silvered, not merely optically smooth transmissive glass.","The diagram represents an equilateral prism; only apex angle is explicitly labelled.","The usual water answer assumes the minimum-deviation incidence is readjusted in water."],"ambiguities":["The words do not explicitly say whether incidence is readjusted on immersion; both possibilities are retained."]},
+      "nativeAuthoring": {"status":"withheld","reason":"The current isolated prism type does not support a mirrored face, and minimum-deviation inverse geometry is not a registered query. Do not replace AC with an overlapping independently traced mirror or remove refraction."},
+      "engineRequest": {"format":"opticsim-problem-v1","physical":null,"requests":[{"id":"air-deviation","kind":"silvered-prism-deviation"},{"id":"water-deviation","kind":"silvered-prism-deviation"}],"illustration":false,"verifyNative":false}
+    },
+    {
+      "id": "R07",
+      "problemSha256": "eb1c0c07a2899ddb39e714e002e4edae18ac4cf5de8b5ba1530aa4f6de6546f8",
+      "attemptNumber": 1,
+      "facts": ["Glass sphere index 1.5, radius r; far hemisphere silvered on inside; axial object is 3r from sphere centre; refraction, reflection and refraction through the unsilvered side."],
+      "manualAnswer": {"status":"conditional","value":{"finalImagePositionFromCentre":"+r, at the silvered rear pole, opposite the object","imageType":"virtual after final emergence","distanceFromObject":"4r"},"reasoning":"Take sphere centre x=0, front x=-r, object x=-3r. First refraction has u=-2r, R=+r and n:1->1.5, giving parallel internal rays. Rear concave reflection focuses at x=+r/2. For return refraction at x=-r, use positive coordinate toward the left: u=-3r/2, R=-r, n:1.5->1. Then 1/v+1/r=1/(2r), so v=-2r: final virtual image at x=+r.","assumptions":["Paraxial spherical-surface formulas; surrounding air index one."]},
+      "nativeAuthoring": {"status":"withheld","reason":"A partly silvered refracting sphere is not the current homogeneous CircleGlass model, nor a separated ideal-lens/plane-mirror return model. Reflecting/refracting boundary composition and its final image are unsupported."},
+      "engineRequest": {"format":"opticsim-problem-v1","physical":null,"requests":[{"id":"final-image","kind":"silvered-sphere-final-image"}],"illustration":false,"verifyNative":false}
+    },
+    {
+      "id": "R08",
+      "problemSha256": "44ae4cc22407f0b80a4dc8fb6b5777a7bb31dd43a30813f429040a5be0bf726a",
+      "attemptNumber": 1,
+      "facts": ["Convex lens; image has absolute magnification 3 with object distances 16 cm and 8 cm; find focal length."],
+      "manualAnswer": {"status":"derived","value":{"focalLengthCm":12,"imageDistanceFor16Cm":48,"imageDistanceFor8Cm":-24},"reasoning":"The larger object distance gives the real inverted image: v=3*16=48, f=16*48/(16+48)=12 cm. The nearer position gives virtual erect image v=-3*8=-24, also 1/f=1/8-1/24=1/12.","assumptions":["Ideal thin convex lens; two observations refer to the same focal length."]},
+      "nativeAuthoring": {"status":"withheld","reason":"The original question is inverse focal-length inference, not a forward ideal-image request. The current lens authoring path requires focal length and additional finite source/aperture data. Feeding the manually solved focal length back would only be forward verification."},
+      "engineRequest": {"format":"opticsim-problem-v1","physical":null,"requests":[{"id":"focal-length","kind":"lens-focal-length-from-magnification"}],"illustration":false,"verifyNative":false}
+    },
+    {
+      "id": "R09",
+      "problemSha256": "09cd3f28f439f1ba314e42f41e4f8ce2eb99f5ae1c5a73f80658d956b6c072b1",
+      "attemptNumber": 1,
+      "facts": ["Plano-convex lens; curved surface radius 10 cm; focal length 30 cm; find material refractive index."],
+      "manualAnswer": {"status":"conditional","value":{"refractiveIndex":1.3333333333333333,"exact":"4/3"},"reasoning":"Thin-lens maker relation in air gives 1/f=(n-1)/R; n=1+R/f=1+10/30=4/3.","assumptions":["Thin/paraxial lens in air; if surrounding index is not one, this determines the relative index instead."]},
+      "nativeAuthoring": {"status":"withheld","reason":"No registered lens-maker/material inverse query exists. An ideal-lens focal parameter is not a material-index measurement, and a complete circular dielectric is not a plano-convex lens."},
+      "engineRequest": {"format":"opticsim-problem-v1","physical":null,"requests":[{"id":"index","kind":"lens-material-index"}],"illustration":false,"verifyNative":false}
+    },
+    {
+      "id": "R10",
+      "problemSha256": "bedba65dbdd85f066c77b0067bfb07932b03cdd7af9c4c773eea7c7996c4cb3a",
+      "attemptNumber": 1,
+      "facts": ["Thin convex lens focal length 1 m for red and 0.968 m for blue; ask chromatic aberration and material dispersive power."],
+      "manualAnswer": {"status":"conditional","value":{"longitudinalChromaticAberrationM":0.032,"longitudinalChromaticAberrationCm":3.2,"approximateDispersivePower":0.032520325203252064},"reasoning":"Longitudinal focal separation is f_red-f_blue=0.032 m. With a representative mean focal length (1+0.968)/2=0.984 m, the usual weak-dispersion approximation gives omega=0.032/0.984 approximately 0.0325. Exact lens-maker dispersive power is f_yellow*(1/f_blue-1/f_red) and needs a specified yellow/reference index or focal length.","assumptions":["Axial/longitudinal chromatic aberration, weak dispersion, and a mean-reference approximation for dispersive power; no exact yellow value is supplied."]},
+      "nativeAuthoring": {"status":"withheld","reason":"The pinned adapter runs monochromatic geometry with no exposed chromatic/material-dispersion query. Two separate focal-length scenes do not by themselves constitute a chromatic-aberration measurement."},
+      "engineRequest": {"format":"opticsim-problem-v1","physical":null,"requests":[{"id":"chromatic","kind":"longitudinal-chromatic-aberration"},{"id":"dispersion","kind":"lens-dispersive-power"}],"illustration":false,"verifyNative":false}
+    }
+  ]
+}
