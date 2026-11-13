@@ -141,9 +141,21 @@ export function planProblem(input){
   const nativeRequests=[],targetBindings=[];
   if(scene&&!invalid){
     for(const r of authoredNativeRequests){
-      if(own(r,'componentId')){nativeRequests.push(r);continue;}
       const type=observableKinds[r.kind].type,types=Array.isArray(type)?type:[type];
       const candidates=scene.physics.components.filter(c=>types.includes(c.type));
+      if(own(r,'componentId')){
+        const target=scene.physics.components.find(c=>c.id===r.componentId);
+        if(target&&types.includes(target.type)){nativeRequests.push(r);continue;}
+        // An explicit target is an authored choice: never redirect it to the
+        // sole compatible component. Diagnose it before costly native work.
+        const index=results.findIndex(x=>x.id===r.id);
+        results[index]={...empty(r,target?'unavailable':'needs-information',
+          target?'INCOMPATIBLE_COMPONENT_TARGET':'UNKNOWN_COMPONENT_TARGET',
+          target?'The named component has the wrong physical type for this measurement.':
+            'The named measurement component is not present; supply an existing componentId.'),
+          componentId:r.componentId,candidateComponentIds:candidates.map(c=>c.id)};
+        continue;
+      }
       if(candidates.length===1){
         const componentId=candidates[0].id;
         nativeRequests.push({...r,componentId});

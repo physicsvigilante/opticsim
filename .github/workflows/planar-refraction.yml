@@ -38,6 +38,10 @@ jobs:
         run: node scripts/triangular-prism-acceptance.mjs
       - name: Prism browser edits, native TIR and qualified export
         run: node scripts/triangular-prism-browser.mjs
+      - name: Native finite convex glass, strict geometry and immutable vertex sweep
+        run: node scripts/polygon-dielectric-acceptance.mjs
+      - name: Polygon viewer physical edits, real TIR and qualified exports
+        run: node scripts/polygon-dielectric-browser.mjs
       - name: Package existing allowlisted static viewer (not a deployment)
         run: node scripts/pack-demo.mjs
       - uses: actions/upload-artifact@v4
@@ -52,6 +56,8 @@ jobs:
             test-artifacts/browser-circular-dielectric/
             test-artifacts/llm-authoring/triangular-prism/
             test-artifacts/browser-triangular-prism/
+            test-artifacts/llm-authoring/polygon-dielectric/
+            test-artifacts/browser-polygon-dielectric/
           if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v4

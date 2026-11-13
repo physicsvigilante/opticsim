@@ -120,3 +120,15 @@
   glass, blockers, screens, or beams is **not** permission to extend existing
   v4–v8 scope; require separate feature review and merge approval. The
   source-only transfer workflow is temporary and must not reach main.
+
+- Convex polygon dielectric v9 is a **four-vertex, strictly convex** finite
+  homogeneous Glass path, not general arbitrary polygons or layered media.
+  Keep 1–4 exact single-ray sources inside/outside, 0–2 external detectors,
+  explicit material indices and reflection policy, source/edge and vertex
+  clearance, 1 mm edge/altitude bounds, and geometric nonconvex rejection.
+  One pinned native `Glass` instance owns ray optics; per-face observer
+  delegates exactly once, and its face labels never invent source-specific
+  routes, images, inverse answers or 3D geometry. Fresnel truncation and
+  ambiguous corners must suppress accepted readings. New v9 cannot leak into
+  historical v4–v8 scopes; no change to PhyDemo core or numerical cutoffs.
+  See `docs/POLYGON-DIELECTRIC.md`.

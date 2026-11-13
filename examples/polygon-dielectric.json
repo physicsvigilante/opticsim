@@ -1,0 +1,86 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "cm",
+    "title": "Synthetic convex glass block: native four-face refraction",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -20,
+          "y": 1,
+          "brightness": 0.5
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 0
+        }
+      },
+      {
+        "id": "G1",
+        "type": "polygon-dielectric",
+        "parameters": {
+          "x1": 0,
+          "y1": -10,
+          "x2": 0,
+          "y2": 10,
+          "x3": 15,
+          "y3": 10,
+          "x4": 15,
+          "y4": -10,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 25,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 30
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "interactions",
+      "kind": "interface-interactions",
+      "componentId": "G1"
+    },
+    {
+      "id": "faces",
+      "kind": "interface-face-events",
+      "componentId": "G1"
+    },
+    {
+      "id": "first",
+      "kind": "interface-first-event",
+      "componentId": "G1"
+    },
+    {
+      "id": "detector",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Show actual native entry and exit through a fully declared 2D convex glass block, not infer an original JEE answer.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "Synthetic configuration, unrelated to original JEE answer grading.",
+      "A stationary convex four-vertex homogeneous 2D dielectric region in an explicit uniform exterior medium.",
+      "partialReflection=false explicitly neglects Fresnel partial reflections while retaining native TIR."
+    ],
+    "unknowns": [
+      "No detected image, source-specific ray graph, three-dimensional claim, or textbook original answer is derived."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}

@@ -1,3 +1,4 @@
+import {distanceToFiniteSegment,finiteGlassFaces,compileFiniteGlass,finiteGlassEncounter} from './finite-glass-geometry.js';
 // Finite triangle geometry and read-only surface identification. Native Glass
 // chooses every hit and outgoing ray; no Snell/Fresnel or routing code here.
 export const PRISM_TYPE='triangular-prism';
@@ -9,21 +10,10 @@ export function prismVertices(p){return [1,2,3].map(i=>({x:p['x'+i],y:p['y'+i]})
 const delta=(a,b)=>({x:b.x-a.x,y:b.y-a.y});
 const cross=(a,b)=>a.x*b.y-a.y*b.x;
 const dot=(a,b)=>a.x*b.x+a.y*b.y;
-export function prismFaces(p){
- const v=prismVertices(p),w=Math.sign(cross(delta(v[0],v[1]),delta(v[0],v[2])));
- return v.map((a,i)=>{const b=v[(i+1)%3],d=delta(a,b),length=Math.hypot(d.x,d.y);
-  return {id:['face-12','face-23','face-31'][i],a,b,length,
-   normal:{x:w*d.y/length,y:-w*d.x/length}};
- });
-}
-function distanceToSegment(p,a,b){
- const ab=delta(a,b),ap=delta(a,p),t=Math.max(0,Math.min(1,dot(ap,ab)/dot(ab,ab)));
- return Math.hypot(ap.x-t*ab.x,ap.y-t*ab.y);
-}
+export function prismFaces(p){return finiteGlassFaces(prismVertices(p));}
+const distanceToSegment=distanceToFiniteSegment;
 export function compilePrism(component){
- const p=component.parameters;
- return {type:'Glass',path:prismVertices(p).map(v=>({x:v.x,y:-v.y,arc:false})),
-  notDone:false,refIndex:p.insideIndex/p.outsideIndex,partialReflect:p.partialReflection};
+ return compileFiniteGlass(component.parameters,prismVertices(component.parameters));
 }
 export function validatePrismGeometry(components,endpoints,fail){
  const path='$.physics.components',prisms=components.filter(c=>c.type===PRISM_TYPE),
@@ -58,12 +48,6 @@ export function validatePrismGeometry(components,endpoints,fail){
 // Identify the face only at a hit ALREADY returned by native Glass. Ambiguous
 // corner events invalidate measured evidence but never alter the native ray.
 export function prismEncounter(component,nativePoint,incoming){
- const p=component.parameters,point={x:nativePoint.x,y:-nativePoint.y};
- const faces=prismFaces(p),near=faces.filter(f=>distanceToSegment(point,f.a,f.b)<=1e-5);
- if(near.length!==1||prismVertices(p).some(v=>Math.hypot(point.x-v.x,point.y-v.y)<PRISM_CLEARANCE_MM))
-  return {point,normal:{x:NaN,y:NaN},invalid:true,faceId:null};
- const face=near[0],normal=face.normal,leaving=incoming&&dot(incoming,normal)>0;
- return {normal,point,faceId:face.id,from:leaving?'inside':'outside',
-  incidentIndex:leaving?p.insideIndex:p.outsideIndex,
-  destinationIndex:leaving?p.outsideIndex:p.insideIndex};
+ return finiteGlassEncounter(component.parameters,prismVertices(component.parameters),
+  nativePoint,incoming,PRISM_CLEARANCE_MM);
 }
