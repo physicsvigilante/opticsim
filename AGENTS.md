@@ -110,3 +110,13 @@
   vertex clearance and runtime ambiguous-face failures, Fresnel truncation
   suppression, qualified history, and old scene scopes unchanged. See
   docs/TRIANGULAR-PRISM.md; do not reinterpret sealed textbook trials.
+
+- The Optical Systems Atlas under `evaluation/optical-systems-atlas-v1/`
+  is a **same-assistant capability discovery** over a deterministic 40-of-114
+  Problems-only sample, not 40 solved JEE questions or an independent accuracy
+  score. Its pinned source SHA, individual image hashes, selected paths,
+  unreviewed inventory, review labels and candidate roadmap must stay
+  consistent. No Solutions entry was opened. A proposal to add convex polygon
+  glass, blockers, screens, or beams is **not** permission to extend existing
+  v4–v8 scope; require separate feature review and merge approval. The
+  source-only transfer workflow is temporary and must not reach main.
