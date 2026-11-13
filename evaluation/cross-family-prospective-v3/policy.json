@@ -1,0 +1,44 @@
+{
+  "format": "opticsim-cross-family-prospective-policy-v1",
+  "baselineCommit": "2fe40f33dd9e5189bef6d34352d8b3aa6463c510",
+  "pinnedUpstream": "811f508d2b070898c241a568b0c167dcb8645251",
+  "frozenBeforeAttempt": true,
+  "design": "Twelve prospective synthetic natural-language scenarios in fixed order: eight fully specified supported cases over diverse existing optical families, four negative controls.",
+  "familySlots": [
+    "thin-lens",
+    "plane-mirror",
+    "circular-arc-mirror",
+    "planar-refraction",
+    "circular-dielectric",
+    "triangular-prism",
+    "mixed-composition",
+    "two-lens",
+    "missing-focal-length",
+    "unsupported-material-query",
+    "ambiguous-target",
+    "invalid-index"
+  ],
+  "classificationTracks": {
+    "positives": [
+      "P01",
+      "P02",
+      "P03",
+      "P04",
+      "P05",
+      "P06",
+      "P07",
+      "P08"
+    ],
+    "negatives": [
+      "N01",
+      "N02",
+      "N03",
+      "N04"
+    ]
+  },
+  "sampling": "Fixed authored prospective synthetic scenarios, not random or representative; no textbook question images or Solutions.",
+  "firstAttempt": "Same ChatGPT assistant writes exactly one opticsim-problem-v1 envelope per prompt, after prompts commit and before any deterministic validation/scoring. No independent model API and no repairs.",
+  "evaluation": "Use frozen reference for factual/component fidelity and requested quantities, deterministic preflight, then existing native workflow. Score each dimension separately; do not count fixture/native success as LLM benchmark.",
+  "controls": "No experimental provider transfer, no synthetic brightness/aperture/angle guessing, never substitute geometry or rewrite originals.",
+  "timeScope": "2026-11-13"
+}

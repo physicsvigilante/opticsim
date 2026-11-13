@@ -1,0 +1,78 @@
+{
+  "format": "opticsim-cross-family-prompts-v1",
+  "commonInstructions": "Author EXACTLY one opticsim-problem-v1 JSON envelope per scenario, containing physical, requests and optional interpretation/illustration/verifyNative. Use the live existing Opticsim component and request kinds. Include only stated physical values and result requests; do not compute answers, add emitters/optics, repair missing or impossible facts, or change the question. For a case with missing essential physics, reproduce that missingness rather than fabricate a valid scene. You may omit componentId only where Opticsim has one uniquely compatible component. No independent model is available in this developmental run.",
+  "cases": [
+    {
+      "id": "P01",
+      "slot": "thin-lens",
+      "class": "supported",
+      "prompt": "Create a 2D scene with x right and y up, lengths in centimetres. One luminous point S1 sits at (-26,+1.2) cm, brightness 0.06 (relative), and emits a full circle of rays. An ideal thin converging lens L1 is vertical and centered on y=0 at x=0, focal length +9 cm and aperture height 13 cm. Use the preview-v1 run policy. Ask for the conditional ideal image of this single point and the number of sampled native source rays. State no other apparatus. Do not calculate image coordinates."
+    },
+    {
+      "id": "P02",
+      "slot": "plane-mirror",
+      "class": "supported",
+      "prompt": "In x-right/y-up coordinates and cm, source S1 is at (-18,+2.5), relative brightness 0.08, emitting into a symmetric 16-degree FULL cone opening centered on the +x direction (0 degrees). Place finite, two-sided plane mirror M1 at (0,0), with a vertical tangent (+90 degrees) and length 20 cm. No lens, detector or other source. Use preview-v1. Request the real sampled count of mirror reflections and source emissions, not a geometric image result."
+    },
+    {
+      "id": "P03",
+      "slot": "circular-arc-mirror",
+      "class": "supported",
+      "prompt": "Use millimetres in a 2D x-right/y-up optical scene. Source S1 at (-280,+15) mm emits a single actual ray to the right (direction 0 degrees), brightness 0.09. A circular-arc mirror M1 has vertex (0,0), front normal 180 degrees (toward -x), signed radius +160 mm (concave toward front), and finite chord aperture 100 mm. Include no other optics. Use preview-v1. Request the actual native mirror-reflection count and source emissions only; spherical local-normal reflection, not a perfect Gaussian mirror."
+    },
+    {
+      "id": "P04",
+      "slot": "planar-refraction",
+      "class": "supported",
+      "prompt": "Use cm, x right and y up. Single-ray source S1 at (-24,+1) cm, relative brightness 0.09, fires toward +x with direction +8 degrees. A single infinite planar dielectric boundary I1 passes through (0,0) with normal +x (0 degrees). Its negative-normal side has refractive index 1.0; positive-normal side has index 1.32. Explicitly DISABLE Fresnel partial reflections, retaining native TIR. No other components. Use preview-v1. Request the first incidence and transmission angles at I1, and native interactions. No Snell-law precomputed result."
+    },
+    {
+      "id": "P05",
+      "slot": "circular-dielectric",
+      "class": "supported",
+      "prompt": "In cm and x-right/y-up, an explicitly bounded circular dielectric region C1 has centre (0,0), radius 9.5 cm, inside refractive index 1.43 and outside index 1.00; partial Fresnel reflection is disabled explicitly. A single-ray source S1 starts at (-24,+1.1) cm and fires direction 0 degrees toward +x, with relative brightness 0.09. This is a full circle, not a cut spherical cap. Use preview-v1. Request the circle's native boundary-interaction count and its first actual incidence angle, not an apparent image."
+    },
+    {
+      "id": "P06",
+      "slot": "triangular-prism",
+      "class": "supported",
+      "prompt": "In x-right/y-up 2D centimetres, create ONE stationary filled triangular glass prism P1 with physical vertices (0,-9), (0,+9), (+10,-9) cm in that order. Its inside medium index is 1.4 and outside is 1.0. Explicitly omit Fresnel partial reflection while retaining TIR. One exact single-ray emitter S1 at (-25,+1) cm travels direction 0 degrees (+x), brightness 0.09 relative. No other apparatus. Use preview-v1. Request native total prism boundary interactions and bounded per-face first-event records (not a claimed source-specific ray route or analytical prism deviation)."
+    },
+    {
+      "id": "P07",
+      "slot": "mixed-composition",
+      "class": "supported",
+      "prompt": "Use centimetres in x-right/y-up. Point source S1 at (-33,0) cm emits a symmetric directional cone centred 0 degrees (+x) with FULL opening 14 degrees and brightness 0.07. One y-centred vertical ideal thin lens L1 is at x=-6 cm, focal length +13 cm, aperture height 16 cm. One finite two-sided plane mirror M1 is centred (18,+5) cm, tangent 90 degrees, length 18 cm. One passive horizontal ray detector D1 is centered at (-22,+6.5) cm, tangent 0 degrees and length 8 cm. No other components. Preview-v1. Request native mirror-reflection and detector-crossing counts, without an asserted lens-mirror-lens ray path or ideal image."
+    },
+    {
+      "id": "P08",
+      "slot": "two-lens",
+      "class": "supported",
+      "prompt": "Use centimetres, x right and y up. A full-circle point source S1 at (-36,+1.4) cm has brightness 0.08. Two ideal thin, vertical y-centred lenses: L1 at x=0 cm has focal length +12 cm, aperture height 14 cm; L2 at x=16 cm has focal length -13 cm, aperture height 15 cm. No other optics or sensors. Use preview-v1 and ask for the CONDITIONAL ideal final image of S1 and the sampled source emission count. Do not invent a physical image detector."
+    },
+    {
+      "id": "N01",
+      "slot": "missing-focal-length",
+      "class": "negative-missing",
+      "prompt": "A question gives a 2D x-right/y-up setup in cm: point source S1 at (-24,+1), brightness 0.08, full-circle emission, and an ideal vertical y-centred lens L1 at x=0 with aperture 15 cm. It does NOT provide the focal length or its sign. There is no other optical component. Request the image position and magnification from the supported ideal-image operation. Preserve the absence of focal length; do not assume a usual lens."
+    },
+    {
+      "id": "N02",
+      "slot": "unsupported-material-query",
+      "class": "negative-unsupported",
+      "prompt": "A material-only optics question asks for a lensmaker focal-length ratio of a double-convex physical glass lens when immersed in another medium. The radii and physical apparatus geometry are NOT stated. No emitter, position, brightness, ray path, or focal length is supplied. Request the original quantity, the material-index lensmaker focal-length ratio. Do not fabricate a native lens scene or substitute an ideal-image observable."
+    },
+    {
+      "id": "N03",
+      "slot": "ambiguous-target",
+      "class": "negative-ambiguous",
+      "prompt": "In cm and x-right/y-up there are TWO independent full-circle emitting point sources, S1 at (-19,+2) with relative brightness 0.07 and S2 at (-23,-2) with brightness 0.08. No other components. Use preview-v1. Ask for 'the sampled number of source rays' WITHOUT naming which source should be counted. Do not choose S1 or S2 silently, infer a source-specific answer, or combine independent emission counts as a fabricated measurement."
+    },
+    {
+      "id": "N04",
+      "slot": "invalid-index",
+      "class": "negative-invalid",
+      "prompt": "A 2D circular dielectric C1 has physical centre (0,0) cm, positive radius 9 cm, inside refractive index explicitly GIVEN as 0.7 and outside index 1.0, with Fresnel partial reflections explicitly disabled. Source S1 sits at (-25,0) cm and emits one ray to the right (0 degrees), brightness 0.09. Use preview-v1. Request actual native circle boundary interactions. Retain the stated index 0.7 even if out of current contract range; do not silently clamp or repair it."
+    }
+  ]
+}
