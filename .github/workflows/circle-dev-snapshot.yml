@@ -1,0 +1,35 @@
+name: Circular dielectric development snapshot (one-off)
+on:
+  push:
+    branches: [feature/circular-dielectric]
+    paths: [.github/workflows/circle-dev-snapshot.yml]
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - name: Pack public source and pinned toolchain without credentials or caches
+        shell: bash
+        run: |
+          mkdir -p test-artifacts/dev-snapshot/workspace test-artifacts/dev-snapshot/runtime/bin
+          git archive HEAD | tar -x -C test-artifacts/dev-snapshot/workspace
+          cp -a vendor test-artifacts/dev-snapshot/workspace/vendor
+          cp "$(command -v node)" test-artifacts/dev-snapshot/runtime/bin/node
+          node -p 'JSON.stringify({node:process.version,head:process.env.GITHUB_SHA})' > test-artifacts/dev-snapshot/runtime/runtime.json
+          find test-artifacts/dev-snapshot -type f \( -iname '*.woff' -o -iname '*.woff2' -o -iname '*.ttf' -o -iname '*.otf' \) -delete
+          tar -czf test-artifacts/dev-snapshot.tgz -C test-artifacts/dev-snapshot .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: circle-development-snapshot
+          path: test-artifacts/dev-snapshot.tgz
+          retention-days: 1
+          compression-level: 0
