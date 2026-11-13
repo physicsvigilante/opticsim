@@ -9,7 +9,7 @@
 <label class="scrub">Simulation time <output id="clock">0.000 s</output><input id="time" type="range" min="0" max="60" step="1" value="0" disabled></label>
 <label>Playback speed<select id="speed"><option value="0.1">0.1× (slow)</option><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1">1×</option></select></label>
 </section>
-<section class="ray-settings" aria-label="Native light and sampling controls">
+<details class="ray-settings" id="ray-settings" aria-label="Native light and sampling controls"><summary class="ray-settings-summary">Light & ray controls — brightness, density, emission and more</summary><div class="ray-settings-body">
 <div class="ray-heading"><div><h2>Light and ray controls</h2><p>Same validated settings as the Opticsim static editor. Changing these creates a revised, hash-bound experiment.</p></div></div>
 <div class="ray-fields">
 <label class="ray-brightness-pair">Source brightness (relative, physical)
@@ -28,7 +28,7 @@
 </div><p>Numerical limits may truncate native rays. Incomplete runs never yield accepted native measurements.</p></details>
 <p id="ray-control-note" class="caption">Brightness and emission affect source physics. Density and limits affect sampled native rays, not image-equation values.</p>
 <p id="ray-control-error" role="alert" hidden></p>
-</section>
+</div></details>
 <section class="choices"><label>Built-in U2 scene (replaces loaded experiment)<select id="example"><option value="ideal">Ideal Gaussian mirror</option><option value="circular">Circular mirror — paraxial image</option></select></label><span id="native-state" data-state="loading" role="status">Loading native core…</span><span id="sample">Frame —</span></section>
 <section class="camera-tools" aria-label="Camera controls"><label>Camera <select id="camera-mode"><option value="motion">Whole motion · include image</option><option value="frame">Current frame · include image</option><option value="apparatus">Apparatus close-up</option></select></label><div class="zoom-tools" role="group" aria-label="Zoom and fit controls"><button id="zoom-out" type="button" aria-label="Zoom out" title="Zoom out" disabled>−</button><output id="zoom-level" aria-label="Zoom relative to fitted view" aria-live="polite">100%</output><button id="zoom-in" type="button" aria-label="Zoom in" title="Zoom in" disabled>+</button><button id="zoom-fit" type="button" title="Return to automatic fit" disabled>Fit</button></div><span id="camera-note">Zoom in or out, use the mouse wheel over either view, or drag to pan. Fit restores the selected camera preset.</span></section>
 <div class="views">
