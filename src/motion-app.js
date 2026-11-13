@@ -35,12 +35,14 @@ function refreshZoomControls(){
  $('zoom-fit').disabled=Math.abs(cameraControl.zoomFactor-1)<1e-8&&
   Math.abs(cameraControl.panMm.x)<1e-8&&Math.abs(cameraControl.panMm.y)<1e-8;
 }
-function rerenderForCamera(){
+function rerenderForCamera(immediate=false){
  if(!player)return;
  player.pause();
  clearTimeout(cameraRenderTimer);
- // Collapse high-frequency wheel and drag events into one fresh native render.
- cameraRenderTimer=setTimeout(()=>{
+ // Switching automatic fit is immediate. High-frequency wheel/drag redraws
+ // are coalesced without allowing old callbacks to become current evidence.
+ if(immediate){cameraRenderTimer=null;player.seek(player.index);}
+ else cameraRenderTimer=setTimeout(()=>{
   cameraRenderTimer=null;
   if(player)player.seek(player.index);
  },70);
@@ -55,7 +57,7 @@ function zoomCamera(direction,element,anchor=null){
 }
 function resetCameraFit(){
  if(!player)return;
- cameraControl=defaultMotionCameraControl();rerenderForCamera();
+ cameraControl=defaultMotionCameraControl();rerenderForCamera(true);
 }
 function setupCameraPointer(element){
  let drag=null,lastWheel=0;
@@ -117,12 +119,13 @@ function drawNativeGuides(frame){
  pointLabel(ctx,object,'object','#85d6bc',canvas.width,canvas.height);
  pointLabel(ctx,image,'calculated image guide','#adbcff',canvas.width,canvas.height,{guide:true});
  // Annotation only. Never inject a ray or modify the native rendering layers.
- const evidence={...nativeCamera,object,image,mode:cameraMode(),relativeZoom:cameraControl.zoomFactor,panMm:{...cameraControl.panMm}};
+ const renderedMode=nativeCamera.mode;
+ const evidence={...nativeCamera,object,image,mode:renderedMode};
  $('native-stage').dataset.viewport=JSON.stringify(evidence);
- const mode=cameraMode()==='motion'?'Whole-motion view — scale stays fixed during playback.':cameraMode()==='frame'?'Current-frame view — scale follows this frame.':'Apparatus close-up — the image may lie outside this view.';
+ const mode=renderedMode==='motion'?'Whole-motion view — scale stays fixed during playback.':renderedMode==='frame'?'Current-frame view — scale follows this frame.':'Apparatus close-up — the image may lie outside this view.';
  $('native-view-note').textContent=mode+' Dashed image guide = conditional calculation, not native detection.'+
-  (!image.visible?(cameraMode()==='apparatus'&&frame.analysis?.globalImageMm?' Select Whole motion to include the image.':' '+imageNote(frame)):'');
- $('camera-note').textContent=(cameraMode()==='motion'?'Fitted to apparatus and finite images across all sampled times. ':'')+
+  (!image.visible?(renderedMode==='apparatus'&&frame.analysis?.globalImageMm?' Select Whole motion to include the image.':' '+imageNote(frame)):'');
+ $('camera-note').textContent=(renderedMode==='motion'?'Fitted to apparatus and finite images across all sampled times. ':'')+
   (viewSubjects?.omittedImages?'Extreme finite images beyond the supported camera range are excluded from fitting. ':'')+
   'Use +/−, mouse wheel or drag to inspect a region; Fit restores this preset. Camera changes affect presentation only.';
  refreshZoomControls();
@@ -196,7 +199,8 @@ async function render(frame,signal){
  view.presentation.view={...adjusted.view};
  const {scene,idMap}=loadDocument(view,width,height),emission=observeSourceSet(view,scene,idMap),
   reflections=observeMirrorSet(view,scene,idMap),detectors=observeDetectorSet(view,scene,idMap);
- nativeCamera={origin:{...scene.origin},scale:scene.scale,width,height};
+ nativeCamera={origin:{...scene.origin},scale:scene.scale,width,height,mode:fitted.mode,
+  relativeZoom:adjusted.relativeZoom,panMm:{...cameraControl.panMm}};
  const sim=new Simulator(scene,...layers.map(c=>c.getContext('2d')),null,true,view.simulation.processedRayLimit);
  return new Promise((resolve,reject)=>{
   let settled=false,timer;
