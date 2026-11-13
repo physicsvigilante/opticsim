@@ -1,0 +1,69 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 9,
+  "adapterVersion": 9,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "polygon-dielectric-tracing",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -200,
+          "y": 10,
+          "brightness": 0.5
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 0,
+          "angleDeg": 30
+        }
+      },
+      {
+        "id": "G1",
+        "type": "polygon-dielectric",
+        "parameters": {
+          "x1": 0,
+          "y1": -100,
+          "x2": 0,
+          "y2": 100,
+          "x3": 150,
+          "y3": 100,
+          "x4": 150,
+          "y4": -100,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 250,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 300
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "Synthetic convex glass block: native four-face refraction",
+    "view": {
+      "x": 25,
+      "y": 0,
+      "zoom": 1.4166666666666667
+    },
+    "mode": "rays",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000
+  }
+}
