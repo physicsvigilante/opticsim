@@ -174,9 +174,9 @@ test('native observer delegates once and refuses ambiguous vertex evidence',()=>
  assert.ok(observer.errors.length>0);assert.ok(observer.byId.G1.invalidObservations>0);
 });
 test('full Fresnel and native depth limitations suppress all requested values on incomplete runs',async()=>{
- for(const edit of [x=>{poly(x).partialReflection=true;},()=>{}]){
-  const d=build(edit);
-  if(!poly(input()).partialReflection&&edit.toString().includes('=>{}'))d.simulation.maxRayDepth=0;
+ for(const kind of ['full-fresnel','depth-zero']){
+  const d=build(kind==='full-fresnel'?x=>{poly(x).partialReflection=true;}:()=>{});
+  if(kind==='depth-zero')d.simulation.maxRayDepth=0;
   const s=run(d);
   assert.ok(['incomplete','stopped'].includes(s.native.status),JSON.stringify(s.native));
   assert.equal(s.observations,null);
