@@ -1,4 +1,5 @@
 // Presentation only. Conditional coordinates are not native image detections.
+import {PRISM_TYPE,prismVertices} from './triangular-prism.js';
 import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
 import {isCurved,curvedPoints} from './curved-mirrors.js';
 import {validate,mirrorEndpoints} from './contract.js';
@@ -19,6 +20,10 @@ export function formatRequestedResult(r){
         `Global image position: x = ${number(p.x)} mm; y = ${number(p.y)} mm.\n`+
         (finite(p.magnification)?`Magnification: ${number(p.magnification)} (dimensionless).\n`:'')+
         `Image type: ${kind}. Not a native image detection.`;
+    }else if(r.kind==='interface-face-events'){
+      value=Object.entries(r.value).map(([id,f])=>id+': '+f.interactions+' native hits; '+(f.first?
+        f.first.from+' → '+f.first.outcome+'; incidence '+number(f.first.incidentAngleDeg)+'°; transmission '+number(f.first.transmittedAngleDeg)+'°; '+
+        f.first.branches.map(b=>b.kind+' heading '+number(Math.atan2(b.direction.y,b.direction.x)*180/Math.PI)+'°').join(', '):'no encounter')).join('\n');
     }else if(r.kind==='interface-first-event'){
       const p=r.value;value=`First native encounter: ${p.outcome}. ${p.from} side, index ${number(p.incidentIndex)} → ${number(p.destinationIndex)}.\n`+
         `Incidence: ${number(p.incidentAngleDeg)}°; transmission: ${number(p.transmittedAngleDeg)}°; reflection: ${number(p.reflectedAngleDeg)}°.\n`+
@@ -34,6 +39,7 @@ export function apparatusPoints(doc){
   validate(doc);
   return doc.physics.components.flatMap(c=>{
     const p=c.parameters;
+    if(c.type===PRISM_TYPE)return prismVertices(p);
     if(c.type===CIRCULAR_TYPE)return circularExtents(p);
     if(isCurved(c.type))return curvedPoints(c);
     if(c.type==='ideal-lens')return [{x:p.x,y:-p.apertureHeight/2},{x:p.x,y:p.apertureHeight/2}];

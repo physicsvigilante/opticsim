@@ -1,3 +1,4 @@
+import {compilePrism,PRISM_TYPE} from './triangular-prism.js';
 import {compileCircular} from './circular-dielectric.js';
 import {compileCurved,isCurved} from './curved-mirrors.js';
 import Scene from '../vendor/ray-optics/src/core/Scene.js';
@@ -9,7 +10,7 @@ i18next.init({ lng: 'en', resources: { en: { simulator: en } }, initImmediate: f
 import {compileInterface,observeInterfaceSet} from './planar-media.js';
 export {observeInterfaceSet};
 const compilers = {
-  'circular-dielectric':compileCircular,
+  'circular-dielectric':compileCircular,[PRISM_TYPE]:compilePrism,
   'ideal-curved-mirror':compileCurved,'circular-arc-mirror':compileCurved,
   'planar-interface':compileInterface,
   'point-source': c => {

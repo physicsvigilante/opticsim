@@ -101,3 +101,12 @@
   simulator-order, not source attribution. Keep Fresnel/trapped-TIR truncation
   incomplete, explicit Fresnel-off qualified, and initial near tangencies
   rejected conservatively. Read docs/CIRCULAR-DIELECTRIC.md for bounds.
+- Triangular-prism v8 is isolated from prior schemas: one finite triangle,
+  1–4 explicit single rays, 0–2 external detectors. Require three vertices,
+  absolute inside/outside indices and partialReflection; compile one native
+  Glass polygon, never crossing PlaneGlass half-planes. Face labels follow
+  authored vertex order, not a ray route. Per-face first events are bounded,
+  simulation-order evidence, not multi-source attribution. Keep initial
+  vertex clearance and runtime ambiguous-face failures, Fresnel truncation
+  suppression, qualified history, and old scene scopes unchanged. See
+  docs/TRIANGULAR-PRISM.md; do not reinterpret sealed textbook trials.
