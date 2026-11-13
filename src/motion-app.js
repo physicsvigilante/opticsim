@@ -98,7 +98,7 @@ function imageNote(frame){
  const image=frame?.analysis?.image;
  return image?.value?.imageKind==='at-infinity'?'Image at infinity — no finite marker.':
   image?.status==='numerically-indeterminate'?'Near focal singularity — finite position withheld.':
-  frame?.analysis?.globalImageMm?'Calculated image is outside the supported camera range; it has not been moved or clipped into view.':'No finite calculated image position.';
+  frame?.analysis?.globalImageMm?'Calculated image is outside this view. Zoom out, drag to pan, or press Fit; extreme positions may exceed the supported camera range.':'No finite calculated image position.';
 }
 function pointLabel(ctx,p,label,color,w,h,{guide=false}={}){
  if(!p.visible)return;
@@ -117,20 +117,22 @@ function drawNativeGuides(frame){
  pointLabel(ctx,object,'object','#85d6bc',canvas.width,canvas.height);
  pointLabel(ctx,image,'calculated image guide','#adbcff',canvas.width,canvas.height,{guide:true});
  // Annotation only. Never inject a ray or modify the native rendering layers.
- const evidence={...nativeCamera,object,image,mode:cameraMode()};
+ const evidence={...nativeCamera,object,image,mode:cameraMode(),relativeZoom:cameraControl.zoomFactor,panMm:{...cameraControl.panMm}};
  $('native-stage').dataset.viewport=JSON.stringify(evidence);
  const mode=cameraMode()==='motion'?'Whole-motion view — scale stays fixed during playback.':cameraMode()==='frame'?'Current-frame view — scale follows this frame.':'Apparatus close-up — the image may lie outside this view.';
  $('native-view-note').textContent=mode+' Dashed image guide = conditional calculation, not native detection.'+
   (!image.visible?(cameraMode()==='apparatus'&&frame.analysis?.globalImageMm?' Select Whole motion to include the image.':' '+imageNote(frame)):'');
  $('camera-note').textContent=(cameraMode()==='motion'?'Fitted to apparatus and finite images across all sampled times. ':'')+
   (viewSubjects?.omittedImages?'Extreme finite images beyond the supported camera range are excluded from fitting. ':'')+
-  'Camera changes affect presentation only.';
+  'Use +/−, mouse wheel or drag to inspect a region; Fit restores this preset. Camera changes affect presentation only.';
+ refreshZoomControls();
 }
 function drawPlot(frame){
  const canvas=$('image-plot'),rect=canvas.getBoundingClientRect();canvas.width=Math.round(rect.width);canvas.height=Math.round(rect.height);
  const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);
  if(!viewSubjects||w<80||h<80)return;
- const fitted=fitMotionView(viewSubjects,w,h,{mode:cameraMode(),frame}),camera=fitted.camera;
+ const fitted=fitMotionView(viewSubjects,w,h,{mode:cameraMode(),frame});
+ const adjusted=applyMotionCameraControl(fitted,cameraControl),camera=adjusted.camera;
  const left=40,right=w-16,top=24,bottom=h-32;
  const x=p=>camera.origin.x+p*camera.scale,y=p=>camera.origin.y-p*camera.scale;
  const xmin=(left-camera.origin.x)/camera.scale,xmax=(right-camera.origin.x)/camera.scale;
@@ -151,7 +153,7 @@ function drawPlot(frame){
  pointLabel(ctx,p,'calculated image','#adbcff',w,h,{guide:true});
  if(!p.visible)$('plot-note').textContent=cameraMode()==='apparatus'&&frame.analysis?.globalImageMm?
   'Close-up excludes the calculated image. Select Whole motion to include it.':imageNote(frame);
- canvas.dataset.viewport=JSON.stringify({...camera,image:p});
+ canvas.dataset.viewport=JSON.stringify({...camera,image:p,relativeZoom:adjusted.relativeZoom,panMm:{...cameraControl.panMm}});
 }
 
 function ui(p){
@@ -178,7 +180,8 @@ function ui(p){
  drawPlot(frame);drawNativeGuides(frame);
  currentEvidence={format:'opticsim-motion-frame-evidence-v1',experimentSha256:model.integritySha256,
   timeSeconds:frame.timeSeconds,frameIndex:p.index,source:frame.object,analysis:frame.analysis,native,
-  presentationCamera:nativeCamera,conditions:frame.assumptions,questionSupport:'not-assessed-by-engine'};
+  presentationCamera:{...nativeCamera,mode:cameraMode(),zoomFactor:cameraControl.zoomFactor,panMm:{...cameraControl.panMm}},
+  conditions:frame.assumptions,questionSupport:'not-assessed-by-engine'};
  $('save-frame').disabled=!frame.scene;$('save-report').disabled=false;
 }
 async function render(frame,signal){
@@ -189,7 +192,8 @@ async function render(frame,signal){
  // Fit the image as well as the apparatus. The baseline, physical scene and
  // simulation budgets remain untouched; only this rendering copy has a new camera.
  const fitted=fitMotionView(viewSubjects,width,height,{mode:cameraMode(),frame});
- view.presentation.view={...fitted.view};
+ const adjusted=applyMotionCameraControl(fitted,cameraControl);
+ view.presentation.view={...adjusted.view};
  const {scene,idMap}=loadDocument(view,width,height),emission=observeSourceSet(view,scene,idMap),
   reflections=observeMirrorSet(view,scene,idMap),detectors=observeDetectorSet(view,scene,idMap);
  nativeCamera={origin:{...scene.origin},scale:scene.scale,width,height};
@@ -210,21 +214,28 @@ async function render(frame,signal){
  });
 }
 async function load(value){
- const token=++loadGeneration;player?.stop();clearRays();currentIndex=null;currentEvidence=null;viewSubjects=null;nativeCamera=null;drawPlot(null);
+ const token=++loadGeneration;player?.stop();clearTimeout(cameraRenderTimer);cameraRenderTimer=null;
+ cameraControl=defaultMotionCameraControl();clearRays();currentIndex=null;currentEvidence=null;viewSubjects=null;nativeCamera=null;drawPlot(null);refreshZoomControls();
  for(const id of ['play','pause','reset','time','save-motion','save-frame','save-report'])$(id).disabled=true;
  try{
   const candidate=await prepareMotionExperiment(await value);if(token!==loadGeneration)return;
-  model=candidate;viewSubjects=collectMotionView(model);$('camera-mode').value='motion';player=new MotionPlayer({model,render,onState:ui});
+  model=candidate;viewSubjects=collectMotionView(model);$('camera-mode').value='motion';
+  $('example').value=model.baseline.scene.physics.components.some(c=>c.type==='circular-arc-mirror')?'circular':'ideal';
+  player=new MotionPlayer({model,render,onState:ui});
   $('time').max=model.times.length-1;$('speed').value='0.1';player.setSpeed(.1);
   $('assumptions').textContent=[model.spec.continuationAssumption,...(model.baseline.qualification.interpretation?.assumptions||[])].join('\n');
   $('experiment-hash').textContent='Experiment SHA-256: '+model.integritySha256;
-  $('error').hidden=true;$('save-motion').disabled=false;await player.seek(0);
+  $('error').hidden=true;$('save-motion').disabled=false;refreshZoomControls();await player.seek(0);
  }catch(error){if(token!==loadGeneration)return;model=null;player=null;drawPlot(null);$('native-state').dataset.state='invalid';$('native-state').textContent='Native: not run — invalid experiment';$('error').hidden=false;$('error').textContent=error.message;
   for(const id of ['play','pause','reset','time','save-motion','save-frame','save-report'])$(id).disabled=true;}
 }
 $('play').onclick=()=>player?.play();$('pause').onclick=()=>player?.pause();$('reset').onclick=()=>player?.seek(0);
 $('time').oninput=()=>player?.seek(Number($('time').value));$('speed').onchange=()=>player?.setSpeed(Number($('speed').value));
-$('camera-mode').onchange=()=>{player?.pause();if(player)player.seek(player.index);};
+$('camera-mode').onchange=()=>resetCameraFit();
+$('zoom-in').onclick=()=>zoomCamera(1,$('native-stage'));
+$('zoom-out').onclick=()=>zoomCamera(-1,$('native-stage'));
+$('zoom-fit').onclick=()=>resetCameraFit();
+setupCameraPointer($('native-stage'));setupCameraPointer($('image-plot'));
 $('example').onchange=()=>load(makeU2Motion(example,{circular:$('example').value==='circular'}));
 $('open-motion').onchange=async()=>{const file=$('open-motion').files[0];if(!file)return;player?.stop();
  if(file.size>1500000){$('error').hidden=false;$('error').textContent='Experiment file exceeds 1.5 MB';return;}
@@ -233,6 +244,8 @@ $('save-motion').onclick=()=>model&&download('source-motion.experiment.json',mod
 $('save-report').onclick=()=>currentEvidence&&download('motion-frame-evidence.json',currentEvidence);
 $('save-frame').onclick=async()=>{const currentModel=model,index=currentIndex,token=loadGeneration;
  if(index===null)return;try{const b=await currentModel.qualifiedFrame(index);if(token===loadGeneration)download('motion-frame.qualified.json',b);}catch(error){$('error').hidden=false;$('error').textContent=error.message;}};
-let resizeTimer;window.addEventListener('resize',()=>{player?.pause();clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>player?.seek(player.index),120);});
+let resizeTimer;window.addEventListener('resize',()=>{player?.pause();clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{
+  if(player){refreshZoomControls();player.seek(player.index);}
+ },120);});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)player?.pause();});
 load(makeU2Motion(example)).catch(error=>{$('error').hidden=false;$('error').textContent=error.message;});
