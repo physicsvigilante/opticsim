@@ -1,0 +1,905 @@
+{
+  "format": "opticsim-optical-systems-atlas-review-v1",
+  "sourceArchiveSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+  "selectionCommittedBeforeImageInspection": "dc307fa00687b3007797e559bc7186db6e87ea1d",
+  "currentEngineCommit": "52accb717b10b75792a484b8a8c6b285c5770e59",
+  "sameAssistantDevelopment": true,
+  "mode": "optical capability discovery from Problems-only PNGs, no solutions or model benchmark",
+  "verdictSemantics": {
+    "existing": "A physical apparatus family is exposed under some current strict validated scope; this does NOT mean all original parameters are sufficient to author a native scene.",
+    "partial": "Some physical components exist but required source modes, geometry, composition or interpretation are absent.",
+    "not-exposed": "Needed physical geometry or composition is not currently exposed by canonical Opticsim.",
+    "registered": "A direct requested result kind is present in current unified dispatcher but may still require the original stated facts.",
+    "conditional": "A related deterministic conditional analysis exists; native visualization/answer may remain unavailable.",
+    "unregistered": "The original requested measurement or inverse relation is not a registered output; a successful ray trace cannot be labeled an answer."
+  },
+  "caveats": [
+    "These are assistant interpretations of images, not independently judged original answers; source questions can be ambiguous, diagrams need not be to scale.",
+    "Quantile sampling is a deliberate fixed 40 of 114 inventory, not a statistical claim about all problems or JEE overall.",
+    "Only /Problems/*.png were inspected. No /Solutions, textbook key, numerical answers, new model calls, or novel native geometries are produced.",
+    "Previously viewed examples may overlap the selection. We do not call this blind or unseen.",
+    "Requested-result support and apparatus-family support are separate; no missing source brightness/aperture/position is imputed.",
+    "Glass sphere/hemisphere is physically three-dimensional; a 2D cross-section must be labelled as such and cannot establish full 3D observational claims."
+  ],
+  "gapCatalog": {
+    "mirror-enclosure": {
+      "name": "Connected mirrors and reusable mirror enclosures",
+      "axis": "composition",
+      "native": "Mirror",
+      "feasibility": "Existing finite Mirror; shared endpoints/corners and finite ray routes require careful validation"
+    },
+    "angular-inverse": {
+      "name": "Reusable inverse reflection/refraction constraints",
+      "axis": "analytical-observable",
+      "native": null,
+      "feasibility": "Existing planar and mirror partial algebra; new queries must be proven, not substituted"
+    },
+    "extended-object": {
+      "name": "Extended object and shape-aware point sampling",
+      "axis": "source-and-observation",
+      "native": "PointSource",
+      "feasibility": "Multiple sources exist; shape-identity and image mapping are not native measurements"
+    },
+    "general-motion": {
+      "name": "Nonlinear trajectories and moving optical positions",
+      "axis": "temporal",
+      "native": null,
+      "feasibility": "Current immutable moving-source player supports uniform translation only"
+    },
+    "apparent-image": {
+      "name": "Observer / apparent-depth and conditional image geometry",
+      "axis": "observation",
+      "native": "Scene observer mode",
+      "feasibility": "Visual observer mode is not a calibrated image detector or exact 3D eye model"
+    },
+    "mixed-media": {
+      "name": "Cross-family refractive media plus mirrors/lenses",
+      "axis": "composition",
+      "native": "PlaneGlass, Glass, Mirror, ArcMirror",
+      "feasibility": "Pinned engine has primitives; simultaneous boundaries, merging and medium membership need audited rules"
+    },
+    "glass-regions": {
+      "name": "Bounded polygons, curved caps and nontriangular glass",
+      "axis": "optical-geometry",
+      "native": "Glass, CurveGlass, SphericalLens",
+      "feasibility": "Pinned native Glass supports straight and circular-arc paths; only triangle currently authored"
+    },
+    "beam-sources": {
+      "name": "Parallel and directional ray bundles through dielectrics",
+      "axis": "source",
+      "native": "Beam, AngleSource",
+      "feasibility": "Native emitters exist; numerical budgets and Fresnel branch completion require validation; user deferred"
+    },
+    "opaque-screen": {
+      "name": "Opaque stops, apertures, screens and visibility",
+      "axis": "optical-and-observation",
+      "native": "Blocker, CircleBlocker, Aperture, Detector",
+      "feasibility": "Native absorbers exist; continuous blocked-visibility assertions need sampled-ray qualifications"
+    },
+    "graded-index": {
+      "name": "Position-dependent refractive index (GRIN) media",
+      "axis": "optical-physics",
+      "native": "GrinGlass, CurveGrinGlass",
+      "feasibility": "Native GRIN exists but expression safety, numerical integration and index positivity not validated"
+    },
+    "waveguide": {
+      "name": "Finite waveguides / guided multiple reflections",
+      "axis": "composition",
+      "native": "Glass",
+      "feasibility": "2D polygon waveguide possible; 3D pipe capture-angle conclusions remain out of scope"
+    },
+    "ray-provenance": {
+      "name": "Bounded source-to-face/branch ray provenance",
+      "axis": "measurement",
+      "native": "native onRayIncident callbacks",
+      "feasibility": "Current aggregate counters and first events cannot verify unique multi-bounce paths"
+    },
+    "prism-analytics": {
+      "name": "Reusable prism angular/deviation/minimum-deviation queries",
+      "axis": "analytical-observable",
+      "native": null,
+      "feasibility": "Finite triangular prism tracer is present; inverse angle algebra not registered"
+    },
+    "material-lens": {
+      "name": "Physical/thick lenses and immersion-aware material properties",
+      "axis": "optical-geometry-and-analysis",
+      "native": "SphericalLens, Glass",
+      "feasibility": "SphericalLens exists upstream; lensmaker/immersion depends on explicitly stated material and surface geometry"
+    },
+    "offaxis-lens": {
+      "name": "Decentered/tilted ideal-lens optical trains",
+      "axis": "optical-geometry",
+      "native": "IdealLens",
+      "feasibility": "Native segment endpoints support transverse offsets; current canonical ideal lenses are y=0 and ABCD analysis is coaxial"
+    },
+    "instrument": {
+      "name": "Microscope, telescope and eye instrument models",
+      "axis": "composed-observable",
+      "native": "IdealLens, Detector",
+      "feasibility": "Lens trains run, but angular magnification, accommodation and observer conventions are not registered"
+    },
+    "lens-contact": {
+      "name": "Coincident lenses and equivalent focal power",
+      "axis": "composition-and-analysis",
+      "native": "IdealLens",
+      "feasibility": "Current geometry rejects overlapping lens planes; model contact analytically without inventing finite spacing"
+    },
+    "multi-source-image": {
+      "name": "Image analysis for multiple sources and inverse lens placement",
+      "axis": "observation-and-inverse",
+      "native": "PointSource, IdealLens",
+      "feasibility": "Multiple native sources supported, but source-specific ideal-image inference and shared-image inverse not"
+    }
+  },
+  "summary": {
+    "selected": 40,
+    "inventory": 114,
+    "chapters": 8,
+    "unreviewed": 74,
+    "apparatus": {
+      "existing": 7,
+      "partial": 15,
+      "not-exposed": 18
+    },
+    "observable": {
+      "registered": 0,
+      "conditional": 4,
+      "unregistered": 36
+    },
+    "gaps": {
+      "mirror-enclosure": 2,
+      "angular-inverse": 5,
+      "extended-object": 3,
+      "general-motion": 2,
+      "apparent-image": 10,
+      "mixed-media": 2,
+      "glass-regions": 7,
+      "beam-sources": 9,
+      "opaque-screen": 2,
+      "graded-index": 1,
+      "waveguide": 1,
+      "ray-provenance": 7,
+      "prism-analytics": 5,
+      "material-lens": 1,
+      "offaxis-lens": 1,
+      "instrument": 5,
+      "lens-contact": 1,
+      "multi-source-image": 1
+    }
+  },
+  "cases": [
+    {
+      "id": "A01",
+      "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/001.png",
+      "imageSha256": "bc419ed8858e6674a6b1061c0387f8e19ff6e12508b5991af5411d4da3be35c5",
+      "systemSummary": "Infer plane-mirror incidence from incoming/outgoing direction vectors",
+      "questionObservable": "reflection direction",
+      "objects": [
+        "plane-mirror"
+      ],
+      "currentApparatus": "partial",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "angular-inverse"
+      ],
+      "caveat": "Mirror normal is not directly stated; tracing alone does not answer the inverse.",
+      "confidence": "high"
+    },
+    {
+      "id": "A02",
+      "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/004.png",
+      "imageSha256": "d8c5dfb3c70b0dcf4462414faf807c2313405811f35656738a89235737d43e36",
+      "systemSummary": "Two-mirror directional constraints with parallel input and exit",
+      "questionObservable": "two reflections and angular inverse",
+      "objects": [
+        "plane-mirror"
+      ],
+      "currentApparatus": "partial",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "angular-inverse",
+        "ray-provenance"
+      ],
+      "caveat": "Two finite mirrors can be traced if their actual positions and ray starting direction are stated.",
+      "confidence": "high"
+    },
+    {
+      "id": "A03",
+      "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/008.png",
+      "imageSha256": "d98c915ffb363dcc2814191ca014ba1964e921977eca632e8b6ed17120bcb146",
+      "systemSummary": "Object within an equilateral triangular plane-mirror enclosure",
+      "questionObservable": "multiple virtual images",
+      "objects": [
+        "plane-mirror",
+        "extended-object"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "mirror-enclosure",
+        "extended-object"
+      ],
+      "caveat": "Three mirrors meet at shared corners; native reflection counts are not unique image counts.",
+      "confidence": "medium"
+    },
+    {
+      "id": "A04",
+      "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/011.png",
+      "imageSha256": "ec0d4946a67825e5df7df46eb97940864c4217ce38d74f0d3f1352da08d6e4db",
+      "systemSummary": "Four-walled reflective box requiring a ray from A to B after four hits",
+      "questionObservable": "inverse source direction and path constraint",
+      "objects": [
+        "plane-mirror",
+        "point-source"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "mirror-enclosure",
+        "ray-provenance",
+        "angular-inverse"
+      ],
+      "caveat": "Four mirrors fit count limits but their shared endpoints/finite target constraints do not.",
+      "confidence": "medium"
+    },
+    {
+      "id": "A05",
+      "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/015.png",
+      "imageSha256": "878622457b75a9e3c547e08967ed86ac1cd4904a7c9e12e29e16f753f32b2743",
+      "systemSummary": "Two inclined plane mirrors with a specified outgoing parallel direction",
+      "questionObservable": "two-bounce incidence inverse",
+      "objects": [
+        "plane-mirror"
+      ],
+      "currentApparatus": "partial",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "angular-inverse",
+        "ray-provenance"
+      ],
+      "caveat": "Finite ray tracing is possible with extra geometry, not a substitute for inverse angles.",
+      "confidence": "high"
+    },
+    {
+      "id": "A06",
+      "problemPath": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/001.png",
+      "imageSha256": "fbd68cb0d4ed0478f3c3f0b8b0dbec4e1086046e37934788968fa6156b45913b",
+      "systemSummary": "Concave-mirror image height for object distance expressed as 1.5 focal lengths",
+      "questionObservable": "signed image height and orientation",
+      "objects": [
+        "circular-arc-mirror",
+        "extended-object"
+      ],
+      "currentApparatus": "partial",
+      "currentObservable": "conditional",
+      "candidateGaps": [
+        "extended-object"
+      ],
+      "caveat": "Scale-free Gaussian image/magnification analysis exists; absolute native mirror size/f are unspecified.",
+      "confidence": "high"
+    },
+    {
+      "id": "A07",
+      "problemPath": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/004.png",
+      "imageSha256": "3d32be9585d21f90c31e7ec3b70a314fba34c7c2b487ee0370127a1f0211fc88",
+      "systemSummary": "Inverse placement of object for fourfold concave-mirror magnification",
+      "questionObservable": "inverse object distance",
+      "objects": [
+        "ideal-curved-mirror"
+      ],
+      "currentApparatus": "partial",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "angular-inverse"
+      ],
+      "caveat": "Forward curved-mirror image analysis exists, not the registered inverse magnitude branch query.",
+      "confidence": "high"
+    },
+    {
+      "id": "A08",
+      "problemPath": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/007.png",
+      "imageSha256": "512656b8d3711783be9bb571086609872e7618c390b296a121d8d8c50f9b9f4c",
+      "systemSummary": "Sinusoidally oscillating object before a concave mirror",
+      "questionObservable": "time-varying image position and magnification",
+      "objects": [
+        "circular-arc-mirror",
+        "moving-object"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "general-motion"
+      ],
+      "caveat": "Motion player currently allows uniform translation; an oscillation law is not accepted.",
+      "confidence": "medium"
+    },
+    {
+      "id": "A09",
+      "problemPath": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/010.png",
+      "imageSha256": "073a971a9eaca6a664e6f509e8b3d6e4428cd736ad80fe81b0fa0bc8e2092947",
+      "systemSummary": "Quadrilateral extended object imaged in a concave mirror",
+      "questionObservable": "image shape",
+      "objects": [
+        "circular-arc-mirror",
+        "extended-object"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "extended-object",
+        "apparent-image"
+      ],
+      "caveat": "A single point-image prediction is not a shape transformation or native detected image.",
+      "confidence": "high"
+    },
+    {
+      "id": "A10",
+      "problemPath": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/013.png",
+      "imageSha256": "de33abd50d2a91491590c596c461cbebe7d852379cf7f2ae9faa8ca30d65ec45",
+      "systemSummary": "Moving point with axial and transverse velocity near a concave mirror",
+      "questionObservable": "instantaneous image velocity components",
+      "objects": [
+        "ideal-curved-mirror",
+        "moving-object"
+      ],
+      "currentApparatus": "partial",
+      "currentObservable": "conditional",
+      "candidateGaps": [],
+      "caveat": "Existing curved-mirror velocity calculation and constant-source motion cover the local model; source/emission/aperture not supplied for exact native scene.",
+      "confidence": "high"
+    },
+    {
+      "id": "A11",
+      "problemPath": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/001.png",
+      "imageSha256": "4edd7c2577fb81f7a7797f21d8ce6344f442ef099f16144cf6de074ad7751d8d",
+      "systemSummary": "Near-normal viewing of a submerged object from air",
+      "questionObservable": "apparent depth",
+      "objects": [
+        "planar-interface",
+        "observer"
+      ],
+      "currentApparatus": "partial",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "apparent-image"
+      ],
+      "caveat": "Surface is representable, but observer/image depth is not registered; exact water index is not specified.",
+      "confidence": "medium"
+    },
+    {
+      "id": "A12",
+      "problemPath": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/003.png",
+      "imageSha256": "d98c8b3aa6086b340c3d038d9821baf4be516bec27eb7892b94286bc7bed170d",
+      "systemSummary": "Curved mirror with a parallel glass slab between mirror and object",
+      "questionObservable": "image shift due to slab and mirror",
+      "objects": [
+        "circular-arc-mirror",
+        "planar-interface"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "mixed-media",
+        "apparent-image"
+      ],
+      "caveat": "Curved mirror and planar dielectric cannot currently share a scene family.",
+      "confidence": "high"
+    },
+    {
+      "id": "A13",
+      "problemPath": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/006.png",
+      "imageSha256": "f851ad695d026000a1310261e00e4a5e1c85e65d3b1a39121cdde2508a5fb572",
+      "systemSummary": "Plane-parallel glass plate backed by a plane mirror",
+      "questionObservable": "round-trip emergent ray separation",
+      "objects": [
+        "planar-interface",
+        "plane-mirror"
+      ],
+      "currentApparatus": "partial",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "ray-provenance"
+      ],
+      "caveat": "Planar interfaces and mirror can compose with fully specified finite geometry; exit separation measurement is missing.",
+      "confidence": "high"
+    },
+    {
+      "id": "A14",
+      "problemPath": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/009.png",
+      "imageSha256": "f4ab4b63f956986c04a17ba0c4db99b71ce75f0c86bfef86b08b5002e24aba6a",
+      "systemSummary": "Parallel beam entering a glass hemisphere above a table",
+      "questionObservable": "luminous spot radius",
+      "objects": [
+        "curved-dielectric",
+        "beam",
+        "screen"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "glass-regions",
+        "beam-sources",
+        "opaque-screen"
+      ],
+      "caveat": "Full CircleGlass is not a hemisphere; a screen spot is not equivalent to detector crossings.",
+      "confidence": "medium"
+    },
+    {
+      "id": "A15",
+      "problemPath": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/012.png",
+      "imageSha256": "abb40484b40dcd9b9a4c663751cad54c00971d218eb42a018e638b66e024bca1",
+      "systemSummary": "Continuous graded-index slab at grazing incidence",
+      "questionObservable": "curved ray trajectory and exit point",
+      "objects": [
+        "graded-index"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "graded-index"
+      ],
+      "caveat": "Pinned GRIN primitive exists but safe authored function family and integrator checks are absent.",
+      "confidence": "high"
+    },
+    {
+      "id": "A16",
+      "problemPath": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/001.png",
+      "imageSha256": "df2fad74e2e23469ad32e09efc894b2673f2504b11a30c988c0643d6b9730796",
+      "systemSummary": "Three planar media with grazing/critical incidence",
+      "questionObservable": "critical input angle and branch reachability",
+      "objects": [
+        "planar-interface"
+      ],
+      "currentApparatus": "existing",
+      "currentObservable": "conditional",
+      "candidateGaps": [],
+      "caveat": "Reduced planar angular calculations support this physical relation without inventing source position/brightness.",
+      "confidence": "high"
+    },
+    {
+      "id": "A17",
+      "problemPath": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/003.png",
+      "imageSha256": "b3cdc8855fdf304efaec8a03bae1e8d928056815ca3e07c302be45821e0e91df",
+      "systemSummary": "Square glass cross-section at grazing input with emergence from neighboring face",
+      "questionObservable": "face-specific emergent angle",
+      "objects": [
+        "glass-polygon",
+        "beam"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "glass-regions",
+        "beam-sources",
+        "ray-provenance"
+      ],
+      "caveat": "Triangle validator cannot represent a square; an equation of emergent angle needs labeled face evidence.",
+      "confidence": "high"
+    },
+    {
+      "id": "A18",
+      "problemPath": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/005.png",
+      "imageSha256": "80dc5c054c8bfe0667e1125cb68ad3dd02c28c71d155d826437084980de819b9",
+      "systemSummary": "Point source under water hidden by opaque floating disk",
+      "questionObservable": "minimum blocking radius / visibility",
+      "objects": [
+        "planar-interface",
+        "point-source",
+        "opaque-obstacle",
+        "observer"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "opaque-screen",
+        "apparent-image",
+        "beam-sources"
+      ],
+      "caveat": "Current refractive sources are single rays and there is no blocker or observer visibility measurement.",
+      "confidence": "high"
+    },
+    {
+      "id": "A19",
+      "problemPath": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/007.png",
+      "imageSha256": "6f55569c754d61d285817f631a263321f9d345c2b1ae459f29e97ac4217b9cc7",
+      "systemSummary": "Rays guided by cylindrical glass pipe using total internal reflection",
+      "questionObservable": "acceptance angle for guided rays",
+      "objects": [
+        "waveguide",
+        "beam"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "glass-regions",
+        "waveguide",
+        "beam-sources"
+      ],
+      "caveat": "A 2D rectangular analog may be traced; exact 3D cylindrical pipe conclusions are not supported.",
+      "confidence": "medium"
+    },
+    {
+      "id": "A20",
+      "problemPath": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/010.png",
+      "imageSha256": "214f77a38e222b9a520df73c6fc7194df22919b1e3ae82e436fa474955810f8e",
+      "systemSummary": "Parallel rays crossing flat face and curved boundary of semicylindrical glass",
+      "questionObservable": "TIR region / exit condition",
+      "objects": [
+        "glass-cap",
+        "beam"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "glass-regions",
+        "beam-sources"
+      ],
+      "caveat": "Native Glass supports arcs, but canonical circular dielectric is a full circle only.",
+      "confidence": "medium"
+    },
+    {
+      "id": "A21",
+      "problemPath": "08_Ray_Optics_Explanations/05_Prism/Problems/001.png",
+      "imageSha256": "d78adec66991f13c049d087f46c3e23a24da5bcbe0c2c16268741d2820aa2df3",
+      "systemSummary": "Equilateral prism with internal TIR and different exit face",
+      "questionObservable": "entry angle and material-index inverse",
+      "objects": [
+        "triangular-prism"
+      ],
+      "currentApparatus": "existing",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "prism-analytics",
+        "ray-provenance"
+      ],
+      "caveat": "Native prism TIR and face events exist, but inverse index and prescribed multi-event path are unregistered.",
+      "confidence": "high"
+    },
+    {
+      "id": "A22",
+      "problemPath": "08_Ray_Optics_Explanations/05_Prism/Problems/004.png",
+      "imageSha256": "ab8949d8594431b2e88cd81b3fdaa683255ce2925a938531738a72f82cbad7aa",
+      "systemSummary": "Isosceles prism with grazing emergence and minimum-deviation condition",
+      "questionObservable": "index inverse and minimum-deviation angle",
+      "objects": [
+        "triangular-prism"
+      ],
+      "currentApparatus": "existing",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "prism-analytics"
+      ],
+      "caveat": "Needs conditional prism algebra, not invented triangle size or native source geometry.",
+      "confidence": "high"
+    },
+    {
+      "id": "A23",
+      "problemPath": "08_Ray_Optics_Explanations/05_Prism/Problems/008.png",
+      "imageSha256": "df8a8d389bfa5841187a04a0da1d0339af4c9de6abc42ef624b571a3b3eb5082",
+      "systemSummary": "Prism given refracting angle, incidence, and net deviation",
+      "questionObservable": "emergence angle and index inverse",
+      "objects": [
+        "triangular-prism"
+      ],
+      "currentApparatus": "existing",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "prism-analytics"
+      ],
+      "caveat": "Native finite prism can trace if the derived index and full geometry are known; reduced angular query missing.",
+      "confidence": "high"
+    },
+    {
+      "id": "A24",
+      "problemPath": "08_Ray_Optics_Explanations/05_Prism/Problems/011.png",
+      "imageSha256": "2cb57a6d5e3d6eabf1082aa3a107a454d2a0023a8edce1677dd09690c12d6ff7",
+      "systemSummary": "Prism emergence angle from incidence, prism angle and deviation",
+      "questionObservable": "emergence angle",
+      "objects": [
+        "triangular-prism"
+      ],
+      "currentApparatus": "existing",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "prism-analytics"
+      ],
+      "caveat": "One more reduced prism-angular query; no finite source/aperture needs to be guessed.",
+      "confidence": "high"
+    },
+    {
+      "id": "A25",
+      "problemPath": "08_Ray_Optics_Explanations/05_Prism/Problems/015.png",
+      "imageSha256": "5ef7dc1e6778bcde10a59950b03514980555c7733ec0a9c7e4346986cdabfe6a",
+      "systemSummary": "Parallel beam partly reflected and transmitted through small-angle prism",
+      "questionObservable": "two-branch deviation and material inverse",
+      "objects": [
+        "triangular-prism",
+        "beam"
+      ],
+      "currentApparatus": "partial",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "beam-sources",
+        "ray-provenance",
+        "prism-analytics"
+      ],
+      "caveat": "Pinned native Fresnel weak branches can truncate; do not conflate transmitted and reflected routes.",
+      "confidence": "high"
+    },
+    {
+      "id": "A26",
+      "problemPath": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/001.png",
+      "imageSha256": "495dea7c51d58b1d1a3e241b4bf8bb88d66051a234ae52459fd4291a2fef8ec7",
+      "systemSummary": "Single convex refracting spherical boundary separating two media",
+      "questionObservable": "surface optical power",
+      "objects": [
+        "curved-dielectric"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "glass-regions",
+        "apparent-image"
+      ],
+      "caveat": "Full circular region is not a single infinite spherical interface; paraxial surface power unregistered.",
+      "confidence": "high"
+    },
+    {
+      "id": "A27",
+      "problemPath": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/004.png",
+      "imageSha256": "e0b938a74df9e6d302ee63a259164b9cfe31fe65b01a93e708774a3e5b404989",
+      "systemSummary": "Sphere sliced into finite paperweight viewed from above a table",
+      "questionObservable": "apparent table distance through spherical cap",
+      "objects": [
+        "glass-cap",
+        "observer"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "glass-regions",
+        "apparent-image"
+      ],
+      "caveat": "Requires finite arc plus flat cut and observer/apparent-depth model; full circle is not equivalent.",
+      "confidence": "medium"
+    },
+    {
+      "id": "A28",
+      "problemPath": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/007.png",
+      "imageSha256": "2f95c58717b644ca282fc22957899410c3e3c02d2c753eabfaa815682728380c",
+      "systemSummary": "Silvered glass hemisphere with internal bubble",
+      "questionObservable": "multiple images from dielectric and reflective cap",
+      "objects": [
+        "glass-cap",
+        "curved-mirror",
+        "observer"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "glass-regions",
+        "mixed-media",
+        "apparent-image"
+      ],
+      "caveat": "Nested/merged reflecting and refracting surfaces and multiple image branches need explicit semantics.",
+      "confidence": "medium"
+    },
+    {
+      "id": "A29",
+      "problemPath": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/010.png",
+      "imageSha256": "d5dedd786f55af52f8b80d4296b53460cddcf2c3520dc27a9e81506bff56bbe5",
+      "systemSummary": "Parallel beam through solid glass sphere near normal incidence",
+      "questionObservable": "paraxial image distance",
+      "objects": [
+        "circular-dielectric",
+        "beam"
+      ],
+      "currentApparatus": "partial",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "beam-sources",
+        "apparent-image"
+      ],
+      "caveat": "Finite circular native tracer exists, but not parallel beam emission or automatic image inference.",
+      "confidence": "high"
+    },
+    {
+      "id": "A30",
+      "problemPath": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/013.png",
+      "imageSha256": "474b2c1c46e97238fd4f4b99548c827169721a0334ddb045dab3d9a6a5b5096f",
+      "systemSummary": "Internal air bubble in glass sphere viewed along radius",
+      "questionObservable": "apparent depth of internal point",
+      "objects": [
+        "circular-dielectric",
+        "observer"
+      ],
+      "currentApparatus": "partial",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "apparent-image"
+      ],
+      "caveat": "Interior point geometry can be represented; bubble is not automatically an emitting point and observer imaging absent.",
+      "confidence": "medium"
+    },
+    {
+      "id": "A31",
+      "problemPath": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/001.png",
+      "imageSha256": "42364c9242e377fbdf4de4360450e980530626cbfe14992ac1fa089908a62e7b",
+      "systemSummary": "Place converging lens so two object points have coincident images",
+      "questionObservable": "inverse lens position with two point sources",
+      "objects": [
+        "ideal-lens",
+        "point-source"
+      ],
+      "currentApparatus": "existing",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "multi-source-image"
+      ],
+      "caveat": "Native multi-source lens scenes exist, but single-source image analysis and lens placement inverse only.",
+      "confidence": "high"
+    },
+    {
+      "id": "A32",
+      "problemPath": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/007.png",
+      "imageSha256": "dc904f5e2c61de38d7c0b4926adde399d88821861625dfd18015bb4966f328ae",
+      "systemSummary": "Converging and diverging ideal lenses in optical contact",
+      "questionObservable": "equivalent focal length",
+      "objects": [
+        "ideal-lens"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "lens-contact"
+      ],
+      "caveat": "Coincident lens planes are rejected; algebraic equivalent-lens law need not create overlapping native objects.",
+      "confidence": "high"
+    },
+    {
+      "id": "A33",
+      "problemPath": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/014.png",
+      "imageSha256": "bd2831f9ccae31bfeccbbec6e60fc780a671a7e02f316d75ef944d65b9457e79",
+      "systemSummary": "Two coaxial converging lenses with specified separation",
+      "questionObservable": "final ideal image position",
+      "objects": [
+        "ideal-lens"
+      ],
+      "currentApparatus": "existing",
+      "currentObservable": "conditional",
+      "candidateGaps": [],
+      "caveat": "Two-lens ABCD image analysis exists when a complete native authoring scene is supplied.",
+      "confidence": "high"
+    },
+    {
+      "id": "A34",
+      "problemPath": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/020.png",
+      "imageSha256": "26982ca24f70b6c009b9c82477fb1962be8a41f49ef9cc53306f5ae23d4eacc2",
+      "systemSummary": "Identical double-convex lenses from different glasses immersed in a liquid",
+      "questionObservable": "focal ratio and immersion-dependent behavior",
+      "objects": [
+        "material-lens"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "material-lens"
+      ],
+      "caveat": "Needs explicit index-aware lensmaker model and material sign; geometry cancels for ratio but not a native scene.",
+      "confidence": "high"
+    },
+    {
+      "id": "A35",
+      "problemPath": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/027.png",
+      "imageSha256": "85c88a0d9215a19d8207d812963dcbb56b0daa207621267f46b23fd493076b47",
+      "systemSummary": "Two decentered coaxially separated lenses illuminated by parallel light",
+      "questionObservable": "off-axis focus position",
+      "objects": [
+        "offaxis-ideal-lens",
+        "beam"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "offaxis-lens",
+        "beam-sources"
+      ],
+      "caveat": "IdealLens exists natively but authoring restricts all lens centers to y=0; no parallel-beam authoring.",
+      "confidence": "medium"
+    },
+    {
+      "id": "A36",
+      "problemPath": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/001.png",
+      "imageSha256": "4f1989a03095631e93a853c3330c224ab72238cd0c6c2862505b0062bdbf05a5",
+      "systemSummary": "Variable eye-lens power for near/far accommodation",
+      "questionObservable": "required accommodation range",
+      "objects": [
+        "eye-model",
+        "physical-lens"
+      ],
+      "currentApparatus": "not-exposed",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "instrument",
+        "apparent-image"
+      ],
+      "caveat": "Simplified eye geometry/retinal criterion and variable optical power are not authored.",
+      "confidence": "medium"
+    },
+    {
+      "id": "A37",
+      "problemPath": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/003.png",
+      "imageSha256": "53ec9bfc9508f0c9ff05b0ca9c1130321d4aaaf7dff0d454f7af313bf932c7b0",
+      "systemSummary": "Corrective lens for finite myopic far point",
+      "questionObservable": "prescription lens power",
+      "objects": [
+        "ideal-lens",
+        "eye-model"
+      ],
+      "currentApparatus": "partial",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "instrument"
+      ],
+      "caveat": "Diverging lenses can be drawn, but far-point accommodation/prescription calculation is absent.",
+      "confidence": "high"
+    },
+    {
+      "id": "A38",
+      "problemPath": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/005.png",
+      "imageSha256": "71951962c0b0171a2819a8895112d6dc57bac488bad1f280ecbc5bb3efad83c1",
+      "systemSummary": "Swap microscope objective and eyepiece while preserving angular magnification",
+      "questionObservable": "new separation of two lenses",
+      "objects": [
+        "ideal-lens",
+        "instrument"
+      ],
+      "currentApparatus": "partial",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "instrument"
+      ],
+      "caveat": "Two-lens native tracing exists, but angular magnification and observer/tube definition missing.",
+      "confidence": "medium"
+    },
+    {
+      "id": "A39",
+      "problemPath": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/007.png",
+      "imageSha256": "6796e7f7b92bf1a5f10c6823ad44c459c18f72309eb5a5ba7ac0d2768ce04a81",
+      "systemSummary": "Microscope with final image at infinity",
+      "questionObservable": "magnifying power",
+      "objects": [
+        "ideal-lens",
+        "instrument"
+      ],
+      "currentApparatus": "partial",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "instrument"
+      ],
+      "caveat": "Neither instrument angular magnification nor retinal observer/nearpoint conditions is an existing observation.",
+      "confidence": "high"
+    },
+    {
+      "id": "A40",
+      "problemPath": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/009.png",
+      "imageSha256": "e219a0b0ea4c2cdab09a1565d77e9c1d2cd3d53bc3819bb0142484299f7ab912",
+      "systemSummary": "Telescope refocused from distant to near object by moving eyepiece",
+      "questionObservable": "eyepiece displacement and angular magnification",
+      "objects": [
+        "ideal-lens",
+        "instrument",
+        "beam"
+      ],
+      "currentApparatus": "partial",
+      "currentObservable": "unregistered",
+      "candidateGaps": [
+        "instrument",
+        "beam-sources",
+        "general-motion"
+      ],
+      "caveat": "Lens-spacing edits exist; actual eyepiece motion, infinity beam, and angular metrics are not unified.",
+      "confidence": "high"
+    }
+  ]
+}
