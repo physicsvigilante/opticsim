@@ -71,6 +71,77 @@ async function main(){
   await cdp.send('Page.navigate',{url:pathToFileURL(join(root,'test-artifacts/motion-demo/index.html')).href});
   s=await until(state,s=>s.state==='completed'&&s.index==='0','portable offline file');assert.equal(s.error,null);
   check('portable demonstration works directly from file:// without an install or model API');
+
+  // The same canonical controls as the static editor are bound to a real
+  // qualified motion experiment; this is not visual-only brightness.
+  const rayInfo=()=>evaluate("(()=>{const e=id=>document.getElementById(id);return {state:e('native-state').dataset.state,hash:e('experiment-hash').textContent,brightness:e('ray-brightness').value,sampling:e('ray-sampling').value,mode:e('ray-source-mode').value,direction:e('ray-direction').value,opening:e('ray-opening').value,view:e('ray-view').value,grid:e('ray-grid').checked,counts:e('native-counts').textContent,error:e('ray-control-error').hidden?null:e('ray-control-error').textContent,velocity:e('velocity-value').textContent,edits:e('ray-control-note').textContent,expanded:e('ray-settings').open};})()");
+  const changeRay=(id,value)=>evaluate("(()=>{const e=document.getElementById("+JSON.stringify(id)+");e.value="+JSON.stringify(value)+";e.dispatchEvent(new Event('change',{bubbles:true}));})()");
+  const settled=(r)=>['completed','completed-with-warnings'].includes(r?.state);
+  const afterChange=async(previousHash,label)=>until(rayInfo,r=>settled(r)&&r.hash!==previousHash&&r.error===null,label);
+  let ray=await until(rayInfo,settled,'initial ray controls');
+  assert.equal(ray.brightness,'0.05');assert.equal(ray.sampling,'dense');assert.equal(ray.mode,'directional');
+  assert.equal(ray.opening,'40');assert.equal(ray.expanded,false);
+  await evaluate("document.querySelector('#ray-settings > summary').click()");
+  assert.equal((await rayInfo()).expanded,true);
+  check('portable ray settings reuse actual static source and sampling fields');
+  const originalHash=ray.hash,initialCount=Number.parseInt(ray.counts,10),oldVelocity=ray.velocity;
+  await changeRay('ray-brightness','0.25');
+  ray=await afterChange(originalHash,'physical brightness revision');
+  assert.equal(ray.brightness,'0.25');assert.equal(ray.velocity,oldVelocity);
+  assert.match(ray.edits,/1 qualified baseline edit/);
+  check('physical brightness is revised with a new experiment hash and unchanged conditional image motion');
+  const brightHash=ray.hash;
+  await changeRay('ray-sampling','sparse');
+  ray=await afterChange(brightHash,'sparse native sampling');
+  assert.equal(ray.sampling,'sparse');
+  assert.ok(Number.parseInt(ray.counts,10)<initialCount,'sparse must emit fewer actual native rays');
+  assert.equal(ray.velocity,oldVelocity);
+  check('Sparse density actually reduces native emitted rays while preserving analytical velocity');
+  const sparseHash=ray.hash;
+  await changeRay('ray-direction','8');
+  ray=await afterChange(sparseHash,'direction revision');
+  assert.equal(ray.direction,'8');
+  await changeRay('ray-opening','32');
+  ray=await afterChange(ray.hash,'cone-opening revision');
+  assert.equal(ray.opening,'32');
+  check('direction and cone changes are validated physical revisions');
+  await changeRay('ray-source-mode','single-ray');
+  ray=await afterChange(ray.hash,'one exact native ray');
+  assert.equal(ray.mode,'single-ray');
+  assert.equal(Number.parseInt(ray.counts,10),1,'single-ray is not enlarged by sampling density');
+  check('Single-ray mode emits exactly one native ray despite density controls');
+  await changeRay('ray-view','extended');
+  ray=await afterChange(ray.hash,'extended-ray display mode');
+  assert.equal(ray.view,'extended');
+  check('Extended native ray view retains experiment provenance');
+  await changeRay('ray-brightness','-1');
+  ray=await until(rayInfo,r=>settled(r)&&r.error&&r.error.includes('brightness'),'rejected brightness');
+  assert.equal(ray.brightness,'0.25');
+  const retained=ray.hash;
+  await sleep(100);assert.equal((await rayInfo()).hash,retained);
+  check('Invalid physical brightness is rejected without mutating the accepted experiment');
+  await rm(join(downloads,saved));
+  await evaluate('document.getElementById("save-motion").click()');
+  const repack=await until(async()=>(await readdir(downloads)).find(x=>x.endsWith('.experiment.json')),Boolean,'revised experiment export');
+  const revised=await prepareMotionExperiment(await readFile(join(downloads,repack),'utf8'));
+  const source=revised.baseline.scene.physics.components.find(c=>c.type==='point-source');
+  assert.equal(source.parameters.brightness,0.25);
+  assert.equal(source.emission.mode,'single-ray');
+  assert.equal(source.emission.directionDeg,8);
+  assert.equal(source.emission.angleDeg,32);
+  assert.equal(revised.baseline.scene.simulation.rayDensity,0.048);
+  assert.equal(revised.baseline.scene.presentation.mode,'extended');
+  assert.ok(revised.baseline.qualification.edits.some(x=>x.kind==='physics'));
+  assert.ok(revised.baseline.qualification.edits.some(x=>x.kind==='numerics'));
+  assert.ok(revised.baseline.qualification.edits.some(x=>x.kind==='presentation'));
+  assert.equal(revised.spec.samples,61);
+  assert.equal(revised.baseline.qualification.origin.preparationStatus,'illustrative');
+  check('Revised portable experiment retains original assumptions and complete physics/numeric/presentation edit history');
+  await upload(join(downloads,repack));
+  ray=await until(rayInfo,r=>settled(r)&&r.hash===retained,'reopen revised ray experiment');
+  assert.equal(ray.brightness,'0.25');assert.equal(ray.mode,'single-ray');assert.equal(ray.sampling,'sparse');
+  check('Reopening a saved revised motion experiment restores ray controls and native execution');
+
  }catch(error){report.errors.push(error.stack);throw error;}
  finally{cdp?.close();browser.kill();server.kill();try{await until(async()=>[browser,server].every(p=>p.exitCode!==null||p.signalCode!==null),Boolean,'shutdown');await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:200});}finally{await writeFile(join(out,'report.json'),JSON.stringify(report,null,2)+'\n');}}
  console.log('Source motion browser PASS: '+report.checks.length+' checks, '+report.screenshots.length+' screenshots.');
