@@ -1,0 +1,35 @@
+{
+  "title":"Synthetic moving-source ideal thin-lens experiment",
+  "request":{
+    "lengthUnit":"cm",
+    "title":"Declared illustrative source crossing the ideal lens focal plane (while remaining left of lens)",
+    "runPolicy":"dense-v1",
+    "components":[
+      {"id":"S1","type":"point-source",
+       "parameters":{"x":-28,"y":1,"brightness":0.05},
+       "emission":{"mode":"directional","directionDeg":0,"angleDeg":40}},
+      {"id":"L1","type":"ideal-lens",
+       "parameters":{"x":0,"focalLength":20,"apertureHeight":12}}
+    ]
+  },
+  "motion":{
+    "format":"opticsim-source-motion-v1",
+    "sourceId":"S1","law":"constant-velocity",
+    "velocity":{"x":4,"y":1.2,"unit":"cm/s"},
+    "durationSeconds":3,
+    "samples":61,
+    "continuationAssumption":"Synthetic demonstration only: the source moves at the declared constant Cartesian velocity for three seconds; this is not a statement from an original textbook question."
+  },
+  "interpretation":{
+    "requestedResult":"Test shared native ray playback and independent conditional real, infinity, and virtual ideal thin-lens image kinematics.",
+    "stated":[],
+    "derived":["Every optical time sample is produced by the deterministic motion engine; the source remains left of the stationary lens throughout."],
+    "assumptions":[
+      "Entire apparatus is illustrative: the source and lens dimensions, focal length, brightness, ray cone and duration are explicitly chosen for a software control.",
+      "Stationary ideal thin lens with fixed +20 cm focal length, finite 12 cm aperture and native PhyDemo ideal-lens geometry.",
+      "Constant source velocity (4 cm/s right, 1.2 cm/s up); no light-travel time, material dispersion, native detected-image point, or moving lens physics.",
+      "Image position and instantaneous image velocity are conditional Gaussian/ABCD calculations, not native ray detections."
+    ],
+    "unknowns":["No original question's optical parameters or requested answer are being inferred."]
+  }
+}
