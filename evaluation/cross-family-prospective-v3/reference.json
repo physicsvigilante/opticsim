@@ -1,0 +1,485 @@
+{
+  "format": "opticsim-cross-family-reference-v1",
+  "source": "Manually transcribed from frozen natural-language prompts by the same development assistant AFTER first-attempt commit. Not independently adjudicated.",
+  "promptFreezeCommit": "08518e49cea9a27e9e73965a9954618ac9517b26",
+  "firstAttemptsFreezeCommit": "ab792a3923da13f956eded1fa364d8089875bb21",
+  "cases": [
+    {
+      "id": "P01",
+      "classification": "supported",
+      "expectedPhysical": {
+        "lengthUnit": "cm",
+        "runPolicy": "preview-v1",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -26,
+              "y": 1.2,
+              "brightness": 0.06
+            },
+            "emission": {
+              "mode": "full-circle"
+            }
+          },
+          {
+            "id": "L1",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": 0,
+              "focalLength": 9,
+              "apertureHeight": 13
+            }
+          }
+        ]
+      },
+      "requestKinds": [
+        "ideal-image",
+        "source-emissions"
+      ],
+      "expectedPreflight": "native-ready",
+      "expectedFirstStatus": "available"
+    },
+    {
+      "id": "P02",
+      "classification": "supported",
+      "expectedPhysical": {
+        "lengthUnit": "cm",
+        "runPolicy": "preview-v1",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -18,
+              "y": 2.5,
+              "brightness": 0.08
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": 0,
+              "angleDeg": 16
+            }
+          },
+          {
+            "id": "M1",
+            "type": "plane-mirror",
+            "parameters": {
+              "x": 0,
+              "y": 0,
+              "orientationDeg": 90,
+              "length": 20
+            }
+          }
+        ]
+      },
+      "requestKinds": [
+        "mirror-reflections",
+        "source-emissions"
+      ],
+      "expectedPreflight": "native-ready",
+      "expectedFirstStatus": "available"
+    },
+    {
+      "id": "P03",
+      "classification": "supported",
+      "expectedPhysical": {
+        "lengthUnit": "mm",
+        "runPolicy": "preview-v1",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -280,
+              "y": 15,
+              "brightness": 0.09
+            },
+            "emission": {
+              "mode": "single-ray",
+              "directionDeg": 0
+            }
+          },
+          {
+            "id": "M1",
+            "type": "circular-arc-mirror",
+            "parameters": {
+              "x": 0,
+              "y": 0,
+              "normalDeg": 180,
+              "radius": 160,
+              "apertureHeight": 100
+            }
+          }
+        ]
+      },
+      "requestKinds": [
+        "mirror-reflections",
+        "source-emissions"
+      ],
+      "expectedPreflight": "native-ready",
+      "expectedFirstStatus": "available"
+    },
+    {
+      "id": "P04",
+      "classification": "supported",
+      "expectedPhysical": {
+        "lengthUnit": "cm",
+        "runPolicy": "preview-v1",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -24,
+              "y": 1,
+              "brightness": 0.09
+            },
+            "emission": {
+              "mode": "single-ray",
+              "directionDeg": 8
+            }
+          },
+          {
+            "id": "I1",
+            "type": "planar-interface",
+            "parameters": {
+              "x": 0,
+              "y": 0,
+              "normalDeg": 0,
+              "negativeIndex": 1,
+              "positiveIndex": 1.32,
+              "partialReflection": false
+            }
+          }
+        ]
+      },
+      "requestKinds": [
+        "interface-incidence-angle",
+        "interface-transmission-angle",
+        "interface-interactions"
+      ],
+      "expectedPreflight": "native-ready",
+      "expectedFirstStatus": "available"
+    },
+    {
+      "id": "P05",
+      "classification": "supported",
+      "expectedPhysical": {
+        "lengthUnit": "cm",
+        "runPolicy": "preview-v1",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -24,
+              "y": 1.1,
+              "brightness": 0.09
+            },
+            "emission": {
+              "mode": "single-ray",
+              "directionDeg": 0
+            }
+          },
+          {
+            "id": "C1",
+            "type": "circular-dielectric",
+            "parameters": {
+              "x": 0,
+              "y": 0,
+              "radius": 9.5,
+              "insideIndex": 1.43,
+              "outsideIndex": 1,
+              "partialReflection": false
+            }
+          }
+        ]
+      },
+      "requestKinds": [
+        "interface-interactions",
+        "interface-incidence-angle"
+      ],
+      "expectedPreflight": "native-ready",
+      "expectedFirstStatus": "available"
+    },
+    {
+      "id": "P06",
+      "classification": "supported",
+      "expectedPhysical": {
+        "lengthUnit": "cm",
+        "runPolicy": "preview-v1",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -25,
+              "y": 1,
+              "brightness": 0.09
+            },
+            "emission": {
+              "mode": "single-ray",
+              "directionDeg": 0
+            }
+          },
+          {
+            "id": "P1",
+            "type": "triangular-prism",
+            "parameters": {
+              "x1": 0,
+              "y1": -9,
+              "x2": 0,
+              "y2": 9,
+              "x3": 10,
+              "y3": -9,
+              "insideIndex": 1.4,
+              "outsideIndex": 1,
+              "partialReflection": false
+            }
+          }
+        ]
+      },
+      "requestKinds": [
+        "interface-interactions",
+        "interface-face-events"
+      ],
+      "expectedPreflight": "native-ready",
+      "expectedFirstStatus": "available"
+    },
+    {
+      "id": "P07",
+      "classification": "supported",
+      "expectedPhysical": {
+        "lengthUnit": "cm",
+        "runPolicy": "preview-v1",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -33,
+              "y": 0,
+              "brightness": 0.07
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": 0,
+              "angleDeg": 14
+            }
+          },
+          {
+            "id": "L1",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": -6,
+              "focalLength": 13,
+              "apertureHeight": 16
+            }
+          },
+          {
+            "id": "M1",
+            "type": "plane-mirror",
+            "parameters": {
+              "x": 18,
+              "y": 5,
+              "orientationDeg": 90,
+              "length": 18
+            }
+          },
+          {
+            "id": "D1",
+            "type": "ray-detector",
+            "parameters": {
+              "x": -22,
+              "y": 6.5,
+              "orientationDeg": 0,
+              "length": 8
+            }
+          }
+        ]
+      },
+      "requestKinds": [
+        "mirror-reflections",
+        "detector-crossings"
+      ],
+      "expectedPreflight": "native-ready",
+      "expectedFirstStatus": "available"
+    },
+    {
+      "id": "P08",
+      "classification": "supported",
+      "expectedPhysical": {
+        "lengthUnit": "cm",
+        "runPolicy": "preview-v1",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -36,
+              "y": 1.4,
+              "brightness": 0.08
+            },
+            "emission": {
+              "mode": "full-circle"
+            }
+          },
+          {
+            "id": "L1",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": 0,
+              "focalLength": 12,
+              "apertureHeight": 14
+            }
+          },
+          {
+            "id": "L2",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": 16,
+              "focalLength": -13,
+              "apertureHeight": 15
+            }
+          }
+        ]
+      },
+      "requestKinds": [
+        "ideal-image",
+        "source-emissions"
+      ],
+      "expectedPreflight": "native-ready",
+      "expectedFirstStatus": "available"
+    },
+    {
+      "id": "N01",
+      "classification": "negative-missing",
+      "expectedPhysical": {
+        "lengthUnit": "cm",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -24,
+              "y": 1,
+              "brightness": 0.08
+            },
+            "emission": {
+              "mode": "full-circle"
+            }
+          },
+          {
+            "id": "L1",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": 0,
+              "apertureHeight": 15
+            }
+          }
+        ]
+      },
+      "requestKinds": [
+        "ideal-image"
+      ],
+      "expectedPreflight": "blocked",
+      "expectedFirstStatus": "needs-information",
+      "reasonCode": "NATIVE_SCENE_REQUIRED"
+    },
+    {
+      "id": "N02",
+      "classification": "negative-unsupported",
+      "expectedPhysical": null,
+      "requestKinds": [
+        "material-lensmaker-focal-ratio"
+      ],
+      "expectedPreflight": "blocked",
+      "expectedFirstStatus": "unavailable",
+      "reasonCode": "UNSUPPORTED_QUANTITY"
+    },
+    {
+      "id": "N03",
+      "classification": "negative-ambiguous",
+      "expectedPhysical": {
+        "lengthUnit": "cm",
+        "runPolicy": "preview-v1",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -19,
+              "y": 2,
+              "brightness": 0.07
+            },
+            "emission": {
+              "mode": "full-circle"
+            }
+          },
+          {
+            "id": "S2",
+            "type": "point-source",
+            "parameters": {
+              "x": -23,
+              "y": -2,
+              "brightness": 0.08
+            },
+            "emission": {
+              "mode": "full-circle"
+            }
+          }
+        ]
+      },
+      "requestKinds": [
+        "source-emissions"
+      ],
+      "expectedPreflight": "blocked",
+      "expectedFirstStatus": "needs-information",
+      "reasonCode": "AMBIGUOUS_COMPONENT_TARGET"
+    },
+    {
+      "id": "N04",
+      "classification": "negative-invalid",
+      "expectedPhysical": {
+        "lengthUnit": "cm",
+        "runPolicy": "preview-v1",
+        "components": [
+          {
+            "id": "S1",
+            "type": "point-source",
+            "parameters": {
+              "x": -25,
+              "y": 0,
+              "brightness": 0.09
+            },
+            "emission": {
+              "mode": "single-ray",
+              "directionDeg": 0
+            }
+          },
+          {
+            "id": "C1",
+            "type": "circular-dielectric",
+            "parameters": {
+              "x": 0,
+              "y": 0,
+              "radius": 9,
+              "insideIndex": 0.7,
+              "outsideIndex": 1,
+              "partialReflection": false
+            }
+          }
+        ]
+      },
+      "requestKinds": [
+        "interface-interactions"
+      ],
+      "expectedPreflight": "invalid-input",
+      "expectedFirstStatus": "invalid-input",
+      "reasonCode": "INVALID_PROBLEM_INPUT"
+    }
+  ],
+  "scoringPolicy": "Physical facts compared after canonical unit conversion for valid supported setups; invalid/missing facts compared as originally stated. Request kinds scored independently from facts and native completion; synthetic references not ground-truth textbook answers."
+}

@@ -29,6 +29,8 @@ jobs:
         run: node scripts/supported-authoring-demos.mjs
       - name: Open, edit and reopen the three supported demonstrations in Chrome
         run: node scripts/supported-demo-browser.mjs
+      - name: Replay sealed cross-family synthetic first attempts (same assistant, not a model benchmark)
+        run: node evaluation/cross-family-prospective-v3/replay.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -44,5 +46,6 @@ jobs:
             test-artifacts/qualified-workflow/
             test-artifacts/llm-authoring/
             test-artifacts/browser-qualified/
+            test-artifacts/llm-evaluation/cross-family-v3/
           if-no-files-found: error
           retention-days: 14

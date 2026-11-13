@@ -1,0 +1,572 @@
+{
+  "format": "opticsim-cross-family-first-attempts-v1",
+  "promptFreezeCommit": "08518e49cea9a27e9e73965a9954618ac9517b26",
+  "author": "same-chat-assistant",
+  "independentModel": false,
+  "externalModelCalls": 0,
+  "attemptedBeforeAnyDeterministicExecution": true,
+  "sourceMaterial": "Frozen synthetic natural-language prompts only; no Solutions or textbook reference images.",
+  "repairs": 0,
+  "attemptPolicy": "One JSON envelope per case. Preserve without editing after scoring; any corrections must be tracked in a separate artifact.",
+  "attempts": [
+    {
+      "id": "P01",
+      "response": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "cm",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -26,
+                "y": 1.2,
+                "brightness": 0.06
+              },
+              "emission": {
+                "mode": "full-circle"
+              }
+            },
+            {
+              "id": "L1",
+              "type": "ideal-lens",
+              "parameters": {
+                "x": 0,
+                "focalLength": 9,
+                "apertureHeight": 13
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "image",
+            "kind": "ideal-image"
+          },
+          {
+            "id": "emission",
+            "kind": "source-emissions"
+          }
+        ],
+        "illustration": false,
+        "verifyNative": false
+      }
+    },
+    {
+      "id": "P02",
+      "response": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "cm",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -18,
+                "y": 2.5,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 16
+              }
+            },
+            {
+              "id": "M1",
+              "type": "plane-mirror",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 20
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "reflections",
+            "kind": "mirror-reflections"
+          },
+          {
+            "id": "emission",
+            "kind": "source-emissions"
+          }
+        ],
+        "illustration": false,
+        "verifyNative": false
+      }
+    },
+    {
+      "id": "P03",
+      "response": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -280,
+                "y": 15,
+                "brightness": 0.09
+              },
+              "emission": {
+                "mode": "single-ray",
+                "directionDeg": 0
+              }
+            },
+            {
+              "id": "M1",
+              "type": "circular-arc-mirror",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "normalDeg": 180,
+                "radius": 160,
+                "apertureHeight": 100
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "reflections",
+            "kind": "mirror-reflections"
+          },
+          {
+            "id": "emission",
+            "kind": "source-emissions"
+          }
+        ],
+        "illustration": false,
+        "verifyNative": false
+      }
+    },
+    {
+      "id": "P04",
+      "response": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "cm",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -24,
+                "y": 1,
+                "brightness": 0.09
+              },
+              "emission": {
+                "mode": "single-ray",
+                "directionDeg": 8
+              }
+            },
+            {
+              "id": "I1",
+              "type": "planar-interface",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "normalDeg": 0,
+                "negativeIndex": 1,
+                "positiveIndex": 1.32,
+                "partialReflection": false
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "incidence",
+            "kind": "interface-incidence-angle"
+          },
+          {
+            "id": "transmission",
+            "kind": "interface-transmission-angle"
+          },
+          {
+            "id": "interactions",
+            "kind": "interface-interactions"
+          }
+        ],
+        "illustration": false,
+        "verifyNative": false
+      }
+    },
+    {
+      "id": "P05",
+      "response": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "cm",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -24,
+                "y": 1.1,
+                "brightness": 0.09
+              },
+              "emission": {
+                "mode": "single-ray",
+                "directionDeg": 0
+              }
+            },
+            {
+              "id": "C1",
+              "type": "circular-dielectric",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "radius": 9.5,
+                "insideIndex": 1.43,
+                "outsideIndex": 1,
+                "partialReflection": false
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "interactions",
+            "kind": "interface-interactions"
+          },
+          {
+            "id": "incidence",
+            "kind": "interface-incidence-angle"
+          }
+        ],
+        "illustration": false,
+        "verifyNative": false
+      }
+    },
+    {
+      "id": "P06",
+      "response": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "cm",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -25,
+                "y": 1,
+                "brightness": 0.09
+              },
+              "emission": {
+                "mode": "single-ray",
+                "directionDeg": 0
+              }
+            },
+            {
+              "id": "P1",
+              "type": "triangular-prism",
+              "parameters": {
+                "x1": 0,
+                "y1": -9,
+                "x2": 0,
+                "y2": 9,
+                "x3": 10,
+                "y3": -9,
+                "insideIndex": 1.4,
+                "outsideIndex": 1,
+                "partialReflection": false
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "interactions",
+            "kind": "interface-interactions"
+          },
+          {
+            "id": "faces",
+            "kind": "interface-face-events"
+          }
+        ],
+        "illustration": false,
+        "verifyNative": false
+      }
+    },
+    {
+      "id": "P07",
+      "response": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "cm",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -33,
+                "y": 0,
+                "brightness": 0.07
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 14
+              }
+            },
+            {
+              "id": "L1",
+              "type": "ideal-lens",
+              "parameters": {
+                "x": -6,
+                "focalLength": 13,
+                "apertureHeight": 16
+              }
+            },
+            {
+              "id": "M1",
+              "type": "plane-mirror",
+              "parameters": {
+                "x": 18,
+                "y": 5,
+                "orientationDeg": 90,
+                "length": 18
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": -22,
+                "y": 6.5,
+                "orientationDeg": 0,
+                "length": 8
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "reflections",
+            "kind": "mirror-reflections"
+          },
+          {
+            "id": "detector",
+            "kind": "detector-crossings"
+          }
+        ],
+        "illustration": false,
+        "verifyNative": false
+      }
+    },
+    {
+      "id": "P08",
+      "response": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "cm",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -36,
+                "y": 1.4,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "full-circle"
+              }
+            },
+            {
+              "id": "L1",
+              "type": "ideal-lens",
+              "parameters": {
+                "x": 0,
+                "focalLength": 12,
+                "apertureHeight": 14
+              }
+            },
+            {
+              "id": "L2",
+              "type": "ideal-lens",
+              "parameters": {
+                "x": 16,
+                "focalLength": -13,
+                "apertureHeight": 15
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "image",
+            "kind": "ideal-image"
+          },
+          {
+            "id": "emission",
+            "kind": "source-emissions"
+          }
+        ],
+        "illustration": false,
+        "verifyNative": false
+      }
+    },
+    {
+      "id": "N01",
+      "response": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "cm",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -24,
+                "y": 1,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "full-circle"
+              }
+            },
+            {
+              "id": "L1",
+              "type": "ideal-lens",
+              "parameters": {
+                "x": 0,
+                "apertureHeight": 15
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "image",
+            "kind": "ideal-image"
+          }
+        ],
+        "illustration": false,
+        "verifyNative": false
+      }
+    },
+    {
+      "id": "N02",
+      "response": {
+        "format": "opticsim-problem-v1",
+        "physical": null,
+        "requests": [
+          {
+            "id": "ratio",
+            "kind": "material-lensmaker-focal-ratio"
+          }
+        ],
+        "illustration": false,
+        "verifyNative": false
+      }
+    },
+    {
+      "id": "N03",
+      "response": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "cm",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -19,
+                "y": 2,
+                "brightness": 0.07
+              },
+              "emission": {
+                "mode": "full-circle"
+              }
+            },
+            {
+              "id": "S2",
+              "type": "point-source",
+              "parameters": {
+                "x": -23,
+                "y": -2,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "full-circle"
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "emission",
+            "kind": "source-emissions"
+          }
+        ],
+        "illustration": false,
+        "verifyNative": false
+      }
+    },
+    {
+      "id": "N04",
+      "response": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "cm",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -25,
+                "y": 0,
+                "brightness": 0.09
+              },
+              "emission": {
+                "mode": "single-ray",
+                "directionDeg": 0
+              }
+            },
+            {
+              "id": "C1",
+              "type": "circular-dielectric",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "radius": 9,
+                "insideIndex": 0.7,
+                "outsideIndex": 1,
+                "partialReflection": false
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "interactions",
+            "kind": "interface-interactions"
+          }
+        ],
+        "illustration": false,
+        "verifyNative": false
+      }
+    }
+  ]
+}
