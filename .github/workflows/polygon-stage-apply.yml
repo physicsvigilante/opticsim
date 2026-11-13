@@ -1,0 +1,54 @@
+name: Integrate checked polygon sources (temporary feature branch only)
+on:
+  push:
+    branches: ['feature/convex-glass-polygon']
+    paths: ['.github/workflows/polygon-stage-apply.yml']
+permissions:
+  contents: write
+jobs:
+  stage-verified-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - name: Verify exact compressed source patch and apply on feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .polygon-delta/part-*.b64 | base64 -d > /tmp/opticsim-polygon-source.patch.xz
+          echo 'b3a377e8cd2192d92f28759a556363291548aa6ebf2b9004d295c4066f9f7485  /tmp/opticsim-polygon-source.patch.xz' | sha256sum --check
+          xz -dc /tmp/opticsim-polygon-source.patch.xz > /tmp/opticsim-polygon-source.patch
+          echo '839899c46c94bfacaf9afb6663292f308bd4cf0b58fe4ad71e0109bddb60a86b  /tmp/opticsim-polygon-source.patch' | sha256sum --check
+          git apply --unidiff-zero --check /tmp/opticsim-polygon-source.patch
+          git apply --unidiff-zero /tmp/opticsim-polygon-source.patch
+          git status --short
+      - name: Prepare unchanged pinned PhyDemo dependencies
+        run: npm run setup
+      - name: Verify all Node regression tests on exactly staged source
+        run: npm test
+      - name: Run native polygon-gold acceptance and immutable sweeps
+        run: node scripts/polygon-glass-acceptance.mjs
+      - name: Build and validate allowlisted static viewer
+        run: |
+          npm run build
+          node scripts/pack-demo.mjs
+      - name: Commit only validated feature source, delete every temporary transport and workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'opticsim-ci-staging'
+          git config user.email 'opticsim-ci-staging@users.noreply.github.com'
+          git rm -r -- .polygon-delta
+          git rm -f --ignore-unmatch .polygon-stage-probe .github/workflows/polygon-source-snapshot.yml .github/workflows/polygon-stage-try.yml .github/workflows/polygon-stage-apply.yml
+          git add -A
+          echo 'Final changed paths relative to main:'
+          git diff --cached --name-only
+          if git diff --cached --name-only | grep -E '(^evaluation/|^01_problems|^08_Ray_Optics|^vendor/|^\.polygon|^\.github/workflows/polygon-|^third_party/)' ; then
+            echo 'Forbidden historical archive or temporary transport remains staged' >&2
+            exit 1
+          fi
+          git commit -m 'Milestone 21: bounded convex four-sided dielectric with shared finite-glass native observables'
+          git push origin HEAD:refs/heads/feature/convex-glass-polygon
