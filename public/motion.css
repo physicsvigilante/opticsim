@@ -52,3 +52,6 @@
 #mirror-aperture-slider{flex:1;min-width:120px;accent-color:var(--accent)}
 #mirror-aperture-note{font-size:12px;color:var(--muted);margin:6px 0 0}
 #mirror-aperture-cm:disabled,#mirror-aperture-slider:disabled{opacity:.5}
+
+/* Author flex/grid styles must not override semantic hidden controls. */
+[hidden]{display:none!important}

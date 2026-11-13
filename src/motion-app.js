@@ -9,14 +9,54 @@ import {curvedPoints,isCurved} from './curved-mirrors.js';
 const $=id=>document.getElementById(id),layers=['light','below','above','grid'].map($);
 let model=null,player=null,loadGeneration=0,currentIndex=null,currentEvidence=null;
 let viewSubjects=null,nativeCamera=null,cameraControl=defaultMotionCameraControl(),cameraRenderTimer=null;
+let experimentBusy=false,resizeTimer=null;
 const number=x=>Number.isFinite(x)?Number(x.toFixed(4)).toString():'unavailable';
 const pair=(v,scale=10)=>v?'x '+number(v.x/scale)+'  ·  y '+number(v.y/scale):'Unavailable';
 function download(name,value){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)+'\n'],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-function clearRays(){for(const canvas of [...layers,$('guides')])canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);delete $('native-stage').dataset.viewport;}
+function clearRays(){
+ for(const canvas of [...layers,$('guides')]){
+  const ctx=canvas.getContext('2d');ctx.save();ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,canvas.width,canvas.height);ctx.restore();
+ }
+ delete $('native-stage').dataset.viewport;
+}
+function clearCurrentResult(message,{clearNative=false}={}){
+ currentIndex=null;currentEvidence=null;nativeCamera=null;
+ if(clearNative)clearRays();
+ else $('guides').getContext('2d').clearRect(0,0,$('guides').width,$('guides').height);
+ delete $('native-stage').dataset.viewport;delete $('image-plot').dataset.viewport;
+ const plot=$('image-plot');plot.getContext('2d').clearRect(0,0,plot.width,plot.height);
+ $('native-counts').textContent=message;
+ for(const id of ['object-value','image-value','velocity-value'])$(id).textContent='No current frame';
+ $('image-model').textContent='Awaiting the current experiment/frame';
+ $('plot-note').textContent=message;$('native-view-note').textContent=message;
+ $('save-frame').disabled=true;$('save-report').disabled=true;
+}
+function syncTransport(){
+ const blocked=experimentBusy||!model||!player;
+ $('play').disabled=blocked||player.playing;
+ $('pause').disabled=blocked||!player.playing;
+ for(const id of ['reset','time','speed','camera-mode'])$(id).disabled=blocked;
+ $('save-motion').disabled=experimentBusy||!model;
+ refreshZoomControls();
+}
+function beginExperimentChange(){
+ const token=++loadGeneration;
+ experimentBusy=true;
+ // Detach before stopping: callbacks from the old player cannot republish it.
+ const previous=player;player=null;previous?.stop();
+ clearTimeout(cameraRenderTimer);cameraRenderTimer=null;
+ clearTimeout(resizeTimer);resizeTimer=null;
+ clearCurrentResult('Validating experiment — previous readings cleared',{clearNative:true});
+ $('native-state').dataset.state='validating';$('native-state').textContent='Native: validating experiment';
+ syncTransport();return token;
+}
+function cancelCameraRefresh(){clearTimeout(cameraRenderTimer);cameraRenderTimer=null;clearTimeout(resizeTimer);resizeTimer=null;}
+
 
 function cameraMode(){return $('camera-mode').value;}
 function fitCameraFor(element){
- if(!viewSubjects||!model||!player)return null;
+ if(experimentBusy||!viewSubjects||!model||!player)return null;
  const box=element.getBoundingClientRect(),width=Math.round(box.width),height=Math.round(box.height);
  if(width<80||height<80)return null;
  const frame=player.result?.frame||model.frame(player.index);
@@ -38,8 +78,10 @@ function refreshZoomControls(){
   Math.abs(cameraControl.panMm.x)<1e-8&&Math.abs(cameraControl.panMm.y)<1e-8;
 }
 function rerenderForCamera(immediate=false){
- if(!player)return;
- player.pause();
+ if(experimentBusy||!player)return;
+ // A pending camera is not a finished render: invalidate export immediately,
+ // abort old native work and coalesce only the repaint, not the evidence.
+ player.stop();clearCurrentResult('Camera changed — recomputing this frame',{clearNative:true});
  clearTimeout(cameraRenderTimer);
  // Switching automatic fit is immediate. High-frequency wheel/drag redraws
  // are coalesced without allowing old callbacks to become current evidence.
@@ -67,7 +109,7 @@ function setupCameraPointer(element){
   if(!player)return;
   event.preventDefault();
   const now=performance.now();
-  if(now-lastWheel<70)return;lastWheel=now;
+  if(event.deltaY===0||now-lastWheel<70)return;lastWheel=now;
   const bounds=element.getBoundingClientRect();
   zoomCamera(event.deltaY<0?1:-1,element,{
    x:Math.max(0,Math.min(bounds.width,event.clientX-bounds.left)),
@@ -135,6 +177,7 @@ function drawNativeGuides(frame){
 function drawPlot(frame){
  const canvas=$('image-plot'),rect=canvas.getBoundingClientRect();canvas.width=Math.round(rect.width);canvas.height=Math.round(rect.height);
  const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);
+ delete canvas.dataset.viewport;
  if(!viewSubjects||w<80||h<80)return;
  const fitted=fitMotionView(viewSubjects,w,h,{mode:cameraMode(),frame});
  const adjusted=applyMotionCameraControl(fitted,cameraControl),camera=adjusted.camera;
@@ -162,15 +205,19 @@ function drawPlot(frame){
 }
 
 function ui(p){
- if(p!==player)return;
+ if(p!==player||experimentBusy)return;
  const time=p.model.times[p.index];$('clock').textContent=time.toFixed(3)+' s';$('time').value=p.index;
  $('sample').textContent='Frame '+(p.index+1)+' / '+p.model.times.length;
  $('native-state').dataset.state=p.state;$('native-state').textContent='Native: '+p.state;
- $('play').disabled=p.playing;$('pause').disabled=!p.playing;$('reset').disabled=false;$('time').disabled=false;
- if(!p.result){currentIndex=null;currentEvidence=null;$('native-counts').textContent='Current frame pending — previous readings cleared';
-  for(const id of ['object-value','image-value','velocity-value'])$(id).textContent='Pending current frame';
-  $('save-frame').disabled=true;$('save-report').disabled=true;drawPlot(null);$('guides').getContext('2d').clearRect(0,0,$('guides').width,$('guides').height);return;}
- const {frame,native}=p.result;currentIndex=p.index;
+ syncTransport();
+ if(!p.result){
+  clearCurrentResult(p.state==='invalid'?'Invalid frame — no current result':'Current frame pending — previous readings cleared');return;
+ }
+ const {frame,native}=p.result;
+ if(!frame||frame.experimentSha256!==model.integritySha256){
+  clearCurrentResult('Stale frame withheld: experiment identity does not match',{clearNative:true});return;
+ }
+ currentIndex=p.index;nativeCamera=native.displayCamera??null;
  const d=native.diagnostics,complete=['completed','completed-with-warnings'].includes(native.status);
  $('native-counts').textContent=complete?d.emitted+' emitted · '+d.reflections+' reflections · '+d.processed+' segments':
   'No completed native observations. '+(native.error||native.issues?.join('; ')||'Frame is incomplete.');
@@ -185,7 +232,7 @@ function ui(p){
  drawPlot(frame);drawNativeGuides(frame);
  currentEvidence={format:'opticsim-motion-frame-evidence-v1',experimentSha256:model.integritySha256,
   timeSeconds:frame.timeSeconds,frameIndex:p.index,source:frame.object,analysis:frame.analysis,native,
-  presentationCamera:{...nativeCamera,mode:cameraMode(),zoomFactor:cameraControl.zoomFactor,panMm:{...cameraControl.panMm}},
+  presentationCamera:nativeCamera?structuredClone(nativeCamera):null,
   conditions:frame.assumptions,questionSupport:'not-assessed-by-engine'};
  $('save-frame').disabled=!frame.scene;$('save-report').disabled=false;
 }
@@ -201,13 +248,13 @@ async function render(frame,signal){
  view.presentation.view={...adjusted.view};
  const {scene,idMap}=loadDocument(view,width,height),emission=observeSourceSet(view,scene,idMap),
   reflections=observeMirrorSet(view,scene,idMap),detectors=observeDetectorSet(view,scene,idMap);
- nativeCamera={origin:{...scene.origin},scale:scene.scale,width,height,mode:fitted.mode,
-  relativeZoom:adjusted.relativeZoom,panMm:{...cameraControl.panMm}};
+ const displayCamera={origin:{...scene.origin},scale:scene.scale,width,height,mode:fitted.mode,
+  relativeZoom:adjusted.relativeZoom,zoomFactor:cameraControl.zoomFactor,panMm:{...cameraControl.panMm}};
  const sim=new Simulator(scene,...layers.map(c=>c.getContext('2d')),null,true,view.simulation.processedRayLimit);
  return new Promise((resolve,reject)=>{
   let settled=false,timer;
   const cancel=()=>{if(sim.simulationTimerId!==-1)clearTimeout(sim.simulationTimerId);sim.simulationTimerId=-1;sim.shouldSimulatorStop=true;};
-  const finish=result=>{if(settled)return;settled=true;clearTimeout(timer);signal.removeEventListener('abort',abort);resolve(result);};
+  const finish=result=>{if(settled)return;settled=true;clearTimeout(timer);signal.removeEventListener('abort',abort);resolve({...result,displayCamera});};
   const abort=()=>{cancel();finish({status:'cancelled'});};
   signal.addEventListener('abort',abort,{once:true});if(signal.aborted){abort();return;}
   timer=setTimeout(()=>{cancel();finish({status:'stopped',error:'Native frame exceeded the 10-second wall-time bound.'});},10000);
@@ -235,37 +282,37 @@ function showMotionAssumptions(){
 }
 
 async function applyRayControlChange(change){
- if(!model)throw Error('No verified motion experiment loaded');
+ if(experimentBusy||!model)throw Error('No idle verified motion experiment loaded');
  const previous=model,at=player?.index??0,speed=player?.speed??.1,
   camera=structuredClone(cameraControl),mode=cameraMode();
- const token=++loadGeneration;
- player?.stop();clearTimeout(cameraRenderTimer);cameraRenderTimer=null;
+ const token=beginExperimentChange();
  try{
   const changed=await reviseMotionRayExperiment(previous.exportExperiment(),change);
   const candidate=await prepareMotionExperiment(changed);
-  if(token!==loadGeneration)return;
+  if(token!==loadGeneration)return false;
   model=candidate;viewSubjects=collectMotionView(model);cameraControl=camera;
   $('camera-mode').value=mode;
   player=new MotionPlayer({model,render,onState:ui});
   player.setSpeed(speed);
   showMotionAssumptions();
   $('experiment-hash').textContent='Experiment SHA-256: '+model.integritySha256;
-  $('save-motion').disabled=false;
+  experimentBusy=false;syncTransport();
   await player.seek(Math.min(at,model.times.length-1));
+  return token===loadGeneration;
  }catch(error){
-  if(token!==loadGeneration)return;
+  if(token!==loadGeneration)return false;
   model=previous;viewSubjects=collectMotionView(model);cameraControl=camera;
   $('camera-mode').value=mode;
   player=new MotionPlayer({model,render,onState:ui});
-  player.setSpeed(speed);
+  player.setSpeed(speed);experimentBusy=false;syncTransport();
   await player.seek(Math.min(at,model.times.length-1));
   throw error;
  }
 }
 
 async function load(value){
- const token=++loadGeneration;player?.stop();clearTimeout(cameraRenderTimer);cameraRenderTimer=null;
- model=null;rayUI.reset();
+ const token=beginExperimentChange();
+ model=null;rayUI.reset();$('experiment-hash').textContent='';$('assumptions').textContent='No verified experiment loaded.';
  cameraControl=defaultMotionCameraControl();clearRays();currentIndex=null;currentEvidence=null;viewSubjects=null;nativeCamera=null;drawPlot(null);refreshZoomControls();
  for(const id of ['play','pause','reset','time','save-motion','save-frame','save-report'])$(id).disabled=true;
  try{
@@ -276,13 +323,18 @@ async function load(value){
   $('time').max=model.times.length-1;$('speed').value='0.1';player.setSpeed(.1);
   showMotionAssumptions();
   $('experiment-hash').textContent='Experiment SHA-256: '+model.integritySha256;
-  $('error').hidden=true;$('save-motion').disabled=false;rayUI.reset();refreshZoomControls();await player.seek(0);
- }catch(error){if(token!==loadGeneration)return;model=null;player=null;drawPlot(null);$('native-state').dataset.state='invalid';$('native-state').textContent='Native: not run — invalid experiment';$('error').hidden=false;$('error').textContent=error.message;
+  $('error').hidden=true;experimentBusy=false;rayUI.reset();syncTransport();await player.seek(0);
+ }catch(error){if(token!==loadGeneration)return;model=null;player=null;experimentBusy=false;viewSubjects=null;
+  clearCurrentResult('Rejected experiment — no current results',{clearNative:true});syncTransport();
+  $('native-state').dataset.state='invalid';$('native-state').textContent='Native: not run — invalid experiment';$('error').hidden=false;$('error').textContent=error.message;
   for(const id of ['play','pause','reset','time','save-motion','save-frame','save-report'])$(id).disabled=true;
   rayUI.sync();}
 }
-$('play').onclick=()=>player?.play();$('pause').onclick=()=>player?.pause();$('reset').onclick=()=>player?.seek(0);
-$('time').oninput=()=>player?.seek(Number($('time').value));$('speed').onchange=()=>player?.setSpeed(Number($('speed').value));
+$('play').onclick=()=>{if(!experimentBusy){cancelCameraRefresh();player?.play();}};
+$('pause').onclick=()=>player?.pause();
+$('reset').onclick=()=>{if(!experimentBusy){cancelCameraRefresh();player?.seek(0);}};
+$('time').oninput=()=>{if(!experimentBusy){cancelCameraRefresh();player?.seek(Number($('time').value));}};
+$('speed').onchange=()=>{if(!experimentBusy)player?.setSpeed(Number($('speed').value));};
 $('camera-mode').onchange=()=>resetCameraFit();
 $('zoom-in').onclick=()=>zoomCamera(1,$('native-stage'));
 $('zoom-out').onclick=()=>zoomCamera(-1,$('native-stage'));
@@ -290,15 +342,23 @@ $('zoom-fit').onclick=()=>resetCameraFit();
 setupCameraPointer($('native-stage'));setupCameraPointer($('image-plot'));
 const rayUI=new MotionRayUI({getModel:()=>model,onChange:applyRayControlChange});
 $('example').onchange=()=>load(makeU2Motion(example,{circular:$('example').value==='circular'}));
-$('open-motion').onchange=async()=>{const file=$('open-motion').files[0];if(!file)return;player?.stop();
- if(file.size>1500000){$('error').hidden=false;$('error').textContent='Experiment file exceeds 1.5 MB';return;}
- await load(file.text());};
-$('save-motion').onclick=()=>model&&download('source-motion.experiment.json',model.exportExperiment());
+$('open-motion').onchange=async()=>{const file=$('open-motion').files[0];if(!file)return;
+ $('open-motion').value='';
+ // Oversized files use the same invalidation path as malformed packages;
+ // the old experiment must not remain exportable behind an error message.
+ await load(file.size>1500000?Promise.reject(Error('Experiment file exceeds 1.5 MB')):file.text());};
+$('save-motion').onclick=()=>!experimentBusy&&model&&download('source-motion.experiment.json',model.exportExperiment());
 $('save-report').onclick=()=>currentEvidence&&download('motion-frame-evidence.json',currentEvidence);
 $('save-frame').onclick=async()=>{const currentModel=model,index=currentIndex,token=loadGeneration;
- if(index===null)return;try{const b=await currentModel.qualifiedFrame(index);if(token===loadGeneration)download('motion-frame.qualified.json',b);}catch(error){$('error').hidden=false;$('error').textContent=error.message;}};
-let resizeTimer;window.addEventListener('resize',()=>{player?.pause();clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{
-  if(player){refreshZoomControls();player.seek(player.index);}
- },120);});
+ if(experimentBusy||index===null)return;try{const b=await currentModel.qualifiedFrame(index);if(token===loadGeneration&&!experimentBusy)download('motion-frame.qualified.json',b);}catch(error){if(token===loadGeneration){$('error').hidden=false;$('error').textContent=error.message;}}};
+window.addEventListener('resize',()=>{
+ if(experimentBusy||!player||!nativeCamera)return;
+ const rect=$('native-stage').getBoundingClientRect();
+ // Ignore startup/browser events that did not change the actual canvas.
+ if(Math.round(rect.width)===nativeCamera.width&&Math.round(rect.height)===nativeCamera.height)return;
+ player.stop();clearCurrentResult('Viewport resized — recomputing this frame',{clearNative:true});
+ clearTimeout(resizeTimer);const token=loadGeneration;
+ resizeTimer=setTimeout(()=>{resizeTimer=null;if(token===loadGeneration&&!experimentBusy&&player)player.seek(player.index);},120);
+});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)player?.pause();});
 load(makeU2Motion(example)).catch(error=>{$('error').hidden=false;$('error').textContent=error.message;});

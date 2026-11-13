@@ -22,6 +22,7 @@ jobs:
       - run: node scripts/pack-motion.mjs
       - run: node scripts/motion-browser.mjs
       - run: node scripts/motion-viewport-browser.mjs
+      - run: node scripts/motion-audit-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

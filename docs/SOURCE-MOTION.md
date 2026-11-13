@@ -234,7 +234,8 @@ a complete frame. Storage errors abort rather than being called optics errors.
 One source and one stationary ideal/circular curved mirror, with optional
 passive detectors, are supported. At most 241 time samples cover a positive
 interval of at most 10 seconds. Native limits are at most 10000 processed
-segments per frame and maximum depth 16. A conservative continuous-path check
+segments per frame and maximum depth 8, matching the existing canonical validator.
+A conservative continuous-path check
 excludes source motion through the mirror aperture disk, the mirror's back
 side, or detector supporting lines; these are supported-scope restrictions,
 not claims about the impossibility of every excluded arrangement.
@@ -264,6 +265,10 @@ pause/reset. Acceptance executes 61 ideal and 61 circular snapshots with the
 real pinned native core. Browser tests cover playback, scrubbing, export/reopen,
 model distinction, focal and tampered-package controls, and direct file opening.
 These are development and integration checks, not independent LLM evaluation.
+
+The correction audit in `CORRECTION-AUDIT.md` additionally covers asynchronous
+input mutation, invalid direction confirmation, stale-result export, rejected
+imports, real canvas clearing, and hidden-control rendering.
 
 This work is a draft stacked on PR #27. Neither #27 nor this new PR is merged
 by implementing this prototype. No earlier original problem record is changed.

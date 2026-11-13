@@ -13,18 +13,27 @@ const numeric=id=>{
 export class MotionRayUI{
  constructor({getModel,onChange}){
   this.getModel=getModel;this.onChange=onChange;this.busy=false;this.directionExplicit=false;
-  this.bind();this.sync();
+  this.revision=0;this.bind();this.sync();
  }
  error(e){
   $('ray-control-error').hidden=!e;
   $('ray-control-error').textContent=e?String(e.message||e):'';
  }
- reset(){this.directionExplicit=false;this.error(null);this.sync();}
+ reset(){this.revision++;this.busy=false;this.directionExplicit=false;this.error(null);this.sync();}
  async apply(change){
-  if(this.busy||!this.getModel())return;
+  if(this.busy||!this.getModel())return false;
+  const revision=this.revision,request=structuredClone(change);
   this.busy=true;this.error(null);this.sync();
-  try{await this.onChange(change);}catch(error){this.error(error);}
-  finally{this.busy=false;this.sync();}
+  try{
+   const accepted=await this.onChange(request);
+   if(revision!==this.revision||accepted===false)return false;
+   // Only a successfully validated direction can authorize conversion from an
+   // omnidirectional source. An invalid number must not confirm an old value.
+   if(request.emissionMode==='full-circle')this.directionExplicit=false;
+   else if(Object.hasOwn(request,'directionDeg'))this.directionExplicit=true;
+   return true;
+  }catch(error){if(revision===this.revision)this.error(error);return false;}
+  finally{if(revision===this.revision){this.busy=false;this.sync();}}
  }
  submitNumber(id,key){
   try{this.apply({[key]:numeric(id)});}
@@ -86,7 +95,7 @@ export class MotionRayUI{
   $('ray-custom-density').onchange=()=>this.submitNumber('ray-custom-density','rayDensity');
   $('ray-direction').onchange=()=>{
    try{const directionDeg=numeric('ray-direction');
-    this.directionExplicit=true;this.apply({directionDeg});}
+    this.apply({directionDeg});}
    catch(error){this.error(error);this.sync();}
   };
   $('ray-opening').onchange=()=>this.submitNumber('ray-opening','angleDeg');
@@ -103,7 +112,6 @@ export class MotionRayUI{
     try{change.directionDeg=numeric('ray-direction');}
     catch(error){this.error(error);this.sync();return;}
    }
-   if(mode==='full-circle')this.directionExplicit=false;
    this.apply(change);
   };
   $('ray-view').onchange=()=>this.apply({presentationMode:$('ray-view').value});

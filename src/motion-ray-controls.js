@@ -97,9 +97,12 @@ export function editMotionRayScene(scene,change){
  return validate(next);
 }
 export async function reviseMotionRayExperiment(experiment,change){
+ // UI/LLM callers retain ownership of their request; async hashing must not
+ // let a later mutation alter the edit that is being accepted.
+ const requestedChange=structuredClone(change);
  const base=await prepareMotionExperiment(experiment);
  const oldPackage=base.exportExperiment(),oldScene=oldPackage.baseline.scene;
- const newScene=editMotionRayScene(oldScene,change);
+ const newScene=editMotionRayScene(oldScene,requestedChange);
  const prior=oldPackage.baseline;
  const qualification=recordQualifiedEdit(oldScene,newScene,prior.qualification);
  // A scene containing an explicit physical or sampling edit must never be

@@ -17,7 +17,7 @@ function finite(x,min,max,label){if(typeof x!=='number'||!Number.isFinite(x)||x<
 export function motionCapabilities(){return {
  format:MOTION_FORMAT,packageFormat:MOTION_PACKAGE_FORMAT,
  scope:'One point source translating uniformly, one fixed ideal/circular curved mirror, optional passive detectors, schema v6.',
- limits:{maxDurationSeconds:10,maxSamples:241,maxSegmentsPerFrame:10000,maxDepth:16},
+ limits:{maxDurationSeconds:10,maxSamples:241,maxSegmentsPerFrame:10000,maxDepth:8},
  coordinates:'Velocity in global x-right/y-up coordinates; baseline source position is at t=0; seconds only.',
  method:'quasi-static native snapshots plus separate conditional image kinematics',
  notSupported:['moving optics','arbitrary equations','acceleration','finite light propagation time','native image detection']};}
@@ -38,8 +38,8 @@ export function validateMotion(scene,spec){
  if(scene.schemaVersion!==6||sources.length!==1||mirrors.length!==1||sources[0].id!==spec.sourceId||
    cs.some(c=>!['point-source','ray-detector','ideal-curved-mirror','circular-arc-mirror'].includes(c.type)))
   throw Error('Motion prototype requires one source and one fixed curved mirror, with passive detectors only');
- if(scene.simulation.processedRayLimit>10000||scene.simulation.maxRayDepth>16)
-  throw Error('Motion requires bounded native per-frame budgets: at most 10000 segments and depth 16');
+ if(scene.simulation.processedRayLimit>10000||scene.simulation.maxRayDepth>8)
+  throw Error('Motion requires bounded native per-frame budgets: at most 10000 segments and depth 8');
  const scale=scales[spec.velocity.unit],velocity=polar?
  {x:spec.velocity.speed*scale*Math.cos(spec.velocity.directionDeg*Math.PI/180),y:spec.velocity.speed*scale*Math.sin(spec.velocity.directionDeg*Math.PI/180)}:
  {x:spec.velocity.x*scale,y:spec.velocity.y*scale};
@@ -132,14 +132,21 @@ export class MotionPlayer{
   this.index=0;this.speed=.1;this.playing=false;this.generation=0;this.state='idle';this.result=null;
  }
  pause(){this.playing=false;this.unschedule(this.timer);this.timer=null;this.onState(this);}
- stop(){this.pause();this.generation++;this.abort?.abort();this.state='stopped';this.result=null;this.onState(this);}
+ stop(){
+  // Invalidate before notifying: no intermediate notification may resurrect a
+  // completed result while a different scene/camera is being prepared.
+  this.playing=false;this.unschedule(this.timer);this.timer=null;
+  this.generation++;this.abort?.abort();this.state='stopped';this.result=null;this.onState(this);
+ }
  setSpeed(speed){if(![.1,.25,.5,1].includes(speed))throw Error('Unsupported playback speed');this.speed=speed;}
  async seek(index,{continuePlaying=false}={}){
   if(!continuePlaying)this.pause();
   this.unschedule(this.timer);this.timer=null;this.abort?.abort();
   const generation=++this.generation;this.abort=new AbortController();
-  const frame=this.model.frame(index);this.index=index;this.state='running';this.result=null;this.onState(this);
+  this.result=null;this.state='running';
+  let frame;
   try{
+   frame=this.model.frame(index);this.index=index;this.onState(this);
    const result=frame.scene?await this.render(frame,this.abort.signal):{status:'invalid',issues:frame.issues};
    if(generation!==this.generation)return null;
    this.result={frame,native:result};this.state=result.status;this.onState(this);
@@ -149,7 +156,12 @@ export class MotionPlayer{
      this.timer=this.schedule(()=>this.seek(index+1,{continuePlaying:true}),ms);
     }else this.pause();}
    return this.result;
-  }catch(error){if(generation!==this.generation)return null;this.state='failed';this.result={frame,native:{status:'failed',error:String(error.message)}};this.pause();this.onState(this);return this.result;}
+  }catch(error){
+   if(generation!==this.generation)return null;
+   this.state=frame?'failed':'invalid';
+   this.result=frame?{frame,native:{status:'failed',error:String(error.message)}}:null;
+   this.pause();return this.result;
+  }
  }
  play(){if(this.playing)return;this.playing=true;const start=this.index>=this.model.times.length-1?0:this.index;return this.seek(start,{continuePlaying:true});}
 }
