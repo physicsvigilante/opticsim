@@ -21,6 +21,7 @@ jobs:
       - run: npm test
       - run: node scripts/motion-acceptance.mjs
       - run: node scripts/lens-motion-acceptance.mjs
+      - run: node scripts/lens-prospective-extract.mjs
       - run: npm run build:motion
       - run: node scripts/pack-motion.mjs
       - run: node scripts/motion-browser.mjs
@@ -33,6 +34,7 @@ jobs:
           path: |
             test-artifacts/llm-authoring/source-motion/
             test-artifacts/browser-source-motion/
+            test-artifacts/lens-prospective/
           if-no-files-found: error
           retention-days: 14
       - uses: actions/upload-artifact@v4
