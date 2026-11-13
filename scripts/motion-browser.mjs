@@ -214,6 +214,55 @@ async function main(){
   check('Circular mirror aperture is editable without replacing the native surface or paraxial model');
   await shot('mirror-aperture-16cm-circular');
 
+  // New family through the SAME browser/transport/controls and package.
+  await evaluate('(()=>{const e=document.getElementById("example");e.value="lens";e.dispatchEvent(new Event("change",{bubbles:true}));})()');
+  let lensState=await until(state,r=>r.state==='completed'&&r.index==='0'&&r.model.includes('thin lens'),'synthetic thin-lens native frame');
+  ray=await rayInfo();
+  assert.equal(ray.apertureCm,'12');assert.match(ray.mirrorType,/Ideal thin lens/);
+  assert.match(lensState.image,/x 70/);
+  assert.match(lensState.velocity,/x 25/);
+  assert.match(lensState.assumptions,/Synthetic demonstration/);
+  check('Synthetic thin lens runs actual native rays with separate conditional real image and velocity');
+  await shot('lens-real-image');
+  await seek(40);
+  lensState=await until(state,r=>r.index==='40'&&r.state==='completed'&&r.image==='At infinity','thin-lens focal time');
+  assert.match(lensState.velocity,/No finite image velocity/);
+  check('Thin-lens focal passage reports infinity without a fake finite image or speed');
+  await shot('lens-image-at-infinity');
+  await seek(60);
+  lensState=await until(state,r=>r.index==='60'&&r.state==='completed'&&r.model.includes('thin lens'),'virtual thin-lens image');
+  assert.match(lensState.image,/x -80/);
+  assert.match(lensState.image,/y 23/);
+  check('The same native viewer displays the distinct virtual image state after crossing the focus');
+  await shot('lens-virtual-image');
+  const lensBefore=await rayInfo();
+  await changeRay('ray-brightness','0.2');
+  ray=await afterChange(lensBefore.hash,'lens brightness physical edit');
+  assert.equal(ray.brightness,'0.2');
+  await changeRay('mirror-aperture-cm','8');
+  ray=await afterChange(ray.hash,'lens physical aperture edit');
+  assert.equal(ray.apertureCm,'8');assert.match(ray.mirrorType,/Ideal thin lens/);
+  assert.match((await state()).image,/x -80/);
+  check('Legacy brightness and aperture controls edit lens physics and retain image mathematics');
+  await evaluate("(()=>{const e=document.getElementById('ray-source-mode');e.value='single-ray';e.dispatchEvent(new Event('change',{bubbles:true}));})()");
+  ray=await until(rayInfo,r=>r.error&&/Unsupported native source emission mode/i.test(r.error),'unsupported v4 source mode');
+  assert.equal(ray.mode,'directional');
+  check('Lens v4 rejects single-ray emission without silently altering the canonical model');
+  await rm(join(downloads,savedAperture));
+  await evaluate('document.getElementById("save-motion").click()');
+  const lensSaved=await until(async()=>(await readdir(downloads)).find(x=>x.endsWith('.experiment.json')),Boolean,'lens experiment save');
+  const lensOpen=await prepareMotionExperiment(await readFile(join(downloads,lensSaved),'utf8'));
+  assert.equal(lensOpen.baseline.scene.physics.model,'ideal-thin-lens-geometric');
+  assert.equal(lensOpen.baseline.scene.physics.components[1].parameters.apertureHeight,80);
+  assert.equal(lensOpen.baseline.qualification.origin.preparationStatus,'illustrative');
+  assert.equal(lensOpen.spec.samples,61);
+  await upload(join(downloads,lensSaved));
+  await until(state,r=>r.state==='completed'&&r.index==='0'&&r.model.includes('thin lens'),'reopen native thin-lens experiment');
+  ray=await rayInfo();
+  assert.equal(ray.apertureCm,'8');assert.equal(ray.brightness,'0.2');
+  check('Qualified lens experiment saves and reopens through unchanged motion package and UI');
+
+
 
  }catch(error){report.errors.push(error.stack);throw error;}
  finally{cdp?.close();browser.kill();server.kill();try{await until(async()=>[browser,server].every(p=>p.exitCode!==null||p.signalCode!==null),Boolean,'shutdown');await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:200});}finally{await writeFile(join(out,'report.json'),JSON.stringify(report,null,2)+'\n');}}
