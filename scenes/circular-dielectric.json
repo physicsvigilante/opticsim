@@ -1,0 +1,64 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 7,
+  "adapterVersion": 7,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "circular-dielectric-tracing",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -300,
+          "y": 30,
+          "brightness": 0.5
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 0,
+          "angleDeg": 30
+        }
+      },
+      {
+        "id": "G1",
+        "type": "circular-dielectric",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "radius": 100,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 200,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 200
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "Synthetic circular dielectric: native refraction, not image detection",
+    "view": {
+      "x": -50,
+      "y": 0,
+      "zoom": 1.6451612903225807
+    },
+    "mode": "rays",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000
+  }
+}

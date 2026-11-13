@@ -6,9 +6,12 @@ on:
     branches: [main]
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   refraction:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -16,18 +19,39 @@ jobs:
         with:
           node-version: '24.19.0'
       - run: npm run setup
-      - run: npm test
+      - name: Node regressions for all optical families
+        shell: bash
+        run: |
+          mkdir -p test-artifacts/ci-refraction
+          { git rev-parse HEAD; node --version; google-chrome --version; sha256sum upstream-pin.json; } > test-artifacts/ci-refraction/runtime.txt
+          npm test | tee test-artifacts/ci-refraction/node-test.log
       - run: npm run build
-      - name: Native refraction, qualified revision and angle sweep
+      - name: Native planar refraction, qualified revision and angle sweep
         run: node scripts/planar-refraction-acceptance.mjs
-      - name: Refraction browser import, physical edits and export
+      - name: Planar browser import, physical edits and export
         run: node scripts/planar-refraction-browser.mjs
+      - name: Native circular region, negative controls and immutable radius sweep
+        run: node scripts/circular-dielectric-acceptance.mjs
+      - name: Circular browser import, physical edits, incomplete results and export
+        run: node scripts/circular-dielectric-browser.mjs
+      - name: Package existing allowlisted static viewer (not a deployment)
+        run: node scripts/pack-demo.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: planar-refraction-evidence
           path: |
+            test-artifacts/ci-refraction/
             test-artifacts/llm-authoring/planar-refraction/
             test-artifacts/browser-planar-refraction/
+            test-artifacts/llm-authoring/circular-dielectric/
+            test-artifacts/browser-circular-dielectric/
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: opticsim-static-viewer-with-circular-dielectric
+          path: test-artifacts/demo-site/
+          if-no-files-found: error
+          retention-days: 7

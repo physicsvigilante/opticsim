@@ -1,4 +1,5 @@
 // Presentation only. Conditional coordinates are not native image detections.
+import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
 import {isCurved,curvedPoints} from './curved-mirrors.js';
 import {validate,mirrorEndpoints} from './contract.js';
 import {sceneHash} from './qualified-utils.js';
@@ -33,6 +34,7 @@ export function apparatusPoints(doc){
   validate(doc);
   return doc.physics.components.flatMap(c=>{
     const p=c.parameters;
+    if(c.type===CIRCULAR_TYPE)return circularExtents(p);
     if(isCurved(c.type))return curvedPoints(c);
     if(c.type==='ideal-lens')return [{x:p.x,y:-p.apertureHeight/2},{x:p.x,y:p.apertureHeight/2}];
     if(c.type==='plane-mirror'||c.type==='ray-detector')return mirrorEndpoints(p);

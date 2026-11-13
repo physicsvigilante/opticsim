@@ -405,3 +405,20 @@ relative brightness, finite ideal-lens aperture and unspecified full-circle
 emission). Its provenance stays in the report, not the canonical scene JSON;
 valid native execution does not certify correct question interpretation.
 See [minimal problem authoring guide](docs/MINIMAL-PROBLEM-AUTHORING.md).
+
+## Finite circular dielectric (v7)
+
+A strict `circular-dielectric` component now reuses pinned native `CircleGlass`
+with explicit centre, positive radius, inside/outside indices and Fresnel
+policy. One finite circular region supports 1–4 explicitly directed native
+single rays and up to two external passive detectors. It reuses the minimal
+authoring request, unified problem command, boundary observations, qualified
+edits, main viewer and exports. It does not add a new ray tracer, image detector,
+prism/cap geometry, nested media, or circular-region motion playback.
+
+See [scope and usage](docs/CIRCULAR-DIELECTRIC.md) and the fully declared
+[synthetic request](examples/circular-dielectric.json). The existing scene menu
+includes **Synthetic: circular dielectric**. Full-Fresnel or trapped-ray
+truncation remains incomplete; explicit Fresnel-off is labelled as an
+approximation, not a numerical repair. Earlier sealed evaluations are not
+rewritten or counted as new successes.

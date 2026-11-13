@@ -4,12 +4,12 @@ import {validate} from './contract.js';
 import {predict} from './analysis.js';
 import {sceneHash,isRecord,boundedText} from './qualified-utils.js';
 const kinds=Object.freeze({
-  'interface-interactions':{type:'planar-interface',unit:'sampled interactions'},
-  'interface-incidence-angle':{type:'planar-interface',unit:'degrees from normal; first native encounter'},
-  'interface-transmission-angle':{type:'planar-interface',unit:'degrees from normal; first native encounter'},
-  'interface-reflection-angle':{type:'planar-interface',unit:'degrees from normal; first native encounter'},
-  'interface-tir-count':{type:'planar-interface',unit:'native TIR interactions'},
-  'interface-first-event':{type:'planar-interface',unit:'native event; directions y-up; power relative'},
+  'interface-interactions':{type:['planar-interface','circular-dielectric'],unit:'sampled interactions'},
+  'interface-incidence-angle':{type:['planar-interface','circular-dielectric'],unit:'degrees from normal; first native encounter'},
+  'interface-transmission-angle':{type:['planar-interface','circular-dielectric'],unit:'degrees from normal; first native encounter'},
+  'interface-reflection-angle':{type:['planar-interface','circular-dielectric'],unit:'degrees from normal; first native encounter'},
+  'interface-tir-count':{type:['planar-interface','circular-dielectric'],unit:'native TIR interactions'},
+  'interface-first-event':{type:['planar-interface','circular-dielectric'],unit:'native event; directions y-up; power relative'},
   'source-emissions':{type:'point-source',unit:'sampled rays'},
   'mirror-reflections':{type:['plane-mirror','ideal-curved-mirror','circular-arc-mirror'],unit:'sampled interactions'},
   'detector-crossings':{type:'ray-detector',unit:'sampled crossings'},
@@ -20,7 +20,8 @@ export function observableCapabilities(){
   return {format:'opticsim-observables-v1',maxRequests:16,kinds,
     limits:['Native counts are sampled, not continuous coverage.',
       'Ideal image is conditional analysis, never native image detection.',
-      'A requested result does not certify interpretation of its source question.']};
+      'A requested result does not certify interpretation of its source question.',
+      'Circular dielectric angles are relative to the local normal at the first actual native hit, not a whole path or detected image.']};
 }
 export function validateObservables(requests){
   if(!Array.isArray(requests)||requests.length>16)throw Error('Expected at most 16 observable requests');
@@ -62,7 +63,7 @@ export async function evaluateObservables(doc,requests,execution){
   const fresh=execution?.canonicalSha256===canonicalSha256;
   const complete=fresh&&execution.executionPassed===true&&
     ['completed','completed-with-warnings'].includes(execution.native?.status);
-  const warnings=[...(execution?.native?.warnings||[]),...doc.physics.components.filter(c=>c.type==='planar-interface'&&!c.parameters.partialReflection)
+  const warnings=[...(execution?.native?.warnings||[]),...doc.physics.components.filter(c=>['planar-interface','circular-dielectric'].includes(c.type)&&!c.parameters.partialReflection)
     .map(c=>c.id+': explicit transmitted-only approximation omits Fresnel partial reflections; native TIR remains active.')];
   const results=requests.map(r=>{
     const base={...r,status:'unavailable',value:null,method:null,unit:null,reason:null};
@@ -81,7 +82,7 @@ export async function evaluateObservables(doc,requests,execution){
       }catch(error){return {...base,reason:'Analytical calculation unavailable: '+error.message};}
     }
     const o=execution.observations;
-    if(spec.type==='planar-interface'){
+    if(r.kind.startsWith('interface-')){
       const meter=o?.interfacesById?.[r.componentId],event=meter?.first;
       const value=r.kind==='interface-interactions'?meter?.interactions:r.kind==='interface-tir-count'?meter?.totalInternalReflections:
         r.kind==='interface-first-event'?event:r.kind==='interface-incidence-angle'?event?.incidentAngleDeg:
