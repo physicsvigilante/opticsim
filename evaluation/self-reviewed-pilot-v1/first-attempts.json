@@ -1,0 +1,36 @@
+{
+  "format": "opticsim-self-reviewed-first-attempts-v1",
+  "author": "GPT-6 (same ChatGPT conversation as test design and later review)",
+  "independentModel": false,
+  "independentReviewers": 0,
+  "externalProviderCalls": 0,
+  "firstAttemptOnly": true,
+  "automatedRepairs": 0,
+  "sourceQuestionIds": [
+    "SELF01",
+    "SELF02",
+    "SELF03"
+  ],
+  "referenceSeenBeforeCapture": false,
+  "creationMethod": "Assistant authored one raw JSON response per synthetic question within this chat; not separate API inference",
+  "attempts": [
+    {
+      "id": "SELF01",
+      "attemptNumber": 1,
+      "rawOutput": "{\"request\":{\"format\":\"opticsim-problem-v1\",\"physical\":{\"lengthUnit\":\"mm\",\"title\":\"Self-reviewed sample: opaque circle with detector\",\"runPolicy\":\"preview-v1\",\"components\":[{\"id\":\"S1\",\"type\":\"point-source\",\"parameters\":{\"x\":-200,\"y\":0,\"brightness\":0.08},\"emission\":{\"mode\":\"directional\",\"directionDeg\":0,\"angleDeg\":20}},{\"id\":\"B1\",\"type\":\"circle-blocker\",\"parameters\":{\"x\":0,\"y\":0,\"radius\":40}},{\"id\":\"D1\",\"type\":\"ray-detector\",\"parameters\":{\"x\":100,\"y\":0,\"orientationDeg\":90,\"length\":80}}]},\"requests\":[{\"id\":\"emissions\",\"kind\":\"source-emissions\",\"componentId\":\"S1\"},{\"id\":\"absorptions\",\"kind\":\"blocker-absorptions\",\"componentId\":\"B1\"},{\"id\":\"crossings\",\"kind\":\"detector-crossings\",\"componentId\":\"D1\"}],\"interpretation\":{\"requestedResult\":\"Native finite-ray source emissions, actual opaque-surface absorption and passive detector crossings\",\"stated\":[],\"derived\":[],\"assumptions\":[],\"unknowns\":[\"Continuous optical shadow, physical irradiance and detected image are not requested or established.\"]},\"illustration\":false,\"verifyNative\":false}}",
+      "kind": "request"
+    },
+    {
+      "id": "SELF02",
+      "attemptNumber": 1,
+      "rawOutput": "{\"request\":{\"format\":\"opticsim-problem-v1\",\"physical\":{\"lengthUnit\":\"mm\",\"title\":\"Self-reviewed sample: lens in finite aperture gap\",\"runPolicy\":\"preview-v1\",\"components\":[{\"id\":\"S1\",\"type\":\"point-source\",\"parameters\":{\"x\":-200,\"y\":0,\"brightness\":0.08},\"emission\":{\"mode\":\"directional\",\"directionDeg\":0,\"angleDeg\":20}},{\"id\":\"B1\",\"type\":\"finite-aperture\",\"parameters\":{\"x\":0,\"y\":0,\"orientationDeg\":90,\"length\":80,\"openingLength\":30}},{\"id\":\"L1\",\"type\":\"ideal-lens\",\"parameters\":{\"x\":0,\"focalLength\":100,\"apertureHeight\":20}},{\"id\":\"D1\",\"type\":\"ray-detector\",\"parameters\":{\"x\":100,\"y\":0,\"orientationDeg\":90,\"length\":80}}]},\"requests\":[{\"id\":\"emissions\",\"kind\":\"source-emissions\",\"componentId\":\"S1\"},{\"id\":\"absorptions\",\"kind\":\"blocker-absorptions\",\"componentId\":\"B1\"},{\"id\":\"crossings\",\"kind\":\"detector-crossings\",\"componentId\":\"D1\"}],\"interpretation\":{\"requestedResult\":\"Native finite-ray source emissions, actual opaque-surface absorption and passive detector crossings\",\"stated\":[],\"derived\":[],\"assumptions\":[],\"unknowns\":[\"Continuous optical shadow, physical irradiance and detected image are not requested or established.\"]},\"illustration\":false,\"verifyNative\":false}}",
+      "kind": "request"
+    },
+    {
+      "id": "SELF03",
+      "attemptNumber": 1,
+      "rawOutput": "{\"cannotAuthor\":\"B1's circular blocker radius is not specified. This is a required physical parameter for a native CircleBlocker, so I cannot author or measure faithful absorption and detector crossings without inventing the missing radius.\"}",
+      "kind": "declined"
+    }
+  ]
+}

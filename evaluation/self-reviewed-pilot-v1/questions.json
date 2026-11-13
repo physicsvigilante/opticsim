@@ -1,0 +1,18 @@
+{
+  "format": "opticsim-self-reviewed-questions-v1",
+  "origin": "Three new but clearly project-exposed, same-assistant synthetic text problems; NOT unseen or independent",
+  "questions": [
+    {
+      "id": "SELF01",
+      "prompt": "Author one Opticsim 2D ray-optics scene with x to the right and y up. All lengths are in millimetres. A directional point source S1 is at (-200,0), with relative brightness 0.08, pointing at 0 degrees (+x) and a full cone opening of 20 degrees. A fully opaque circular blocker B1 has centre (0,0) and radius 40. A passive vertical ray detector D1 is centred at (100,0), tangent orientation +90 degrees and length 80. Request the number of native sampled source emissions, native B1 absorptions and D1 crossings. Do not claim continuous shadow or an image."
+    },
+    {
+      "id": "SELF02",
+      "prompt": "Author a single Opticsim 2D ray-optics scene with x right and y up, in millimetres. A directional point source S1 sits at (-200,0), brightness 0.08, direction 0 degrees (+x), full cone opening 20 degrees. At (0,0) is a vertical finite aperture B1, tangent orientation +90 degrees, outer length 80 and centred transparent opening length 30. An ideal thin lens L1 is also at x=0, centred on the optical axis, with aperture height 20 and focal length +100; it lies entirely inside the open aperture gap, not across either opaque arm. Place a passive vertical detector D1 at (100,0), tangent orientation +90 degrees, length 80. Request the sampled source emissions, B1's native absorptions and D1 native crossings; do not calculate irradiance, an image or continuous transmission."
+    },
+    {
+      "id": "SELF03",
+      "prompt": "In 2D with x right and y up and lengths in millimetres, S1 is a directional point source at (-200,0), relative brightness 0.08, direction 0 degrees and full cone opening 20 degrees. A fully opaque circular blocker B1 is centred at (0,0), but its radius is not supplied anywhere. A vertical passive detector D1 is centred at (100,0), tangent +90 degrees, length 80. Author a faithful Opticsim scene to measure B1 native sampled absorptions and D1 crossings, or decline with a concrete missing-physics reason. Do not choose a radius."
+    }
+  ]
+}
