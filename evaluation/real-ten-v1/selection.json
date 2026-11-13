@@ -1,0 +1,23 @@
+{
+  "format": "opticsim-real-ten-selection-v1",
+  "baselineCommit": "cf698442d51f7ada1d0d8ff43ed0d878c3644722",
+  "sourceCommit": "d33b45226348d9b0c701f2a3e8b86dd1285de2d0",
+  "archiveFile": "08_Ray_Optics_Explanations.zip",
+  "archiveSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+  "inventoryGitBlob": "3224c05dfc43a7de7f6e6f15b9759374a3dfed11",
+  "selectionRule": "Choose the lowest lexicographic Problems PNG marked not-reviewed in the fixed atlas inventory from each of eight chapters, plus the next such PNG in chapters 01 and 07. Sort chosen paths; assign R01-R10. No replacement after opening images.",
+  "claimBoundary": "Same-assistant development trial on original supplied archive questions; not an independent model evaluation. Atlas not-reviewed is a limited exposure record, not proof of unseen training or project material. JEE attribution is inherited from the supplied archive, not independently authenticated.",
+  "solutionsOpenedAtSelection": false,
+  "cases": [
+    {"id":"R01","problemPath":"08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/002.png"},
+    {"id":"R02","problemPath":"08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/003.png"},
+    {"id":"R03","problemPath":"08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/002.png"},
+    {"id":"R04","problemPath":"08_Ray_Optics_Explanations/03_General_Refraction/Problems/002.png"},
+    {"id":"R05","problemPath":"08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/002.png"},
+    {"id":"R06","problemPath":"08_Ray_Optics_Explanations/05_Prism/Problems/002.png"},
+    {"id":"R07","problemPath":"08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/002.png"},
+    {"id":"R08","problemPath":"08_Ray_Optics_Explanations/07_Lens_Formula/Problems/002.png"},
+    {"id":"R09","problemPath":"08_Ray_Optics_Explanations/07_Lens_Formula/Problems/003.png"},
+    {"id":"R10","problemPath":"08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/002.png"}
+  ]
+}

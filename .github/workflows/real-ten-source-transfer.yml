@@ -1,0 +1,33 @@
+name: Temporary real-ten source transfer
+# Branch-only artifact transfer; remove this file before merging the trial.
+on:
+  push:
+    branches: [feature/real-ten-problem-trial]
+    paths: [.github/workflows/real-ten-source-transfer.yml]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - name: Obtain exact user-supplied source archive
+        shell: bash
+        run: |
+          mkdir -p test-artifacts
+          git fetch --no-tags origin d33b45226348d9b0c701f2a3e8b86dd1285de2d0
+          git show d33b45226348d9b0c701f2a3e8b86dd1285de2d0:08_Ray_Optics_Explanations.zip > test-artifacts/source-08.zip
+      - name: Extract selected Problems only; do not read Solutions
+        run: node evaluation/real-ten-v1/extract-images.mjs problems
+      - uses: actions/upload-artifact@v4
+        with:
+          name: real-ten-problems
+          path: test-artifacts/real-ten-problems/
+          if-no-files-found: error
+          retention-days: 1
