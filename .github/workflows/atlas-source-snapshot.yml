@@ -17,9 +17,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git fetch --no-tags --depth=1 origin 6883c12d431961156aee47b7b8c129231753878c
+          git fetch --no-tags --depth=1 origin d33b45226348d9b0c701f2a3e8b86dd1285de2d0
           mkdir -p test-artifacts/atlas-transfer
-          git show 6883c12d431961156aee47b7b8c129231753878c:01_problems.zip > test-artifacts/atlas-transfer/source.zip
+          git show d33b45226348d9b0c701f2a3e8b86dd1285de2d0:08_Ray_Optics_Explanations.zip > test-artifacts/atlas-transfer/source.zip
           echo "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939  test-artifacts/atlas-transfer/source.zip" | sha256sum --check
           python3 - <<'PY'
           import zipfile,json,hashlib,pathlib,collections
@@ -45,7 +45,7 @@ jobs:
           (root/"problem-inventory.json").write_text(json.dumps({
             "format":"opticsim-jee-atlas-source-transport-v1",
             "originalArchiveSha256":"03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
-            "sourceCommit":"6883c12d431961156aee47b7b8c129231753878c",
+            "sourceCommit":"d33b45226348d9b0c701f2a3e8b86dd1285de2d0",
             "count":len(manifest),"chapters":dict(sorted(chapters.items())),"members":manifest
           },indent=2)+"\n")
           print("Transport prepared: Problems-only",len(manifest),"PNG files in",len(chapters),"chapters")
