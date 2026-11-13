@@ -7,6 +7,39 @@ scene, and runs the unchanged pinned PhyDemo core again. Positions are evaluated
 from the original baseline, never integrated cumulatively. The mirror, aperture,
 emission pattern, brightness and numerical policy do not change with time.
 
+## Reusable layers (not a U2-specific trajectory solver)
+
+This version separates **authoring facts**, **motion**, **native execution**,
+**conditional analysis**, **camera presentation**, and **qualified evidence**:
+
+1. The author/LLM supplies a validated baseline optical scene and a bounded,
+   data-only motion specification. U2 is one explicit example file, not a
+   special-case branch of the frame generator.
+2. `prepareMotionExperiment` binds the fixed scene and law by content hashes.
+   `frame(i)` or `sampleAt(t)` derives a fresh scene from the **original**
+   baseline without accumulated editing.
+3. Native PhyDemo chooses actual finite ray intersections for each time sample.
+   Analytical image position and velocity are separate, conditional quantities.
+4. `collectMotionView` / `fitMotionView` find camera targets generically from
+   optical endpoints, sampled object positions and available finite image
+   positions. `applyMotionCameraControl` adds presentation-only zoom/pan.
+5. Playback and export preserve frame status, source-question provenance and
+   method qualifiers without turning calculated image markers into native
+   measurements.
+
+New problem classes should expand the **smallest validated layer necessary**:
+add a new declarative motion law only with justified data and tests; add new
+native optical elements only when supported by pinned PhyDemo; add a new
+analytical observable only with an explicit physical model; and leave unsupported
+arrangements unavailable. **Do not** teach a general model a collection of
+hard-coded textbook pictures or add an arbitrary equation interpreter.
+
+This first implementation is intentionally *not* general motion dynamics.
+It currently handles one translating source at constant velocity with one
+stationary ideal/circular mirror, and it makes no claim about light-travel-time
+effects. We can extend that scope gradually as independently checked examples
+reveal recurring requirements.
+
 ## What is actually being animated
 
 The native canvas shows the rays produced by the point emitter at its current
@@ -56,7 +89,21 @@ npm start
 
 Open `http://127.0.0.1:4173/motion.html`. The initial example is built into the
 bundle, not fetched from an external server. Use **Play**, **Pause**, **Reset**,
-and the time slider. Playback speed is a maximum requested rate: the next
+and the time slider. Use **+ / −** to zoom both views relative to the selected
+camera preset (25%–800%), **Fit** to restore that preset, the mouse wheel to
+zoom toward the pointer, or drag either view to pan. **Whole motion** holds a
+fixed automatic frame across time; **Current frame** refits the instant;
+**Apparatus close-up** intentionally may omit the remote image. Camera choices
+and their view adjustments affect **presentation only**; they do not change the
+experiment's source trajectory, native mirror geometry, ray tracing or
+numerical policy. A camera change may rerun the same static native frame to
+redraw its rays. The finite camera zoom remains within the existing 0.03–10
+native zoom range; extreme images, infinity and singularities cannot be made
+finite by zooming. Frame evidence records the displayed camera separately,
+while qualified static-scene export retains the authored frame's original
+presentation rather than the temporary playback viewport.
+
+Playback speed is a maximum requested rate: the next
 sample waits until the current native frame finishes, so a slow machine can
 play more slowly but does not queue unlimited simulations or skip silently.
 
@@ -124,8 +171,11 @@ pause playback and do not publish accepted native measurements. The separate
 conditional mathematics retains its own method/status.
 
 Exact focal inputs have no finite image point or velocity. Near-focal
-indeterminate results are not plotted. Finite points beyond the fixed diagram
-range are explicitly reported as off-plot, never clamped onto an edge.
+indeterminate results are not plotted. The automatic diagram and native camera
+fit supported finite points without clamping; after manual zoom or pan, an
+off-screen point is reported rather than moved to the view edge. Extremely
+far finite image positions beyond the supported camera range are not
+silently given false coordinates.
 The prototype does not claim to identify every singularity between discrete
 samples, and does not draw a line joining image points across infinity.
 
