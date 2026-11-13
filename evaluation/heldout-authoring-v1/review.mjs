@@ -56,14 +56,19 @@ export function validateFrozenCapture(capture,questions,commitment,attemptDirect
 export async function runReview({questionsPath,referencePath,commitmentPath,capturePath,outPath,
  execute=null}){
  const q=readJSON(requirePrivateInput(questionsPath)),c=readJSON(requirePrivateInput(commitmentPath),20000),
-  r=readJSON(requirePrivateInput(referencePath)),f=readJSON(requirePrivateInput(capturePath),1024*1024);
- const questions=validateQuestions(q.value);checkCommitment(c.value,q.bytes,r.bytes);
- const reference=validateReference(r.value,questions),capture=f.value;
+  f=readJSON(requirePrivateInput(capturePath),1024*1024);
+ const questions=validateQuestions(q.value);checkCommitment(c.value,q.bytes);
+ const capture=f.value;
  if(capture.commitmentSha256!==c.digest)
   throw Error('Capture commitment SHA-256 does not match committed file');
  if(c.value.ids.join('|')!==questions.cases.map(x=>x.id).join('|'))
   throw Error('Committed case list differs from private question set');
+ // Verify every first model response BEFORE opening the independently
+ // adjudicated reference, even though inference lives in a separate process.
  validateFrozenCapture(capture,questions,c.value,resolve(capturePath,'..'));
+ const r=readJSON(requirePrivateInput(referencePath));
+ checkCommitment(c.value,q.bytes,r.bytes);
+ const reference=validateReference(r.value,questions);
  const runKey=basename(resolve(outPath))+'-'+sha256(Buffer.from(resolve(outPath))).slice(0,12),
   nativeRoot=resolve(ROOT,'test-artifacts/llm-authoring/private-heldout-'+runKey);
  if(existsSync(nativeRoot))throw Error('Existing native scoring evidence; choose a new output directory');
