@@ -220,6 +220,20 @@ async function render(frame,signal){
  });
 }
 
+function showMotionAssumptions(){
+ if(!model)return;
+ const before=model.baseline.qualification.interpretation?.assumptions||[];
+ const changes=model.baseline.qualification.edits;
+ const aperture=model.baseline.scene.physics.components.find(c=>isCurved(c.type))?.parameters.apertureHeight;
+ $('assumptions').textContent=[
+  'Original author interpretation and illustration assumptions (historical after revisions):',
+  model.spec.continuationAssumption,...before,
+  'Current accepted mirror aperture: '+(Number.isFinite(aperture)?number(aperture/10)+' cm':'unavailable')+'.',
+  changes.length+' qualified scene edit'+(changes.length===1?'':'s')+
+  ' recorded. Physical changes are not retroactively labelled original problem facts.'
+ ].join('\n');
+}
+
 async function applyRayControlChange(change){
  if(!model)throw Error('No verified motion experiment loaded');
  const previous=model,at=player?.index??0,speed=player?.speed??.1,
@@ -234,8 +248,7 @@ async function applyRayControlChange(change){
   $('camera-mode').value=mode;
   player=new MotionPlayer({model,render,onState:ui});
   player.setSpeed(speed);
-  $('assumptions').textContent=[model.spec.continuationAssumption,
-   ...(model.baseline.qualification.interpretation?.assumptions||[])].join('\n');
+  showMotionAssumptions();
   $('experiment-hash').textContent='Experiment SHA-256: '+model.integritySha256;
   $('save-motion').disabled=false;
   await player.seek(Math.min(at,model.times.length-1));
@@ -261,7 +274,7 @@ async function load(value){
   $('example').value=model.baseline.scene.physics.components.some(c=>c.type==='circular-arc-mirror')?'circular':'ideal';
   player=new MotionPlayer({model,render,onState:ui});
   $('time').max=model.times.length-1;$('speed').value='0.1';player.setSpeed(.1);
-  $('assumptions').textContent=[model.spec.continuationAssumption,...(model.baseline.qualification.interpretation?.assumptions||[])].join('\n');
+  showMotionAssumptions();
   $('experiment-hash').textContent='Experiment SHA-256: '+model.integritySha256;
   $('error').hidden=true;$('save-motion').disabled=false;rayUI.reset();refreshZoomControls();await player.seek(0);
  }catch(error){if(token!==loadGeneration)return;model=null;player=null;drawPlot(null);$('native-state').dataset.state='invalid';$('native-state').textContent='Native: not run — invalid experiment';$('error').hidden=false;$('error').textContent=error.message;
