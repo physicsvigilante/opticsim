@@ -4,6 +4,15 @@ A standalone-browser-capable optical bench powered by PhyDemo Ray Optics Simulat
 pinned to **811f508d2b070898c241a568b0c167dcb8645251**. Browser runtime resources
 are local. No LLM request is needed to open, simulate, or edit supported scenes.
 
+## Private independent-model authoring assessment (manual only)
+
+A separately reviewable, **local-only** held-out protocol is available at
+[evaluation/heldout-authoring-v1](evaluation/heldout-authoring-v1/README.md).
+Its question text, reference and model key must stay in ignored local files,
+and external transfer requires an explicit opt-in. It reuses the existing
+preflight and native execution layer. Neither normal CI nor repository setup
+sends text or runs a live external LLM; mock tests are not model accuracy scores.
+
 ## LLM authoring without unnecessary physics choices
 
 For an existing `opticsim-problem-v1` request, `node scripts/preflight-problem.mjs my-problem.json` checks complete physical facts and requested results **without a native run**. The dispatcher now binds omitted measurement `componentId` values only when the validated scene contains exactly one compatible authored component; multiple matches require an explicit ID. The original input bytes and binding decision are preserved. See [LLM authoring preflight](docs/LLM-AUTHORING-PREFLIGHT.md). This is not an image interpreter, new optical physics or an independent LLM score.
