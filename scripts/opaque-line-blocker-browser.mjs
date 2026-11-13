@@ -153,6 +153,52 @@ async function main(){
   check('Tangent circular stop and detector reject the revision before simulation');
   await upload(circleBundles.blocked);
   await until(state,x=>x.status==='completed'&&x.results?.[0]?.value===6,'circle restore final');
+  // The same native viewer and qualified evidence gates handle an aperture
+  // as two solid arms separated by physical, transparent open space.
+  const apertureAcceptance=JSON.parse(await readFile(join(root,
+    'test-artifacts/llm-authoring/finite-aperture/acceptance.json'),'utf8'));
+  const apertureBundle=apertureAcceptance.browserBundles.baseline;
+  await upload(apertureBundle);
+  s=await until(state,x=>x.status==='completed'&&x.results?.[0]?.value>0&&
+    x.results?.[0]?.value<6&&x.results?.[2]?.value>0,'native finite aperture');
+  assert.equal(s.error,'');assert.equal(s.results[1].value,6);
+  const originalAbsorbed=s.results[0].value,originalCrossings=s.results[2].value;
+  check('Native Aperture allows real sampled rays through the gap while opaque arms absorb others');
+  await shot('native-aperture-partial');
+  const originalReport=structuredClone(s.results);
+  await evaluate('document.getElementById("fit-results").click()');
+  s=await until(state,x=>x.status==='completed'&&!x.fitDisabled,'aperture fit');
+  assert.deepEqual(s.results,originalReport);
+  check('Aperture Fit preserves exact native measurements');
+  await edit('B1-openingLength',1);
+  s=await until(state,x=>x.status==='completed'&&x.results?.[0]?.value>=originalAbsorbed&&
+    x.results?.[2]?.value<=originalCrossings,'narrow gap');
+  check('Reducing physical gap changes native absorption and crossings, not source sampling');
+  await edit('B1-y',100);
+  s=await until(state,x=>x.status==='completed'&&x.results?.[0]?.value===0&&x.results?.[2]?.value===4,'shifted aperture');
+  check('Moving the two opaque aperture arms out of the beam restores the clear detector reading');
+  await shot('native-aperture-shifted');
+  for(const name of await readdir(downloads))if(name.endsWith('.json'))await rm(join(downloads,name));
+  await evaluate('document.getElementById("save-qualified").click()');
+  const apertureName=await until(async()=>(await readdir(downloads)).find(n=>n.endsWith('.json')),
+    Boolean,'aperture export');
+  const apertureFile=join(downloads,apertureName);
+  const savedAperture=await parseQualifiedBundle(await readFile(apertureFile,'utf8'));
+  assert.equal(savedAperture.scene.physics.components.find(c=>c.id==='B1').type,'finite-aperture');
+  assert.equal(savedAperture.scene.physics.components.find(c=>c.id==='B1').parameters.openingLength,1);
+  assert.equal(savedAperture.scene.physics.components.find(c=>c.id==='B1').parameters.y,100);
+  assert.ok(savedAperture.qualification.edits.some(e=>e.kind==='physics'));
+  await upload(apertureFile);
+  s=await until(state,x=>x.status==='completed'&&x.results?.[0]?.value===0&&x.results?.[2]?.value===4,'aperture reopen');
+  check('Portable finite aperture export and reopen preserve the exact opening and edited centre');
+  await upload(apertureBundle);
+  await until(state,x=>x.status==='completed'&&x.results?.[0]?.value===originalAbsorbed,'restore aperture');
+  await edit('B1-x',100);
+  s=await until(state,x=>x.status==='invalid','aperture-detector overlap');
+  assert.equal(s.results,null);assert.equal(s.saveDisabled,true);assert.equal(s.fitDisabled,true);
+  check('Intersecting opaque aperture arms and detector reject the revision');
+  await upload(apertureBundle);
+  await until(state,x=>x.status==='completed'&&x.results?.[0]?.value===originalAbsorbed,'aperture restore final');
   assert.deepEqual(report.errors,[]);
 
   }catch(error){
