@@ -1,5 +1,6 @@
 // Presentation only. Conditional coordinates are not native image detections.
 import {PRISM_TYPE,prismVertices} from './triangular-prism.js';
+import {POLYGON_TYPE,polygonVertices} from './polygon-dielectric.js';
 import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
 import {isCurved,curvedPoints} from './curved-mirrors.js';
 import {validate,mirrorEndpoints} from './contract.js';
@@ -40,6 +41,7 @@ export function apparatusPoints(doc){
   return doc.physics.components.flatMap(c=>{
     const p=c.parameters;
     if(c.type===PRISM_TYPE)return prismVertices(p);
+     if(c.type===POLYGON_TYPE)return polygonVertices(p);
     if(c.type===CIRCULAR_TYPE)return circularExtents(p);
     if(isCurved(c.type))return curvedPoints(c);
     if(c.type==='ideal-lens')return [{x:p.x,y:-p.apertureHeight/2},{x:p.x,y:p.apertureHeight/2}];
