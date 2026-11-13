@@ -50,7 +50,8 @@ export class MotionRayUI{
   $('ray-custom-density').value=v.rayDensity;
   $('ray-custom-density').disabled=this.busy||v.densityPreset!=='custom';
   $('ray-source-mode').value=v.emissionMode;
-  $('ray-source-mode').querySelector('option[value="single-ray"]').disabled=v.opticType==='ideal-lens';
+  const oneRayOption=document.querySelector?.('#ray-source-mode option[value="single-ray"]');
+  if(oneRayOption)oneRayOption.disabled=v.opticType==='ideal-lens';
   $('ray-direction').value=v.directionDeg;
   $('ray-opening').value=v.angleDeg;
   $('ray-opening').disabled=this.busy||v.emissionMode!=='directional';
@@ -61,9 +62,9 @@ export class MotionRayUI{
   // Only the browser label uses cm; canonical optical geometry stays in mm.
   const apertureCm=v.opticalApertureHeightMm/10;
   const isLens=v.opticType==='ideal-lens';
-  document.querySelector('label[for="mirror-aperture-cm"]').textContent=
-   (isLens?'Lens':'Mirror')+' aperture height (cm) — physical size';
-  $('mirror-aperture-cm').setAttribute('aria-label',(isLens?'Lens':'Mirror')+' aperture height in centimetres');
+  const apertureLabel=document.querySelector?.('label[for="mirror-aperture-cm"]');
+  if(apertureLabel)apertureLabel.textContent=(isLens?'Lens':'Mirror')+' aperture height (cm) — physical size';
+  $('mirror-aperture-cm').setAttribute?.('aria-label',(isLens?'Lens':'Mirror')+' aperture height in centimetres');
   $('mirror-aperture-cm').value=String(apertureCm);
   const slider=$('mirror-aperture-slider');
   // Quick adjustment is 1–20 cm for typical scenes, but a valid imported
