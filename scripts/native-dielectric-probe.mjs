@@ -53,6 +53,12 @@ assert.ok(inside.events.length>=1,'Ray inside circle must hit boundary');
 const tir=inside.events[0],tn={x:tir.point.x/100,y:tir.point.y/100};
 assert.ok(dot(tir.before,tn)>0.5&&dot(tir.after,tn)<0,'Native total internal reflection must reverse radial sign');
 near(dot(tir.before,tn),-dot(tir.after,tn));
+assert.ok(inside.truncation>0,'A bounded repeatedly reflecting TIR ray must report truncated native brightness');
+// Full-Fresnel branching is a distinct numerical experiment, not a claim of
+// complete transmitted/reflected ray energy within the fixed depth budget.
+const fresnel=run({...circle,partialReflect:true},{x:-300,y:30});
+assert.ok(fresnel.events.length>=2,'Native Fresnel mode must still reach the circle');
+assert.ok(fresnel.truncation>=0,'Native Fresnel truncation must be observable');
 const prism=run({type:'Glass',notDone:false,
  path:[{x:-100,y:-100,arc:false},{x:0,y:0,arc:false},{x:-100,y:100,arc:false}],
  refIndex:1.25,partialReflect:false},{x:-300,y:20});
@@ -62,8 +68,8 @@ assert.equal(prism.truncation,0);assert.equal(prism.undefinedBehavior,0);
 assert.ok(Math.abs(prism.events.at(-1).after.y)>0.02,'Actual prism exit direction must deviate');
 const report={format:'opticsim-native-dielectric-feasibility-v1',pin:base.upstreamCommit,
  note:'Only ephemeral TEST-ONLY native objects, no new canonical authoring support or image detection',
- normalCircle:normal,obliqueCircle:oblique,internalTIR:inside,polygonPrism:prism,
- approximation:'Explicit partialReflect=false; full-Fresnel branch reliability is NOT established'};
+ normalCircle:normal,obliqueCircle:oblique,internalTIR:inside,fullFresnelCircle:fresnel,polygonPrism:prism,
+ approximation:'Initial normal/oblique/prism probes explicitly use partialReflect=false. Native TIR at depth 3 has nonzero truncated brightness; full-Fresnel mode is recorded separately but neither represents complete unbounded light.'};
 const dir=resolve(root,'test-artifacts/native-dielectric-probe');mkdirSync(dir,{recursive:true});
 writeFileSync(resolve(dir,'report.json'),JSON.stringify(report,null,2)+'\n',{flag:'wx'});
 console.log('Pinned PhyDemo native CircleGlass and Glass geometric feasibility PASS.');

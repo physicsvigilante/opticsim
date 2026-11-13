@@ -31,3 +31,7 @@ The first test probe uses `partialReflect:false` **explicitly as a transmission-
 LLM authors only stated **regions, indices, source rays, and requested observables**. Validation constructs a finite canonical region; pinned PhyDemo owns actual intersections/refraction/TIR. The existing native observation and qualification layers report what was actually measured, with no changed numerical thresholds or invented apparent images.
 
 This milestone is test-first by design. The current branch is a feasibility investigation; turning it into a production authoring contract requires a separate, reviewable implementation commit and acceptance evidence. No new controls or native engine rewrite are prerequisites.
+
+## Completed native probe evidence
+
+The first pinned-native run [43391993280](https://github.com/physicsvigilante/opticsim/actions/runs/43391993280) completed successfully. It recorded two exact normal-circle hits, two oblique-circle hits with local-normal Snell agreement, at least one interior total-internal reflection, and two distinct native prism boundary hits with a changed outgoing heading. **Important qualification:** the internal TIR test's `simulationComplete` callback was accompanied by `totalTruncation = 0.1` relative brightness at an intentionally short ray depth. Under Opticsim's actual completion policy that is **incomplete**, not a publishable full native observation. The follow-up probe explicitly asserts truncated brightness and samples full Fresnel mode separately. No numerical cutoffs are changed.
