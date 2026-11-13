@@ -80,7 +80,7 @@ async function main(){
 
   // The same canonical controls as the static editor are bound to a real
   // qualified motion experiment; this is not visual-only brightness.
-  const rayInfo=()=>evaluate("(()=>{const e=id=>document.getElementById(id);return {state:e('native-state').dataset.state,hash:e('experiment-hash').textContent,brightness:e('ray-brightness').value,sampling:e('ray-sampling').value,mode:e('ray-source-mode').value,direction:e('ray-direction').value,opening:e('ray-opening').value,view:e('ray-view').value,grid:e('ray-grid').checked,counts:e('native-counts').textContent,error:e('ray-control-error').hidden?null:e('ray-control-error').textContent,velocity:e('velocity-value').textContent,edits:e('ray-control-note').textContent,expanded:e('ray-settings').open};})()");
+  const rayInfo=()=>evaluate("(()=>{const e=id=>document.getElementById(id);return {state:e('native-state').dataset.state,hash:e('experiment-hash').textContent,brightness:e('ray-brightness').value,sampling:e('ray-sampling').value,mode:e('ray-source-mode').value,apertureCm:e('mirror-aperture-cm').value,mirrorType:e('mirror-aperture-kind').textContent,direction:e('ray-direction').value,opening:e('ray-opening').value,view:e('ray-view').value,grid:e('ray-grid').checked,counts:e('native-counts').textContent,error:e('ray-control-error').hidden?null:e('ray-control-error').textContent,velocity:e('velocity-value').textContent,assumptions:e('assumptions').textContent,edits:e('ray-control-note').textContent,expanded:e('ray-settings').open};})()");
   const changeRay=(id,value)=>evaluate("(()=>{const e=document.getElementById("+JSON.stringify(id)+");e.value="+JSON.stringify(value)+";e.dispatchEvent(new Event('change',{bubbles:true}));})()");
   const settled=(r)=>['completed','completed-with-warnings'].includes(r?.state);
   const afterChange=async(previousHash,label)=>until(rayInfo,r=>settled(r)&&r.hash!==previousHash&&r.error===null,label);
@@ -147,6 +147,55 @@ async function main(){
   ray=await until(rayInfo,r=>settled(r)&&r.hash===retained,'reopen revised ray experiment');
   assert.equal(ray.brightness,'0.25');assert.equal(ray.mode,'single-ray');assert.equal(ray.sampling,'sparse');
   check('Reopening a saved revised motion experiment restores ray controls and native execution');
+
+  const initialApertureHash=ray.hash,priorNative=ray.counts,priorImageVelocity=ray.velocity;
+  assert.equal(ray.apertureCm,'6');
+  assert.match(ray.mirrorType,/Ideal Gaussian/);
+  await evaluate("document.querySelector('#ray-settings > summary').open=true");
+  await changeRay('mirror-aperture-cm','16');
+  ray=await afterChange(initialApertureHash,'mirror aperture physical edit');
+  assert.equal(ray.apertureCm,'16');assert.equal(ray.velocity,priorImageVelocity);
+  assert.notEqual(ray.hash,initialApertureHash);
+  assert.ok(Number(ray.counts.match(/(\\d+) reflections/)?.[1])>
+    Number(priorNative.match(/(\\d+) reflections/)?.[1]),
+    'larger physical mirror catches more actual native rays than the 6-cm aperture');
+  assert.match(ray.assumptions,/Current accepted mirror aperture: 16 cm/);
+  assert.match(ray.assumptions,/Finite aperture 6 cm/i);
+  check('Precise physical mirror-size edit changes native reflection hits, not focal image kinematics');
+  const apertureHash=ray.hash;
+  await changeRay('mirror-aperture-cm','100');
+  ray=await until(rayInfo,r=>settled(r)&&r.hash===apertureHash&&
+   r.error&&/Source|aperture|disk|mirror/i.test(r.error),'invalid wide mirror');
+  assert.equal(ray.apertureCm,'16');
+  check('Oversized mirror is rejected by existing whole-trajectory geometry without altering the accepted scene');
+  await evaluate("(()=>{const s=document.getElementById('mirror-aperture-slider');s.value='8';s.dispatchEvent(new Event('input',{bubbles:true}));s.dispatchEvent(new Event('change',{bubbles:true}));})()");
+  ray=await afterChange(apertureHash,'mirror aperture slider physical edit');
+  assert.equal(ray.apertureCm,'8');
+  check('Mirror-size slider shares precise unit-converted physical parameter with number input');
+  await rm(join(downloads,repack));
+  await evaluate('document.getElementById("save-motion").click()');
+  const savedAperture=await until(async()=>(await readdir(downloads)).find(x=>x.endsWith('.experiment.json')),Boolean,'mirror-size experiment saved');
+  const sized=await prepareMotionExperiment(await readFile(join(downloads,savedAperture),'utf8'));
+  const mirrorParams=sized.baseline.scene.physics.components.find(c=>c.type==='ideal-curved-mirror').parameters;
+  assert.equal(mirrorParams.apertureHeight,80);
+  assert.equal(mirrorParams.focalLength,200);
+  assert.ok(sized.baseline.qualification.edits.some(x=>x.kind==='physics'&&
+   x.changes.some(c=>c.path.includes('apertureHeight'))));
+  assert.equal(sized.motion?.samples,undefined); // Prepared model stores motion as spec, never a new physics DSL.
+  assert.equal(sized.spec.samples,61);
+  await upload(join(downloads,savedAperture));
+  ray=await until(rayInfo,r=>settled(r)&&r.hash===sized.integritySha256&&r.apertureCm==='8','reopen mirror aperture experiment');
+  assert.equal(ray.apertureCm,'8');
+  check('Physical mirror size and original U2 assumptions round-trip in the qualified portable experiment');
+  await evaluate('(()=>{const e=document.getElementById("example");e.value="circular";e.dispatchEvent(new Event("change",{bubbles:true}));})()');
+  ray=await until(rayInfo,r=>settled(r)&&r.apertureCm==='6'&&r.mirrorType.includes('Circular'),'circular example aperture');
+  const circularHash=ray.hash;
+  await changeRay('mirror-aperture-cm','16');
+  ray=await afterChange(circularHash,'circular mirror aperture revision');
+  assert.equal(ray.apertureCm,'16');
+  assert.match(ray.mirrorType,/Circular arc/);
+  check('Circular mirror aperture is editable without replacing the native surface or paraxial model');
+
 
  }catch(error){report.errors.push(error.stack);throw error;}
  finally{cdp?.close();browser.kill();server.kill();try{await until(async()=>[browser,server].every(p=>p.exitCode!==null||p.signalCode!==null),Boolean,'shutdown');await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:200});}finally{await writeFile(join(out,'report.json'),JSON.stringify(report,null,2)+'\n');}}
