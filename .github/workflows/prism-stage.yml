@@ -1,0 +1,63 @@
+name: Prism source integration (temporary branch only)
+on:
+  push:
+    branches: [feature/triangular-prism]
+    paths:
+      - .prism-stage/**
+      - .github/workflows/prism-stage.yml
+permissions:
+  contents: read
+jobs:
+  validate-and-stage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: node .prism-stage/apply.mjs
+      - run: npm run setup
+      - name: Full Node suite on checksum-verified source
+        shell: bash
+        run: |
+          mkdir -p test-artifacts/prism-stage
+          { git rev-parse HEAD; node --version; google-chrome --version; sha256sum upstream-pin.json; } > test-artifacts/prism-stage/runtime.txt
+          npm test | tee test-artifacts/prism-stage/node-test.log
+      - run: npm run build
+      - run: node scripts/planar-refraction-acceptance.mjs
+      - run: node scripts/planar-refraction-browser.mjs
+      - run: node scripts/circular-dielectric-acceptance.mjs
+      - run: node scripts/circular-dielectric-browser.mjs
+      - run: node scripts/triangular-prism-acceptance.mjs
+      - run: node scripts/triangular-prism-browser.mjs
+      - run: node scripts/pack-demo.mjs
+      - name: Stage exact tested immutable Git tree, never update any branch
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .prism-stage/publish-tree.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prism-integration-evidence
+          path: |
+            test-artifacts/prism-stage/
+            test-artifacts/llm-authoring/planar-refraction/
+            test-artifacts/browser-planar-refraction/
+            test-artifacts/llm-authoring/circular-dielectric/
+            test-artifacts/browser-circular-dielectric/
+            test-artifacts/llm-authoring/triangular-prism/
+            test-artifacts/browser-triangular-prism/
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: opticsim-static-prism-viewer
+          path: test-artifacts/demo-site/
+          if-no-files-found: error
+          retention-days: 7
