@@ -62,6 +62,8 @@ code**. The reference SHA is known to capture only as a checksum, not answers.
         "components": []
       },
       "requestKinds": ["source-emissions"],
+      "requiredComponentIds": [],
+      "expectedTargets": [],
       "expectedPreflight": "native-ready",
       "reviewNote": "Independently adjudicated facts and applicability."
     }
@@ -71,9 +73,18 @@ code**. The reference SHA is known to capture only as a checksum, not answers.
 
 The structural example above is **not an executable physical reference**:
 a real `supported` case must contain all stated, valid components and
-complete authoring fields. Negative classifications are `missing`,
+complete authoring fields. Every supported reference must explicitly include
+`requiredComponentIds` and `expectedTargets` arrays (use `[]` when the
+question states no IDs or target constraints). Only IDs literally specified
+by the question belong in `requiredComponentIds`. List an `expectedTargets`
+entry with `kind` and `componentId` when a particular measurement target
+is part of the required answer. This avoids grading an arbitrary reference
+label as a physical requirement or accepting a wrong detector/source when
+native tracing nevertheless completes.
+
+Negative classifications are `missing`,
 `unsupported`, `ambiguous`, and `invalid`; for them specify
-`expectedFirstStatus` and optionally `reasonCode` when the exact expected
+`expectedFirstStatus` (required) and optionally `reasonCode` when the exact expected
 native refusal is independently reviewed. `requestKinds` must reflect the
 question asked, **even when the requested operation is unsupported**. Do
 not silently replace an unsupported inverse/symbolic question with a handy
@@ -156,8 +167,12 @@ dimensions: response validity; physical facts, requested kind fidelity and
 stable IDs; preflight/refusal correctness; native completeness; and supported
 result availability. Physically wrong but runnable scenes **fail fidelity**.
 Native measurements are qualified only under existing truncation and hash
-gates. A model refusal can be safe for an unsupported problem without
-being graded as a fully correct physical explanation.
+gates. A model refusal may be appropriate for an unsupported problem, but a negative-case
+decline is **provisional** until its explanation is reviewed by a human. Such
+declines do not increase the automatically verified `safeNegativeHandling`
+count; they appear separately as `negativeDeclinesAwaitingReview`.
+Supported exact-authoring credit additionally checks reviewed, explicitly
+stated IDs and adjudicated result targets when the reference specifies them.
 
 **Do not publish the output or provider responses unreviewed.** Although
 the source questions are not committed, raw model output may repeat their
