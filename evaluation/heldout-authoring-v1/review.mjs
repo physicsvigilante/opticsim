@@ -8,7 +8,7 @@ import {createRequire} from 'node:module';
 import {spawnSync} from 'node:child_process';
 import {readJSON,validateQuestions,validateReference,checkCommitment,
  checkedNewOutput,requirePrivateInput,sha256,ROOT} from './manifest.mjs';
-import {scoreAuthoring} from '../cross-family-prospective-v3/replay.mjs';
+import {scoreHeldout} from './scoring.mjs';
 import {parseAnswer,authoringMessages} from './capture.mjs';
 import {runProblemEvidence} from '../../scripts/run-problem.mjs';
 import {evaluateDocument} from '../../scripts/author-scene.mjs';
@@ -85,8 +85,10 @@ export async function runReview({questionsPath,referencePath,commitmentPath,capt
    continue;
   }
   if(a.kind==='declined'){
-   rows.push({id:a.id,responseKind:'declined',safeDecline:gold.classification!=='supported',
-    declineReason:a.reason,physicalFidelity:false,requestedKindFidelity:false,nativeCalls:0,
+   // Only provisionally acceptable: human adjudication of the reason is pending.
+   rows.push({id:a.id,responseKind:'declined',
+    provisionalDecline:gold.classification!=='supported',
+    declineReason:a.reason,physicalFidelity:false,kindFidelity:false,nativeCalls:0,
     manualExplanationReview:'required',exactAuthoring:false});
    continue;
   }
@@ -119,11 +121,9 @@ export async function runReview({questionsPath,referencePath,commitmentPath,capt
     manualExplanationReview:'required'});
    continue;
   }
-  const score=scoreAuthoring(gold,{response:a.request},preflight,run);
+  const score=scoreHeldout(gold,{response:a.request},preflight,run);
   rows.push({...score,responseKind:'request',sourceResponseSha256:a.outputSha256,
-   preflightStatus:preflight.status,nativeCalls,originalInterpretation:'requires-independent-review',
-   exactAuthoring:score.physicalFidelity&&score.kindFidelity&&score.preflightCorrect&&
-     (gold.classification==='supported'?score.nativeComplete&&score.resultCorrect:score.negativeDiscipline)});
+   preflightStatus:preflight.status,nativeCalls,originalInterpretation:'requires-independent-review'});
  }
  const selected=rows.length,supported=rows.filter((_,i)=>reference.cases[i].classification==='supported'),
   negatives=rows.filter((_,i)=>reference.cases[i].classification!=='supported');
@@ -137,7 +137,13 @@ export async function runReview({questionsPath,referencePath,commitmentPath,capt
   nativeAttempted:rows.filter(x=>x.nativeCalls===1).length,
   nativeComplete:supported.filter(x=>x.nativeComplete).length,
   supportedQualified:supported.filter(x=>x.exactAuthoring).length,
-  safeNegativeHandling:negatives.filter(x=>x.negativeDiscipline||x.safeDecline).length,
+  // Unreviewed declines are NOT automatically verified negative handling.
+  safeNegativeHandling:negatives.filter(x=>x.negativeDiscipline).length,
+  negativeDeclinesAwaitingReview:negatives.filter(x=>x.provisionalDecline).length,
+  adjudicatedTargetCases:supported.filter(x=>x.adjudicatedTargets>0).length,
+  matchedTargetCases:supported.filter(x=>x.targetFidelity===true).length,
+  statedIdCases:supported.filter(x=>x.requiredStatedIds>0).length,
+  matchedStatedIdCases:supported.filter(x=>x.statedIdsFaithful===true).length,
   manualExplanationsReviewed:0,
   providerCallsRecorded:capture.externalCalls,repairAttempts:0
  };
@@ -147,6 +153,7 @@ export async function runReview({questionsPath,referencePath,commitmentPath,capt
   independentlyVerifiedReviewers:false,counts,rows,
   validity:'First-attempt external-model trial against a PRIVATE, precommitted, separately authored reference. Independence of reference reviewers and subjective explanations still requires human verification.',
   limitations:['Reference SHA proves byte identity, not independent adjudication.',
+   'Unreviewed model declines are held for manual explanation review and earn no automatic safe-handling credit.',
    'Native completion cannot certify semantic fidelity to the original question.',
    'Full-scene physical-fact and request-kind comparisons are separate from native coverage.',
    'No retry/repair. Decline reasons require human review. Invalid JSON is not repaired.',

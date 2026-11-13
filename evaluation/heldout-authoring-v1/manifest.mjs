@@ -45,7 +45,7 @@ export function validateReference(obj,questions){
  const classifications=['supported','missing','unsupported','ambiguous','invalid'];
  const expected=['native-ready','blocked','invalid-input','no-native-required'];
  for(const c of obj.cases){
-  if(!keys(c,['id','classification','expectedPhysical','requestKinds','expectedPreflight','expectedFirstStatus','reasonCode','reviewNote'])||
+  if(!keys(c,['id','classification','expectedPhysical','requestKinds','expectedPreflight','expectedFirstStatus','reasonCode','reviewNote','requiredComponentIds','expectedTargets'])||
      !classifications.includes(c.classification)||
      !expected.includes(c.expectedPreflight)||
      !Array.isArray(c.requestKinds)||c.requestKinds.length<1||c.requestKinds.length>16||
@@ -60,6 +60,29 @@ export function validateReference(obj,questions){
     throw Error(c.id+': supported case must declare native-ready apparatus');
   if(c.classification!=='supported'&&c.expectedPreflight==='native-ready')
     throw Error(c.id+': negative reference cannot declare native-ready');
+  // Empty arrays certify that the question states no component IDs or targets.
+  if(c.classification==='supported'&&
+     (!Array.isArray(c.requiredComponentIds)||!Array.isArray(c.expectedTargets)))
+    throw Error(c.id+': supported reference requires adjudicated ID and target lists');
+  if(c.classification!=='supported'&&c.expectedFirstStatus===undefined)
+    throw Error(c.id+': negative reference requires expectedFirstStatus');
+  if(c.requiredComponentIds!==undefined&&(!Array.isArray(c.requiredComponentIds)||
+     c.requiredComponentIds.some(id=>!validId(id))||
+     new Set(c.requiredComponentIds).size!==c.requiredComponentIds.length))
+    throw Error(c.id+': invalid stated component IDs');
+  if(c.expectedTargets!==undefined&&(!Array.isArray(c.expectedTargets)||
+     c.expectedTargets.some(t=>!keys(t,['kind','componentId'])||
+       Object.keys(t).length!==2||typeof t.kind!=='string'||
+       !c.requestKinds.includes(t.kind)||!validId(t.componentId))||
+     new Set(c.expectedTargets.map(t=>JSON.stringify([t.kind,t.componentId]))).size!==c.expectedTargets.length))
+    throw Error(c.id+': invalid expected measurement targets');
+  if(c.classification==='supported'){
+    const components=Array.isArray(c.expectedPhysical.components)?c.expectedPhysical.components:[];
+    const ids=new Set(components.map(x=>x.id));
+    if(c.requiredComponentIds.some(id=>!ids.has(id))||
+       c.expectedTargets.some(t=>!ids.has(t.componentId)))
+      throw Error(c.id+': reviewed IDs and targets must exist in expected apparatus');
+  }
  }
  return obj;
 }

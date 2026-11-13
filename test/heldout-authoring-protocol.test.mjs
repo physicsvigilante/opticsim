@@ -9,6 +9,7 @@ import {validateQuestions,validateReference,readJSON,checkCommitment,checkedNewO
  requirePrivateInput} from '../evaluation/heldout-authoring-v1/manifest.mjs';
 import {collectOnce,authoringMessages} from '../evaluation/heldout-authoring-v1/capture.mjs';
 import {runReview} from '../evaluation/heldout-authoring-v1/review.mjs';
+import {scoreHeldout} from '../evaluation/heldout-authoring-v1/scoring.mjs';
 import {scoreAuthoring} from '../evaluation/cross-family-prospective-v3/replay.mjs';
 import {evaluateDocument} from '../scripts/author-scene.mjs';
 const core=createRequire(import.meta.url)('../dist/test-core.cjs');
@@ -26,7 +27,8 @@ const files=x=>{
   {id:'B01',prompt:'Mock incomplete lens problem lacks focal length; return a refusal without guessing the focal length.'}]};
  const ref={format:'opticsim-heldout-reference-v1',reviewers:['mock reviewer one','mock reviewer two'],cases:[
   {id:'A01',classification:'supported',expectedPhysical:positive.physical,
-   requestKinds:['source-emissions'],expectedPreflight:'native-ready'},
+   requestKinds:['source-emissions'],expectedPreflight:'native-ready',
+   requiredComponentIds:[],expectedTargets:[]},
   {id:'B01',classification:'missing',expectedPhysical:null,requestKinds:['ideal-image'],
    expectedPreflight:'blocked',expectedFirstStatus:'needs-information',reviewNote:'Missing focal length should not be invented.'}
  ]};
@@ -99,12 +101,14 @@ test('offline mock first-attempt review scores native success separately from ne
  assert.equal(result.counts.supportedQualified,1);
  assert.equal(result.counts.nativeAttempted,1);
  assert.equal(result.counts.nativeComplete,1);
- assert.equal(result.counts.safeNegativeHandling,1);
+ assert.equal(result.counts.safeNegativeHandling,0);
+ assert.equal(result.counts.negativeDeclinesAwaitingReview,1);
  assert.equal(result.counts.providerCallsRecorded,2);
  assert.equal(result.independentlyVerifiedReviewers,false);
  assert.equal(result.rows[0].physicalFidelity,true);
  assert.equal(result.rows[0].kindFidelity,true);
- assert.equal(result.rows[1].safeDecline,true);
+ assert.equal(result.rows[1].provisionalDecline,true);
+ assert.equal(result.rows[1].manualExplanationReview,'required');
  assert.equal(result.rows[1].nativeCalls,0);
  assert.ok(existsSync(resolve(out,'review.json')));
  assert.equal(readFileSync(cap,'utf8'),JSON.stringify(collected,null,2)+'\n',
@@ -141,4 +145,74 @@ test('malformed model request is recorded as a first-attempt failure, and later 
  assert.equal(report.rows[0].errorCode,'INVALID_MODEL_REQUEST');assert.equal(report.rows[0].exactAuthoring,false);
  assert.equal(report.rows[1].responseKind,'declined');assert.equal(report.counts.nativeAttempted,0);
  assert.equal(readFileSync(cap,'utf8'),bytes);
+});
+
+
+test('supported private references must explicitly adjudicate named IDs and targets',()=>{
+ const f=files();
+ const missing=structuredClone(f.ref);delete missing.cases[0].expectedTargets;
+ assert.throws(()=>validateReference(missing,f.questions),/adjudicated ID and target lists/);
+ const badIds=structuredClone(f.ref);badIds.cases[0].requiredComponentIds=['UNKNOWN'];
+ assert.throws(()=>validateReference(badIds,f.questions),/exist in expected apparatus/);
+ const badTargets=structuredClone(f.ref);
+ badTargets.cases[0].expectedTargets=[{kind:'source-emissions',componentId:'L'}];
+ assert.equal(validateReference(badTargets,f.questions),badTargets);
+ // The declared component is present; whether it is a *valid* target is
+ // checked by the actual result contract, not by a second authoring DSL.
+ const noNegative=structuredClone(f.ref);delete noNegative.cases[1].expectedFirstStatus;
+ assert.throws(()=>validateReference(noNegative,f.questions),/requires expectedFirstStatus/);
+});
+function scoredExecution(id='S',kind='source-emissions'){
+ return {report:{results:[{id:'emissions',kind,componentId:id,status:'available'}],
+  coverage:{requested:1,available:1},native:{status:'completed'},
+  dispatch:{nativeCalls:1,repairs:0,externalModelCalls:0},targetBindings:[]}};
+}
+test('renaming a stated physical ID does not earn exact authoring despite native completion',()=>{
+ const f=files(),gold={...f.ref.cases[0],requiredComponentIds:['S'],
+  expectedTargets:[{kind:'source-emissions',componentId:'S'}]};
+ const bad=structuredClone(f.positive);bad.physical.components[0].id='DIFFERENT';
+ bad.requests[0].componentId='DIFFERENT';
+ const score=scoreHeldout(gold,{response:bad},
+  {status:'native-ready',native:{canRun:true},results:[]},
+  scoredExecution('DIFFERENT'));
+ assert.equal(score.physicalFidelity,true);
+ assert.equal(score.kindFidelity,true);
+ assert.equal(score.nativeComplete,true);
+ assert.equal(score.statedIdsFaithful,false);
+ assert.equal(score.targetFidelity,false);
+ assert.equal(score.exactAuthoring,false);
+});
+test('wrong source of a valid measurement cannot earn target-fidelity credit',()=>{
+ const f=files(),physical=structuredClone(f.positive.physical);
+ physical.components.push({id:'S2',type:'point-source',
+  parameters:{x:-30,y:12,brightness:.08},emission:{mode:'full-circle'}});
+ const gold={...f.ref.cases[0],expectedPhysical:physical,requiredComponentIds:[],
+  expectedTargets:[{kind:'source-emissions',componentId:'S'}]};
+ const bad={format:'opticsim-problem-v1',physical,
+  requests:[{id:'emissions',kind:'source-emissions',componentId:'S2'}]};
+ const score=scoreHeldout(gold,{response:bad},
+  {status:'native-ready',native:{canRun:true},results:[]},scoredExecution('S2'));
+ assert.equal(score.physicalFidelity,true);
+ assert.equal(score.kindFidelity,true);
+ assert.equal(score.nativeComplete,true);
+ assert.equal(score.targetFidelity,false);
+ assert.equal(score.exactAuthoring,false);
+});
+test('fresh held-out case IDs do not inherit sealed N03 negative-validation special cases',()=>{
+ const incomplete={lengthUnit:'cm',components:[
+  {id:'S',type:'point-source',parameters:{x:-24,y:1,brightness:.08},emission:{mode:'full-circle'}},
+  {id:'L',type:'ideal-lens',parameters:{x:0,apertureHeight:10}}
+ ]};
+ const reference={id:'N03',classification:'missing',expectedPhysical:incomplete,
+  requestKinds:['ideal-image'],expectedPreflight:'blocked',
+  expectedFirstStatus:'needs-information',requiredComponentIds:[],expectedTargets:[]};
+ const attempt={response:{format:'opticsim-problem-v1',physical:structuredClone(incomplete),
+  requests:[{id:'image',kind:'ideal-image',componentId:'S'}]}};
+ const run={report:{results:[{kind:'ideal-image',status:'needs-information',
+  reasonCode:'NATIVE_SCENE_REQUIRED'}],coverage:{requested:1,available:0},
+  native:{status:'not-run'},dispatch:{nativeCalls:0,repairs:0,externalModelCalls:0},targetBindings:[]}};
+ const score=scoreHeldout(reference,attempt,{status:'blocked',native:{canRun:false},results:[]},run);
+ assert.equal(score.physicalFidelity,true);
+ assert.equal(score.negativeDiscipline,true);
+ assert.equal(score.exactAuthoring,true);
 });

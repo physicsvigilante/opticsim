@@ -62,13 +62,16 @@ const sortedKinds=request=>Array.isArray(request?.requests)?
  request.requests.map(r=>r.kind).sort():[];
 const equivalent=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const statusOf=(r)=>['available','qualified','conditional'].includes(r.status)?'available':r.status;
-export function scoreAuthoring(reference,attempt,preflight,run){
+export function scoreAuthoring(reference,attempt,preflight,run,{strictNegativeIds=['N03']}={}){
  const expected=reference,request=attempt.response,results=run.report.results||[];
  const supported=expected.classification==='supported';
+ // The legacy sealed N03 policy remains the default. Fresh held-out scoring
+ // passes an empty list so private IDs cannot select a developmental shortcut.
+ const strictPhysical=supported||strictNegativeIds.includes(expected.id);
  const oraclePhysical=physicalSignatures(expected.expectedPhysical,{
-  validateSupported:supported||expected.id==='N03'});
+  validateSupported:strictPhysical});
  const authoredPhysical=physicalSignatures(request.physical,{
-  validateSupported:supported||expected.id==='N03'});
+  validateSupported:strictPhysical});
  const physicalFidelity=equivalent(oraclePhysical,authoredPhysical)&&oraclePhysical!==null||
   expected.expectedPhysical===null&&request.physical===null;
  const idsFaithful=equivalent(physicalSignatures(expected.expectedPhysical,{includeIds:true}),
