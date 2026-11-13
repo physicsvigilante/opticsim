@@ -24,6 +24,8 @@ jobs:
         run: node scripts/opaque-line-blocker-acceptance.mjs
       - name: Native circular opaque stop and immutable radius sweep
         run: node scripts/opaque-circle-blocker-acceptance.mjs
+      - name: Native finite aperture and immutable opening-width sweep
+        run: node scripts/finite-aperture-acceptance.mjs
       - name: Opaque blocker browser edits, detector readings and qualified exports
         run: node scripts/opaque-line-blocker-browser.mjs
       - name: LLM authoring CLI with real native execution and revision guards
@@ -59,6 +61,7 @@ jobs:
           path: |
             test-artifacts/llm-authoring/opaque-line-blocker/
             test-artifacts/browser-opaque-line-blocker/
+            test-artifacts/llm-authoring/finite-aperture/
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()

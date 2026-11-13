@@ -1,0 +1,82 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "Synthetic native finite aperture: central opening and downstream detector",
+    "runPolicy": "preview-v1",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -200,
+          "y": 0,
+          "brightness": 0.08
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 0,
+          "angleDeg": 20
+        }
+      },
+      {
+        "id": "B1",
+        "type": "finite-aperture",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 80,
+          "openingLength": 30
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 100,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 80
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "absorbed",
+      "kind": "blocker-absorptions",
+      "componentId": "B1"
+    },
+    {
+      "id": "emitted",
+      "kind": "source-emissions",
+      "componentId": "S1"
+    },
+    {
+      "id": "crossings",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "power",
+      "kind": "detector-signed-power",
+      "componentId": "D1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Native absorption by the two opaque aperture arms, and actual downstream detector crossings",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "Entirely synthetic apparatus, not inferred from a JEE problem.",
+      "Finite straight line with a 30 mm transparent centred opening, two opaque arms and native PhyDemo Aperture absorption.",
+      "Brightness and source cone are explicitly specified, and finite ray sampling does not establish continuous transmission."
+    ],
+    "unknowns": [
+      "Continuous illumination, image, observer visibility, geometric beam coverage between sampled rays, wave diffraction, and an original exam answer are not inferred."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}

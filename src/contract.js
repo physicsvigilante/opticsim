@@ -4,6 +4,7 @@ import {CIRCULAR_TYPE,CIRCULAR_PARAMETERS,validateCircularGeometry} from './circ
 import {CURVED_PARAMETERS,isCurved,validateCurvedGeometry} from './curved-mirrors.js';
 import {PLANAR_TYPE,PLANAR_PARAMETERS,validatePlanarGeometry} from './planar-media.js';
 import {CIRCLE_BLOCKER_TYPE,validateCircleBlockerGeometry} from './opaque-circle-blocker.js';
+import {FINITE_APERTURE_TYPE,APERTURE_CLEARANCE_MM,apertureGeometry,separatedSegmentDistance} from './finite-aperture.js';
 export const UPSTREAM = '811f508d2b070898c241a568b0c167dcb8645251';
 export const SAMPLING_PRESETS = Object.freeze({ sparse: 0.048, medium: 0.2, dense: 1 });
 export function samplingPreset(density) { return Object.keys(SAMPLING_PRESETS).find(key => SAMPLING_PRESETS[key] === density) || 'custom'; }
@@ -25,18 +26,20 @@ const parameters = { 'point-source': ['x', 'y'], 'ideal-lens': ['x', 'focalLengt
   'plane-mirror': ['x', 'y', 'orientationDeg', 'length'],
   'line-blocker': ['x', 'y', 'orientationDeg', 'length'],
   [CIRCLE_BLOCKER_TYPE]: ['x', 'y', 'radius'],
+  [FINITE_APERTURE_TYPE]: ['x', 'y', 'orientationDeg', 'length', 'openingLength'],
   'ray-detector': ['x', 'y', 'orientationDeg', 'length'],
   [PLANAR_TYPE]: [...PLANAR_PARAMETERS], [CIRCULAR_TYPE]: [...CIRCULAR_PARAMETERS], [PRISM_TYPE]: [...PRISM_PARAMETERS], [POLYGON_TYPE]: [...POLYGON_PARAMETERS], ...CURVED_PARAMETERS };
 // Shared authoring/validator definitions. General composition relaxes mandatory
 // apparatus types; it does not relax numerical, geometric or runtime limits.
 export const COMPONENT_TYPES = Object.freeze(Object.keys(parameters));
-export const LENGTH_PARAMETERS = Object.freeze(['x','y','x1','y1','x2','y2','x3','y3','x4','y4','focalLength','apertureHeight','length','radius']);
+export const LENGTH_PARAMETERS = Object.freeze(['x','y','x1','y1','x2','y2','x3','y3','x4','y4','focalLength','apertureHeight','length','openingLength','radius']);
 export const GENERAL_SCOPE = Object.freeze({
   'point-source': Object.freeze({min:1,max:4}),
   'ideal-lens': Object.freeze({min:0,max:4}),
   'plane-mirror': Object.freeze({min:0,max:4}),
   'line-blocker': Object.freeze({min:0,max:2}),
   [CIRCLE_BLOCKER_TYPE]: Object.freeze({min:0,max:2}),
+  [FINITE_APERTURE_TYPE]: Object.freeze({min:0,max:2}),
   'ray-detector': Object.freeze({min:0,max:2}),
   [PLANAR_TYPE]: Object.freeze({min:0,max:4}),
   [CIRCULAR_TYPE]: Object.freeze({min:0,max:1}),
@@ -46,7 +49,7 @@ export const GENERAL_SCOPE = Object.freeze({
   'circular-arc-mirror': Object.freeze({min:0,max:2})
 });
 // Largest currently admitted arrangement: general sources/lenses/mirrors/stops/detectors.
-// Line and circular blockers share a combined two-stop limit. Do not sum
+// Line blockers, circles and finite apertures share a two-stop limit. Do not sum
 // their individual limits or the isolated optical-family limits.
 export const MAX_AUTHORING_COMPONENTS = ['point-source','ideal-lens','plane-mirror',
   'line-blocker','ray-detector'].reduce((total,type)=>total+GENERAL_SCOPE[type].max,0);
@@ -86,7 +89,7 @@ function validateVersion(doc, version) {
     object(c, ['id', 'type', 'parameters', ...(version >= 2 && c?.type === 'point-source' ? ['emission'] : [])], path);
     if (typeof c.id !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(c.id) || ids.has(c.id)) fail(`${path}.id`, 'expected a unique stable ID (letters, digits, underscores, hyphens)');
     ids.add(c.id);
-    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(version===4||!['line-blocker',CIRCLE_BLOCKER_TYPE].includes(t))) :
+    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(version===4||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))) :
       version >= 3 ? ['point-source', 'ideal-lens', 'plane-mirror'] :
       ['point-source', 'ideal-lens'], `${path}.type`);
     object(c.parameters, componentParameterNames(c.type,version), `${path}.parameters`);
@@ -99,9 +102,11 @@ function validateVersion(doc, version) {
       if (key === 'radius' && (c.type===CIRCULAR_TYPE?value<2:c.type===CIRCLE_BLOCKER_TYPE?value<1:Math.abs(value)<2)) fail(`${path}.parameters.${key}`, c.type===CIRCLE_BLOCKER_TYPE?'opaque circle radius must be at least 1 mm':'radius magnitude must be at least 2 mm');
       if (key === 'focalLength' && Math.abs(value) < 1) fail(`${path}.parameters.${key}`, 'magnitude must be at least 1 mm');
       if (key === 'brightness') number(value, 0.01, 1, `${path}.parameters.brightness`);
-      if (key === 'length') number(value, 1, 10000, `${path}.parameters.length`);
+      if (key === 'length'||key === 'openingLength') number(value, 1, 10000, `${path}.parameters.${key}`);
       if (key === 'orientationDeg') number(value, -180, 180, `${path}.parameters.orientationDeg`);
     }
+    if (c.type===FINITE_APERTURE_TYPE && c.parameters.length-c.parameters.openingLength < 2)
+      fail(`${path}.parameters.openingLength`, 'central opening must leave two opaque arms at least 1 mm long');
     if (version >= 2 && c.type === 'point-source') {
       object(c.emission, ['mode', 'directionDeg', 'angleDeg'], `${path}.emission`);
       choice(c.emission.mode, version===6?['single-ray','full-circle','directional']:(version===5||version===7||version===8||version===9)?['single-ray']:['full-circle', 'directional'], `${path}.emission.mode`);
@@ -223,17 +228,18 @@ function validateMixedTraceScope(components, general = false) {
   const mirrors=components.filter(c=>c.type==='plane-mirror');
   const blockers=components.filter(c=>c.type==='line-blocker');
   const circleBlockers=components.filter(c=>c.type===CIRCLE_BLOCKER_TYPE);
+  const apertures=components.filter(c=>c.type===FINITE_APERTURE_TYPE);
   const path='$.physics.components';
   if(sources.length<GENERAL_SCOPE['point-source'].min||
      sources.length>GENERAL_SCOPE['point-source'].max||
      lenses.length>(GENERAL_SCOPE['ideal-lens'].max)||
      mirrors.length>(GENERAL_SCOPE['plane-mirror'].max)||
-     blockers.length+circleBlockers.length>GENERAL_SCOPE['line-blocker'].max||
-     (!general && blockers.length+circleBlockers.length>0)||
+     blockers.length+circleBlockers.length+apertures.length>GENERAL_SCOPE['line-blocker'].max||
+     (!general && blockers.length+circleBlockers.length+apertures.length>0)||
      (!general && (lenses.length<1 || mirrors.length<1))||
-     components.length!==sources.length+lenses.length+mirrors.length+blockers.length+circleBlockers.length)
+     components.length!==sources.length+lenses.length+mirrors.length+blockers.length+circleBlockers.length+apertures.length)
     fail(path,general
-      ? 'general tracing supports 1–4 point sources, 0–4 coaxial lenses, 0–4 plane mirrors and 0–2 total opaque line/circular blockers'
+      ? 'general tracing supports 1–4 point sources, 0–4 coaxial lenses, 0–4 plane mirrors and 0–2 total opaque line/circular/aperture stops'
       : 'mixed tracing supports 1–4 point sources, 1–4 coaxial lenses and 1–4 plane mirrors',
       'UNSUPPORTED_SCOPE');
   const points=sources.map(c=>c.parameters);
@@ -251,7 +257,9 @@ function validateMixedTraceScope(components, general = false) {
     const line=c.type==='ideal-lens'
       ? [{x:p.x,y:-p.apertureHeight/2},{x:p.x,y:p.apertureHeight/2}]
       : mirrorEndpoints(p);
-    if(['plane-mirror','line-blocker'].includes(c.type)){
+    const isAperture=c.type===FINITE_APERTURE_TYPE;
+    const lines=isAperture?apertureGeometry(p,mirrorEndpoints).arms:[line];
+    if(['plane-mirror','line-blocker',FINITE_APERTURE_TYPE].includes(c.type)){
       if(line.some(v=>Math.abs(v.x)>10000||Math.abs(v.y)>10000))
         fail(path+'['+index+'].parameters','segment endpoints exceed coordinate bounds','UNSUPPORTED_SCOPE');
       const theta=p.orientationDeg*Math.PI/180;
@@ -259,10 +267,15 @@ function validateMixedTraceScope(components, general = false) {
         -(source.x-p.x)*Math.sin(theta)+(source.y-p.y)*Math.cos(theta))<0.01))
         fail(path+'['+index+'].parameters','each source must be at least 0.01 mm from finite surface supporting line','UNSUPPORTED_SCOPE');
     }
-    for(const other of surfaces)
-      if(segmentsIntersect(other.line,line))
-        fail(path+'['+index+']','optical segments intersect or overlap ('+other.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
-    surfaces.push({id:c.id,line});
+    // The transparent opening is free space, not a solid obstacle.
+    for(const arm of lines){
+      for(const other of surfaces)
+        if(segmentsIntersect(other.line,arm)||
+          (isAperture||other.aperture) &&
+          separatedSegmentDistance(other.line,arm)<APERTURE_CLEARANCE_MM)
+          fail(path+'['+index+']','optical segments intersect or nearly touch ('+other.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
+      surfaces.push({id:c.id,line:arm,aperture:isAperture});
+    }
   }
 }
 // The detector layer is independent of the optical model and can be authored
@@ -274,11 +287,16 @@ function validateDetectorScope(components) {
     fail('$.physics.components','at most two ray detectors are supported','UNSUPPORTED_SCOPE');
   if(!detectors.length)return;
   const sources=components.filter(c=>c.type==='point-source').map(c=>c.parameters);
-  const surfaces=components.filter(c=>['ideal-lens','plane-mirror','line-blocker'].includes(c.type))
-    .map(c=>({id:c.id,line:c.type==='ideal-lens'
-      ? [{x:c.parameters.x,y:-c.parameters.apertureHeight/2},
-         {x:c.parameters.x,y:c.parameters.apertureHeight/2}]
-      : mirrorEndpoints(c.parameters)}));
+  const surfaces=components.filter(c=>['ideal-lens','plane-mirror','line-blocker',FINITE_APERTURE_TYPE].includes(c.type))
+    .flatMap(c=>{
+      const aperture=c.type===FINITE_APERTURE_TYPE;
+      const lines=aperture?apertureGeometry(c.parameters,mirrorEndpoints).arms:
+        [c.type==='ideal-lens'
+          ? [{x:c.parameters.x,y:-c.parameters.apertureHeight/2},
+             {x:c.parameters.x,y:c.parameters.apertureHeight/2}]
+          : mirrorEndpoints(c.parameters)];
+      return lines.map(line=>({id:c.id,line,aperture}));
+    });
   for(const [i,c] of components.entries()) {
     if(c.type!=='ray-detector')continue;
     const p=c.parameters,line=mirrorEndpoints(p),path='$.physics.components['+i+']';
@@ -289,9 +307,10 @@ function validateDetectorScope(components) {
       -(source.x-p.x)*Math.sin(theta)+(source.y-p.y)*Math.cos(theta))<0.01))
       fail(path+'.parameters','each source must be at least 0.01 mm from detector supporting line','UNSUPPORTED_SCOPE');
     for(const other of surfaces)
-      if(segmentsIntersect(other.line,line))
-        fail(path,'detector segment intersects or overlaps '+other.id,'UNSUPPORTED_SCOPE');
-    surfaces.push({id:c.id,line});
+      if(segmentsIntersect(other.line,line)||
+        other.aperture&&separatedSegmentDistance(other.line,line)<APERTURE_CLEARANCE_MM)
+        fail(path,'detector segment intersects or nearly touches '+other.id,'UNSUPPORTED_SCOPE');
+    surfaces.push({id:c.id,line,aperture:false});
   }
 }
 export function setParameter(doc, id, parameter, value) {

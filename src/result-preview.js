@@ -47,7 +47,7 @@ export function apparatusPoints(doc){
     if(c.type===CIRCLE_BLOCKER_TYPE)return circleBlockerExtents(p);
     if(isCurved(c.type))return curvedPoints(c);
     if(c.type==='ideal-lens')return [{x:p.x,y:-p.apertureHeight/2},{x:p.x,y:p.apertureHeight/2}];
-    if(c.type==='plane-mirror'||c.type==='ray-detector'||c.type==='line-blocker')return mirrorEndpoints(p);
+    if(c.type==='plane-mirror'||c.type==='ray-detector'||c.type==='line-blocker'||c.type==='finite-aperture')return mirrorEndpoints(p);
     return [{x:p.x,y:p.y}];
   });
 }
