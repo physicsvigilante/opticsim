@@ -19,6 +19,8 @@ jobs:
       - run: npm test
       - name: Run five synthetic and existing integration controls
         run: node scripts/unified-problem-acceptance.mjs
+      - name: Stress generality across 21 fixed synthetic authored scenes
+        run: node scripts/general-composition-acceptance.mjs
       - name: Replay six sealed original-image first attempts without repairs
         run: node scripts/unified-original-trial.mjs
       - name: Preserve source fingerprints and separate review
@@ -41,5 +43,6 @@ jobs:
           path: |
             test-artifacts/llm-authoring/unified-acceptance/
             test-artifacts/llm-authoring/unified-original-trial/
+            test-artifacts/llm-authoring/general-composition-v1/
           if-no-files-found: error
           retention-days: 14
