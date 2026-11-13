@@ -4,6 +4,10 @@ A standalone-browser-capable optical bench powered by PhyDemo Ray Optics Simulat
 pinned to **811f508d2b070898c241a568b0c167dcb8645251**. Browser runtime resources
 are local. No LLM request is needed to open, simulate, or edit supported scenes.
 
+## LLM authoring without unnecessary physics choices
+
+For an existing `opticsim-problem-v1` request, `node scripts/preflight-problem.mjs my-problem.json` checks complete physical facts and requested results **without a native run**. The dispatcher now binds omitted measurement `componentId` values only when the validated scene contains exactly one compatible authored component; multiple matches require an explicit ID. The original input bytes and binding decision are preserved. See [LLM authoring preflight](docs/LLM-AUTHORING-PREFLIGHT.md). This is not an image interpreter, new optical physics or an independent LLM score.
+
 ## Windows PowerShell
 
 Verified toolchain: Node.js **24.19.0**, npm **11.17.0**, Git **2.43.0.windows.1**.

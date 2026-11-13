@@ -85,7 +85,7 @@ export async function runProblemEvidence({inputBytes,outputPath,execute=executeN
     dispatch:{calculationRequests:plan.calculations.length,nativeRequested:plan.native.required,
       nativeCalls:plan.native.canRun?1:0,nativeCallDefinition:'executor attempts, including setup failure',
       repairs:0,externalModelCalls:0},
-    preparation:plan.preparation,diagnostics:plan.diagnostics,
+    preparation:plan.preparation,diagnostics:plan.diagnostics,targetBindings:plan.targetBindings,
     interpretation:plan.request.interpretation??null,interpretationAssessment:plan.interpretation,
     native,results,portable,questionSupport:'not-assessed-by-engine'};
   persist('report.json',report);
