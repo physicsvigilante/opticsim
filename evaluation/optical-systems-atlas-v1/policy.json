@@ -1,0 +1,75 @@
+{
+  "format": "opticsim-jee-systems-atlas-policy-v1",
+  "baselineMain": "52accb717b10b75792a484b8a8c6b285c5770e59",
+  "source": {
+    "repository": "physicsvigilante/opticsim",
+    "sourceCommit": "d33b45226348d9b0c701f2a3e8b86dd1285de2d0",
+    "filename": "08_Ray_Optics_Explanations.zip",
+    "sha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939"
+  },
+  "selectionRule": "For each of 8 chapters, sort all Problems PNG paths ascending and select five fixed indices floor(k*(N-1)/4), k=0,...,4. Selection committed before reading selected PNG contents; no replacement after review. Previously exposed cases may overlap, and no blind/unseen claim.",
+  "chapterCounts": {
+    "01_Reflection_at_Plane_Surfaces": 15,
+    "02_Reflection_at_Curved_Surfaces": 13,
+    "03_General_Refraction": 12,
+    "04_Total_Internal_Reflection_TIR": 10,
+    "05_Prism": 15,
+    "06_Refraction_at_Curved_Surfaces": 13,
+    "07_Lens_Formula": 27,
+    "08_Aberrations_Human_Eye_Optical_Instruments": 9
+  },
+  "totalArchiveProblems": 114,
+  "selectedCount": 40,
+  "classificationSchema": {
+    "objectFamilies": [
+      "point-source",
+      "extended-object",
+      "ideal-thin-lens",
+      "physical-lens",
+      "plane-mirror",
+      "curved-mirror",
+      "planar-interface",
+      "curved-dielectric",
+      "circular-dielectric",
+      "triangular-prism",
+      "arbitrary-glass-region",
+      "opaque-obstacle",
+      "aperture",
+      "ray-detector",
+      "screen",
+      "observer",
+      "instrument",
+      "moving-object",
+      "other"
+    ],
+    "dimensions": [
+      "static-geometry",
+      "ray-path",
+      "image-formation",
+      "inverse-geometry",
+      "continuous-visibility",
+      "motion",
+      "material-property",
+      "wave/polarization",
+      "numerical-analysis",
+      "other"
+    ],
+    "verdicts": [
+      "already-composable",
+      "partial-native-component",
+      "missing-component",
+      "composition-gap",
+      "observation-gap",
+      "analytical-only",
+      "unclear-facts"
+    ],
+    "confidence": [
+      "high",
+      "medium",
+      "low"
+    ]
+  },
+  "plannedReview": "40 questions (5 per chapter) visually classified as capability discovery, NOT correctness/independent model evaluation. The other 74 are inventoried but not visually assessed. Do not read Solutions, change sealed first attempts, or automatically solve JEE questions. Capability families should generalize across chapters.",
+  "claimedIndependentAccuracy": false,
+  "solutionsRead": false
+}
