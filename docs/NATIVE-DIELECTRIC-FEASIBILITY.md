@@ -35,3 +35,19 @@ This milestone is test-first by design. The current branch is a feasibility inve
 ## Completed native probe evidence
 
 The first pinned-native run [43391993280](https://github.com/physicsvigilante/opticsim/actions/runs/43391993280) completed successfully. It recorded two exact normal-circle hits, two oblique-circle hits with local-normal Snell agreement, at least one interior total-internal reflection, and two distinct native prism boundary hits with a changed outgoing heading. **Important qualification:** the internal TIR test's `simulationComplete` callback was accompanied by `totalTruncation = 0.1` relative brightness at an intentionally short ray depth. Under Opticsim's actual completion policy that is **incomplete**, not a publishable full native observation. The follow-up probe explicitly asserts truncated brightness and samples full Fresnel mode separately. No numerical cutoffs are changed.
+
+## Repeated probe and numerical classification
+
+The exact revised candidate `83a8945b882f48c1505b8d5e4b7246e71d70572b` completed [run 43392322380](https://github.com/physicsvigilante/opticsim/actions/runs/43392322380) on freshly built, unchanged pinned core.
+
+| Test-only native arrangement | Actual native surface encounters | Raw native callback | Truncated relative brightness | Canonical Opticsim classification |
+|---|---:|---|---:|---|
+| Circle, normal incidence | 2 | simulationComplete | 0 | completed |
+| Circle, oblique incidence | 2 | simulationComplete | 0 | completed |
+| Circle, internal TIR, depth 3 | 3 | simulationComplete | 0.1 | **incomplete** |
+| Circle, full Fresnel | 2 | simulationComplete | 0.00786636 | **incomplete** |
+| Nonparallel triangular Glass polygon | 2 | simulationComplete | 0 | completed |
+
+The raw native callback is *not* proof of full ray-energy coverage. `classifyRun` correctly suppresses accepted observables whenever native truncation or undefined behavior is nonzero. The Fresnel and TIR cases therefore demonstrate useful **physics plus a limitation**, not fully complete optical solutions. The probe's full-Fresnel branch is an actual native run; its numerical values are evidence for that fixture only, not an estimate of accuracy for every incidence.
+
+[Downloaded evidence ZIP](https://github.com/physicsvigilante/opticsim/actions/runs/43392322380/artifacts/14021008114) contains `report.json`, with validated internal CRC and the actual incident-point/direction readings. The subsequent documentation-only cleanup removes the branch-triggered workflow to prevent ongoing CI duplication. Run the explicit probe locally as `npm run setup && node scripts/build.mjs --test && node scripts/native-dielectric-probe.mjs`.
