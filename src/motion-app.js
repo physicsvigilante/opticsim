@@ -1,5 +1,6 @@
 import example from '../examples/u2-motion.json';
-import {makeU2Motion} from './motion-example.js';
+import lensExample from '../examples/moving-lens.json';
+import {makeU2Motion,makeLensMotion} from './motion-example.js';
 import {prepareMotionExperiment,MotionPlayer} from './source-motion.js';
 import {reviseMotionRayExperiment} from './motion-ray-controls.js';
 import {MotionRayUI} from './motion-ray-ui.js';
@@ -189,10 +190,14 @@ function drawPlot(frame){
  for(const v of motionGridTicks(xmin,xmax,w<400?3:5)){ctx.beginPath();ctx.moveTo(x(v),top);ctx.lineTo(x(v),bottom);ctx.stroke();ctx.fillText(number(v/10),x(v)-10,bottom+19);}
  for(const v of motionGridTicks(ymin,ymax,4)){ctx.beginPath();ctx.moveTo(left,y(v));ctx.lineTo(right,y(v));ctx.stroke();ctx.fillText(number(v/10),5,y(v)+4);}
  ctx.fillText('y / cm',8,14);ctx.fillText('x / cm',w-53,h-4);
- const mirror=model?.baseline.scene.physics.components.find(c=>isCurved(c.type));
- if(mirror){const [a,b]=curvedPoints(mirror),mp=mirror.parameters;
+ const optic=model?.baseline.scene.physics.components.find(c=>isCurved(c.type)||c.type==='ideal-lens');
+ if(optic){
+  const points=isCurved(optic.type)?curvedPoints(optic):[
+   {x:optic.parameters.x,y:-optic.parameters.apertureHeight/2},
+   {x:optic.parameters.x,y:optic.parameters.apertureHeight/2}];
+  const [a,b]=points,mp={x:optic.parameters.x,y:optic.parameters.y??0};
   ctx.strokeStyle='#e3c88b';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x(a.x),y(a.y));ctx.lineTo(x(b.x),y(b.y));ctx.stroke();
-  pointLabel(ctx,projectMotionPoint(mp,camera),'mirror','#e3c88b',w,h);
+  pointLabel(ctx,projectMotionPoint(mp,camera),optic.type==='ideal-lens'?'lens':'mirror','#e3c88b',w,h);
  }
  $('plot-note').textContent='Separate conditional calculation. Global x-right/y-up, equal x/y scale; no analytical ray paths.';
  if(!frame)return;
@@ -219,14 +224,17 @@ function ui(p){
  }
  currentIndex=p.index;nativeCamera=native.displayCamera??null;
  const d=native.diagnostics,complete=['completed','completed-with-warnings'].includes(native.status);
- $('native-counts').textContent=complete?d.emitted+' emitted · '+d.reflections+' reflections · '+d.processed+' segments':
+ $('native-counts').textContent=complete?d.emitted+' emitted · '+(d.reflections===null?'no mirrors':d.reflections+' reflections')+' · '+d.processed+' segments':
   'No completed native observations. '+(native.error||native.issues?.join('; ')||'Frame is incomplete.');
  $('object-value').textContent=frame.object?pair(frame.object.positionMm)+' cm':'Invalid source position';
  const im=frame.analysis?.image,vel=frame.analysis?.kinematics;
  $('image-value').textContent=im?.value?.imageKind==='at-infinity'?'At infinity':frame.analysis?.globalImageMm?
   pair(frame.analysis.globalImageMm)+' cm\nm = '+number(im.value.magnification):(im?.status||'unavailable');
  $('velocity-value').textContent=pair(frame.analysis?.globalImageVelocityMmPerSecond);
- $('image-model').textContent=im?.model==='spherical-paraxial'?'Paraxial calculation; circular rays may exhibit aberration':'Ideal Gaussian calculation — not native detection';
+ $('image-model').textContent=im?.model==='ideal-thin-lens'?
+  'Stationary ideal thin lens · conditional Gaussian/ABCD image, not native detection':
+  im?.model==='spherical-paraxial'?'Paraxial calculation; circular rays may exhibit aberration':
+  'Ideal Gaussian mirror calculation — not native detection';
  if(vel?.status==='unavailable')$('velocity-value').textContent='No finite image velocity';
  if(vel?.status==='numerically-indeterminate')$('velocity-value').textContent='Numerically indeterminate';
  drawPlot(frame);drawNativeGuides(frame);
@@ -271,11 +279,12 @@ function showMotionAssumptions(){
  if(!model)return;
  const before=model.baseline.qualification.interpretation?.assumptions||[];
  const changes=model.baseline.qualification.edits;
- const aperture=model.baseline.scene.physics.components.find(c=>isCurved(c.type))?.parameters.apertureHeight;
+ const optic=model.baseline.scene.physics.components.find(c=>isCurved(c.type)||c.type==='ideal-lens');
+ const aperture=optic?.parameters.apertureHeight;
  $('assumptions').textContent=[
   'Original author interpretation and illustration assumptions (historical after revisions):',
   model.spec.continuationAssumption,...before,
-  'Current accepted mirror aperture: '+(Number.isFinite(aperture)?number(aperture/10)+' cm':'unavailable')+'.',
+  'Current accepted '+(optic?.type==='ideal-lens'?'lens':'mirror')+' aperture: '+(Number.isFinite(aperture)?number(aperture/10)+' cm':'unavailable')+'.',
   changes.length+' qualified scene edit'+(changes.length===1?'':'s')+
   ' recorded. Physical changes are not retroactively labelled original problem facts.'
  ].join('\n');
@@ -317,8 +326,12 @@ async function load(value){
  for(const id of ['play','pause','reset','time','save-motion','save-frame','save-report'])$(id).disabled=true;
  try{
   const candidate=await prepareMotionExperiment(await value);if(token!==loadGeneration)return;
-  model=candidate;viewSubjects=collectMotionView(model);$('camera-mode').value='motion';
-  $('example').value=model.baseline.scene.physics.components.some(c=>c.type==='circular-arc-mirror')?'circular':'ideal';
+  model=candidate;viewSubjects=collectMotionView(model);
+  // A lens image can diverge near its focal plane: whole-motion fit would
+  // shrink the native lens/ray apparatus to a few pixels. Start in an
+  // explicitly labelled current-frame view; Whole motion remains selectable.
+  $('camera-mode').value=model.baseline.scene.physics.model==='ideal-thin-lens-geometric'?'frame':'motion';
+  $('example').value=model.baseline.scene.physics.components.some(c=>c.type==='ideal-lens')?'lens':model.baseline.scene.physics.components.some(c=>c.type==='circular-arc-mirror')?'circular':'ideal';
   player=new MotionPlayer({model,render,onState:ui});
   $('time').max=model.times.length-1;$('speed').value='0.1';player.setSpeed(.1);
   showMotionAssumptions();
@@ -341,7 +354,7 @@ $('zoom-out').onclick=()=>zoomCamera(-1,$('native-stage'));
 $('zoom-fit').onclick=()=>resetCameraFit();
 setupCameraPointer($('native-stage'));setupCameraPointer($('image-plot'));
 const rayUI=new MotionRayUI({getModel:()=>model,onChange:applyRayControlChange});
-$('example').onchange=()=>load(makeU2Motion(example,{circular:$('example').value==='circular'}));
+$('example').onchange=()=>load($('example').value==='lens'?makeLensMotion(lensExample):makeU2Motion(example,{circular:$('example').value==='circular'}));
 $('open-motion').onchange=async()=>{const file=$('open-motion').files[0];if(!file)return;
  $('open-motion').value='';
  // Oversized files use the same invalidation path as malformed packages;
