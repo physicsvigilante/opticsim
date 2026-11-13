@@ -31,6 +31,9 @@ There is no default source, glass thickness, index, incident direction,
 entry/exit face, refractive path or inferred measurement value.
 
 The one homogeneous polygon is surrounded by one uniform exterior medium.
+The exterior is **not assumed to be air**: its explicitly supplied
+`outsideIndex` remains an independent absolute physical input. Changing that
+index is a physical revision, not a camera or sampling preference.
 Native `refIndex=insideIndex/outsideIndex` is the same common normalization
 used for our triangle and full circle. The native shape is a single `Glass`
 path of four straight edges, `notDone:false` and explicit `partialReflect`.
