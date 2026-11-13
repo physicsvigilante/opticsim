@@ -132,9 +132,12 @@ async function main(){
   s=await until(state,x=>x.status==='completed'&&x.results?.[0]?.value===0&&x.results?.[2]?.value===4,'clear circle');
   check('Moving the circular stop yields zero absorptions and four crossings');
   await shot('native-circle-clear');
-  const filesBefore=new Set(await readdir(downloads));
+  // The line and circle qualified exports can have the same base filename.
+  // The line export was already parsed; clear prior downloads so Chrome may
+  // reuse its filename without creating a false timeout.
+  for(const name of await readdir(downloads))if(name.endsWith('.json'))await rm(join(downloads,name));
   await evaluate('document.getElementById("save-qualified").click()');
-  const circleName=await until(async()=>(await readdir(downloads)).find(n=>n.endsWith('.json')&&!filesBefore.has(n)),
+  const circleName=await until(async()=>(await readdir(downloads)).find(n=>n.endsWith('.json')),
     Boolean,'circle qualified export');
   const circleFile=join(downloads,circleName),circleSaved=await parseQualifiedBundle(await readFile(circleFile,'utf8'));
   assert.equal(circleSaved.scene.physics.components.find(c=>c.id==='B1').type,'circle-blocker');
