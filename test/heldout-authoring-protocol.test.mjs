@@ -32,7 +32,7 @@ const files=x=>{
  ]};
  writeFileSync(questionPath,JSON.stringify(questions,null,2)+'\n',{flag:'wx'});
  writeFileSync(referencePath,JSON.stringify(ref,null,2)+'\n',{flag:'wx'});
- const commit=makeOfflineCommitment({questionsPath,referencePath,outPath:commitmentPath});
+ const commit=makeOfflineCommitment({questionsPath:questionPath,referencePath,outPath:commitmentPath});
  return {base,questionPath,referencePath,commitmentPath,commitment:commit.commitment,positive,questions,ref};
 };
 test('private questions and reference require strict separate manifests and declared reviewers',()=>{
