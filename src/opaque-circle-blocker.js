@@ -1,5 +1,6 @@
 // Native-first opaque 2D disks. This module validates the *authored geometry*
 // and compiles PhyDemo's pinned CircleBlocker; it does not trace or route rays.
+import {FINITE_APERTURE_TYPE,apertureGeometry} from './finite-aperture.js';
 export const CIRCLE_BLOCKER_TYPE='circle-blocker';
 const CLEARANCE_MM=0.01;
 export function circleBlockerExtents({x,y,radius}){
@@ -22,11 +23,15 @@ export function validateCircleBlockerGeometry(components,mirrorEndpoints,fail){
     .filter(c=>c.type===CIRCLE_BLOCKER_TYPE);
   if(!circles.length)return;
   const sources=components.filter(c=>c.type==='point-source');
-  const segments=components.filter(c=>['ideal-lens','plane-mirror','line-blocker','ray-detector'].includes(c.type))
-    .map(c=>({id:c.id,line:c.type==='ideal-lens'
-      ? [{x:c.parameters.x,y:-c.parameters.apertureHeight/2},
-         {x:c.parameters.x,y:c.parameters.apertureHeight/2}]
-      : mirrorEndpoints(c.parameters)}));
+  const segments=components.filter(c=>['ideal-lens','plane-mirror','line-blocker','ray-detector',FINITE_APERTURE_TYPE].includes(c.type))
+    .flatMap(c=>{
+      const lines=c.type===FINITE_APERTURE_TYPE?apertureGeometry(c.parameters,mirrorEndpoints).arms:
+        [c.type==='ideal-lens'
+          ? [{x:c.parameters.x,y:-c.parameters.apertureHeight/2},
+             {x:c.parameters.x,y:c.parameters.apertureHeight/2}]
+          : mirrorEndpoints(c.parameters)];
+      return lines.map(line=>({id:c.id,line}));
+    });
   for(const [i,circle] of circles.entries()){
     const p=circle.parameters,path='$.physics.components['+circle.index+'].parameters';
     if(Math.abs(p.x)+p.radius>10000||Math.abs(p.y)+p.radius>10000)

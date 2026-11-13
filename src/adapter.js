@@ -2,6 +2,7 @@ import {compilePrism,PRISM_TYPE} from './triangular-prism.js';
 import {compilePolygon,POLYGON_TYPE} from './polygon-dielectric.js';
 import {compileCircular} from './circular-dielectric.js';
 import {CIRCLE_BLOCKER_TYPE,compileCircleBlocker} from './opaque-circle-blocker.js';
+import {FINITE_APERTURE_TYPE,compileFiniteAperture} from './finite-aperture.js';
 import {compileCurved,isCurved} from './curved-mirrors.js';
 import Scene from '../vendor/ray-optics/src/core/Scene.js';
 import Simulator from '../vendor/ray-optics/src/core/Simulator.js';
@@ -14,6 +15,7 @@ export {observeInterfaceSet};
 const compilers = {
   'circular-dielectric':compileCircular,[PRISM_TYPE]:compilePrism,[POLYGON_TYPE]:compilePolygon,
   [CIRCLE_BLOCKER_TYPE]:compileCircleBlocker,
+  [FINITE_APERTURE_TYPE]:c=>compileFiniteAperture(c,mirrorEndpoints),
   'ideal-curved-mirror':compileCurved,'circular-arc-mirror':compileCurved,
   'planar-interface':compileInterface,
   'point-source': c => {
@@ -143,7 +145,7 @@ export function observeDetectorSet(doc, scene, idMap) {
 }
 // Per-instance native absorber observations; never trace or reroute a ray.
 export function observeBlockerSet(doc, scene, idMap) {
-  const entries=doc.physics.components.filter(c=>['line-blocker',CIRCLE_BLOCKER_TYPE].includes(c.type)).map(c=>{
+  const entries=doc.physics.components.filter(c=>['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(c.type)).map(c=>{
     const native=scene.objs[idMap.get(c.id)],original=native.onRayIncident;
     const count={absorptions:0,invalidObservations:0};
     native.onRayIncident=function(...args){
