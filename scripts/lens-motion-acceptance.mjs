@@ -29,7 +29,7 @@ assert.equal(atFocus.analysis.image.value.imageKind,'at-infinity');
 assert.equal(atFocus.analysis.globalImageMm,null);
 assert.equal(atFocus.analysis.globalImageVelocityMmPerSecond,null);
 assert.equal(atEnd.analysis.image.value.imageKind,'finite-virtual');
-assert.equal(atEnd.analysis.image.value.magnification,5);
+assert.ok(Math.abs(atEnd.analysis.image.value.magnification-5)<1e-9);
 assert.equal(atEnd.analysis.nativeImageDetection,false);
 const m=await prepareMotionExperiment(input);
 const review={
