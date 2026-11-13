@@ -46,8 +46,12 @@ jobs:
           git add -A
           echo 'Final changed paths relative to main:'
           git diff --cached --name-only
-          if git diff --cached --name-only | grep -E '(^evaluation/|^01_problems|^08_Ray_Optics|^vendor/|^\.polygon|^\.github/workflows/polygon-|^third_party/)' ; then
+          if git diff --cached --name-only | grep -E '(^evaluation/|^01_problems|^08_Ray_Optics|^vendor/|^third_party/)' ; then
             echo 'Forbidden historical archive or temporary transport remains staged' >&2
+            exit 1
+          fi
+          if git ls-files | grep -E '(^\.polygon|^\.github/workflows/polygon-)' ; then
+            echo 'Temporary workflow or transport survived cleanup' >&2
             exit 1
           fi
           git commit -m 'Milestone 21: bounded convex four-sided dielectric with shared finite-glass native observables'
