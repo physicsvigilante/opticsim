@@ -96,7 +96,7 @@ function validateVersion(doc, version) {
       if(key==='normalDeg')number(value,-180,180,`${path}.parameters.${key}`);
       number(value, -10000, 10000, `${path}.parameters.${key}`);
       if (key === 'apertureHeight' && value < 1) fail(`${path}.parameters.${key}`, 'must be at least 1 mm');
-      if (key === 'radius' && (c.type===CIRCULAR_TYPE?value<2:c.type===CIRCLE_BLOCKER_TYPE?value<1:Math.abs(value)<2)) fail(`${path}.parameters.${key}`, 'radius magnitude must be at least 2 mm');
+      if (key === 'radius' && (c.type===CIRCULAR_TYPE?value<2:c.type===CIRCLE_BLOCKER_TYPE?value<1:Math.abs(value)<2)) fail(`${path}.parameters.${key}`, c.type===CIRCLE_BLOCKER_TYPE?'opaque circle radius must be at least 1 mm':'radius magnitude must be at least 2 mm');
       if (key === 'focalLength' && Math.abs(value) < 1) fail(`${path}.parameters.${key}`, 'magnitude must be at least 1 mm');
       if (key === 'brightness') number(value, 0.01, 1, `${path}.parameters.brightness`);
       if (key === 'length') number(value, 1, 10000, `${path}.parameters.length`);
