@@ -4,6 +4,7 @@
 import {validate,serializeSave} from './contract.js';
 import {isCurved,curvedFrame,curvedPoints} from './curved-mirrors.js';
 import {analyzeCurvedMirrorQuery,CURVED_FACTS_FORMAT,CURVED_QUERY_FORMAT} from './curved-mirror-queries.js';
+import {analyzeMovingThinLens} from './motion-lens-analysis.js';
 import {verifyQualifiedBundle,createQualifiedBundle,recordQualifiedEdit} from './qualification.js';
 import {canonicalJSON,sha256Text,isRecord} from './qualified-utils.js';
 export const MOTION_FORMAT='opticsim-source-motion-v1';
@@ -16,11 +17,19 @@ function object(x,keys,label){
 function finite(x,min,max,label){if(typeof x!=='number'||!Number.isFinite(x)||x<min||x>max)throw Error('Invalid '+label);}
 export function motionCapabilities(){return {
  format:MOTION_FORMAT,packageFormat:MOTION_PACKAGE_FORMAT,
- scope:'One point source translating uniformly, one fixed ideal/circular curved mirror, optional passive detectors, schema v6.',
+ scope:'One uniformly translating point source and one fixed optical element: v6 ideal/circular curved mirror or v4 ideal thin lens, optional passive detectors.',
  limits:{maxDurationSeconds:10,maxSamples:241,maxSegmentsPerFrame:10000,maxDepth:8},
  coordinates:'Velocity in global x-right/y-up coordinates; baseline source position is at t=0; seconds only.',
  method:'quasi-static native snapshots plus separate conditional image kinematics',
  notSupported:['moving optics','arbitrary equations','acceleration','finite light propagation time','native image detection']};}
+function checkDetectorTrajectory(components,start,end){
+ for(const detector of components.filter(c=>c.type==='ray-detector')){
+  const a=detector.parameters.orientationDeg*Math.PI/180,dp=detector.parameters;
+  const side=q=>(q.x-dp.x)*(-Math.sin(a))+(q.y-dp.y)*Math.cos(a);
+  if(side(start)*side(end)<=0||Math.min(Math.abs(side(start)),Math.abs(side(end)))<.01)
+   throw Error('Source trajectory crosses a detector supporting line');
+ }
+}
 export function validateMotion(scene,spec){
  validate(scene);
  object(spec,['format','sourceId','law','velocity','durationSeconds','samples','continuationAssumption'],'motion');
@@ -34,17 +43,29 @@ export function validateMotion(scene,spec){
  if(!Number.isInteger(spec.samples))throw Error('Sample count must be an integer');
  if(typeof spec.continuationAssumption!=='string'||!spec.continuationAssumption.trim()||spec.continuationAssumption.length>1200)
   throw Error('Declare the assumption extending motion beyond the stated instant');
- const cs=scene.physics.components,sources=cs.filter(c=>c.type==='point-source'),mirrors=cs.filter(c=>isCurved(c.type));
- if(scene.schemaVersion!==6||sources.length!==1||mirrors.length!==1||sources[0].id!==spec.sourceId||
-   cs.some(c=>!['point-source','ray-detector','ideal-curved-mirror','circular-arc-mirror'].includes(c.type)))
-  throw Error('Motion prototype requires one source and one fixed curved mirror, with passive detectors only');
+ const cs=scene.physics.components,sources=cs.filter(c=>c.type==='point-source'),mirrors=cs.filter(c=>isCurved(c.type)),lenses=cs.filter(c=>c.type==='ideal-lens');
+ const curvedMode=scene.schemaVersion===6&&scene.physics.model==='curved-mirror-tracing'&&sources.length===1&&mirrors.length===1&&lenses.length===0&&
+  cs.every(c=>['point-source','ray-detector','ideal-curved-mirror','circular-arc-mirror'].includes(c.type));
+ const lensMode=scene.schemaVersion===4&&scene.physics.model==='ideal-thin-lens-geometric'&&sources.length===1&&lenses.length===1&&mirrors.length===0&&
+  cs.every(c=>['point-source','ray-detector','ideal-lens'].includes(c.type));
+ if(!(curvedMode||lensMode)||sources[0].id!==spec.sourceId)
+  throw Error('Motion requires one source and one stationary ideal/circular curved mirror OR one ideal thin lens, with passive detectors only');
  if(scene.simulation.processedRayLimit>10000||scene.simulation.maxRayDepth>8)
   throw Error('Motion requires bounded native per-frame budgets: at most 10000 segments and depth 8');
  const scale=scales[spec.velocity.unit],velocity=polar?
  {x:spec.velocity.speed*scale*Math.cos(spec.velocity.directionDeg*Math.PI/180),y:spec.velocity.speed*scale*Math.sin(spec.velocity.directionDeg*Math.PI/180)}:
  {x:spec.velocity.x*scale,y:spec.velocity.y*scale};
- const source=sources[0],mirror=mirrors[0],p=source.parameters,m=mirror.parameters,{n,t}=curvedFrame(m);
+ const source=sources[0],p=source.parameters;
  const end={x:p.x+velocity.x*spec.durationSeconds,y:p.y+velocity.y*spec.durationSeconds};
+ checkDetectorTrajectory(cs,p,end);
+ if(lensMode){
+  const lens=lenses[0];
+  if(Math.max(p.x,end.x)>lens.parameters.x-.01)
+   throw Error('Moving source must remain strictly left of the stationary lens plane for the whole interval');
+  const final=structuredClone(scene);Object.assign(final.physics.components.find(c=>c.id===source.id).parameters,end);validate(final);
+  return {source,lens,mirror:null,velocity};
+ }
+ const mirror=mirrors[0],m=mirror.parameters,{n,t}=curvedFrame(m);
  // Check the whole continuous segment, not just sampled times, against the
  // supported aperture bounding disk. This is a conservative authoring bound,
  // not a native intersection calculation or a substitute for ray tracing.
@@ -57,12 +78,6 @@ export function validateMotion(scene,spec){
   throw Error('Motion must remain on the declared front side of the fixed mirror');
  // Convex coordinate bounds: endpoint validation covers the entire straight
  // segment for x/y bounds; every sampled scene is still validated below.
- for(const detector of cs.filter(c=>c.type==='ray-detector')){
-  const a=detector.parameters.orientationDeg*Math.PI/180,dp=detector.parameters;
-  const side=q=>(q.x-dp.x)*(-Math.sin(a))+(q.y-dp.y)*Math.cos(a);
-  if(side(p)*side(end)<=0||Math.min(Math.abs(side(p)),Math.abs(side(end)))<.01)
-   throw Error('Source trajectory crosses a detector supporting line');
- }
  const final=structuredClone(scene);Object.assign(final.physics.components.find(c=>c.id===source.id).parameters,end);validate(final);
  return {source,mirror,velocity,n,t};
 }
@@ -82,7 +97,7 @@ export async function prepareMotionExperiment(value){
  if(await sha256Text(canonicalJSON(payload))!==integritySha256)throw Error('Motion package integrity mismatch');
  await verifyQualifiedBundle(experiment.baseline);
  const baseline=experiment.baseline,spec=experiment.motion,info=validateMotion(baseline.scene,spec);
- const {source,mirror,velocity,n,t}=info;
+ const {source,mirror,lens,velocity,n,t}=info;
  const times=Array.from({length:spec.samples},(_,i)=>spec.durationSeconds*i/(spec.samples-1));
  const sampleAt=time=>{
   finite(time,0,spec.durationSeconds,'time');
@@ -91,6 +106,13 @@ export async function prepareMotionExperiment(value){
   let status='valid',issues=[];
   try{validate(scene);}catch(error){status='invalid';issues=[String(error.message)];}
   if(status==='invalid')return {timeSeconds:time,status,issues,scene:null,analysis:null,experimentSha256:integritySha256};
+  if(lens){
+   const analysis=analyzeMovingThinLens(scene,velocity);
+   return {timeSeconds:time,status,issues,scene,experimentSha256:integritySha256,
+    object:{positionMm:{x:p.x,y:p.y},velocityMmPerSecond:{...velocity}},
+    analysis,native:{status:'not-run'},
+    assumptions:[spec.continuationAssumption,'Quasi-static snapshots; no finite light propagation time.',...analysis.assumptions]};
+  }
   const mp=mirror.parameters,dx=p.x-mp.x,dy=p.y-mp.y;
   const facts={format:CURVED_FACTS_FORMAT,model:mirror.type==='ideal-curved-mirror'?'ideal-gaussian':'spherical-paraxial',
     signConvention:'real-positive-local',lengthUnit:'mm',focalLength:mirror.type==='ideal-curved-mirror'?mp.focalLength:mp.radius/2,
