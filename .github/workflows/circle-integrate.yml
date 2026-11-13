@@ -10,6 +10,7 @@ on:
       - test/circular-dielectric.test.mjs
       - scripts/circular-dielectric-acceptance.mjs
       - scripts/circular-dielectric-browser.mjs
+      - scripts/circle-browser-fix.mjs
 permissions:
   contents: write
 jobs:
@@ -24,6 +25,7 @@ jobs:
         with:
           node-version: '24.19.0'
       - run: node .circle-build.mjs
+      - run: node scripts/circle-browser-fix.mjs
       - run: npm run setup
       - name: Full Node suite
         shell: bash
