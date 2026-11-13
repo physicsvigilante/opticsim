@@ -22,6 +22,10 @@ const report={format:'opticsim-circular-dielectric-acceptance-v1',status:'runnin
 async function run(name,edit,status,exitCode){
  const input=structuredClone(fixture);input.physical.title='Synthetic circular dielectric · '+name;
  edit(input);
+ // Each synthetic variant declares its own chosen policy BEFORE capture.
+ // These are fixture inputs, not edits to an original problem interpretation.
+ const fresnel=input.physical.components.find(c=>c.type==='circular-dielectric').parameters.partialReflection;
+ if(fresnel===true)input.interpretation.assumptions[2]='partialReflection=true requests native Fresnel partial reflections and total internal reflection; any truncated ray energy remains incomplete.';
  const bytes=Buffer.from(JSON.stringify(input,null,2)+'\n');
  let calls=0;
  const result=await runProblemEvidence({inputBytes:bytes,outputPath:resolve(folder,name),
