@@ -2,16 +2,98 @@ import example from '../examples/u2-motion.json';
 import {makeU2Motion} from './motion-example.js';
 import {prepareMotionExperiment,MotionPlayer} from './source-motion.js';
 import {loadDocument,Simulator,diagnostics,classifyRun,observeSourceSet,observeMirrorSet,observeDetectorSet} from './adapter.js';
-import {collectMotionView,fitMotionView,projectMotionPoint,motionGridTicks} from './motion-viewport.js';
+import {collectMotionView,fitMotionView,projectMotionPoint,motionGridTicks,defaultMotionCameraControl,applyMotionCameraControl,stepMotionCameraZoom,panMotionCameraByPixels,MOTION_CAMERA_CONTROLS,MOTION_VIEW_LIMITS} from './motion-viewport.js';
 import {curvedPoints,isCurved} from './curved-mirrors.js';
 const $=id=>document.getElementById(id),layers=['light','below','above','grid'].map($);
 let model=null,player=null,loadGeneration=0,currentIndex=null,currentEvidence=null;
-let viewSubjects=null,nativeCamera=null;
+let viewSubjects=null,nativeCamera=null,cameraControl=defaultMotionCameraControl(),cameraRenderTimer=null;
 const number=x=>Number.isFinite(x)?Number(x.toFixed(4)).toString():'unavailable';
 const pair=(v,scale=10)=>v?'x '+number(v.x/scale)+'  ·  y '+number(v.y/scale):'Unavailable';
 function download(name,value){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)+'\n'],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function clearRays(){for(const canvas of [...layers,$('guides')])canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);delete $('native-stage').dataset.viewport;}
+
 function cameraMode(){return $('camera-mode').value;}
+function fitCameraFor(element){
+ if(!viewSubjects||!model||!player)return null;
+ const box=element.getBoundingClientRect(),width=Math.round(box.width),height=Math.round(box.height);
+ if(width<80||height<80)return null;
+ const frame=player.result?.frame||model.frame(player.index);
+ return fitMotionView(viewSubjects,width,height,{mode:cameraMode(),frame});
+}
+function refreshZoomControls(){
+ const fit=fitCameraFor($('native-stage')),ready=Boolean(fit);
+ if(!ready){
+  for(const id of ['zoom-out','zoom-in','zoom-fit'])$(id).disabled=true;
+  $('zoom-level').textContent='100%';return;
+ }
+ const actual=applyMotionCameraControl(fit,cameraControl);
+ $('zoom-level').textContent=Math.round(actual.relativeZoom*100)+'%';
+ $('zoom-in').disabled=cameraControl.zoomFactor>=MOTION_CAMERA_CONTROLS.maxRelativeZoom-1e-8||
+  actual.view.zoom>=MOTION_VIEW_LIMITS.maxZoom-1e-8;
+ $('zoom-out').disabled=cameraControl.zoomFactor<=MOTION_CAMERA_CONTROLS.minRelativeZoom+1e-8||
+  actual.view.zoom<=MOTION_VIEW_LIMITS.minZoom+1e-8;
+ $('zoom-fit').disabled=Math.abs(cameraControl.zoomFactor-1)<1e-8&&
+  Math.abs(cameraControl.panMm.x)<1e-8&&Math.abs(cameraControl.panMm.y)<1e-8;
+}
+function rerenderForCamera(){
+ if(!player)return;
+ player.pause();
+ clearTimeout(cameraRenderTimer);
+ // Collapse high-frequency wheel and drag events into one fresh native render.
+ cameraRenderTimer=setTimeout(()=>{
+  cameraRenderTimer=null;
+  if(player)player.seek(player.index);
+ },70);
+ refreshZoomControls();
+}
+function zoomCamera(direction,element,anchor=null){
+ const fit=fitCameraFor(element);
+ if(!fit)return;
+ const next=stepMotionCameraZoom(fit,cameraControl,direction,anchor);
+ if(next===cameraControl)return;
+ cameraControl=next;rerenderForCamera();
+}
+function resetCameraFit(){
+ if(!player)return;
+ cameraControl=defaultMotionCameraControl();rerenderForCamera();
+}
+function setupCameraPointer(element){
+ let drag=null,lastWheel=0;
+ element.addEventListener('wheel',event=>{
+  if(!player)return;
+  event.preventDefault();
+  const now=performance.now();
+  if(now-lastWheel<70)return;lastWheel=now;
+  const bounds=element.getBoundingClientRect();
+  zoomCamera(event.deltaY<0?1:-1,element,{
+   x:Math.max(0,Math.min(bounds.width,event.clientX-bounds.left)),
+   y:Math.max(0,Math.min(bounds.height,event.clientY-bounds.top))
+  });
+ },{passive:false});
+ element.addEventListener('pointerdown',event=>{
+  if(!player||event.button!==0)return;
+  drag={id:event.pointerId,x:event.clientX,y:event.clientY};
+  element.setPointerCapture(event.pointerId);
+  element.classList.add('camera-dragging');
+ });
+ element.addEventListener('pointermove',event=>{
+  if(!drag||event.pointerId!==drag.id||!player)return;
+  const dx=event.clientX-drag.x,dy=event.clientY-drag.y;
+  drag.x=event.clientX;drag.y=event.clientY;
+  if(!dx&&!dy)return;
+  const fit=fitCameraFor(element);
+  if(!fit)return;
+  cameraControl=panMotionCameraByPixels(fit,cameraControl,dx,dy);
+  rerenderForCamera();
+ });
+ const endDrag=event=>{
+  if(!drag||event.pointerId!==drag.id)return;
+  if(element.hasPointerCapture(event.pointerId))element.releasePointerCapture(event.pointerId);
+  drag=null;element.classList.remove('camera-dragging');
+ };
+ element.addEventListener('pointerup',endDrag);
+ element.addEventListener('pointercancel',endDrag);
+}
 function imageNote(frame){
  const image=frame?.analysis?.image;
  return image?.value?.imageKind==='at-infinity'?'Image at infinity — no finite marker.':
