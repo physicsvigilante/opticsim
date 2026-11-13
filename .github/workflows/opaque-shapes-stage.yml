@@ -25,6 +25,15 @@ jobs:
           git checkout --detach ffba26e185ac4f2eadaba64eec07dbd4fb5c5dcf
           git apply --check /tmp/opaque-next.patch
           git apply /tmp/opaque-next.patch
+          # Repair a browser-only label scope defect discovered by Chrome.
+          node --input-type=module <<'JS'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const path='src/app.js',source=readFileSync(path,'utf8');
+          const old="radius:circular||component.type===CIRCLE_BLOCKER_TYPE?'Circle radius (positive)':'Signed curvature radius'";
+          const updated="radius:circular?'Circle radius (positive)':'Signed curvature radius'";
+          if(source.split(old).length!==2)throw Error('Unexpected radius label syntax');
+          writeFileSync(path,source.replace(old,updated));
+          JS
           git diff --check
           echo 'Verified source diff:'
           git status --short
