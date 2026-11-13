@@ -10,7 +10,8 @@ export function collectMotionView(model){
   const optics=[];
   for(const c of model.baseline.scene.physics.components){
     const p=c.parameters;
-    if(isCurved(c.type))optics.push(...curvedPoints(c));
+    if(c.type==='ideal-lens')optics.push({x:p.x,y:-p.apertureHeight/2},{x:p.x,y:p.apertureHeight/2});
+    else if(isCurved(c.type))optics.push(...curvedPoints(c));
     else if(c.type==='ray-detector'||c.type==='plane-mirror'){
       const a=p.orientationDeg*Math.PI/180,h=p.length/2;
       optics.push({x:p.x-h*Math.cos(a),y:p.y-h*Math.sin(a)},
