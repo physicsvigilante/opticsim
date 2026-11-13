@@ -52,8 +52,8 @@ export class MotionRayUI{
   $('ray-source-mode').value=v.emissionMode;
   // The historical strict v4 thin-lens scene supports full-circle and
   // directional emission; v6 curved scenes also support a native single ray.
-  $('ray-source-mode').querySelector('option[value="single-ray"]').disabled=
-   v.mirrorType==='ideal-lens';
+  const singleRayOption=$('ray-source-mode').querySelector?.('option[value="single-ray"]');
+  if(singleRayOption)singleRayOption.disabled=v.mirrorType==='ideal-lens';
   $('ray-direction').value=v.directionDeg;
   $('ray-opening').value=v.angleDeg;
   $('ray-opening').disabled=this.busy||v.emissionMode!=='directional';
@@ -74,7 +74,8 @@ export class MotionRayUI{
   $('mirror-aperture-kind').textContent=v.mirrorType==='ideal-lens'?
    'Ideal thin lens · native refraction':v.mirrorType==='circular-arc-mirror'?
    'Circular arc · local-normal native reflection':'Ideal Gaussian curved mirror';
-  document.querySelector('label[for="mirror-aperture-cm"]').textContent=
+  const opticalApertureLabel=document.querySelector?.('label[for="mirror-aperture-cm"]');
+  if(opticalApertureLabel)opticalApertureLabel.textContent=
    v.mirrorType==='ideal-lens'?'Lens aperture height (cm) — physical size':
    'Mirror aperture height (cm) — physical size';
   $('mirror-aperture-note').textContent=
