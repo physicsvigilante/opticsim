@@ -1,0 +1,29 @@
+name: Polygon audit source snapshot (temporary)
+on:
+  push:
+    branches: [review/polygon-audit-tools]
+    paths: [.github/workflows/polygon-audit-snapshot.yml]
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 102b0436fb4c05ede1c88141241dd47498dab5af
+          persist-credentials: false
+      - name: Export only tracked source, excluding question archives
+        run: |
+          mkdir -p test-artifacts/audit-source
+          git rev-parse HEAD > test-artifacts/audit-source/commit.txt
+          git ls-tree -r HEAD > test-artifacts/audit-source/tree.txt
+          git archive --format=tar HEAD -- . ':!*.zip' > test-artifacts/audit-source/source.tar
+          sha256sum test-artifacts/audit-source/source.tar > test-artifacts/audit-source/source.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: polygon-audit-source
+          path: test-artifacts/audit-source/
+          retention-days: 1
+          if-no-files-found: error
