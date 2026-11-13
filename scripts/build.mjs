@@ -11,13 +11,15 @@ execFileSync('git', ['diff', '--exit-code', 'HEAD', '--'], { cwd: vendor });
 const require = createRequire(resolve(vendor, 'package.json'));
 const webpack = require('webpack');
 const testing = process.argv.includes('--test');
+const motion = process.argv.includes('--motion');
+if(testing&&motion)throw Error('Build test core and motion UI separately');
 const output = resolve(root, 'dist');
 mkdirSync(output, { recursive: true });
 const stats = await new Promise((accept, reject) => {
   const compiler = webpack({
     mode: 'production', target: testing ? 'node' : 'web', context: root,
-    entry: resolve(root, testing ? 'src/test-entry.js' : 'src/app.js'),
-    output: { path: output, filename: testing ? 'test-core.cjs' : 'app.js', ...(testing ? { library: { type: 'commonjs2' } } : {}) },
+    entry: resolve(root, testing ? 'src/test-entry.js' : motion ? 'src/motion-app.js' : 'src/app.js'),
+    output: { path: output, filename: testing ? 'test-core.cjs' : motion ? 'motion.js' : 'app.js', ...(testing ? { library: { type: 'commonjs2' } } : {}) },
     optimization: { minimize: false }, performance: { hints: false },
     resolve: { modules: [resolve(vendor, 'node_modules'), 'node_modules'], alias: { mathjs: resolve(vendor, 'node_modules/mathjs') } },
     resolveLoader: { modules: [resolve(vendor, 'node_modules')] },
@@ -26,7 +28,7 @@ const stats = await new Promise((accept, reject) => {
   compiler.run((error, result) => compiler.close(closeError => error || closeError ? reject(error || closeError) : result.hasErrors() ? reject(Error(result.toString({ all: false, errors: true }))) : accept(result)));
 });
 if (!testing) {
-  for (const name of ['index.html', 'style.css']) copyFileSync(resolve(root, 'public', name), resolve(output, name));
+  for (const name of (motion ? ['motion.html','motion.css'] : ['index.html', 'style.css'])) copyFileSync(resolve(root, 'public', name), resolve(output, name));
   mkdirSync(resolve(output, 'scenes'), { recursive: true });
   for (const name of readdirSync(resolve(root, 'scenes'))) copyFileSync(resolve(root, 'scenes', name), resolve(output, 'scenes', name));
   // Preserve upstream notices plus license texts for packages included in this bundle.

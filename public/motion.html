@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'"><title>Opticsim · Moving source</title><link rel="stylesheet" href="motion.css"><link rel="icon" href="data:,"></head>
+<body>
+<header><div><p class="eyebrow">OPTICSIM / TIME SNAPSHOTS</p><h1>A moving object. An evolving image.</h1><p>Built-in U2 example · <strong>native rays</strong> and <strong>conditional image kinematics</strong> are separate. Open a compatible motion experiment to explore another case.</p></div><label class="open">Open experiment<input id="open-motion" type="file" accept=".json"></label></header>
+<main>
+<section class="notice"><strong>Time-sampled optics, not continuously travelling light.</strong> Each selected instant reruns native rays from an immutable scene. The built-in U2 example assumes constant velocity beyond the problem's stated instant; imported experiments retain their own declared assumptions.</section>
+<section class="transport" aria-label="Time controls">
+<button id="play" disabled>Play</button><button id="pause" disabled>Pause</button><button id="reset" disabled>Reset to t = 0</button>
+<label class="scrub">Simulation time <output id="clock">0.000 s</output><input id="time" type="range" min="0" max="60" step="1" value="0" disabled></label>
+<label>Playback speed<select id="speed"><option value="0.1">0.1× (slow)</option><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1">1×</option></select></label>
+</section>
+<details class="ray-settings" id="ray-settings" aria-label="Native light and sampling controls"><summary class="ray-settings-summary">Light & ray controls — brightness, density, emission and more</summary><div class="ray-settings-body">
+<div class="ray-heading"><div><h2>Light and ray controls</h2><p>Same validated settings as the Opticsim static editor. Changing these creates a revised, hash-bound experiment.</p></div></div>
+<div class="ray-fields">
+<label class="ray-brightness-pair">Source brightness (relative, physical)
+ <span class="ray-number-pair"><input id="ray-brightness" type="number" min="0.01" max="1" step="any" disabled><input id="ray-brightness-slider" type="range" min="0.01" max="1" step="0.01" disabled aria-label="Source brightness slider"></span></label>
+<label>Sampling density <select id="ray-sampling" disabled><option value="sparse">Sparse (0.048)</option><option value="medium">Medium (0.2)</option><option value="dense">Dense (1)</option><option value="custom">Custom</option></select></label>
+<label id="ray-custom-wrap" hidden>Custom ray density <input id="ray-custom-density" type="number" min="0.048" max="1" step="any" disabled></label>
+<label>Light source mode <select id="ray-source-mode" disabled><option value="directional">Directional cone</option><option value="full-circle">Full circle (360°)</option><option value="single-ray">Single exact ray</option></select></label>
+<label>Direction (degrees) <input id="ray-direction" type="number" min="-180" max="180" step="any" disabled></label>
+<label>Opening angle (degrees) <input id="ray-opening" type="number" min="1" max="180" step="any" disabled></label>
+<label>Native ray view <select id="ray-view" disabled><option value="rays">Rays</option><option value="extended">Extended rays</option></select></label>
+<label class="ray-check"><input id="ray-grid" type="checkbox" disabled> Show native grid</label>
+</div>
+<div class="mirror-aperture-control">
+ <div class="mirror-aperture-heading">
+  <label for="mirror-aperture-cm">Mirror aperture height (cm) — physical size</label>
+  <span id="mirror-aperture-kind">Validated curved mirror</span>
+ </div>
+ <div class="mirror-aperture-inputs">
+  <input id="mirror-aperture-cm" type="number" min="0.1" step="any" disabled aria-label="Mirror aperture height in centimetres">
+  <input id="mirror-aperture-slider" type="range" min="1" max="20" step="0.5" disabled aria-label="Mirror aperture height quick slider in centimetres">
+ </div>
+ <p id="mirror-aperture-note">Adjust the physical reflecting aperture, not the camera zoom. Focal length and curvature stay fixed; incompatible sizes are rejected.</p>
+</div>
+<details class="ray-advanced"><summary>Native ray processing limits</summary><div class="ray-fields">
+<label>Maximum ray depth <input id="ray-depth" type="number" min="0" max="8" step="1" disabled></label>
+<label>Processed-ray limit <input id="ray-limit" type="number" min="1" max="10000" step="1" disabled></label>
+</div><p>Numerical limits may truncate native rays. Incomplete runs never yield accepted native measurements.</p></details>
+<p id="ray-control-note" class="caption">Brightness and emission affect source physics. Density and limits affect sampled native rays, not image-equation values.</p>
+<p id="ray-control-error" role="alert" hidden></p>
+</div></details>
+<section class="choices"><label>Built-in U2 scene (replaces loaded experiment)<select id="example"><option value="ideal">Ideal Gaussian mirror</option><option value="circular">Circular mirror — paraxial image</option></select></label><span id="native-state" data-state="loading" role="status">Loading native core…</span><span id="sample">Frame —</span></section>
+<section class="camera-tools" aria-label="Camera controls"><label>Camera <select id="camera-mode"><option value="motion">Whole motion · include image</option><option value="frame">Current frame · include image</option><option value="apparatus">Apparatus close-up</option></select></label><div class="zoom-tools" role="group" aria-label="Zoom and fit controls"><button id="zoom-out" type="button" aria-label="Zoom out" title="Zoom out" disabled>−</button><output id="zoom-level" aria-label="Zoom relative to fitted view" aria-live="polite">100%</output><button id="zoom-in" type="button" aria-label="Zoom in" title="Zoom in" disabled>+</button><button id="zoom-fit" type="button" title="Return to automatic fit" disabled>Fit</button></div><span id="camera-note">Zoom in or out, use the mouse wheel over either view, or drag to pan. Fit restores the selected camera preset.</span></section>
+<div class="views">
+<section class="panel"><div class="panel-heading"><div><span class="tag">NATIVE PHYDEMO</span><h2>Rays at this time</h2></div><span id="native-counts">No completed ray observations yet</span></div>
+<div id="native-stage"><canvas id="below"></canvas><canvas id="grid"></canvas><canvas id="light"></canvas><canvas id="above"></canvas><canvas id="guides" aria-label="Calculated image guide, not native detection"></canvas></div>
+<p id="native-view-note" class="caption">Whole-motion view. Rays are native PhyDemo; the dashed image marker is a separate calculated guide, not detection.</p></section>
+<section class="panel"><div class="panel-heading"><div><span class="tag analytical">CONDITIONAL MATHEMATICS</span><h2>Object and image position</h2></div></div>
+<canvas id="image-plot" aria-label="Separate calculated object and image position diagram"></canvas>
+<p id="plot-note" class="caption">This point is calculated, not detected in the native rays. Axes are global x-right, y-up in centimetres.</p></section>
+</div>
+<section class="readouts"><article><h3>Object</h3><div id="object-value">—</div><p>Given initial position and velocity</p></article><article><h3>Conditional image</h3><div id="image-value">—</div><p id="image-model">—</p></article><article><h3>Instantaneous image velocity</h3><div id="velocity-value">—</div><p>Global x-right / y-up · cm/s</p></article></section>
+<p id="error" role="alert" hidden></p>
+<details open><summary>Assumptions, limits and provenance</summary><p id="assumptions">Loading…</p><p id="experiment-hash" class="hash"></p><p>Native completion is not image detection. The camera fits finite sampled image positions without changing physics. Infinite, indeterminate or extreme out-of-range positions have no finite guide. A dashed marker is an analytical guide, not a natively detected image. Circular-mirror rays may exhibit aberration; their single image prediction is paraxial. A stopped or failed native frame is never labelled complete.</p></details>
+<footer><button id="save-motion" disabled>Save experiment</button><button id="save-frame" disabled>Save current static scene</button><button id="save-report" disabled>Save frame evidence</button><span>Static scene export is one snapshot. The experiment file preserves the motion.</span></footer>
+</main><script src="motion.js"></script></body></html>

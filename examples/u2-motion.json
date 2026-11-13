@@ -1,0 +1,30 @@
+{
+  "title": "U2 — a moving point near a concave mirror",
+  "originalQuestion": "Instantaneous image velocity for u=25 cm, f=20 cm and object speed 5 cm/s at 45 degrees up and toward the mirror.",
+  "request": {
+    "lengthUnit": "cm",
+    "title": "U2 continuation — explicit ideal-mirror illustration",
+    "runPolicy": "dense-v1",
+    "components": [
+      {"id":"S1","type":"point-source","parameters":{"x":-25,"y":0,"brightness":0.05},"emission":{"mode":"directional","directionDeg":0,"angleDeg":40}},
+      {"id":"M1","type":"ideal-curved-mirror","parameters":{"x":0,"y":0,"normalDeg":180,"focalLength":20,"apertureHeight":6}}
+    ]
+  },
+  "motion": {
+    "format":"opticsim-source-motion-v1",
+    "sourceId":"S1",
+    "law":"constant-velocity",
+    "velocity":{"speed":5,"directionDeg":45,"unit":"cm/s"},
+    "durationSeconds":0.5,
+    "samples":61,
+    "continuationAssumption":"The given instantaneous velocity is held constant for this 0.5-second illustration. The original U2 question does not specify the later trajectory."
+  },
+  "interpretation": {
+    "source":{"caseId":"U2","path":"08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/013.png","sha256":"de33abd50d2a91491590c596c461cbebe7d852379cf7f2ae9faa8ca30d65ec45"},
+    "requestedResult":"Illustrate the stated U2 instant and an explicitly assumed uniform-motion continuation with separately labelled native rays and conditional image kinematics.",
+    "stated":["Concave mirror focal length 20 cm; object initially 25 cm in front.","Object instantaneous speed 5 cm/s at 45 degrees up and toward the mirror."],
+    "derived":["Velocity components and every frame position are calculated deterministically from speed, angle and time."],
+    "assumptions":["Constant velocity beyond t=0, stationary mirror and fixed focal length.","Ideal Gaussian mirror for the default demonstration; circular alternative is explicitly a different finite-aperture model.","Finite aperture 6 cm, source brightness 0.05 and fixed 40-degree right-going emission cone are illustrative, not U2 data.","Quasi-static geometric optics: no light-travel time, moving-mirror dynamics or native image detection.","World coordinates place the pole at (0,0), front side at negative x and positive transverse displacement upwards."],
+    "unknowns":["The original statement does not determine the object's later trajectory, actual aperture or emission pattern."]
+  }
+}

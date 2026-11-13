@@ -153,7 +153,10 @@ export async function createQualifiedBundle(doc,qualification,observables=[]){
   if(new TextEncoder().encode(JSON.stringify(bundle)).length>1024*1024)throw Error('Qualified package exceeds 1 MB');
   return bundle;
 }
-export async function verifyQualifiedBundle(bundle){
+export async function verifyQualifiedBundle(input){
+  // Snapshot before the first asynchronous digest. Returning caller-owned data
+  // after checking older bytes permits a valid hash to accompany changed values.
+  const bundle=structuredClone(input);
   if(!isRecord(bundle)||bundle.format!==bundleFormat||
     Object.keys(bundle).sort().join(',')!==['format','scene','qualification','observables','sceneSha256','integritySha256'].sort().join(','))throw Error('Invalid qualified package fields');
   validate(bundle.scene);validateQualification(bundle.qualification);validateObservables(bundle.observables);
