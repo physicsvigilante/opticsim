@@ -23,6 +23,7 @@ jobs:
           npm test | tee test-artifacts/polygon-stage/tests.log
       - run: npm run build
       - run: node scripts/polygon-dielectric-acceptance.mjs
+      - run: node scripts/polygon-dielectric-browser.mjs
       - run: node scripts/pack-demo.mjs
       - uses: actions/upload-artifact@v4
         if: always()
@@ -31,5 +32,6 @@ jobs:
           path: |
             test-artifacts/polygon-stage/
             test-artifacts/llm-authoring/polygon-dielectric/
+            test-artifacts/browser-polygon-dielectric/
           if-no-files-found: ignore
           retention-days: 7
