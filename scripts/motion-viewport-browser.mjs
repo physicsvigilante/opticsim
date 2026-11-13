@@ -96,7 +96,7 @@ async function main(){
   await evaluate("document.getElementById('zoom-fit').click()");
   await until(state,s=>s?.state==='completed'&&s.zoomFitDisabled===true&&Math.abs(s.viewport?.origin.x-fittedAgain.viewport.origin.x)<1e-8,'fit after drag');
   const before=await seek(30);const close=await change('camera-mode','apparatus');
-  assert.equal(close.viewport.image.visible,false);assert.equal(close.counts,before.counts);assert.equal(close.hash,before.hash);
+  assert.equal(close.viewport.image.visible,false,'Apparatus camera does not exclude image: '+JSON.stringify({mode:close.viewport.mode,origin:close.viewport.origin,scale:close.viewport.scale,image:close.viewport.image,prior:before.viewport}));assert.equal(close.counts,before.counts);assert.equal(close.hash,before.hash);
   const follow=await change('camera-mode','frame');contained(follow);assert.equal(follow.counts,before.counts);
   const restored=await change('camera-mode','motion');contained(restored);assert.equal(restored.viewport.scale,before.viewport.scale);
   report.checks.push({name:'camera controls preserve physical results and baseline identity',status:'pass'});
