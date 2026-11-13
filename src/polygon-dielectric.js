@@ -46,7 +46,7 @@ export function validatePolygonGeometry(components,endpoints,fail){
   const faces=polygonFaces(p);
   // Every vertex must be separated from every nonincident supporting edge;
   // additionally each edge's opposite vertices need a 1 mm altitude.
-  if(faces.some(f=>f.length<1||v.some(q=>q!==f.a&&q!==f.b&&
+  if(faces.some((f,i)=>f.length<1||v.some((q,j)=>j!==i&&j!==(i+1)%4&&
        Math.abs(cross(delta(f.a,f.b),delta(f.a,q)))/f.length<1)))
     fail(path,'All polygon edges and opposite-vertex altitudes must be at least 1 mm.','UNSUPPORTED_SCOPE');
   for(const c of sources){
