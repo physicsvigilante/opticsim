@@ -1,3 +1,4 @@
+import {CURVED_PARAMETERS,isCurved,validateCurvedGeometry} from './curved-mirrors.js';
 import {PLANAR_TYPE,PLANAR_PARAMETERS,validatePlanarGeometry} from './planar-media.js';
 export const UPSTREAM = '811f508d2b070898c241a568b0c167dcb8645251';
 export const SAMPLING_PRESETS = Object.freeze({ sparse: 0.048, medium: 0.2, dense: 1 });
@@ -19,17 +20,19 @@ function choice(value, choices, path) { if (!choices.includes(value)) fail(path,
 const parameters = { 'point-source': ['x', 'y'], 'ideal-lens': ['x', 'focalLength', 'apertureHeight'],
   'plane-mirror': ['x', 'y', 'orientationDeg', 'length'],
   'ray-detector': ['x', 'y', 'orientationDeg', 'length'],
-  [PLANAR_TYPE]: [...PLANAR_PARAMETERS] };
+  [PLANAR_TYPE]: [...PLANAR_PARAMETERS], ...CURVED_PARAMETERS };
 // Shared authoring/validator definitions. General composition relaxes mandatory
 // apparatus types; it does not relax numerical, geometric or runtime limits.
 export const COMPONENT_TYPES = Object.freeze(Object.keys(parameters));
-export const LENGTH_PARAMETERS = Object.freeze(['x','y','focalLength','apertureHeight','length']);
+export const LENGTH_PARAMETERS = Object.freeze(['x','y','focalLength','apertureHeight','length','radius']);
 export const GENERAL_SCOPE = Object.freeze({
   'point-source': Object.freeze({min:1,max:4}),
   'ideal-lens': Object.freeze({min:0,max:4}),
   'plane-mirror': Object.freeze({min:0,max:4}),
   'ray-detector': Object.freeze({min:0,max:2}),
-  [PLANAR_TYPE]: Object.freeze({min:0,max:4})
+  [PLANAR_TYPE]: Object.freeze({min:0,max:4}),
+  'ideal-curved-mirror': Object.freeze({min:0,max:2}),
+  'circular-arc-mirror': Object.freeze({min:0,max:2})
 });
 export const COMPONENT_BOUNDS = Object.freeze({
   coordinateMm: Object.freeze([-10000,10000]),
@@ -47,7 +50,7 @@ export function componentParameterNames(type, version = 4) {
   return [...parameters[type], ...(version >= 2 && type === 'point-source' ? ['brightness'] : [])];
 }
 // V4 is preserved exactly; new planar scenes alone use explicit V5.
-export function validate(doc) { return validateVersion(doc, doc?.schemaVersion===5?5:4); }
+export function validate(doc) { return validateVersion(doc, doc?.schemaVersion===6?6:doc?.schemaVersion===5?5:4); }
 function validateVersion(doc, version) {
   object(doc, ['format', 'schemaVersion', 'adapterVersion', 'upstreamCommit', 'physics', 'presentation', 'simulation'], '$');
   choice(doc.format, ['ray-optics-2d'], '$.format');
@@ -58,7 +61,7 @@ function validateVersion(doc, version) {
   object(p, ['lengthUnit', 'coordinates', 'model', 'components'], '$.physics');
   choice(p.lengthUnit, ['mm'], '$.physics.lengthUnit');
   choice(p.coordinates, ['x-right-y-up'], '$.physics.coordinates');
-  const models = version===5?['planar-media-tracing']:['ideal-thin-lens-geometric', ...(version >= 3 ? ['plane-mirror-geometric'] : []), ...(version >= 4 ? ['lens-mirror-return-geometric', 'mixed-lens-mirror-tracing', 'general-component-tracing'] : [])];
+  const models = version===6?['curved-mirror-tracing']:version===5?['planar-media-tracing']:['ideal-thin-lens-geometric', ...(version >= 3 ? ['plane-mirror-geometric'] : []), ...(version >= 4 ? ['lens-mirror-return-geometric', 'mixed-lens-mirror-tracing', 'general-component-tracing'] : [])];
   choice(p.model, models, '$.physics.model');
   if (!Array.isArray(p.components) || p.components.length > 32) fail('$.physics.components', 'expected a bounded component array');
   const ids = new Set();
@@ -67,7 +70,7 @@ function validateVersion(doc, version) {
     object(c, ['id', 'type', 'parameters', ...(version >= 2 && c?.type === 'point-source' ? ['emission'] : [])], path);
     if (typeof c.id !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(c.id) || ids.has(c.id)) fail(`${path}.id`, 'expected a unique stable ID (letters, digits, underscores, hyphens)');
     ids.add(c.id);
-    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>version>=5||t!==PLANAR_TYPE) :
+    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))) :
       version >= 3 ? ['point-source', 'ideal-lens', 'plane-mirror'] :
       ['point-source', 'ideal-lens'], `${path}.type`);
     object(c.parameters, componentParameterNames(c.type,version), `${path}.parameters`);
@@ -77,6 +80,7 @@ function validateVersion(doc, version) {
       if(key==='normalDeg')number(value,-180,180,`${path}.parameters.${key}`);
       number(value, -10000, 10000, `${path}.parameters.${key}`);
       if (key === 'apertureHeight' && value < 1) fail(`${path}.parameters.${key}`, 'must be at least 1 mm');
+      if (key === 'radius' && Math.abs(value) < 2) fail(`${path}.parameters.${key}`, 'radius magnitude must be at least 2 mm');
       if (key === 'focalLength' && Math.abs(value) < 1) fail(`${path}.parameters.${key}`, 'magnitude must be at least 1 mm');
       if (key === 'brightness') number(value, 0.01, 1, `${path}.parameters.brightness`);
       if (key === 'length') number(value, 1, 10000, `${path}.parameters.length`);
@@ -84,7 +88,7 @@ function validateVersion(doc, version) {
     }
     if (version >= 2 && c.type === 'point-source') {
       object(c.emission, ['mode', 'directionDeg', 'angleDeg'], `${path}.emission`);
-      choice(c.emission.mode, version===5?['single-ray']:['full-circle', 'directional'], `${path}.emission.mode`);
+      choice(c.emission.mode, version===6?['single-ray','full-circle','directional']:version===5?['single-ray']:['full-circle', 'directional'], `${path}.emission.mode`);
       number(c.emission.directionDeg, -180, 180, `${path}.emission.directionDeg`);
       number(c.emission.angleDeg, 1, 180, `${path}.emission.angleDeg`);
     }
@@ -93,7 +97,11 @@ function validateVersion(doc, version) {
   // cardinality or analytical path. One reusable measurement layer serves all
   // current-v4 arrangements; the original optical scope checks stay unchanged.
   const opticalComponents=p.components.filter(c=>c.type!=='ray-detector');
-  if(p.model==='planar-media-tracing'){
+  if(p.model==='curved-mirror-tracing'){
+    validateCurvedGeometry(p.components,mirrorEndpoints,fail);
+    validateMixedTraceScope(opticalComponents.filter(c=>!isCurved(c.type)),true);
+  }
+  else if(p.model==='planar-media-tracing'){
     validatePlanarGeometry(p.components,mirrorEndpoints,fail);
     validateMixedTraceScope(opticalComponents.filter(c=>c.type!==PLANAR_TYPE),true);
   }

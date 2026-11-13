@@ -1,3 +1,4 @@
+import {isCurved} from './curved-mirrors.js';
 import {QualifiedUI} from './qualified-ui.js';
 import { loadDocument, Simulator, diagnostics, nativeExport, observeSourceSet, observeMirrorSet, observeDetectorSet, observeInterfaceSet } from './adapter.js';
 import { parseSave, serializeSave, SAMPLING_PRESETS, samplingPreset, setSourceMode } from './contract.js';
@@ -51,9 +52,9 @@ function update() {
   $('stage').classList.toggle('invalid', ['invalid', 'failed'].includes(state));
   const d = session.data;
   const mixed = session.document?.physics.model === 'lens-mirror-return-geometric';
-  const mirror = session.document?.physics.components.some(c => c.type === 'plane-mirror');
+  const mirror = session.document?.physics.components.some(c => c.type === 'plane-mirror'||isCurved(c.type));
   const hasOptics = session.document?.physics.components.some(c =>
-    c.type==='ideal-lens'||c.type==='plane-mirror');
+    c.type==='ideal-lens'||c.type==='plane-mirror'||isCurved(c.type));
   const partial = !['completed', 'completed-with-warnings'].includes(state);
   const perMirror = d?.reflectionsById ? Object.entries(d.reflectionsById)
     .map(([id,count])=>id+': '+count).join(' · ') : '';
@@ -97,13 +98,14 @@ function update() {
     const calculations=qualificationUI.qualification?.calculations||[];
     if(calculations.length&&session.document&&state!=='invalid'){
       const revised=qualificationUI.qualification.edits.some(e=>e.kind==='physics');
+      const calculationType=calculations.some(c=>c.kind.startsWith('curved-mirror-'))?'curved-mirror':'angular';
       $('analysis-status').textContent='General image analysis: '+
-        session.analysisStatus+'. Attached conditional angular calculation: '+
+        session.analysisStatus+'. Attached conditional '+calculationType+' calculation: '+
         (revised?'historical after a physical edit':calculations[0].status)+
         '. Native simulation: '+state.replaceAll('-', ' ')+'.';
       $('prediction').textContent=revised?
-        'An earlier conditional angular result is preserved in Qualification, but the scene was physically revised. Recompute the angle for the current scene.':
-        'A separate conditional angular calculation is available in Qualification above. It is not a native ray observation or image detection.';
+        'An earlier conditional '+calculationType+' result is preserved in Qualification, but the scene was physically revised. Recompute for the current scene.':
+        'A separate conditional '+calculationType+' calculation is available in Qualification above. It is not a native ray observation or image detection.';
       $('prediction-note').textContent='General image prediction and the attached ideal-model angular calculation use different methods. Native tracing is '+
         state.replaceAll('-', ' ')+'. Its incomplete or missing ray branches are not described as successful native results.';
       return;
@@ -162,9 +164,10 @@ function controls() {
   }
   const mixed = session.document.physics.model === 'lens-mirror-return-geometric';
   const planar = session.document.physics.model === 'planar-media-tracing';
+  const curved = session.document.physics.model === 'curved-mirror-tracing';
   const general = session.document.physics.model === 'general-component-tracing';
   const tracing = general || session.document.physics.model === 'mixed-lens-mirror-tracing';
-  const labels = { normalDeg:'Normal direction',negativeIndex:'Negative-side index',positiveIndex:'Positive-side index',x: 'Position x', y: 'Position y', focalLength: 'Focal length', apertureHeight: 'Aperture height', orientationDeg: 'Surface orientation', length: 'Length' };
+  const labels = { radius:'Signed curvature radius',normalDeg:'Normal direction',negativeIndex:'Negative-side index',positiveIndex:'Positive-side index',x: 'Position x', y: 'Position y', focalLength: 'Focal length', apertureHeight: 'Aperture height', orientationDeg: 'Surface orientation', length: 'Length' };
   for (const component of session.document.physics.components) {
     const fieldset = document.createElement('fieldset');
     const legend = document.createElement('legend'); legend.textContent = component.id;
@@ -191,6 +194,13 @@ function controls() {
       note.textContent = mixed ? 'Return layout fixes centre y=0 and perpendicular orientation ±90°. Mirror x and finite length remain editable. The same lens is used on both encounters.' : 'Position is the segment centre. Surface tangent: 0° horizontal · 90° vertical · +45° rises right. Reflects from both sides.';
       fieldset.append(note);
     }
+    if(isCurved(component.type)){
+      const note=document.createElement('p');note.className='muted';
+      note.textContent=component.type==='ideal-curved-mirror'?
+        'Native IdealMirror: ideal Gaussian mapping, not a circular surface. Positive f concave, negative f convex; normal defines the front side.':
+        'Native ArcMirror: circular geometry and local-normal reflection. Positive radius concave toward front; negative convex. Gaussian image prediction is paraxial, not exact finite-aperture ray intersection.';
+      fieldset.append(note);
+    }
     if(component.type==='planar-interface'){
       const note=document.createElement('p');note.className='muted';
       note.textContent='Infinite plane. Normal points from negative to positive side; indices are explicit. Unchecking Fresnel is a transmitted-only approximation, not a complete dielectric model. TIR remains native. Parallel layers require matching adjacent indices.';fieldset.append(note);
@@ -214,9 +224,9 @@ function controls() {
   }
   $('title').textContent = session.document.presentation.title;
   const mirror = session.document.physics.model === 'plane-mirror-geometric';
-  $('model-label').textContent = planar?'Planar refractive media · native tracing':mixed ? 'Lens / mirror return · geometric optics' : general ? 'General component tracing' : tracing ? 'Mixed lens / mirror tracing' : mirror ? 'Plane mirror · geometric optics' : 'Ideal lenses · geometric optics';
-  $('parameter-guidance').textContent = `Lengths in mm. x points right; y points up. ${planar?'1–4 exact single rays; 1–4 parallel interfaces with consistent indices; finite surfaces cannot cross an interface.':mixed ? 'Source left of lens left of perpendicular mirror; lens and mirror share y=0.' : general ? '1–4 sources, up to four coaxial lenses, four mirrors and two detectors; finite surfaces must not intersect.' : tracing ? '1–4 independent point sources, 1–4 coaxial lenses and 1–4 plane mirrors; finite optical surfaces must not intersect.' : mirror ? 'Mirror orientation describes the surface tangent.' : 'Lenses share the horizontal axis.'}`;
-  $('physical-note').textContent = planar?'Native PlaneGlass uses relative index ratios to represent the stated media. Native Fresnel branches and TIR are observed without rerouting. Transmitted-only mode is an explicit approximation. Weak-branch/depth truncation suppresses requested results. No time-of-flight, phase, dispersion or image solver is exposed.':mixed ? 'One native lens can be encountered in both directions. PhyDemo chooses every intersection; finite lens/mirror misses are not blocked. Positive f converges; negative f diverges.' : general ? 'Native PhyDemo traces each supported component and all actual intersections. Sources need not encounter a lens or mirror. Analytic image predictions are unavailable without a justified optical path; counts and detector readings are sampled observations, not image detection.' : tracing ? 'PhyDemo chooses each hit; analytical image predictions are intentionally unavailable without a specified optical path. Reflection totals and per-mirror counts describe sampled native encounters, not image formation.' : mirror ? 'The finite native mirror reflects from both sides. Rays missing its segment continue unchanged. Edit physical values here; the canvas is a simulation view.' : 'Positive focal length converges. Negative focal length diverges. Edit physical values here; the canvas is a simulation view.';
+  $('model-label').textContent = curved?'Curved mirrors · distinct ideal / circular models':planar?'Planar refractive media · native tracing':mixed ? 'Lens / mirror return · geometric optics' : general ? 'General component tracing' : tracing ? 'Mixed lens / mirror tracing' : mirror ? 'Plane mirror · geometric optics' : 'Ideal lenses · geometric optics';
+  $('parameter-guidance').textContent = `Lengths in mm. x points right; y points up. ${curved?'1–2 curved mirrors, 1–4 sources and separate plane mirrors/detectors. Normal points to the declared front; signed radius is not focal length.':planar?'1–4 exact single rays; 1–4 parallel interfaces with consistent indices; finite surfaces cannot cross an interface.':mixed ? 'Source left of lens left of perpendicular mirror; lens and mirror share y=0.' : general ? '1–4 sources, up to four coaxial lenses, four mirrors and two detectors; finite surfaces must not intersect.' : tracing ? '1–4 independent point sources, 1–4 coaxial lenses and 1–4 plane mirrors; finite optical surfaces must not intersect.' : mirror ? 'Mirror orientation describes the surface tangent.' : 'Lenses share the horizontal axis.'}`;
+  $('physical-note').textContent = curved?'Native IdealMirror obeys an ideal mapping; ArcMirror reflects from a circular surface and can exhibit spherical aberration. No calculated image is a native detection. Finite mirrors may be missed; conservative aperture separation is enforced.':planar?'Native PlaneGlass uses relative index ratios to represent the stated media. Native Fresnel branches and TIR are observed without rerouting. Transmitted-only mode is an explicit approximation. Weak-branch/depth truncation suppresses requested results. No time-of-flight, phase, dispersion or image solver is exposed.':mixed ? 'One native lens can be encountered in both directions. PhyDemo chooses every intersection; finite lens/mirror misses are not blocked. Positive f converges; negative f diverges.' : general ? 'Native PhyDemo traces each supported component and all actual intersections. Sources need not encounter a lens or mirror. Analytic image predictions are unavailable without a justified optical path; counts and detector readings are sampled observations, not image detection.' : tracing ? 'PhyDemo chooses each hit; analytical image predictions are intentionally unavailable without a specified optical path. Reflection totals and per-mirror counts describe sampled native encounters, not image formation.' : mirror ? 'The finite native mirror reflects from both sides. Rays missing its segment continue unchanged. Edit physical values here; the canvas is a simulation view.' : 'Positive focal length converges. Negative focal length diverges. Edit physical values here; the canvas is a simulation view.';
   $('grid-toggle').checked = session.document.presentation.grid;
   $('zoom').value = session.document.presentation.view.zoom;
   syncSampling();
@@ -226,6 +236,7 @@ function sourcePicker(component) {
     { mode: 'full-circle', title: 'Point source (360°)', description: 'Light in every direction', icon: pointSourceIcon },
     { mode: 'directional', title: 'Point source (directional)', description: 'Symmetric cone · 1–180°', icon: angleSourceIcon }
   ];
+  if(session.document.schemaVersion===6)choices.push({mode:'single-ray',title:'Single ray (native)',description:'One exact direction; no cone from sampling',icon:angleSourceIcon});
   const details = document.createElement('details'); details.className = 'source-picker';
   const summary = document.createElement('summary'); summary.id = `${component.id}-mode`;
   const heading = document.createElement('span');

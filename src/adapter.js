@@ -1,3 +1,4 @@
+import {compileCurved,isCurved} from './curved-mirrors.js';
 import Scene from '../vendor/ray-optics/src/core/Scene.js';
 import Simulator from '../vendor/ray-optics/src/core/Simulator.js';
 import i18next from '../vendor/ray-optics/node_modules/i18next/dist/esm/i18next.js';
@@ -7,6 +8,7 @@ i18next.init({ lng: 'en', resources: { en: { simulator: en } }, initImmediate: f
 import {compileInterface,observeInterfaceSet} from './planar-media.js';
 export {observeInterfaceSet};
 const compilers = {
+  'ideal-curved-mirror':compileCurved,'circular-arc-mirror':compileCurved,
   'planar-interface':compileInterface,
   'point-source': c => {
     const { x, y, brightness } = c.parameters;
@@ -102,7 +104,7 @@ export function observeMirrorReflections(mirror) {
 // Attach to every native mirror, preserving stable authored IDs and physical
 // object order. The old single-mirror observer remains available for callers.
 export function observeMirrorSet(doc, scene, idMap) {
-  const entries = doc.physics.components.filter(c=>c.type==='plane-mirror')
+  const entries = doc.physics.components.filter(c=>c.type==='plane-mirror'||isCurved(c.type))
     .map(c=>[c.id,observeMirrorReflections(scene.objs[idMap.get(c.id)])]);
   if(!entries.length)return null;
   return {

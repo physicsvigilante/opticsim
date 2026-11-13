@@ -11,7 +11,7 @@ const kinds=Object.freeze({
   'interface-tir-count':{type:'planar-interface',unit:'native TIR interactions'},
   'interface-first-event':{type:'planar-interface',unit:'native event; directions y-up; power relative'},
   'source-emissions':{type:'point-source',unit:'sampled rays'},
-  'mirror-reflections':{type:'plane-mirror',unit:'sampled interactions'},
+  'mirror-reflections':{type:['plane-mirror','ideal-curved-mirror','circular-arc-mirror'],unit:'sampled interactions'},
   'detector-crossings':{type:'ray-detector',unit:'sampled crossings'},
   'detector-signed-power':{type:'ray-detector',unit:'relative native units; not watts'},
   'ideal-image':{type:'point-source',unit:'mm; magnification dimensionless'}
@@ -68,7 +68,7 @@ export async function evaluateObservables(doc,requests,execution){
     const base={...r,status:'unavailable',value:null,method:null,unit:null,reason:null};
     if(!Object.hasOwn(kinds,r.kind))return {...base,reason:'Requested quantity is not exposed by the current result contract.'};
     const spec=kinds[r.kind],component=doc.physics.components.find(c=>c.id===r.componentId);
-    if(!component||component.type!==spec.type)return {...base,reason:'Requested component is missing or has the wrong physical type.'};
+    if(!component||!(Array.isArray(spec.type)?spec.type.includes(component.type):component.type===spec.type))return {...base,reason:'Requested component is missing or has the wrong physical type.'};
     if(!complete)return {...base,status:'suppressed',reason:!fresh?
       'Execution evidence does not match the current scene hash.':'Current native run is incomplete, failed, or not yet available.'};
     if(r.kind==='ideal-image'){

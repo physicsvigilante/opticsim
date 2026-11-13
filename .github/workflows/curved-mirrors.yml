@@ -1,0 +1,33 @@
+name: Curved mirror checks
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  curved:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - run: npm test
+      - name: Original follow-ups and native integration acceptance
+        run: node scripts/curved-mirror-acceptance.mjs
+      - run: npm run build
+      - name: Actual curved mirror browser import edit export and reopen
+        run: node scripts/curved-mirror-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: curved-mirror-evidence
+          path: |
+            test-artifacts/llm-authoring/curved-mirrors/
+            test-artifacts/browser-curved-mirrors/
+          if-no-files-found: error
+          retention-days: 14

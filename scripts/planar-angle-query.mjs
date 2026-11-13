@@ -32,7 +32,7 @@ function nativeCheck(scene){
     limitations:'These are actual native observations or partial diagnostics. They do not confirm that conditional mathematical results were natively observed or that the source question was interpreted correctly.'};
 }
 function compactCalculation(result){
-  return result.kind==='critical-input-angle'?result.value:{
+  return ['critical-input-angle','curved-mirror-image','curved-mirror-image-velocity'].includes(result.kind)?result.value:{
     initial:result.initial,branches:result.results?.map(b=>({
       id:b.id,status:b.status,value:b.value??null,reasonCode:b.reasonCode??null
     }))??[]

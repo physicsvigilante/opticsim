@@ -1,4 +1,5 @@
 // Presentation only. Conditional coordinates are not native image detections.
+import {isCurved,curvedPoints} from './curved-mirrors.js';
 import {validate,mirrorEndpoints} from './contract.js';
 import {sceneHash} from './qualified-utils.js';
 // Presentation limits match the existing canonical validator; the fitted document
@@ -32,6 +33,7 @@ export function apparatusPoints(doc){
   validate(doc);
   return doc.physics.components.flatMap(c=>{
     const p=c.parameters;
+    if(isCurved(c.type))return curvedPoints(c);
     if(c.type==='ideal-lens')return [{x:p.x,y:-p.apertureHeight/2},{x:p.x,y:p.apertureHeight/2}];
     if(c.type==='plane-mirror'||c.type==='ray-detector')return mirrorEndpoints(p);
     return [{x:p.x,y:p.y}];

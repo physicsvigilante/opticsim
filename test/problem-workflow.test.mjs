@@ -58,7 +58,7 @@ test('mixed branch calculation and incomplete native evidence remain separately 
  assert.equal(q.qualification.calculations[0].kind,'branch-angles');
 });
 test('unknown quantity is unavailable without inference, native execution or retry',async()=>{
- const p={format:'opticsim-problem-v1',physical:null,requests:[{id:'unsupported',kind:'curved-mirror-image-velocity'}]};
+ const p={format:'opticsim-problem-v1',physical:null,requests:[{id:'unsupported',kind:'curved-mirror-symbolic-time-law'}]};
  const r=await runProblemEvidence({inputBytes:bytes(p),outputPath:fresh(),execute:()=>{throw Error('must not run');}});
  assert.equal(r.report.results[0].reasonCode,'UNSUPPORTED_QUANTITY');assert.equal(r.report.results[0].value,null);
  assert.equal(r.report.dispatch.nativeCalls,0);assert.equal(r.report.dispatch.repairs,0);assert.equal(r.exitCode,2);
