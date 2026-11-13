@@ -26,7 +26,7 @@ async function main(){
   const evaluate=async expression=>{const r=await cdp.send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result?.value;};
   const state=()=>evaluate(`(()=>{const el=id=>document.getElementById(id);if(!el('native-state'))return null;return {state:el('native-state').dataset.state,index:el('time').value,viewport:el('native-stage').dataset.viewport?JSON.parse(el('native-stage').dataset.viewport):null,plot:el('image-plot').dataset.viewport?JSON.parse(el('image-plot').dataset.viewport):null,counts:el('native-counts').textContent,hash:el('experiment-hash').textContent,zoom:el('zoom-level')?.textContent,zoomFitDisabled:el('zoom-fit')?.disabled,note:el('plot-note').textContent,image:el('image-value').textContent};})()`);
   const seek=async(i,requireCompleted=true)=>{await evaluate(`(()=>{const e=document.getElementById('time');e.value='${i}';e.dispatchEvent(new Event('input',{bubbles:true}));})()`);return until(state,s=>s&&(requireCompleted?s.state==='completed':s.state!=='running')&&s.index===String(i)&&s.viewport,'native frame '+i);};
-  const change=async(id,value)=>{await evaluate(`(()=>{const e=document.getElementById('${id}');e.value='${value}';e.dispatchEvent(new Event('change',{bubbles:true}));})()`);return until(state,s=>s?.state==='completed'&&s.viewport,'change '+id);};
+  const change=async(id,value)=>{await evaluate(`(()=>{const e=document.getElementById('${id}');e.value='${value}';e.dispatchEvent(new Event('change',{bubbles:true}));})()`);return until(state,s=>s?.state==='completed'&&s.viewport&&(id!=='camera-mode'||s.viewport.mode===value),'change '+id);};
   const contained=s=>{for(const key of ['image','object']){const p=s.viewport[key];assert.equal(p.visible,true);assert.ok(p.x>=16&&p.x<=s.viewport.width-16);assert.ok(p.y>=16&&p.y<=s.viewport.height-16);}assert.equal(s.plot.image.visible,true);};
   const shot=async name=>{const r=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});await writeFile(join(out,name+'.png'),Buffer.from(r.data,'base64'));report.screenshots.push(name+'.png');};
   for(const width of [1440,390]){
@@ -55,7 +55,7 @@ async function main(){
   const beforeZoom=await seek(30),physicalCounts=beforeZoom.counts,originalHash=beforeZoom.hash;
   assert.equal(beforeZoom.zoom,'100%');
   await evaluate("document.getElementById('zoom-in').click()");
-  let zoomed=await until(state,s=>s?.state==='completed'&&s.index==='30'&&s.zoom!=='100%','zoom-in native repaint');
+  let zoomed=await until(state,s=>s?.state==='completed'&&s.index==='30'&&s.zoom!=='100%'&&s.viewport?.scale>beforeZoom.viewport.scale+1e-9,'zoom-in native repaint');
   assert.ok(zoomed.viewport.scale>beforeZoom.viewport.scale);
   assert.ok(zoomed.plot.scale>beforeZoom.plot.scale);
   assert.equal(zoomed.hash,originalHash);assert.equal(zoomed.counts,physicalCounts);
@@ -67,17 +67,17 @@ async function main(){
   report.checks.push({name:'Zoom-in follows fixed whole-motion camera across time and both views; unchanged physics',status:'pass'});
   const beforeOut=await seek(30);
   await evaluate("document.getElementById('zoom-out').click()");
-  const recovered=await until(state,s=>s?.state==='completed'&&s.index==='30'&&s.zoom==='100%','zoom-out');
+  const recovered=await until(state,s=>s?.state==='completed'&&s.index==='30'&&s.zoom==='100%'&&Math.abs(s.viewport?.scale-beforeZoom.viewport.scale)<1e-8,'zoom-out');
   assert.equal(recovered.viewport.scale,beforeZoom.viewport.scale);
   assert.deepEqual(recovered.viewport.origin,beforeZoom.viewport.origin);
   report.checks.push({name:'Zoom-out returns to fitted camera without changing native results',status:'pass'});
   await evaluate("(()=>{const e=document.getElementById('native-stage'),r=e.getBoundingClientRect();e.dispatchEvent(new WheelEvent('wheel',{deltaY:-100,clientX:r.left+r.width*.4,clientY:r.top+r.height*.65,bubbles:true,cancelable:true}));})()");
-  const wheel=await until(state,s=>s?.state==='completed'&&s.index==='30'&&s.zoom!=='100%','wheel zoom');
+  const wheel=await until(state,s=>s?.state==='completed'&&s.index==='30'&&s.zoom!=='100%'&&s.viewport?.scale>recovered.viewport.scale+1e-9,'wheel zoom');
   assert.ok(wheel.viewport.scale>recovered.viewport.scale);
   assert.equal(wheel.counts,physicalCounts);
   report.checks.push({name:'Wheel zoom at cursor updates camera while preserving native interactions',status:'pass'});
   await evaluate("document.getElementById('zoom-fit').click()");
-  const fittedAgain=await until(state,s=>s?.state==='completed'&&s.index==='30'&&s.zoom==='100%','fit reset');
+  const fittedAgain=await until(state,s=>s?.state==='completed'&&s.index==='30'&&s.zoom==='100%'&&Math.abs(s.viewport?.scale-baseline.viewport.scale)<1e-8,'fit reset');
   assert.equal(fittedAgain.viewport.scale,baseline.viewport.scale);
   assert.equal(fittedAgain.zoomFitDisabled,true);
   report.checks.push({name:'Fit resets zoom and pan to the selected automatic camera preset',status:'pass'});
@@ -88,13 +88,13 @@ async function main(){
   await cdp.send('Input.dispatchMouseEvent',{type:'mousePressed',x:rect.x,y:rect.y,button:'left',buttons:1,clickCount:1});
   await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:rect.x+45,y:rect.y+20,button:'left',buttons:1});
   await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',x:rect.x+45,y:rect.y+20,button:'left',buttons:0,clickCount:1});
-  const panned=await until(state,s=>s?.state==='completed'&&s.index==='30'&&s.zoomFitDisabled===false,'drag pan repaint');
+  const panned=await until(state,s=>s?.state==='completed'&&s.index==='30'&&s.zoomFitDisabled===false&&Math.abs(s.viewport?.origin.x-fittedAgain.viewport.origin.x)>1,'drag pan repaint');
   assert.equal(panned.hash,originalHash);assert.equal(panned.counts,physicalCounts);
   assert.ok(Math.abs(panned.viewport.origin.x-fittedAgain.viewport.origin.x-45)<2);
   assert.ok(Math.abs(panned.viewport.origin.y-fittedAgain.viewport.origin.y-20)<2);
   report.checks.push({name:'Real pointer drag pans both views without moving an optical component',status:'pass'});
   await evaluate("document.getElementById('zoom-fit').click()");
-  await until(state,s=>s?.state==='completed'&&s.zoomFitDisabled===true,'fit after drag');
+  await until(state,s=>s?.state==='completed'&&s.zoomFitDisabled===true&&Math.abs(s.viewport?.origin.x-fittedAgain.viewport.origin.x)<1e-8,'fit after drag');
   const before=await seek(30);const close=await change('camera-mode','apparatus');
   assert.equal(close.viewport.image.visible,false);assert.equal(close.counts,before.counts);assert.equal(close.hash,before.hash);
   const follow=await change('camera-mode','frame');contained(follow);assert.equal(follow.counts,before.counts);
