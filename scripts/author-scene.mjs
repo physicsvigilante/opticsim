@@ -49,7 +49,8 @@ export function evaluateDocument(doc,core) {
       emissionsById:diag.emissionsById,
       reflectionsById:diag.reflectionsById,
       detectorsById:diag.detectorsById,
-      interfacesById:diag.interfacesById
+      interfacesById:diag.interfacesById,
+      blockersById:diag.blockersById
     }:null,
     measurementState,analysis:{status:run.analysis.status,reason:run.analysis.reason},
     executionPassed:run.executionPassed,

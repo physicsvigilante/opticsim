@@ -22,6 +22,7 @@ function choice(value, choices, path) { if (!choices.includes(value)) fail(path,
 // These schemas describe components. The current bench scope is enforced separately below.
 const parameters = { 'point-source': ['x', 'y'], 'ideal-lens': ['x', 'focalLength', 'apertureHeight'],
   'plane-mirror': ['x', 'y', 'orientationDeg', 'length'],
+  'line-blocker': ['x', 'y', 'orientationDeg', 'length'],
   'ray-detector': ['x', 'y', 'orientationDeg', 'length'],
   [PLANAR_TYPE]: [...PLANAR_PARAMETERS], [CIRCULAR_TYPE]: [...CIRCULAR_PARAMETERS], [PRISM_TYPE]: [...PRISM_PARAMETERS], [POLYGON_TYPE]: [...POLYGON_PARAMETERS], ...CURVED_PARAMETERS };
 // Shared authoring/validator definitions. General composition relaxes mandatory
@@ -32,6 +33,7 @@ export const GENERAL_SCOPE = Object.freeze({
   'point-source': Object.freeze({min:1,max:4}),
   'ideal-lens': Object.freeze({min:0,max:4}),
   'plane-mirror': Object.freeze({min:0,max:4}),
+  'line-blocker': Object.freeze({min:0,max:2}),
   'ray-detector': Object.freeze({min:0,max:2}),
   [PLANAR_TYPE]: Object.freeze({min:0,max:4}),
   [CIRCULAR_TYPE]: Object.freeze({min:0,max:1}),
@@ -76,7 +78,7 @@ function validateVersion(doc, version) {
     object(c, ['id', 'type', 'parameters', ...(version >= 2 && c?.type === 'point-source' ? ['emission'] : [])], path);
     if (typeof c.id !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(c.id) || ids.has(c.id)) fail(`${path}.id`, 'expected a unique stable ID (letters, digits, underscores, hyphens)');
     ids.add(c.id);
-    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)) :
+    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(version===4||t!=='line-blocker')) :
       version >= 3 ? ['point-source', 'ideal-lens', 'plane-mirror'] :
       ['point-source', 'ideal-lens'], `${path}.type`);
     object(c.parameters, componentParameterNames(c.type,version), `${path}.parameters`);
@@ -210,15 +212,18 @@ function validateMixedTraceScope(components, general = false) {
   const sources=components.filter(c=>c.type==='point-source');
   const lenses=components.filter(c=>c.type==='ideal-lens');
   const mirrors=components.filter(c=>c.type==='plane-mirror');
+  const blockers=components.filter(c=>c.type==='line-blocker');
   const path='$.physics.components';
   if(sources.length<GENERAL_SCOPE['point-source'].min||
      sources.length>GENERAL_SCOPE['point-source'].max||
      lenses.length>(GENERAL_SCOPE['ideal-lens'].max)||
      mirrors.length>(GENERAL_SCOPE['plane-mirror'].max)||
+     blockers.length>(GENERAL_SCOPE['line-blocker'].max)||
+     (!general && blockers.length>0)||
      (!general && (lenses.length<1 || mirrors.length<1))||
-     components.length!==sources.length+lenses.length+mirrors.length)
+     components.length!==sources.length+lenses.length+mirrors.length+blockers.length)
     fail(path,general
-      ? 'general tracing supports 1–4 point sources, 0–4 coaxial lenses and 0–4 plane mirrors'
+      ? 'general tracing supports 1–4 point sources, 0–4 coaxial lenses, 0–4 plane mirrors and 0–2 opaque line blockers'
       : 'mixed tracing supports 1–4 point sources, 1–4 coaxial lenses and 1–4 plane mirrors',
       'UNSUPPORTED_SCOPE');
   const points=sources.map(c=>c.parameters);
@@ -236,13 +241,13 @@ function validateMixedTraceScope(components, general = false) {
     const line=c.type==='ideal-lens'
       ? [{x:p.x,y:-p.apertureHeight/2},{x:p.x,y:p.apertureHeight/2}]
       : mirrorEndpoints(p);
-    if(c.type==='plane-mirror'){
+    if(['plane-mirror','line-blocker'].includes(c.type)){
       if(line.some(v=>Math.abs(v.x)>10000||Math.abs(v.y)>10000))
         fail(path+'['+index+'].parameters','segment endpoints exceed coordinate bounds','UNSUPPORTED_SCOPE');
       const theta=p.orientationDeg*Math.PI/180;
       if(points.some(source=>Math.abs(
         -(source.x-p.x)*Math.sin(theta)+(source.y-p.y)*Math.cos(theta))<0.01))
-        fail(path+'['+index+'].parameters','each source must be at least 0.01 mm from mirror supporting line','UNSUPPORTED_SCOPE');
+        fail(path+'['+index+'].parameters','each source must be at least 0.01 mm from finite surface supporting line','UNSUPPORTED_SCOPE');
     }
     for(const other of surfaces)
       if(segmentsIntersect(other.line,line))
@@ -259,7 +264,7 @@ function validateDetectorScope(components) {
     fail('$.physics.components','at most two ray detectors are supported','UNSUPPORTED_SCOPE');
   if(!detectors.length)return;
   const sources=components.filter(c=>c.type==='point-source').map(c=>c.parameters);
-  const surfaces=components.filter(c=>['ideal-lens','plane-mirror'].includes(c.type))
+  const surfaces=components.filter(c=>['ideal-lens','plane-mirror','line-blocker'].includes(c.type))
     .map(c=>({id:c.id,line:c.type==='ideal-lens'
       ? [{x:c.parameters.x,y:-c.parameters.apertureHeight/2},
          {x:c.parameters.x,y:c.parameters.apertureHeight/2}]

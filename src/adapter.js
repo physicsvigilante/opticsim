@@ -25,6 +25,10 @@ const compilers = {
   },
   'ideal-lens': c => ({ type: 'IdealLens', p1: { x: c.parameters.x, y: -c.parameters.apertureHeight / 2 },
     p2: { x: c.parameters.x, y: c.parameters.apertureHeight / 2 }, focalLength: c.parameters.focalLength }),
+  'line-blocker': c => {
+    const [a,b]=mirrorEndpoints(c.parameters);
+    return {type:'Blocker',p1:{x:a.x,y:-a.y},p2:{x:b.x,y:-b.y},filter:false};
+  },
   'plane-mirror': c => {
     const [a, b] = mirrorEndpoints(c.parameters);
     return { type: 'Mirror', p1: { x: a.x, y: -a.y }, p2: { x: b.x, y: -b.y }, filter: false };
@@ -135,8 +139,28 @@ export function observeDetectorSet(doc, scene, idMap) {
       signedPower:Number.isFinite(entry.detector.power)?entry.detector.power:null}
   ]));}};
 }
-export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, detectorMeter = null, interfaceMeter = null) {
-  const errors = [...(interfaceMeter?.errors||[]),scene.error, simulator.error, ...scene.objs.map(o => o.getError())].filter(Boolean);
+// Per-instance native absorber observations; never trace or reroute a ray.
+export function observeBlockerSet(doc, scene, idMap) {
+  const entries=doc.physics.components.filter(c=>c.type==='line-blocker').map(c=>{
+    const native=scene.objs[idMap.get(c.id)],original=native.onRayIncident;
+    const count={absorptions:0,invalidObservations:0};
+    native.onRayIncident=function(...args){
+      const result=original.apply(this,args);
+      if(result?.isAbsorbed===true)count.absorptions++;
+      else count.invalidObservations++;
+      return result;
+    };
+    return [c.id,count];
+  });
+  if(!entries.length)return null;
+  return {
+    get byId(){return Object.fromEntries(entries.map(([id,m])=>[id,{...m}]));},
+    get errors(){return entries.filter(([,m])=>m.invalidObservations).map(([id])=>
+      id+': native blocker incident did not report absorption');}
+  };
+}
+export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, detectorMeter = null, interfaceMeter = null, blockerMeter = null) {
+  const errors = [...(interfaceMeter?.errors||[]),...(blockerMeter?.errors||[]),scene.error, simulator.error, ...scene.objs.map(o => o.getError())].filter(Boolean);
   const warnings = [scene.warning, simulator.warning, ...scene.objs.map(o => o.getWarning())].filter(Boolean);
   const emissionsById=meter?.byId ?? null;
   const sourceCount=emissionsById ? Object.keys(emissionsById).length : 0;
@@ -149,7 +173,8 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
     reflections: mirrorMeter?.reflections ?? null,
     reflectionsById: mirrorMeter?.byId ?? null,
     detectorsById: detectorMeter?.byId ?? null,
-    interfacesById: interfaceMeter?.byId ?? null };
+    interfacesById: interfaceMeter?.byId ?? null,
+    blockersById: blockerMeter?.byId ?? null }; 
 }
 export function classifyRun(event, data) {
   return data.errors.length ? 'failed' : event === 'simulationStop' ? 'stopped' :
