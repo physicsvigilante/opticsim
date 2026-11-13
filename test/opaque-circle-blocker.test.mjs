@@ -109,7 +109,7 @@ test('near tangent and endpoint contact are rejected without an invented ray out
    x:70,y:0,orientationDeg:0,length:60}});
  })); // Endpoint at x=40 touches the opaque circumference
  assert.equal(build(r=>stop(r).radius=1).physics.components[1].parameters.radius,1);
- assert.throws(()=>build(r=>stop(r).radius=0.5),/opaque circle radius must be at least 1 mm/);
+ assert.throws(()=>setParameter(build(),'B1','radius',0.5),/opaque circle radius must be at least 1 mm/);
 });
 
 test('v4 general-scene only: old or isolated model families may not silently reinterpret the disk',()=>{
