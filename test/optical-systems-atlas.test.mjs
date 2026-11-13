@@ -83,3 +83,23 @@ test('Pinned PhyDemo already contains absorber, curved glass, beam and GRIN prim
  const sphere=readFileSync(new URL('../vendor/ray-optics/src/core/sceneObjs/glass/Glass.js',import.meta.url),'utf8');
  assert.match(sphere,/circular arcs/);
 });
+
+test('Roadmap priorities derive nonexclusive case counts from the fixed 40-image audit',()=>{
+ const review=load('review.json'),roadmap=load('roadmap.json');
+ assert.equal(roadmap.format,'opticsim-jee-systems-atlas-roadmap-v1');
+ assert.equal(roadmap.sourceModesDeferredByOwner,true);
+ assert.equal(roadmap.noAutomaticImplementation,true);
+ assert.ok(roadmap.priorities.length>=8);
+ assert.equal(roadmap.priorities[0].id,'convex-polygon-glass');
+ assert.equal(roadmap.priorities[1].id,'opaque-stops-screens');
+ const ids=new Set();
+ for(const [n,stage] of roadmap.priorities.entries()){
+  assert.equal(stage.rank,n+1);
+  assert.ok(!ids.has(stage.id));ids.add(stage.id);
+  const actual=review.cases.filter(c=>c.candidateGaps.includes(stage.gap)).map(c=>c.id);
+  assert.equal(stage.reviewedCaseCount,actual.length,stage.id);
+  assert.deepEqual(stage.sampleCaseIds,actual,stage.id);
+ }
+ const beam=roadmap.priorities.find(p=>p.gap==='beam-sources');
+ assert.equal(beam.readiness,'deferred-by-owner');
+});
