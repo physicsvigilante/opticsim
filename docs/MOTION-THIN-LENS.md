@@ -60,7 +60,7 @@ native illumination without moving the analytical image point.
 
 `examples/moving-lens.json` explicitly supplies every physical value
 for a software-control example: x_o=-28 cm, y_o=+1 cm, L=0,
-f=+20 cm, lens aperture 12 cm, 0.05 relative source brightness,
+f=+20 cm, lens aperture 12 cm, 0.3 relative source brightness,
 40° directional cone pointing right, and uniform velocity
 (+4,+1.2) cm/s for 3 seconds over 61 samples.
 
