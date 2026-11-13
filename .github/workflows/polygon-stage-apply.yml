@@ -35,24 +35,22 @@ jobs:
         run: |
           npm run build
           node scripts/pack-demo.mjs
-      - name: Commit only validated feature source, delete every temporary transport and workflow
+      - name: Commit only validated application source (no workflow file permission required)
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'opticsim-ci-staging'
           git config user.email 'opticsim-ci-staging@users.noreply.github.com'
-          git rm -r -- .polygon-delta
-          git rm -f --ignore-unmatch .polygon-stage-probe .github/workflows/polygon-source-snapshot.yml .github/workflows/polygon-stage-try.yml .github/workflows/polygon-stage-apply.yml
-          git add -A
-          echo 'Final changed paths relative to main:'
+          # Actions GitHub App cannot push a workflow-file change. The connected
+          # maintainer tool will update production workflow & remove temporary
+          # materials in a separate, reviewable commit after this feature push.
+          git restore -- .github/workflows/planar-refraction.yml
+          git add -A -- AGENTS.md README.md docs examples public scenes scripts src test
+          echo 'Application paths staged:'
           git diff --cached --name-only
-          if git diff --cached --name-only | grep -E '(^evaluation/|^01_problems|^08_Ray_Optics|^vendor/|^third_party/)' ; then
-            echo 'Forbidden historical archive or temporary transport remains staged' >&2
+          if git diff --cached --name-only | grep -E '(^evaluation/|^\.github/|^01_problems|^08_Ray_Optics|^vendor/|^third_party/|^\.polygon)' ; then
+            echo 'Forbidden archive/workflow/temp staged' >&2
             exit 1
           fi
-          if git ls-files | grep -E '(^\.polygon|^\.github/workflows/polygon-)' ; then
-            echo 'Temporary workflow or transport survived cleanup' >&2
-            exit 1
-          fi
-          git commit -m 'Milestone 21: bounded convex four-sided dielectric with shared finite-glass native observables'
+          git commit -m 'Milestone 21: bounded convex four-sided glass with shared native observers'
           git push origin HEAD:refs/heads/feature/convex-glass-polygon
