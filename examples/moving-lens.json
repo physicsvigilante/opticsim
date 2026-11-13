@@ -6,7 +6,7 @@
     "runPolicy":"dense-v1",
     "components":[
       {"id":"S1","type":"point-source",
-       "parameters":{"x":-28,"y":1,"brightness":0.05},
+       "parameters":{"x":-28,"y":1,"brightness":0.3},
        "emission":{"mode":"directional","directionDeg":0,"angleDeg":40}},
       {"id":"L1","type":"ideal-lens",
        "parameters":{"x":0,"focalLength":20,"apertureHeight":12}}
