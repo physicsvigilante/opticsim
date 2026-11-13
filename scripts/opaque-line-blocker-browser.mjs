@@ -110,6 +110,49 @@ async function main(){
   await evaluate("(()=>{const e=document.getElementById('examples');e.value='triangular-prism';e.dispatchEvent(new Event('change',{bubbles:true}));})()");
   await until(state,x=>x.status==='completed'&&x.model.includes('Triangular prism'),'old glass scene');
   check('Same viewer still opens unchanged finite prism');
+  // Reuse the same native browser harness and qualified import path for circles.
+  const circularAcceptance=JSON.parse(await readFile(join(root,
+    'test-artifacts/llm-authoring/opaque-circle-blocker/acceptance.json'),'utf8'));
+  const circleBundles=circularAcceptance.browserBundles;
+  await upload(circleBundles.blocked);
+  s=await until(state,x=>x.status==='completed'&&x.results?.[0]?.value===6&&x.results?.[2]?.value===0,'native circle blocked');
+  assert.equal(s.error,'');assert.equal(s.results[1].value,6);
+  assert.match(await evaluate('document.getElementById("stats").textContent'),/B1: 6 absorbed native rays/);
+  check('Native CircleBlocker qualified import records six sampled absorptions and no detector crossings');
+  await shot('native-circle-blocked');
+  const circleBefore=structuredClone(s.results);
+  await evaluate('document.getElementById("fit-results").click()');
+  s=await until(state,x=>x.status==='completed'&&!x.fitDisabled,'circle fit');
+  assert.deepEqual(s.results,circleBefore);
+  check('Circle boundary extents fit without altering native observations');
+  await edit('B1-radius',10);
+  s=await until(state,x=>x.status==='completed'&&x.results?.[0]?.value>0&&x.results?.[0]?.value<6,'partial circle');
+  check('Editing physical radius changes native sampled absorption rather than painting rays');
+  await edit('B1-y',100);
+  s=await until(state,x=>x.status==='completed'&&x.results?.[0]?.value===0&&x.results?.[2]?.value===4,'clear circle');
+  check('Moving the circular stop yields zero absorptions and four crossings');
+  await shot('native-circle-clear');
+  // The line and circle qualified exports can have the same base filename.
+  // The line export was already parsed; clear prior downloads so Chrome may
+  // reuse its filename without creating a false timeout.
+  for(const name of await readdir(downloads))if(name.endsWith('.json'))await rm(join(downloads,name));
+  await evaluate('document.getElementById("save-qualified").click()');
+  const circleName=await until(async()=>(await readdir(downloads)).find(n=>n.endsWith('.json')),
+    Boolean,'circle qualified export');
+  const circleFile=join(downloads,circleName),circleSaved=await parseQualifiedBundle(await readFile(circleFile,'utf8'));
+  assert.equal(circleSaved.scene.physics.components.find(c=>c.id==='B1').type,'circle-blocker');
+  assert.deepEqual(circleSaved.scene.physics.components.find(c=>c.id==='B1').parameters,{x:0,y:100,radius:10});
+  assert.ok(circleSaved.qualification.edits.some(e=>e.kind==='physics'));
+  await upload(circleFile);
+  s=await until(state,x=>x.status==='completed'&&x.results?.[0]?.value===0&&x.results?.[2]?.value===4,'circle reopen');
+  check('Portable circular stop export/reopen preserves radius, centre and qualification history');
+  await upload(circleBundles.blocked);await until(state,x=>x.status==='completed'&&x.results?.[0]?.value===6,'restore circle');
+  await edit('B1-x',60);
+  s=await until(state,x=>x.status==='invalid','circle detector tangency');
+  assert.equal(s.saveDisabled,true);assert.equal(s.fitDisabled,true);assert.equal(s.results,null);
+  check('Tangent circular stop and detector reject the revision before simulation');
+  await upload(circleBundles.blocked);
+  await until(state,x=>x.status==='completed'&&x.results?.[0]?.value===6,'circle restore final');
   assert.deepEqual(report.errors,[]);
 
   }catch(error){

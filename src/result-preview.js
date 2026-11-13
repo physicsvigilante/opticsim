@@ -2,6 +2,7 @@
 import {PRISM_TYPE,prismVertices} from './triangular-prism.js';
 import {POLYGON_TYPE,polygonVertices} from './polygon-dielectric.js';
 import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
+import {CIRCLE_BLOCKER_TYPE,circleBlockerExtents} from './opaque-circle-blocker.js';
 import {isCurved,curvedPoints} from './curved-mirrors.js';
 import {validate,mirrorEndpoints} from './contract.js';
 import {sceneHash} from './qualified-utils.js';
@@ -43,6 +44,7 @@ export function apparatusPoints(doc){
     if(c.type===PRISM_TYPE)return prismVertices(p);
      if(c.type===POLYGON_TYPE)return polygonVertices(p);
     if(c.type===CIRCULAR_TYPE)return circularExtents(p);
+    if(c.type===CIRCLE_BLOCKER_TYPE)return circleBlockerExtents(p);
     if(isCurved(c.type))return curvedPoints(c);
     if(c.type==='ideal-lens')return [{x:p.x,y:-p.apertureHeight/2},{x:p.x,y:p.apertureHeight/2}];
     if(c.type==='plane-mirror'||c.type==='ray-detector'||c.type==='line-blocker')return mirrorEndpoints(p);
