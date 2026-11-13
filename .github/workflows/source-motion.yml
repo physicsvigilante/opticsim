@@ -2,6 +2,8 @@ name: Quasi-static source motion checks
 on:
   pull_request:
     branches: [main, feature/curved-mirror-imaging]
+  push:
+    branches: [feature/quasi-static-source-motion]
 permissions:
   contents: read
 jobs:
