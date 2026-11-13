@@ -10,3 +10,24 @@
 #native-stage.camera-dragging,#image-plot.camera-dragging{cursor:grabbing}
 .camera-tools #camera-note{min-width:220px}
 @media(max-width:600px){.zoom-tools{order:2}.camera-tools #camera-note{order:3;flex-basis:100%}}
+
+
+/* Reuses existing physical source fields and numerical sampling policies. */
+.ray-settings{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:17px 19px;margin:18px 0}
+.ray-heading h2{font-size:17px;line-height:1.25;margin:0}
+.ray-heading p{font-size:12px;color:var(--muted);margin:6px 0 13px}
+.ray-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 18px;align-items:end}
+.ray-fields label{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ray-fields input:not([type=checkbox]),.ray-fields select{min-width:0;width:100%;border:1px solid #3b536e;border-radius:7px;background:#1c2c41;color:var(--text);padding:8px 9px;font-size:13px}
+.ray-fields input[type=range]{accent-color:var(--accent);padding:0}
+.ray-number-pair{display:flex;flex-direction:column;gap:3px}
+.ray-fields .ray-check{align-self:center;flex-direction:row;align-items:center;gap:8px;padding:14px 0 0}
+.ray-fields .ray-check input{accent-color:var(--accent)}
+.ray-advanced{margin:14px 0 0;padding:10px 12px}
+.ray-advanced .ray-fields{margin-top:12px}
+.ray-advanced p{font-size:12px;color:var(--muted)}
+#ray-control-note{padding:9px 0 0;margin:0;min-height:auto}
+#ray-control-error{background:#352128;border:1px solid #764f55;padding:9px 12px;border-radius:7px;font-size:13px;color:#ffd6ca}
+.ray-fields input:disabled,.ray-fields select:disabled{opacity:.56;cursor:not-allowed}
+@media(max-width:1100px){.ray-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.ray-fields{grid-template-columns:1fr}.ray-settings{padding:13px}.ray-fields .ray-check{padding:0}}
