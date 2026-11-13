@@ -33,7 +33,24 @@ async function main(){
   const state=()=>evaluate('({state:document.getElementById("native-state").dataset.state,time:document.getElementById("clock").textContent,index:document.getElementById("time").value,object:document.getElementById("object-value").textContent,image:document.getElementById("image-value").textContent,velocity:document.getElementById("velocity-value").textContent,model:document.getElementById("image-model").textContent,note:document.getElementById("plot-note").textContent,error:document.getElementById("error").hidden?null:document.getElementById("error").textContent,saveDisabled:document.getElementById("save-frame").disabled,playing:document.getElementById("play").disabled,assumptions:document.getElementById("assumptions").textContent})');
   const seek=i=>evaluate('(()=>{const e=document.getElementById("time");e.value="'+i+'";e.dispatchEvent(new Event("input",{bubbles:true}));})()');
   const upload=async path=>{const dom=await cdp.send('DOM.getDocument',{depth:-1}),input=await cdp.send('DOM.querySelector',{nodeId:dom.root.nodeId,selector:'#open-motion'});await cdp.send('DOM.setFileInputFiles',{nodeId:input.nodeId,files:[path]});};
-  const shot=async name=>{const r=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});await writeFile(join(out,name+'.png'),Buffer.from(r.data,'base64'));report.screenshots.push(name+'.png');};
+  const shot=async name=>{
+   const ready=s=>['completed','completed-with-warnings'].includes(s.state)&&!s.saveDisabled;
+   const before=await until(state,ready,'frame before screenshot');
+   const layout=await cdp.send('Page.getLayoutMetrics');
+   // Make the full-page viewport explicit and let the real application render
+   // it. Capturing during the resize invalidation would document an empty
+   // pending frame and could make a following click hit a disabled Save button.
+   await cdp.send('Emulation.setDeviceMetricsOverride',{width:1500,
+    height:Math.min(8000,Math.max(1100,Math.ceil(layout.cssContentSize.height)+32)),
+    deviceScaleFactor:1,mobile:false});
+   await sleep(200);
+   await until(state,s=>ready(s)&&s.index===before.index,'screenshot native redraw');
+   const r=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+   await writeFile(join(out,name+'.png'),Buffer.from(r.data,'base64'));report.screenshots.push(name+'.png');
+   await cdp.send('Emulation.clearDeviceMetricsOverride');
+   await sleep(200);
+   await until(state,s=>ready(s)&&s.index===before.index,'restore viewport after screenshot');
+  };
   const check=name=>report.checks.push({name,status:'pass'});
   await cdp.send('Page.navigate',{url:origin+'/motion.html'});
   let s=await until(state,s=>s.state==='completed'&&s.index==='0','initial native frame');
