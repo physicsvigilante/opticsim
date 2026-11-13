@@ -164,6 +164,38 @@ accepted. In problems where a detector or partial Fresnel reflection is
 important, changing brightness and sampling can affect numerical/native
 readouts, so their choice must be visible in the evidence.
 
+## Mirror aperture (physical size, not zoom)
+
+The existing **Mirror aperture height** parameter is also available as a simple
+centimetre input with a quick 1–20 cm slider in the collapsible controls.
+The baseline U2 illustration starts at **6 cm**. Exact numeric input can
+specify other valid lengths; the slider adapts to an imported aperture
+outside its usual range. Both controls edit only the existing canonical
+`mirror.parameters.apertureHeight` in **millimetres**, after explicit
+unit conversion.
+
+This resizes the actual finite reflecting surface used by pinned PhyDemo.
+It does **not** scale the entire picture, change focal length or curvature
+radius, reposition the mirror, modify source motion, replace native reflection
+with analytical tracing, or infer a new textbook dimension. A larger aperture
+may intercept more sampled native rays; it does not change the ideal/paraxial
+mirror-equation image position for unchanged object and focal properties.
+
+Every edit is validated using the **existing** v6 curved-mirror geometry
+rules and the full constant-velocity source path. In particular, circular
+arcs must remain nondegenerate and sources must remain clear of the
+conservatively bounded aperture throughout the motion. An impossible or
+out-of-scope size is rejected, not silently clipped to the slider end or
+converted into a successful native run. The original illustrative 6 cm
+assumption remains explicitly **historical** after a revision, and the UI
+labels the current accepted size. The `recordQualifiedEdit` physical
+history and new experiment hash preserve this distinction on save/reopen.
+
+This reuses an already supported parameter, not a new component, engine,
+geometry formula, authoring dialect or problem-specific case branch.
+Other mirror/object problems can therefore reuse the same control without
+changing how the LLM supplies their physical facts.
+
 ## Minimal bounded motion declaration
 
 ```json
