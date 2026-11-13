@@ -222,6 +222,12 @@ async function main(){
   assert.match(lensState.image,/x 70/);
   assert.match(lensState.velocity,/x 25/);
   assert.match(lensState.assumptions,/Synthetic demonstration/);
+  // Native-completed counters alone do not establish that the display is
+  // useful. Check actual visible canvas drawing, independent of the dashed
+  // calculated image overlay, at the automatically selected current-frame fit.
+  const nativeRayPixels=()=>evaluate("(()=>{let n=0;for(const id of ['light','above','below']){const c=document.getElementById(id),p=c.getContext('2d').getImageData(0,0,c.width,c.height).data;for(let i=3;i<p.length;i+=4)if(p[i]>0)n++;}return n;})()");
+  assert.equal(await evaluate("document.getElementById('camera-mode').value"),'frame');
+  assert.ok(await nativeRayPixels()>80,'Completed native lens trace must draw a meaningful number of actual ray/surface pixels');
   check('Synthetic thin lens runs actual native rays with separate conditional real image and velocity');
   await shot('lens-real-image');
   await seek(40);
