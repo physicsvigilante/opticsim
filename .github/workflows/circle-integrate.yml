@@ -1,0 +1,62 @@
+name: Circular dielectric source integration (temporary branch only)
+on:
+  push:
+    branches: [feature/circular-dielectric]
+    paths:
+      - .circle-build.mjs
+      - .circle-stage.mjs
+      - .github/workflows/circle-integrate.yml
+      - src/circular-dielectric.js
+      - test/circular-dielectric.test.mjs
+      - scripts/circular-dielectric-acceptance.mjs
+      - scripts/circular-dielectric-browser.mjs
+permissions:
+  contents: write
+jobs:
+  validate-and-stage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: node .circle-build.mjs
+      - run: npm run setup
+      - name: Full Node suite
+        shell: bash
+        run: |
+          mkdir -p test-artifacts/ci-circle-integration
+          { git rev-parse HEAD; node --version; google-chrome --version; sha256sum upstream-pin.json; } > test-artifacts/ci-circle-integration/runtime.txt
+          npm test | tee test-artifacts/ci-circle-integration/node-test.log
+      - run: npm run build
+      - run: node scripts/circular-dielectric-acceptance.mjs
+      - run: node scripts/circular-dielectric-browser.mjs
+      - run: node scripts/planar-refraction-acceptance.mjs
+      - run: node scripts/planar-refraction-browser.mjs
+      - run: node scripts/pack-demo.mjs
+      - name: Stage exact tested Git tree, without changing any branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .circle-stage.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: circle-integration-evidence
+          path: |
+            test-artifacts/ci-circle-integration/
+            test-artifacts/llm-authoring/circular-dielectric/
+            test-artifacts/browser-circular-dielectric/
+            test-artifacts/llm-authoring/planar-refraction/
+            test-artifacts/browser-planar-refraction/
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: opticsim-circular-dielectric-static-viewer
+          path: test-artifacts/demo-site/
+          if-no-files-found: error
+          retention-days: 7

@@ -1,0 +1,27 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "cm",
+    "title": "Synthetic circular dielectric: native refraction, not image detection",
+    "components": [
+      {"id":"S1","type":"point-source","parameters":{"x":-30,"y":3,"brightness":0.5},"emission":{"mode":"single-ray","directionDeg":0}},
+      {"id":"G1","type":"circular-dielectric","parameters":{"x":0,"y":0,"radius":10,"insideIndex":1.5,"outsideIndex":1,"partialReflection":false}},
+      {"id":"D1","type":"ray-detector","parameters":{"x":20,"y":0,"orientationDeg":90,"length":20}}
+    ]
+  },
+  "requests": [
+    {"id":"encounters","kind":"interface-interactions","componentId":"G1"},
+    {"id":"entry-transmission","kind":"interface-transmission-angle","componentId":"G1"},
+    {"id":"first-native-event","kind":"interface-first-event","componentId":"G1"},
+    {"id":"detected-crossings","kind":"detector-crossings","componentId":"D1"}
+  ],
+  "interpretation": {
+    "requestedResult":"Demonstrate one explicitly supplied circular region through shared authoring, native measurements and qualified export.",
+    "stated":[],
+    "derived":[],
+    "assumptions":["Entire configuration is synthetic software-control data, not an original textbook question.","The homogeneous circular region is a 2D cross section in one uniform outside medium.","partialReflection=false explicitly omits Fresnel partial reflections while retaining native total internal reflection."],
+    "unknowns":["No image location, apparent depth, full 3D sphere or textbook answer is inferred."]
+  },
+  "illustration":false,
+  "verifyNative":false
+}
