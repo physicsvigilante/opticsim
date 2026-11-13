@@ -50,6 +50,10 @@ export class MotionRayUI{
   $('ray-custom-density').value=v.rayDensity;
   $('ray-custom-density').disabled=this.busy||v.densityPreset!=='custom';
   $('ray-source-mode').value=v.emissionMode;
+  // The historical strict v4 thin-lens scene supports full-circle and
+  // directional emission; v6 curved scenes also support a native single ray.
+  $('ray-source-mode').querySelector('option[value="single-ray"]').disabled=
+   v.mirrorType==='ideal-lens';
   $('ray-direction').value=v.directionDeg;
   $('ray-opening').value=v.angleDeg;
   $('ray-opening').disabled=this.busy||v.emissionMode!=='directional';
@@ -67,12 +71,16 @@ export class MotionRayUI{
   slider.max=String(Math.max(20,Math.ceil(apertureCm*2)/2));
   slider.step=apertureCm<1?'0.1':'0.5';
   slider.value=String(apertureCm);
-  $('mirror-aperture-kind').textContent=v.mirrorType==='circular-arc-mirror'?
+  $('mirror-aperture-kind').textContent=v.mirrorType==='ideal-lens'?
+   'Ideal thin lens · native refraction':v.mirrorType==='circular-arc-mirror'?
    'Circular arc · local-normal native reflection':'Ideal Gaussian curved mirror';
+  document.querySelector('label[for="mirror-aperture-cm"]').textContent=
+   v.mirrorType==='ideal-lens'?'Lens aperture height (cm) — physical size':
+   'Mirror aperture height (cm) — physical size';
   $('mirror-aperture-note').textContent=
    'Quick slider is typically 1–20 cm; precise number accepts any supported size. '+
-   'This changes the reflecting surface, not zoom. Focal length/radius and source motion remain unchanged. '+
-   'Circular geometry and full source trajectory may impose stricter bounds.';
+   (v.mirrorType==='ideal-lens'?'This changes the native lens aperture, not zoom. Focal length and source motion remain fixed; the source must remain left of the lens.':
+    'This changes the reflecting surface, not zoom. Focal length/radius and source motion remain unchanged. Circular geometry and the entire trajectory may impose stricter bounds.');
   const edits=model.baseline.qualification.edits.length;
   $('ray-control-note').textContent='Brightness and emission are physical; density and limits affect native ray sampling; grid and extended view are presentation. '+
    (v.emissionMode==='single-ray'?'One exact ray: density will not make a cone. ':
