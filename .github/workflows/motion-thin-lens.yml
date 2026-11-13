@@ -1,0 +1,45 @@
+name: Moving-source thin-lens checks
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feature/motion-thin-lens]
+permissions:
+  contents: read
+jobs:
+  lens-motion:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify browser runtime
+        run: google-chrome --version
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - run: npm test
+      - run: node scripts/motion-acceptance.mjs
+      - run: node scripts/motion-lens-acceptance.mjs
+      - run: npm run build:motion
+      - run: node scripts/pack-motion.mjs
+      - run: node scripts/motion-browser.mjs
+      - run: node scripts/motion-viewport-browser.mjs
+      - run: node scripts/motion-audit-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lens-motion-evidence
+          path: |
+            test-artifacts/llm-authoring/source-motion/
+            test-artifacts/llm-authoring/lens-motion/
+            test-artifacts/browser-source-motion/
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: opticsim-lens-and-mirror-motion-demo
+          path: test-artifacts/motion-demo/
+          if-no-files-found: error
+          retention-days: 14
