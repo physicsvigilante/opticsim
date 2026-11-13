@@ -422,3 +422,16 @@ includes **Synthetic: circular dielectric**. Full-Fresnel or trapped-ray
 truncation remains incomplete; explicit Fresnel-off is labelled as an
 approximation, not a numerical repair. Earlier sealed evaluations are not
 rewritten or counted as new successes.
+
+### Finite triangular prism (v8)
+
+A single `triangular-prism` is specified by three vertices, explicit inside/outside
+indices and reflection policy. It reuses pinned native `Glass`, the unified
+problem workflow, the same viewer and qualified exports. One to four explicit
+single rays may start inside or outside; up to two external detectors are allowed.
+Existing interface measurements now include bounded first events per prism face.
+See [`docs/TRIANGULAR-PRISM.md`](docs/TRIANGULAR-PRISM.md) and the synthetic
+[`examples/triangular-prism.json`](examples/triangular-prism.json). Select the
+triangular-prism example after building, or load a qualified acceptance bundle.
+Truncated Fresnel runs remain incomplete; no arbitrary polygon, nested medium,
+image detector, new motion model or textbook-specific solver is implied.

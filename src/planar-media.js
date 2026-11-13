@@ -1,5 +1,6 @@
 // Native planar-medium adapter and bounded read-only interaction observation.
 // No Snell/Fresnel implementation, ray routing, intensity repair or resampling.
+import {PRISM_TYPE,prismFaces,prismEncounter} from './triangular-prism.js';
 import {CIRCULAR_TYPE,circularEncounter} from './circular-dielectric.js';
 export const PLANAR_TYPE='planar-interface';
 export const PLANAR_PARAMETERS=Object.freeze(['x','y','normalDeg','negativeIndex','positiveIndex','partialReflection']);
@@ -48,16 +49,17 @@ const direction=ray=>{
 const power=ray=>ray.brightness_s+ray.brightness_p;
 const angle=(d,n)=>d?Math.atan2(Math.abs(d.x*n.y-d.y*n.x),Math.abs(d.x*n.x+d.y*n.y))*180/Math.PI:null;
 export function observeInterfaceSet(doc,scene,idMap){
-  const entries=doc.physics.components.filter(c=>c.type===PLANAR_TYPE||c.type===CIRCULAR_TYPE).map(component=>{
+  const entries=doc.physics.components.filter(c=>c.type===PLANAR_TYPE||c.type===CIRCULAR_TYPE||c.type===PRISM_TYPE).map(component=>{
     const native=scene.objs[idMap.get(component.id)],original=native.onRayIncident;
-    const circular=component.type===CIRCULAR_TYPE;
-    const meter={interactions:0,transmitted:0,reflected:0,totalInternalReflections:0,first:null,invalidObservations:0};
+    const circular=component.type===CIRCULAR_TYPE,prism=component.type===PRISM_TYPE;
+    const meter={interactions:0,transmitted:0,reflected:0,totalInternalReflections:0,first:null,invalidObservations:0,
+      ...(prism?{faces:Object.fromEntries(prismFaces(component.parameters).map(f=>[f.id,{interactions:0,first:null}]))}:{})};
     native.onRayIncident=function(...args){
       const incoming=direction(args[0]),beforePower=power(args[0]);
-      const encounter=circular?circularEncounter(component,args[2],incoming):null;
+      const encounter=prism?prismEncounter(component,args[2],incoming):circular?circularEncounter(component,args[2],incoming):null;
       const n=encounter?.normal||interfaceNormal(component.parameters);
       const incomingSign=incoming?Math.sign(incoming.x*n.x+incoming.y*n.y):0;
-      if(circular&&(!incoming||![n.x,n.y,encounter.point.x,encounter.point.y].every(Number.isFinite)||
+      if((circular||prism)&&(!incoming||![n.x,n.y,encounter.point.x,encounter.point.y].every(Number.isFinite)||
         Math.abs(incoming.x*n.x+incoming.y*n.y)<1e-10))meter.invalidObservations++;
       // Delegate exactly once, with identical arguments and return object.
       const returned=original.apply(this,args);
@@ -69,14 +71,15 @@ export function observeInterfaceSet(doc,scene,idMap){
           angleDeg:angle(d,n),direction:d,relativePower:brightness};
       }).filter(Boolean);
       const transmitted=branches.find(b=>b.kind==='transmitted'),reflected=branches.find(b=>b.kind==='reflected');
-      // In the pinned PlaneGlass/CircleGlass implementations the TIR path alone returns
+      // In the pinned PlaneGlass/CircleGlass/Glass implementations the TIR path alone returns
       // undefined and leaves the reflected primary ray. Near-critical cases
       // retain the native decision; we do not reclassify using our own optics.
       const tir=returned===undefined&&!!reflected;
       meter.interactions++;meter.transmitted+=Number(!!transmitted);meter.reflected+=Number(!!reflected);
       meter.totalInternalReflections+=Number(tir);
-      if(!meter.first)meter.first={incidentAngleDeg:angle(incoming,n),
+      const event={incidentAngleDeg:angle(incoming,n),
         ...(encounter?{pointMm:encounter.point,outwardNormal:encounter.normal}:{}),
+        ...(prism?{faceId:encounter.faceId,incidentDirection:incoming}:{}),
         from:encounter?.from??(incomingSign>0?'negative':'positive'),
         incidentIndex:encounter?.incidentIndex??(incomingSign>0?component.parameters.negativeIndex:component.parameters.positiveIndex),
         destinationIndex:encounter?.destinationIndex??(incomingSign>0?component.parameters.positiveIndex:component.parameters.negativeIndex),
@@ -85,6 +88,8 @@ export function observeInterfaceSet(doc,scene,idMap){
         transmittedAngleDeg:transmitted?.angleDeg??null,reflectedAngleDeg:reflected?.angleDeg??null,
         incidentRelativePower:beforePower,branches,partialReflection:component.parameters.partialReflection,
         nativeTruncation:returned?.truncation||0,rayIndex:args[1]};
+      if(!meter.first)meter.first=event;
+      if(prism&&encounter.faceId){const face=meter.faces[encounter.faceId];face.interactions++;if(!face.first)face.first=event;}
       return returned;
     };
     return [component.id,meter];

@@ -4,12 +4,13 @@ import {validate} from './contract.js';
 import {predict} from './analysis.js';
 import {sceneHash,isRecord,boundedText} from './qualified-utils.js';
 const kinds=Object.freeze({
-  'interface-interactions':{type:['planar-interface','circular-dielectric'],unit:'sampled interactions'},
-  'interface-incidence-angle':{type:['planar-interface','circular-dielectric'],unit:'degrees from normal; first native encounter'},
-  'interface-transmission-angle':{type:['planar-interface','circular-dielectric'],unit:'degrees from normal; first native encounter'},
-  'interface-reflection-angle':{type:['planar-interface','circular-dielectric'],unit:'degrees from normal; first native encounter'},
-  'interface-tir-count':{type:['planar-interface','circular-dielectric'],unit:'native TIR interactions'},
-  'interface-first-event':{type:['planar-interface','circular-dielectric'],unit:'native event; directions y-up; power relative'},
+  'interface-interactions':{type:['planar-interface','circular-dielectric','triangular-prism'],unit:'sampled interactions'},
+  'interface-incidence-angle':{type:['planar-interface','circular-dielectric','triangular-prism'],unit:'degrees from normal; first native encounter'},
+  'interface-transmission-angle':{type:['planar-interface','circular-dielectric','triangular-prism'],unit:'degrees from normal; first native encounter'},
+  'interface-reflection-angle':{type:['planar-interface','circular-dielectric','triangular-prism'],unit:'degrees from normal; first native encounter'},
+  'interface-tir-count':{type:['planar-interface','circular-dielectric','triangular-prism'],unit:'native TIR interactions'},
+  'interface-first-event':{type:['planar-interface','circular-dielectric','triangular-prism'],unit:'native event; directions y-up; power relative'},
+  'interface-face-events':{type:'triangular-prism',unit:'bounded first native encounter and total count per finite face'},
   'source-emissions':{type:'point-source',unit:'sampled rays'},
   'mirror-reflections':{type:['plane-mirror','ideal-curved-mirror','circular-arc-mirror'],unit:'sampled interactions'},
   'detector-crossings':{type:'ray-detector',unit:'sampled crossings'},
@@ -63,7 +64,7 @@ export async function evaluateObservables(doc,requests,execution){
   const fresh=execution?.canonicalSha256===canonicalSha256;
   const complete=fresh&&execution.executionPassed===true&&
     ['completed','completed-with-warnings'].includes(execution.native?.status);
-  const warnings=[...(execution?.native?.warnings||[]),...doc.physics.components.filter(c=>['planar-interface','circular-dielectric'].includes(c.type)&&!c.parameters.partialReflection)
+  const warnings=[...(execution?.native?.warnings||[]),...doc.physics.components.filter(c=>['planar-interface','circular-dielectric','triangular-prism'].includes(c.type)&&!c.parameters.partialReflection)
     .map(c=>c.id+': explicit transmitted-only approximation omits Fresnel partial reflections; native TIR remains active.')];
   const results=requests.map(r=>{
     const base={...r,status:'unavailable',value:null,method:null,unit:null,reason:null};
@@ -84,13 +85,13 @@ export async function evaluateObservables(doc,requests,execution){
     const o=execution.observations;
     if(r.kind.startsWith('interface-')){
       const meter=o?.interfacesById?.[r.componentId],event=meter?.first;
-      const value=r.kind==='interface-interactions'?meter?.interactions:r.kind==='interface-tir-count'?meter?.totalInternalReflections:
+      const value=r.kind==='interface-face-events'?meter?.faces:r.kind==='interface-interactions'?meter?.interactions:r.kind==='interface-tir-count'?meter?.totalInternalReflections:
         r.kind==='interface-first-event'?event:r.kind==='interface-incidence-angle'?event?.incidentAngleDeg:
         r.kind==='interface-transmission-angle'?event?.transmittedAngleDeg:event?.reflectedAngleDeg;
-      if(value==null||r.kind!=='interface-first-event'&&!Number.isFinite(value))return {...base,unit:spec.unit,
+      if(value==null||!['interface-first-event','interface-face-events'].includes(r.kind)&&!Number.isFinite(value))return {...base,unit:spec.unit,
         reason:!event?'No native encounter was recorded.':'The first native encounter has no requested outgoing branch ('+event.outcome+').'};
       return {...base,status:warnings.length?'qualified':'available',value,method:'native-observation',unit:spec.unit,warnings,
-        limitation:'First encounter is simulation-order dependent, not source attribution or a whole ray path. Angles use actual native directions; no missing branch is invented.'};
+        limitation:'First encounter (per face when requested) is simulation-order dependent, not source attribution or a whole ray path. Angles use actual native directions; no missing branch is invented.'};
     }
     const value=r.kind==='source-emissions'?o?.emissionsById?.[r.componentId]?.emitted:
       r.kind==='mirror-reflections'?o?.reflectionsById?.[r.componentId]:

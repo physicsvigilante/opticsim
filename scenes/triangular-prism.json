@@ -1,0 +1,67 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 8,
+  "adapterVersion": 8,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "triangular-prism-tracing",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -200,
+          "y": 20,
+          "brightness": 0.5
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 0,
+          "angleDeg": 30
+        }
+      },
+      {
+        "id": "P1",
+        "type": "triangular-prism",
+        "parameters": {
+          "x1": 0,
+          "y1": -100,
+          "x2": 0,
+          "y2": 100,
+          "x3": 115.47005383792516,
+          "y3": -100,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 250,
+          "y": -40,
+          "orientationDeg": 90,
+          "length": 300
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "Synthetic triangular prism: native face refraction",
+    "view": {
+      "x": 25,
+      "y": -40,
+      "zoom": 1.4166666666666667
+    },
+    "mode": "rays",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000
+  }
+}

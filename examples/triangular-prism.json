@@ -1,0 +1,25 @@
+{
+  "format":"opticsim-problem-v1",
+  "physical":{
+    "lengthUnit":"cm",
+    "title":"Synthetic triangular prism: native face refraction",
+    "components":[
+      {"id":"S1","type":"point-source","parameters":{"x":-20,"y":2,"brightness":0.5},"emission":{"mode":"single-ray","directionDeg":0}},
+      {"id":"P1","type":"triangular-prism","parameters":{"x1":0,"y1":-10,"x2":0,"y2":10,"x3":11.547005383792516,"y3":-10,"insideIndex":1.5,"outsideIndex":1,"partialReflection":false}},
+      {"id":"D1","type":"ray-detector","parameters":{"x":25,"y":-4,"orientationDeg":90,"length":30}}
+    ]
+  },
+  "requests":[
+    {"id":"encounters","kind":"interface-interactions","componentId":"P1"},
+    {"id":"faces","kind":"interface-face-events","componentId":"P1"},
+    {"id":"first","kind":"interface-first-event","componentId":"P1"},
+    {"id":"detector","kind":"detector-crossings","componentId":"D1"}
+  ],
+  "interpretation":{
+    "requestedResult":"Demonstrate explicitly supplied finite prism geometry, native entrance/exit face observations and portable results.",
+    "stated":[],"derived":[],
+    "assumptions":["Entire configuration is synthetic software-control data, not an original textbook question.","One stationary homogeneous triangular region in a uniform outside medium, represented in 2D.","partialReflection=false explicitly omits Fresnel partial reflections while retaining native total internal reflection."],
+    "unknowns":["No image, source-specific multi-ray path, symbolic prism proof or unseen-question answer is inferred."]
+  },
+  "illustration":false,"verifyNative":false
+}

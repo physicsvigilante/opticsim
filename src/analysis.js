@@ -8,6 +8,7 @@ export function predict(doc) {
     case 'lens-mirror-return-geometric': return predictReturn(doc);
     case 'mixed-lens-mirror-tracing': return { kind: 'unavailable',
       reason: 'Mixed lens–mirror tracing has no route-independent analytical image; native PhyDemo selects the actual ray encounters.' };
+    case 'triangular-prism-tracing': return {kind:'unavailable',reason:'Finite prism exposes native face observations, not an image solver.'};
     case 'circular-dielectric-tracing': return {kind:'unavailable',reason:'Finite circular dielectric exposes native boundary observations, not an image solver or a 3D sphere model.'};
     case 'planar-media-tracing': return {kind:'unavailable',reason:'Planar media expose native interface angles and branches, not an analytical image solver.'};
     case 'general-component-tracing': return { kind: 'unavailable',

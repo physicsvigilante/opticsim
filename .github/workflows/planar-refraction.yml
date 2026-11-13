@@ -34,6 +34,10 @@ jobs:
         run: node scripts/circular-dielectric-acceptance.mjs
       - name: Circular browser import, physical edits, incomplete results and export
         run: node scripts/circular-dielectric-browser.mjs
+      - name: Native finite prism, face events and vertex sweep
+        run: node scripts/triangular-prism-acceptance.mjs
+      - name: Prism browser edits, native TIR and qualified export
+        run: node scripts/triangular-prism-browser.mjs
       - name: Package existing allowlisted static viewer (not a deployment)
         run: node scripts/pack-demo.mjs
       - uses: actions/upload-artifact@v4
@@ -46,6 +50,8 @@ jobs:
             test-artifacts/browser-planar-refraction/
             test-artifacts/llm-authoring/circular-dielectric/
             test-artifacts/browser-circular-dielectric/
+            test-artifacts/llm-authoring/triangular-prism/
+            test-artifacts/browser-triangular-prism/
           if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v4
