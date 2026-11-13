@@ -1,0 +1,81 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "Synthetic opaque stop: directional source and passive detector",
+    "runPolicy": "preview-v1",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -200,
+          "y": 0,
+          "brightness": 0.08
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 0,
+          "angleDeg": 20
+        }
+      },
+      {
+        "id": "B1",
+        "type": "line-blocker",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 80
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 100,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 80
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "absorbed",
+      "kind": "blocker-absorptions",
+      "componentId": "B1"
+    },
+    {
+      "id": "emitted",
+      "kind": "source-emissions",
+      "componentId": "S1"
+    },
+    {
+      "id": "crossings",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "power",
+      "kind": "detector-signed-power",
+      "componentId": "D1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Native absorption and downstream detector crossings from a fully declared synthetic opaque finite stop",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "Synthetic, not reconstructed from JEE text.",
+      "The finite line is perfectly opaque and native Blocker absorbs actual hits; detector is passive.",
+      "The directional source emits finitely sampled rays, not a continuous light field."
+    ],
+    "unknowns": [
+      "Continuous shadow, observer visibility, 3D disc geometry, and any original JEE answer are not inferred."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}

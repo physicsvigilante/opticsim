@@ -1,0 +1,62 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 4,
+  "adapterVersion": 4,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "general-component-tracing",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -200,
+          "y": 0,
+          "brightness": 0.08
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 0,
+          "angleDeg": 20
+        }
+      },
+      {
+        "id": "B1",
+        "type": "line-blocker",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 80
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 100,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 80
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "Synthetic opaque stop: directional source and passive detector",
+    "view": {
+      "x": -50,
+      "y": 0,
+      "zoom": 2
+    },
+    "mode": "rays",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000
+  }
+}
