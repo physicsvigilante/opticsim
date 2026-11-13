@@ -50,6 +50,7 @@ export class MotionRayUI{
   $('ray-custom-density').value=v.rayDensity;
   $('ray-custom-density').disabled=this.busy||v.densityPreset!=='custom';
   $('ray-source-mode').value=v.emissionMode;
+  $('ray-source-mode').querySelector('option[value="single-ray"]').disabled=v.opticType==='ideal-lens';
   $('ray-direction').value=v.directionDeg;
   $('ray-opening').value=v.angleDeg;
   $('ray-opening').disabled=this.busy||v.emissionMode!=='directional';
@@ -58,7 +59,11 @@ export class MotionRayUI{
   $('ray-depth').value=v.maxRayDepth;
   $('ray-limit').value=v.processedRayLimit;
   // Only the browser label uses cm; canonical optical geometry stays in mm.
-  const apertureCm=v.mirrorApertureHeightMm/10;
+  const apertureCm=v.opticalApertureHeightMm/10;
+  const isLens=v.opticType==='ideal-lens';
+  document.querySelector('label[for="mirror-aperture-cm"]').textContent=
+   (isLens?'Lens':'Mirror')+' aperture height (cm) — physical size';
+  $('mirror-aperture-cm').setAttribute('aria-label',(isLens?'Lens':'Mirror')+' aperture height in centimetres');
   $('mirror-aperture-cm').value=String(apertureCm);
   const slider=$('mirror-aperture-slider');
   // Quick adjustment is 1–20 cm for typical scenes, but a valid imported
@@ -67,12 +72,13 @@ export class MotionRayUI{
   slider.max=String(Math.max(20,Math.ceil(apertureCm*2)/2));
   slider.step=apertureCm<1?'0.1':'0.5';
   slider.value=String(apertureCm);
-  $('mirror-aperture-kind').textContent=v.mirrorType==='circular-arc-mirror'?
-   'Circular arc · local-normal native reflection':'Ideal Gaussian curved mirror';
+  $('mirror-aperture-kind').textContent=isLens?'Ideal thin lens · native PhyDemo':
+   v.mirrorType==='circular-arc-mirror'?'Circular arc · local-normal native reflection':'Ideal Gaussian curved mirror';
   $('mirror-aperture-note').textContent=
    'Quick slider is typically 1–20 cm; precise number accepts any supported size. '+
-   'This changes the reflecting surface, not zoom. Focal length/radius and source motion remain unchanged. '+
-   'Circular geometry and full source trajectory may impose stricter bounds.';
+   'This changes the physical '+(isLens?'transmitting lens':'reflecting mirror')+' aperture, not zoom. '+
+   'Focal length/radius and source motion remain unchanged. '+
+   'Full source trajectory and geometry validators may impose stricter bounds.';
   const edits=model.baseline.qualification.edits.length;
   $('ray-control-note').textContent='Brightness and emission are physical; density and limits affect native ray sampling; grid and extended view are presentation. '+
    (v.emissionMode==='single-ray'?'One exact ray: density will not make a cone. ':
@@ -118,10 +124,10 @@ export class MotionRayUI{
   $('ray-grid').onchange=()=>this.apply({grid:$('ray-grid').checked});
   $('ray-depth').onchange=()=>this.submitNumber('ray-depth','maxRayDepth');
   $('ray-limit').onchange=()=>this.submitNumber('ray-limit','processedRayLimit');
-  // One existing native geometry parameter; the shared validator rejects
-  // source-path collisions and unsupported circular minor arcs.
+  // One existing native geometry parameter for lens or mirror; the shared
+  // validator rejects out-of-scope continuous source paths and arcs.
   const editAperture=id=>{
-   try{this.apply({mirrorApertureHeightMm:numeric(id)*10});}
+   try{this.apply({opticalApertureHeightMm:numeric(id)*10});}
    catch(error){this.error(error);this.sync();}
   };
   $('mirror-aperture-slider').oninput=()=>{
