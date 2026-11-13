@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
-import {collectMotionView,fitMotionView,projectMotionPoint} from '../src/motion-viewport.js';
+import {collectMotionView,fitMotionView,projectMotionPoint,defaultMotionCameraControl,applyMotionCameraControl,stepMotionCameraZoom,panMotionCameraByPixels,MOTION_VIEW_LIMITS,MOTION_CAMERA_CONTROLS} from '../src/motion-viewport.js';
 import {prepareMotionExperiment} from '../src/source-motion.js';
 import {serializeSave} from '../src/contract.js';
 import {makeU2Motion} from '../src/motion-example.js';
@@ -70,5 +70,68 @@ test('fitted camera uses the actual native transform and does not change ray cou
    assert.equal(serializeSave(frame.scene),baseline);
   }
   assert.equal(serializeSave(model.baseline.scene),before);
+ }
+});
+
+test('zoom is a presentation-only multiplier for arbitrary motion subjects, not U2-specific optics',()=>{
+ const points={optics:[{x:100,y:40},{x:120,y:-20}],objects:[{x:-70,y:30},{x:-20,y:20}],
+   images:[{x:450,y:100},{x:500,y:120}],omittedImages:0,nonfiniteImages:0};
+ const old=JSON.stringify(points),fit=fitMotionView(points,780,420);
+ const start=defaultMotionCameraControl(),unchanged=applyMotionCameraControl(fit,start);
+ assert.equal(unchanged.view.zoom,fit.view.zoom);
+ let zoom=stepMotionCameraZoom(fit,start,1),inView=applyMotionCameraControl(fit,zoom);
+ assert.ok(inView.camera.scale>unchanged.camera.scale);
+ assert.ok(Math.abs(inView.camera.scale/unchanged.camera.scale-1.5)<1e-10);
+ const outView=applyMotionCameraControl(fit,stepMotionCameraZoom(fit,zoom,-1));
+ assert.ok(Math.abs(outView.camera.scale-fit.view.zoom)<1e-10);
+ assert.deepEqual(points,JSON.parse(old));
+ assert.deepEqual(fit.view,fitMotionView(points,780,420).view);
+});
+test('pointer-anchored zoom preserves the exact world point beneath the cursor',()=>{
+ const fit=fitMotionView({optics:[{x:-20,y:50},{x:5,y:0}],objects:[{x:120,y:75}],
+  images:[{x:-400,y:-30}],omittedImages:0,nonfiniteImages:0},800,400);
+ const anchor={x:157,y:301},world={x:-130,y:25};
+ const old=applyMotionCameraControl(fit,defaultMotionCameraControl()).camera;
+ const positionBefore=projectMotionPoint(world,old,0);
+ let control=stepMotionCameraZoom(fit,defaultMotionCameraControl(),1,anchor);
+ let after=applyMotionCameraControl(fit,control).camera;
+ const anchorWorld={x:(anchor.x-old.origin.x)/old.scale,y:(old.origin.y-anchor.y)/old.scale};
+ const beforeAt=projectMotionPoint(anchorWorld,old,0),afterAt=projectMotionPoint(anchorWorld,after,0);
+ assert.ok(Math.abs(beforeAt.x-anchor.x)<1e-7);
+ assert.ok(Math.abs(beforeAt.y-anchor.y)<1e-7);
+ assert.ok(Math.abs(afterAt.x-anchor.x)<1e-7);
+ assert.ok(Math.abs(afterAt.y-anchor.y)<1e-7);
+ assert.ok(positionBefore.x!==projectMotionPoint(world,after,0).x);
+});
+test('dragging pans in screen directions, does not alter physics, and respects camera coordinate limits',()=>{
+ const fit=fitMotionView({optics:[{x:0,y:0}],objects:[{x:-250,y:0}],
+  images:[{x:-1000,y:0}],omittedImages:0,nonfiniteImages:0},750,360);
+ const world={x:-250,y:0};
+ const control=defaultMotionCameraControl(),before=applyMotionCameraControl(fit,control);
+ const afterControl=panMotionCameraByPixels(fit,control,48,-32);
+ const after=applyMotionCameraControl(fit,afterControl);
+ const p=projectMotionPoint(world,before.camera,0),q=projectMotionPoint(world,after.camera,0);
+ assert.ok(Math.abs(q.x-p.x-48)<1e-8);
+ assert.ok(Math.abs(q.y-p.y+32)<1e-8);
+ assert.ok(Math.abs(after.view.x)<=MOTION_VIEW_LIMITS.maxCenter);
+ assert.ok(Math.abs(after.view.y)<=MOTION_VIEW_LIMITS.maxCenter);
+ assert.throws(()=>panMotionCameraByPixels(fit,control,NaN,4),/Invalid bounded/);
+ assert.throws(()=>applyMotionCameraControl(fit,{zoomFactor:Infinity,panMm:{x:0,y:0}}),/Invalid bounded/);
+});
+test('zoom bounds and automatic fits stay reproducible after non-sequential scrubbing',()=>{
+ const model=sampleModel(),subjects=collectMotionView(model),fit=fitMotionView(subjects,697,360);
+ let control=defaultMotionCameraControl();
+ for(let i=0;i<40;i++)control=stepMotionCameraZoom(fit,control,1);
+ assert.ok(control.zoomFactor<=MOTION_CAMERA_CONTROLS.maxRelativeZoom);
+ const max=applyMotionCameraControl(fit,control);
+ assert.ok(max.view.zoom<=MOTION_VIEW_LIMITS.maxZoom);
+ for(let i=0;i<80;i++)control=stepMotionCameraZoom(fit,control,-1);
+ assert.ok(control.zoomFactor>=MOTION_CAMERA_CONTROLS.minRelativeZoom);
+ const min=applyMotionCameraControl(fit,control);
+ assert.ok(min.view.zoom>=MOTION_VIEW_LIMITS.minZoom);
+ const fixed=applyMotionCameraControl(fit,{zoomFactor:2,panMm:{x:10,y:-5}});
+ for(const i of [60,0,30,5,60,0]){
+   const current=fitMotionView(subjects,697,360,{mode:'motion',frame:model.frame(i)});
+   assert.deepEqual(applyMotionCameraControl(current,{zoomFactor:2,panMm:{x:10,y:-5}}).camera,fixed.camera);
  }
 });
