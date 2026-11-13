@@ -8,10 +8,12 @@ permissions:
   contents: read
 jobs:
   motion:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Verify browser runtime
+        run: google-chrome --version
       - uses: actions/setup-node@v4
         with:
           node-version: '24.19.0'
