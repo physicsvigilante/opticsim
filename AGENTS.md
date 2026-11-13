@@ -91,3 +91,13 @@
   not three successful answers to the original inverse/material questions.
 - Image authoring uses the explicitly invoked repo skill `skills/sim-ro-image-to-scene/SKILL.md`. Keep provenance outside strict sandbox JSON, prefer labels over pixels, withhold scenes for essential unknowns/conflicts, and reject unsupported arrangements. The Node checker rebuilds/reuses the current core; execution success does not certify interpretation. Generated reports/previews stay in ignored `test-artifacts/image-to-scene/`.
 - After approval, routine implementation and focused testing may proceed within the agreed milestone. Ask before scope expansion, upstream physics changes, writes outside this workspace, committing, or pushing. Keep caches/build outputs inside this workspace where configurable.
+- Circular dielectric v7 is separate from v4/v5/v6: exactly one stationary
+  `circular-dielectric`, 1–4 explicit single rays inside/outside, 0–2 external
+  detectors. Require centre, positive radius and absolute inside/outside
+  indices plus partialReflection. Compile to pinned CircleGlass with the
+  index ratio; no custom refraction, image detection, circle motion, other
+  optics or nested finite media. Reuse boundary observations with the actual
+  local outward normal; counts span the entire circle and first-event is
+  simulator-order, not source attribution. Keep Fresnel/trapped-TIR truncation
+  incomplete, explicit Fresnel-off qualified, and initial near tangencies
+  rejected conservatively. Read docs/CIRCULAR-DIELECTRIC.md for bounds.

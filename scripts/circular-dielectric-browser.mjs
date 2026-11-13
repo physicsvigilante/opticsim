@@ -98,10 +98,10 @@ async function main(){
   await upload(b['outside-tir']);s=await until(state,s=>s.status==='completed'&&s.results?.[2]?.value.outcome==='total-internal-reflection','outside TIR');
   assert.equal(s.results[1].status,'unavailable');assert.equal(s.results[1].value,null);assert.equal(s.results[3].value,1);
   check('Native TIR at lower-index region shows reflected ray and no fabricated transmission');await shot('circular-outside-tir');
-  await upload(b['full-fresnel']);s=await until(state,s=>s.status==='incomplete'&&s.results?.every(r=>r.status==='suppressed'),'full Fresnel truncation');
-  assert.ok(s.results.every(r=>r.value===null));check('Full Fresnel truncation suppresses accepted native measurements');await shot('circular-fresnel-incomplete');
-  await upload(b['trapped-tir']);s=await until(state,s=>s.status==='incomplete'&&s.results?.length===3&&s.results.every(r=>r.status==='suppressed'),'trapped interior TIR');
-  check('Repeated interior TIR respects native depth limits and cannot display stale results');
+  await upload(b['full-fresnel']);s=await until(state,s=>s.status==='incomplete'&&s.title.endsWith('full-fresnel')&&s.results===null&&s.text.includes('suppressed'),'full Fresnel truncation');
+  assert.equal(s.results,null);assert.equal(s.fitDisabled,true);check('Full Fresnel truncation suppresses accepted native measurements');await shot('circular-fresnel-incomplete');
+  await upload(b['trapped-tir']);s=await until(state,s=>s.status==='incomplete'&&s.title.endsWith('trapped-tir')&&s.results===null&&s.text.includes('suppressed'),'trapped interior TIR');
+  assert.equal(s.fitDisabled,true);check('Repeated interior TIR respects native depth limits and cannot display stale results');
   await upload(b.miss);s=await until(state,s=>s.status==='completed'&&s.results?.[0]?.value===0,'native miss');
   assert.equal(s.results[1].status,'unavailable');assert.equal(s.results[2].status,'unavailable');check('A finite-circle miss reports zero interactions rather than a fake ray encounter');
   await upload(b.oblique);await until(state,s=>s.status==='completed'&&s.results?.[0]?.value===2,'restore');
