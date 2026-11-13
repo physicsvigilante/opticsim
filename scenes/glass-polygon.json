@@ -1,0 +1,69 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 9,
+  "adapterVersion": 9,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "polygon-glass-tracing",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -200,
+          "y": -10,
+          "brightness": 0.5
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 8,
+          "angleDeg": 30
+        }
+      },
+      {
+        "id": "G1",
+        "type": "glass-polygon",
+        "parameters": {
+          "x1": 0,
+          "y1": -80,
+          "x2": 0,
+          "y2": 80,
+          "x3": 120,
+          "y3": 80,
+          "x4": 120,
+          "y4": -80,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 240,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 180
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "Synthetic convex glass quadrilateral: native entry and exit",
+    "view": {
+      "x": 20,
+      "y": 0,
+      "zoom": 1.8214285714285714
+    },
+    "mode": "rays",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000
+  }
+}

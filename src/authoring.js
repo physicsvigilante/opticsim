@@ -2,6 +2,7 @@
 // Interpret/choose physics outside this module. No new ray tracing, geometry DSL,
 // physical parameter guessing, implicit native JSON or network service.
 import {PRISM_TYPE,prismVertices} from './triangular-prism.js';
+import {POLYGON_TYPE,polygonVertices} from './polygon-glass.js';
 import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
 import {isCurved,curvedPoints} from './curved-mirrors.js';
 import {validate,UPSTREAM,SAMPLING_PRESETS,COMPONENT_TYPES,componentParameterNames,
@@ -13,7 +14,7 @@ const policies=Object.freeze({
   'dense-v1':Object.freeze({rayDensity:SAMPLING_PRESETS.dense,maxRayDepth:8,processedRayLimit:10000})
 });
 const prefixes=Object.freeze({
-  'point-source':'source','ideal-lens':'lens','plane-mirror':'mirror','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism'
+  'point-source':'source','ideal-lens':'lens','plane-mirror':'mirror','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism',[POLYGON_TYPE]:'glass'
 });
 const lengthKeys=new Set(LENGTH_PARAMETERS);
 const own=(value,key)=>Object.prototype.hasOwnProperty.call(value,key);
@@ -53,6 +54,7 @@ export class AuthoringError extends Error {
 }
 export function capabilities() {
   return {
+    finitePolygonGlass:{schemaVersion:9,model:'polygon-glass-tracing',scope:'One stationary convex four-vertex glass region; 1–4 explicit single rays; 0–2 external detectors; no other optics or nested media',geometry:'Four ordered physical vertices in either winding; strictly convex, edges and local altitudes >=1 mm; native Glass chooses all actual interactions, no authored ray paths'},
     triangularPrisms:{schemaVersion:8,model:'triangular-prism-tracing',scope:'One stationary triangle; 1–4 explicit single rays; 0–2 external detectors; no other optics',geometry:'Three explicit vertices in either winding; edges and altitudes >=1 mm; initial corner rays excluded; no face route supplied'},
     interfaceVersion:1,canonicalFormat:'ray-optics-2d',schemaVersion:4,
     circularDielectric:{schemaVersion:7,model:'circular-dielectric-tracing',scope:'Exactly one stationary circular region; 1–4 explicit single rays inside or outside; 0–2 external detectors; no other optics or nested regions',indices:'Required inside/outside absolute indices [1,4]; native ratio inside/outside',radius:'Positive radius >=2 mm; complete circle within coordinate bounds',partialReflection:'Required boolean; false explicitly omits Fresnel partial reflections, not TIR',clearance:'0.01 mm source/boundary and detector/circle separation; initial forward near-tangent rays within 0.01 mm are unsupported'},
@@ -66,10 +68,11 @@ export function capabilities() {
       ...(type==='planar-interface'?{booleanParameters:['partialReflection'],nativeType:'PlaneGlass',normal:'negative to positive side; degrees CCW in y-up'}:{}),
       ...(type===CIRCULAR_TYPE?{booleanParameters:['partialReflection'],nativeType:'CircleGlass',indices:['insideIndex','outsideIndex'],geometry:'Finite 2D circle, not an ideal thin lens or a truncated sphere'}:{}),
       ...(type===PRISM_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-31'],geometry:'Three physical vertices; vertex order defines face labels, not a ray route'}:{}),
+      ...(type===POLYGON_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-34','face-41'],geometry:'Four ordered strictly convex vertices; one native Glass; source/face attribution not inferred'}:{}),
       counts:{...GENERAL_SCOPE[type]},
       ...(isCurved(type)?{nativeType:type==='ideal-curved-mirror'?'IdealMirror':'ArcMirror',model:type==='ideal-curved-mirror'?'ideal Gaussian mapping':'native circular local-normal reflection; analytical image is paraxial'}:{}),
       ...(type==='point-source'?{emission:{mode:['full-circle','directional'],curvedSceneModes:['full-circle','directional','single-ray'],
-        directionalFields:['directionDeg','angleDeg'],planarOnlyMode:'single-ray',circularOnlyMode:'single-ray',prismOnlyMode:'single-ray',singleRayFields:['directionDeg']}}:{})
+        directionalFields:['directionDeg','angleDeg'],planarOnlyMode:'single-ray',circularOnlyMode:'single-ray',prismOnlyMode:'single-ray',polygonOnlyMode:'single-ray',singleRayFields:['directionDeg']}}:{})
     }])),
     bounds:COMPONENT_BOUNDS,
     runPolicies:Object.fromEntries(Object.entries(policies).map(([id,value])=>[id,{...value}])),
@@ -167,6 +170,7 @@ function camera(components) {
     if(c.type==='point-source')vertices.push({x:p.x,y:p.y});
     else if(c.type===CIRCULAR_TYPE)vertices.push(...circularExtents(p));
     else if(c.type===PRISM_TYPE)vertices.push(...prismVertices(p));
+    else if(c.type===POLYGON_TYPE)vertices.push(...polygonVertices(p));
     else if(isCurved(c.type))vertices.push(...curvedPoints(c));
     else if(c.type==='ideal-lens')vertices.push({x:p.x,y:-p.apertureHeight/2},
       {x:p.x,y:p.apertureHeight/2});
@@ -207,11 +211,12 @@ export function prepareScene(request) {
   });
   const circular=components.some(c=>c.type===CIRCULAR_TYPE);
   const prism=components.some(c=>c.type===PRISM_TYPE);
+  const polygon=components.some(c=>c.type===POLYGON_TYPE);
   const planar=components.some(c=>c.type==='planar-interface'),curved=components.some(c=>isCurved(c.type));
   const doc={
-    format:'ray-optics-2d',schemaVersion:prism?8:circular?7:curved?6:planar?5:4,adapterVersion:prism?8:circular?7:curved?6:planar?5:4,upstreamCommit:UPSTREAM,
+    format:'ray-optics-2d',schemaVersion:polygon?9:prism?8:circular?7:curved?6:planar?5:4,adapterVersion:polygon?9:prism?8:circular?7:curved?6:planar?5:4,upstreamCommit:UPSTREAM,
     physics:{lengthUnit:'mm',coordinates:'x-right-y-up',
-      model:prism?'triangular-prism-tracing':circular?'circular-dielectric-tracing':curved?'curved-mirror-tracing':planar?'planar-media-tracing':'general-component-tracing',components},
+      model:polygon?'polygon-glass-tracing':prism?'triangular-prism-tracing':circular?'circular-dielectric-tracing':curved?'curved-mirror-tracing':planar?'planar-media-tracing':'general-component-tracing',components},
     presentation:{title,view:camera(components),mode:'rays',grid:false},
     simulation:{...policies[policyName]}
   };
@@ -257,7 +262,7 @@ export function reviseScene(document,patch){
     if(seen.has(identity)){issues.push(issue(path,'DUPLICATE_CHANGE','Update a field only once per revision'));continue;}
     seen.add(identity);
     if(change.section==='emission'&&change.key==='mode'){
-      if(own(change,'unit')||!(document.schemaVersion===6?['single-ray','full-circle','directional']:(document.schemaVersion===5||document.schemaVersion===7||document.schemaVersion===8)?['single-ray']:['full-circle','directional']).includes(change.value))
+      if(own(change,'unit')||!(document.schemaVersion===6?['single-ray','full-circle','directional']:(document.schemaVersion===5||document.schemaVersion===7||document.schemaVersion===8||document.schemaVersion===9)?['single-ray']:['full-circle','directional']).includes(change.value))
         issues.push(issue(path+'.value','INVALID_MODE','Expected full-circle or directional without units'));
       else component.emission.mode=change.value;
       continue;
