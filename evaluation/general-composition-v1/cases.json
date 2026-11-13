@@ -1,0 +1,1741 @@
+{
+  "format": "opticsim-synthetic-composition-matrix-v1",
+  "origin": "Deliberately constructed synthetic authored scenes, NOT an independent model evaluation",
+  "pinnedPhyDemoCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "schemaVersion": 4,
+  "cases": [
+    {
+      "id": "source-only",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition source-only",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "emitted",
+            "kind": "source-emissions"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic source-only",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 1,
+        "exitCode": 0,
+        "coverage": "all-requested-quantities-available",
+        "emitted": 6,
+        "bindings": 1
+      }
+    },
+    {
+      "id": "free-detector",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition free-detector",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "emitted",
+            "kind": "source-emissions",
+            "componentId": "S1"
+          },
+          {
+            "id": "crossings",
+            "kind": "detector-crossings",
+            "componentId": "D1"
+          },
+          {
+            "id": "power",
+            "kind": "detector-signed-power",
+            "componentId": "D1"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic free-detector",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 1,
+        "exitCode": 0,
+        "coverage": "all-requested-quantities-available",
+        "emitted": 6,
+        "crossings": 4
+      }
+    },
+    {
+      "id": "opaque-line",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition opaque-line",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "B1",
+              "type": "line-blocker",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "emitted",
+            "kind": "source-emissions",
+            "componentId": "S1"
+          },
+          {
+            "id": "absorbed",
+            "kind": "blocker-absorptions",
+            "componentId": "B1"
+          },
+          {
+            "id": "crossings",
+            "kind": "detector-crossings",
+            "componentId": "D1"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic opaque-line",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 1,
+        "exitCode": 0,
+        "coverage": "all-requested-quantities-available",
+        "emitted": 6,
+        "absorbed": 6,
+        "crossings": 0
+      }
+    },
+    {
+      "id": "opaque-circle",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition opaque-circle",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "B1",
+              "type": "circle-blocker",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "radius": 40
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "emitted",
+            "kind": "source-emissions",
+            "componentId": "S1"
+          },
+          {
+            "id": "absorbed",
+            "kind": "blocker-absorptions",
+            "componentId": "B1"
+          },
+          {
+            "id": "crossings",
+            "kind": "detector-crossings",
+            "componentId": "D1"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic opaque-circle",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 1,
+        "exitCode": 0,
+        "coverage": "all-requested-quantities-available",
+        "emitted": 6,
+        "absorbed": 6,
+        "crossings": 0
+      }
+    },
+    {
+      "id": "finite-aperture",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition finite-aperture",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "B1",
+              "type": "finite-aperture",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80,
+                "openingLength": 30
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "emitted",
+            "kind": "source-emissions",
+            "componentId": "S1"
+          },
+          {
+            "id": "absorbed",
+            "kind": "blocker-absorptions",
+            "componentId": "B1"
+          },
+          {
+            "id": "crossings",
+            "kind": "detector-crossings",
+            "componentId": "D1"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic finite-aperture",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 1,
+        "exitCode": 0,
+        "coverage": "all-requested-quantities-available",
+        "emitted": 6,
+        "partiallyAbsorbed": true
+      }
+    },
+    {
+      "id": "lens-in-aperture-gap",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition lens-in-aperture-gap",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "B1",
+              "type": "finite-aperture",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80,
+                "openingLength": 30
+              }
+            },
+            {
+              "id": "L1",
+              "type": "ideal-lens",
+              "parameters": {
+                "x": 0,
+                "focalLength": 100,
+                "apertureHeight": 20
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "emitted",
+            "kind": "source-emissions",
+            "componentId": "S1"
+          },
+          {
+            "id": "absorbed",
+            "kind": "blocker-absorptions",
+            "componentId": "B1"
+          },
+          {
+            "id": "crossings",
+            "kind": "detector-crossings",
+            "componentId": "D1"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic lens-in-aperture-gap",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 1,
+        "exitCode": 0,
+        "coverage": "all-requested-quantities-available",
+        "emitted": 6
+      }
+    },
+    {
+      "id": "circle-in-aperture-gap",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition circle-in-aperture-gap",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "B1",
+              "type": "finite-aperture",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80,
+                "openingLength": 30
+              }
+            },
+            {
+              "id": "C2",
+              "type": "circle-blocker",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "radius": 5
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "emitted",
+            "kind": "source-emissions",
+            "componentId": "S1"
+          },
+          {
+            "id": "absorbed",
+            "kind": "blocker-absorptions",
+            "componentId": "B1"
+          },
+          {
+            "id": "circle-absorbed",
+            "kind": "blocker-absorptions",
+            "componentId": "C2"
+          },
+          {
+            "id": "crossings",
+            "kind": "detector-crossings",
+            "componentId": "D1"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic circle-in-aperture-gap",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 1,
+        "exitCode": 0,
+        "coverage": "all-requested-quantities-available",
+        "emitted": 6
+      }
+    },
+    {
+      "id": "mixed-line-circle",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition mixed-line-circle",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "B1",
+              "type": "line-blocker",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            },
+            {
+              "id": "C2",
+              "type": "circle-blocker",
+              "parameters": {
+                "x": 0,
+                "y": 90,
+                "radius": 10
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "emitted",
+            "kind": "source-emissions",
+            "componentId": "S1"
+          },
+          {
+            "id": "absorbed",
+            "kind": "blocker-absorptions",
+            "componentId": "B1"
+          },
+          {
+            "id": "circle-absorbed",
+            "kind": "blocker-absorptions",
+            "componentId": "C2"
+          },
+          {
+            "id": "crossings",
+            "kind": "detector-crossings",
+            "componentId": "D1"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic mixed-line-circle",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 1,
+        "exitCode": 0,
+        "coverage": "all-requested-quantities-available",
+        "emitted": 6,
+        "absorbed": 6,
+        "crossings": 0
+      }
+    },
+    {
+      "id": "dual-source-mirror-lens",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition dual-source-mirror-lens",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "S2",
+              "type": "point-source",
+              "parameters": {
+                "x": -230,
+                "y": 80,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "L1",
+              "type": "ideal-lens",
+              "parameters": {
+                "x": -50,
+                "focalLength": 100,
+                "apertureHeight": 80
+              }
+            },
+            {
+              "id": "M1",
+              "type": "plane-mirror",
+              "parameters": {
+                "x": 180,
+                "y": 100,
+                "orientationDeg": 0,
+                "length": 60
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "emitted",
+            "kind": "source-emissions",
+            "componentId": "S1"
+          },
+          {
+            "id": "emitted-2",
+            "kind": "source-emissions",
+            "componentId": "S2"
+          },
+          {
+            "id": "crossings",
+            "kind": "detector-crossings",
+            "componentId": "D1"
+          },
+          {
+            "id": "mirror",
+            "kind": "mirror-reflections",
+            "componentId": "M1"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic dual-source-mirror-lens",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 1,
+        "exitCode": 0,
+        "coverage": "all-requested-quantities-available",
+        "emitted": 12
+      }
+    },
+    {
+      "id": "mixed-optics-with-circle",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition mixed-optics-with-circle",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "L1",
+              "type": "ideal-lens",
+              "parameters": {
+                "x": -50,
+                "focalLength": 100,
+                "apertureHeight": 80
+              }
+            },
+            {
+              "id": "C2",
+              "type": "circle-blocker",
+              "parameters": {
+                "x": 30,
+                "y": 90,
+                "radius": 10
+              }
+            },
+            {
+              "id": "M1",
+              "type": "plane-mirror",
+              "parameters": {
+                "x": 180,
+                "y": 100,
+                "orientationDeg": 0,
+                "length": 60
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "emitted",
+            "kind": "source-emissions",
+            "componentId": "S1"
+          },
+          {
+            "id": "crossings",
+            "kind": "detector-crossings",
+            "componentId": "D1"
+          },
+          {
+            "id": "mirror",
+            "kind": "mirror-reflections",
+            "componentId": "M1"
+          },
+          {
+            "id": "circle",
+            "kind": "blocker-absorptions",
+            "componentId": "C2"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic mixed-optics-with-circle",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 1,
+        "exitCode": 0,
+        "coverage": "all-requested-quantities-available",
+        "emitted": 6
+      }
+    },
+    {
+      "id": "unit-cm-equivalent",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "cm",
+          "title": "Synthetic composition unit-cm-equivalent",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -20,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "B1",
+              "type": "line-blocker",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 8
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 10,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 8
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "emitted",
+            "kind": "source-emissions",
+            "componentId": "S1"
+          },
+          {
+            "id": "absorbed",
+            "kind": "blocker-absorptions",
+            "componentId": "B1"
+          },
+          {
+            "id": "crossings",
+            "kind": "detector-crossings",
+            "componentId": "D1"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic unit-cm-equivalent",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 1,
+        "exitCode": 0,
+        "coverage": "all-requested-quantities-available",
+        "emitted": 6,
+        "absorbed": 6,
+        "crossings": 0,
+        "equivalentTo": "opaque-line"
+      }
+    },
+    {
+      "id": "translated-line",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition translated-line",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 100,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "B1",
+              "type": "line-blocker",
+              "parameters": {
+                "x": 0,
+                "y": 100,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 100,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "emitted",
+            "kind": "source-emissions",
+            "componentId": "S1"
+          },
+          {
+            "id": "absorbed",
+            "kind": "blocker-absorptions",
+            "componentId": "B1"
+          },
+          {
+            "id": "crossings",
+            "kind": "detector-crossings",
+            "componentId": "D1"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic translated-line",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 1,
+        "exitCode": 0,
+        "coverage": "all-requested-quantities-available",
+        "emitted": 6,
+        "absorbed": 6,
+        "crossings": 0,
+        "equivalentCountsTo": "opaque-line"
+      }
+    },
+    {
+      "id": "too-many-stops",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition too-many-stops",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "B1",
+              "type": "line-blocker",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            },
+            {
+              "id": "C2",
+              "type": "circle-blocker",
+              "parameters": {
+                "x": 0,
+                "y": 100,
+                "radius": 10
+              }
+            },
+            {
+              "id": "A2",
+              "type": "finite-aperture",
+              "parameters": {
+                "x": -30,
+                "y": -120,
+                "orientationDeg": 90,
+                "length": 80,
+                "openingLength": 10
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "absorbed",
+            "kind": "blocker-absorptions",
+            "componentId": "B1"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic too-many-stops",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 0,
+        "exitCode": 1
+      }
+    },
+    {
+      "id": "missing-aperture-opening",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition missing-aperture-opening",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "B1",
+              "type": "finite-aperture",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "absorbed",
+            "kind": "blocker-absorptions",
+            "componentId": "B1"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic missing-aperture-opening",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 0,
+        "exitCode": 2
+      }
+    },
+    {
+      "id": "lens-over-opaque-arm",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition lens-over-opaque-arm",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "B1",
+              "type": "finite-aperture",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80,
+                "openingLength": 30
+              }
+            },
+            {
+              "id": "L1",
+              "type": "ideal-lens",
+              "parameters": {
+                "x": 0,
+                "focalLength": 100,
+                "apertureHeight": 70
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "absorbed",
+            "kind": "blocker-absorptions",
+            "componentId": "B1"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic lens-over-opaque-arm",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 0,
+        "exitCode": 1
+      }
+    },
+    {
+      "id": "circle-tangent-detector",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition circle-tangent-detector",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "B1",
+              "type": "circle-blocker",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "radius": 40
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 40,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "absorbed",
+            "kind": "blocker-absorptions",
+            "componentId": "B1"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic circle-tangent-detector",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 0,
+        "exitCode": 1
+      }
+    },
+    {
+      "id": "ambiguous-stop-target",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition ambiguous-stop-target",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "B1",
+              "type": "line-blocker",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            },
+            {
+              "id": "C2",
+              "type": "circle-blocker",
+              "parameters": {
+                "x": 0,
+                "y": 90,
+                "radius": 10
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "abs",
+            "kind": "blocker-absorptions"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic ambiguous-stop-target",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 0,
+        "exitCode": 2,
+        "reasonCode": "AMBIGUOUS_COMPONENT_TARGET"
+      }
+    },
+    {
+      "id": "wrong-component-target",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition wrong-component-target",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "B1",
+              "type": "line-blocker",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "abs",
+            "kind": "blocker-absorptions",
+            "componentId": "D1"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic wrong-component-target",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 0,
+        "exitCode": 2,
+        "reasonCode": "INCOMPATIBLE_COMPONENT_TARGET"
+      }
+    },
+    {
+      "id": "ambiguous-source-target",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition ambiguous-source-target",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "S2",
+              "type": "point-source",
+              "parameters": {
+                "x": -230,
+                "y": 80,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "em",
+            "kind": "source-emissions"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic ambiguous-source-target",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 0,
+        "exitCode": 2,
+        "reasonCode": "AMBIGUOUS_COMPONENT_TARGET"
+      }
+    },
+    {
+      "id": "ideal-image-with-blocker",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition ideal-image-with-blocker",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "B1",
+              "type": "line-blocker",
+              "parameters": {
+                "x": 0,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "image",
+            "kind": "ideal-image",
+            "componentId": "S1"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic ideal-image-with-blocker",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 1,
+        "exitCode": 2,
+        "resultStatus": "unavailable"
+      }
+    },
+    {
+      "id": "unknown-quantity",
+      "input": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "lengthUnit": "mm",
+          "title": "Synthetic composition unknown-quantity",
+          "runPolicy": "preview-v1",
+          "components": [
+            {
+              "id": "S1",
+              "type": "point-source",
+              "parameters": {
+                "x": -200,
+                "y": 0,
+                "brightness": 0.08
+              },
+              "emission": {
+                "mode": "directional",
+                "directionDeg": 0,
+                "angleDeg": 20
+              }
+            },
+            {
+              "id": "D1",
+              "type": "ray-detector",
+              "parameters": {
+                "x": 100,
+                "y": 0,
+                "orientationDeg": 90,
+                "length": 80
+              }
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "unknown",
+            "kind": "unregistered-quantity"
+          }
+        ],
+        "interpretation": {
+          "requestedResult": "Check typed native observations for synthetic unknown-quantity",
+          "stated": [],
+          "derived": [],
+          "assumptions": [
+            "Explicit synthetic geometry and source settings; no original exam interpretation is asserted."
+          ],
+          "unknowns": [
+            "Continuous visibility, irradiance, diffraction and original-question accuracy are not assessed."
+          ]
+        },
+        "illustration": false,
+        "verifyNative": false
+      },
+      "expected": {
+        "nativeCalls": 0,
+        "exitCode": 2,
+        "reasonCode": "UNSUPPORTED_QUANTITY"
+      }
+    }
+  ]
+}
