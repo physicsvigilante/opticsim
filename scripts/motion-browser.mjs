@@ -214,6 +214,49 @@ async function main(){
   check('Circular mirror aperture is editable without replacing the native surface or paraxial model');
   await shot('mirror-aperture-16cm-circular');
 
+  // Independent lens example through the SAME viewer, same buttons and
+  // existing qualified source-motion experiment package, not a new UI.
+  await evaluate('(()=>{const e=document.getElementById("example");e.value="lens";e.dispatchEvent(new Event("change",{bubbles:true}));})()');
+  let ls=await until(state,s=>s?.state==='completed'&&s.index==='0'&&s.model.includes('thin-lens'),'initial thin-lens native frame');
+  assert.match(ls.image,/x 20/);assert.match(ls.image,/y -1/);
+  assert.match(ls.velocity,/x 12/);assert.match(ls.velocity,/y -3\.2/);
+  let lr=await rayInfo();
+  assert.equal(lr.apertureCm,'8');assert.match(lr.mirrorType,/Ideal thin lens/);
+  assert.equal(await evaluate("document.querySelector('#ray-source-mode option[value=single-ray]').disabled"),true);
+  check('Synthetic ideal-lens model loads in the original moving-source UI with real native rays and separate image motion');
+  await shot('motion-thin-lens-real');
+  await seek(50);
+  ls=await until(state,s=>s?.state==='completed'&&s.index==='50'&&s.image==='At infinity','lens focal native frame');
+  assert.match(ls.velocity,/No finite image velocity/);assert.match(ls.note,/infinity|singularity/i);
+  check('At the lens focal plane the native rays still finish, but no finite image or speed is invented');
+  await shot('motion-thin-lens-focus');
+  await seek(60);
+  ls=await until(state,s=>s?.state==='completed'&&s.index==='60'&&s.model.includes('thin-lens'),'virtual thin-lens frame');
+  assert.match(ls.image,/x -40/);assert.match(ls.image,/y 15/);assert.match(ls.image,/m = 5/);
+  assert.match(ls.velocity,/x 300/);assert.match(ls.velocity,/y -80/);
+  check('After crossing the focal plane the existing playback shows a conditional virtual lens image');
+  await shot('motion-thin-lens-virtual');
+  const lensHash=(await rayInfo()).hash,lensVelocity=ls.velocity;
+  await changeRay('mirror-aperture-cm','6');
+  lr=await afterChange(lensHash,'physical lens aperture revision');
+  assert.equal(lr.apertureCm,'6');assert.equal(lr.velocity,lensVelocity);
+  assert.match(lr.mirrorType,/Ideal thin lens/);
+  assert.equal(await evaluate("document.querySelector('#ray-source-mode option[value=single-ray]').disabled"),true);
+  check('Existing aperture and ray controls edit the physical thin lens without changing ideal image kinematics');
+  // The same Save/Open experiment buttons preserve the revised lens scene.
+  const lensSavedHash=lr.hash;
+  for(const name of await readdir(downloads))if(name.endsWith('.experiment.json'))await rm(join(downloads,name));
+  await evaluate('document.getElementById("save-motion").click()');
+  const lensSaved=await until(async()=>(await readdir(downloads)).find(n=>n.endsWith('.experiment.json')),Boolean,'lens experiment export');
+  const lensReopen=await prepareMotionExperiment(await readFile(join(downloads,lensSaved),'utf8'));
+  assert.equal(lensReopen.baseline.scene.physics.model,'ideal-thin-lens-geometric');
+  assert.equal(lensReopen.baseline.scene.physics.components.find(c=>c.type==='ideal-lens').parameters.apertureHeight,60);
+  assert.ok(lensReopen.baseline.qualification.edits.some(e=>e.kind==='physics'));
+  await upload(join(downloads,lensSaved));
+  lr=await until(rayInfo,r=>r.state==='completed'&&r.hash===lensSavedHash&&r.apertureCm==='6','reopened thin-lens experiment');
+  check('The same qualified experiment format exports and reopens a physically edited thin-lens motion');
+
+
 
  }catch(error){report.errors.push(error.stack);throw error;}
  finally{cdp?.close();browser.kill();server.kill();try{await until(async()=>[browser,server].every(p=>p.exitCode!==null||p.signalCode!==null),Boolean,'shutdown');await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:200});}finally{await writeFile(join(out,'report.json'),JSON.stringify(report,null,2)+'\n');}}
