@@ -1152,7 +1152,8 @@
       },
       "expected": {
         "nativeCalls": 0,
-        "exitCode": 1
+        "exitCode": 2,
+        "reasonCode": "NATIVE_SCENE_REQUIRED"
       }
     },
     {
@@ -1304,7 +1305,8 @@
       },
       "expected": {
         "nativeCalls": 0,
-        "exitCode": 1
+        "exitCode": 2,
+        "reasonCode": "NATIVE_SCENE_REQUIRED"
       }
     },
     {
@@ -1374,7 +1376,8 @@
       },
       "expected": {
         "nativeCalls": 0,
-        "exitCode": 1
+        "exitCode": 2,
+        "reasonCode": "NATIVE_SCENE_REQUIRED"
       }
     },
     {
