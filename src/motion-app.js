@@ -1,6 +1,8 @@
 import example from '../examples/u2-motion.json';
 import {makeU2Motion} from './motion-example.js';
 import {prepareMotionExperiment,MotionPlayer} from './source-motion.js';
+import {reviseMotionRayExperiment} from './motion-ray-controls.js';
+import {MotionRayUI} from './motion-ray-ui.js';
 import {loadDocument,Simulator,diagnostics,classifyRun,observeSourceSet,observeMirrorSet,observeDetectorSet} from './adapter.js';
 import {collectMotionView,fitMotionView,projectMotionPoint,motionGridTicks,defaultMotionCameraControl,applyMotionCameraControl,stepMotionCameraZoom,panMotionCameraByPixels,MOTION_CAMERA_CONTROLS,MOTION_VIEW_LIMITS} from './motion-viewport.js';
 import {curvedPoints,isCurved} from './curved-mirrors.js';
@@ -217,8 +219,40 @@ async function render(frame,signal){
   try{sim.updateSimulation(false,false);}catch(error){cancel();finish({status:'failed',error:String(error.message)});}
  });
 }
+
+async function applyRayControlChange(change){
+ if(!model)throw Error('No verified motion experiment loaded');
+ const previous=model,at=player?.index??0,speed=player?.speed??.1,
+  camera=structuredClone(cameraControl),mode=cameraMode();
+ const token=++loadGeneration;
+ player?.stop();clearTimeout(cameraRenderTimer);cameraRenderTimer=null;
+ try{
+  const changed=await reviseMotionRayExperiment(previous.exportExperiment(),change);
+  const candidate=await prepareMotionExperiment(changed);
+  if(token!==loadGeneration)return;
+  model=candidate;viewSubjects=collectMotionView(model);cameraControl=camera;
+  $('camera-mode').value=mode;
+  player=new MotionPlayer({model,render,onState:ui});
+  player.setSpeed(speed);
+  $('assumptions').textContent=[model.spec.continuationAssumption,
+   ...(model.baseline.qualification.interpretation?.assumptions||[])].join('\n');
+  $('experiment-hash').textContent='Experiment SHA-256: '+model.integritySha256;
+  $('save-motion').disabled=false;
+  await player.seek(Math.min(at,model.times.length-1));
+ }catch(error){
+  if(token!==loadGeneration)return;
+  model=previous;viewSubjects=collectMotionView(model);cameraControl=camera;
+  $('camera-mode').value=mode;
+  player=new MotionPlayer({model,render,onState:ui});
+  player.setSpeed(speed);
+  await player.seek(Math.min(at,model.times.length-1));
+  throw error;
+ }
+}
+
 async function load(value){
  const token=++loadGeneration;player?.stop();clearTimeout(cameraRenderTimer);cameraRenderTimer=null;
+ model=null;rayUI.reset();
  cameraControl=defaultMotionCameraControl();clearRays();currentIndex=null;currentEvidence=null;viewSubjects=null;nativeCamera=null;drawPlot(null);refreshZoomControls();
  for(const id of ['play','pause','reset','time','save-motion','save-frame','save-report'])$(id).disabled=true;
  try{
@@ -229,9 +263,10 @@ async function load(value){
   $('time').max=model.times.length-1;$('speed').value='0.1';player.setSpeed(.1);
   $('assumptions').textContent=[model.spec.continuationAssumption,...(model.baseline.qualification.interpretation?.assumptions||[])].join('\n');
   $('experiment-hash').textContent='Experiment SHA-256: '+model.integritySha256;
-  $('error').hidden=true;$('save-motion').disabled=false;refreshZoomControls();await player.seek(0);
+  $('error').hidden=true;$('save-motion').disabled=false;rayUI.reset();refreshZoomControls();await player.seek(0);
  }catch(error){if(token!==loadGeneration)return;model=null;player=null;drawPlot(null);$('native-state').dataset.state='invalid';$('native-state').textContent='Native: not run — invalid experiment';$('error').hidden=false;$('error').textContent=error.message;
-  for(const id of ['play','pause','reset','time','save-motion','save-frame','save-report'])$(id).disabled=true;}
+  for(const id of ['play','pause','reset','time','save-motion','save-frame','save-report'])$(id).disabled=true;
+  rayUI.sync();}
 }
 $('play').onclick=()=>player?.play();$('pause').onclick=()=>player?.pause();$('reset').onclick=()=>player?.seek(0);
 $('time').oninput=()=>player?.seek(Number($('time').value));$('speed').onchange=()=>player?.setSpeed(Number($('speed').value));
@@ -240,6 +275,7 @@ $('zoom-in').onclick=()=>zoomCamera(1,$('native-stage'));
 $('zoom-out').onclick=()=>zoomCamera(-1,$('native-stage'));
 $('zoom-fit').onclick=()=>resetCameraFit();
 setupCameraPointer($('native-stage'));setupCameraPointer($('image-plot'));
+const rayUI=new MotionRayUI({getModel:()=>model,onChange:applyRayControlChange});
 $('example').onchange=()=>load(makeU2Motion(example,{circular:$('example').value==='circular'}));
 $('open-motion').onchange=async()=>{const file=$('open-motion').files[0];if(!file)return;player?.stop();
  if(file.size>1500000){$('error').hidden=false;$('error').textContent='Experiment file exceeds 1.5 MB';return;}
