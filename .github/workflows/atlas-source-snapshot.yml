@@ -50,6 +50,8 @@ jobs:
           },indent=2)+"\n")
           print("Transport prepared: Problems-only",len(manifest),"PNG files in",len(chapters),"chapters")
           PY
+          node evaluation/optical-systems-atlas-v1/check.mjs --archive test-artifacts/atlas-transfer/source.zip > test-artifacts/atlas-transfer/atlas-image-check.json
+          cat test-artifacts/atlas-transfer/atlas-image-check.json
           rm test-artifacts/atlas-transfer/source.zip
       - name: Upload Problems-only images for offline atlas review (7 days)
         uses: actions/upload-artifact@v4
