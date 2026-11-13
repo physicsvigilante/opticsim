@@ -1,0 +1,69 @@
+name: Polygon reviewed candidate (temporary isolated branch)
+on:
+  push:
+    branches: [review/polygon-audit-tools]
+    paths: [.github/workflows/polygon-audit-candidate.yml]
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - name: Apply only the exact locally reviewed patch to frozen PR source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .review/polygon-fixes.patch "$RUNNER_TEMP/polygon-fixes.patch"
+          echo "d182727ea90642f3c1394128045a8f581f710c39f0642c56063ea1e3b0ef2983  $RUNNER_TEMP/polygon-fixes.patch" | sha256sum --check
+          git fetch --no-tags --depth=1 origin 102b0436fb4c05ede1c88141241dd47498dab5af
+          git checkout --detach 102b0436fb4c05ede1c88141241dd47498dab5af
+          git apply --unidiff-zero --check "$RUNNER_TEMP/polygon-fixes.patch"
+          git apply --unidiff-zero --index "$RUNNER_TEMP/polygon-fixes.patch"
+          git diff --cached --check
+          test "$(git diff --cached --name-only | wc -l)" -eq 12
+          test -z "$(git diff --cached --name-only -- .github upstream-pin.json vendor examples scenes)"
+          mkdir -p test-artifacts/polygon-review
+          git diff --cached --raw --full-index > test-artifacts/polygon-review/changed-blobs.txt
+          git write-tree > test-artifacts/polygon-review/candidate-tree.txt
+      - run: npm run setup
+      - name: Full pinned native regression suite
+        shell: bash
+        run: npm test | tee test-artifacts/polygon-review/node-tests.log
+      - run: npm run build
+      - run: node scripts/polygon-dielectric-acceptance.mjs
+      - run: node scripts/triangular-prism-acceptance.mjs
+      - run: node scripts/polygon-dielectric-browser.mjs
+      - run: node scripts/triangular-prism-browser.mjs
+      - run: node scripts/pack-demo.mjs
+      - name: Publish a separate tested candidate only; never push main or PR head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 102b0436fb4c05ede1c88141241dd47498dab5af
+          git -c user.name='Opticsim review' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Fix authoring target validation, fourth-vertex scoring and malformed review; share finite glass geometry'
+          git push --force-with-lease=refs/heads/review/polygon-audit-candidate: origin HEAD:refs/heads/review/polygon-audit-candidate
+          git rev-parse HEAD > test-artifacts/polygon-review/candidate-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: polygon-audit-candidate-evidence
+          path: |
+            test-artifacts/polygon-review/
+            test-artifacts/llm-authoring/polygon-dielectric/
+            test-artifacts/llm-authoring/triangular-prism/
+            test-artifacts/browser-polygon-dielectric/
+            test-artifacts/browser-triangular-prism/
+          if-no-files-found: warn
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: polygon-audit-tested-viewer
+          path: test-artifacts/demo-site/
+          retention-days: 7
+          if-no-files-found: error
