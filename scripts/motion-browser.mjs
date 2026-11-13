@@ -162,6 +162,7 @@ async function main(){
   assert.match(ray.assumptions,/Current accepted mirror aperture: 16 cm/);
   assert.match(ray.assumptions,/Finite aperture 6 cm/i);
   check('Precise physical mirror-size edit changes native reflection hits, not focal image kinematics');
+  await shot('mirror-aperture-16cm-ideal');
   const apertureHash=ray.hash;
   await changeRay('mirror-aperture-cm','100');
   ray=await until(rayInfo,r=>settled(r)&&r.hash===apertureHash&&
@@ -194,6 +195,7 @@ async function main(){
   assert.equal(ray.apertureCm,'16');
   assert.match(ray.mirrorType,/Circular arc/);
   check('Circular mirror aperture is editable without replacing the native surface or paraxial model');
+  await shot('mirror-aperture-16cm-circular');
 
 
  }catch(error){report.errors.push(error.stack);throw error;}
