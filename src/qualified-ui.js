@@ -4,6 +4,7 @@ import {bundleFormat,parseQualifiedBundle,createQualifiedBundle,
   recordQualifiedEdit,qualificationSummary} from './qualification.js';
 import {evaluateObservables} from './observables.js';
 import {sceneHash,canonicalJSON} from './qualified-utils.js';
+import {snapshotNativeObservations} from './native-observations.js';
 import {fitRequestedView,formatRequestedResult} from './result-preview.js';
 const $=id=>document.getElementById(id);
 const scalar=n=>Number.isFinite(n)?Number(n.toPrecision(8)).toString():'not finite';
@@ -148,8 +149,7 @@ export class QualifiedUI {
     $('observable-results').textContent='Checking results for this revision…';
     (async()=>{
       const execution={canonicalSha256:await sceneHash(doc),executionPassed:true,
-        native:{status,warnings:data?.warnings||[]},observations:{
-          emissionsById:data?.emissionsById,reflectionsById:data?.reflectionsById,detectorsById:data?.detectorsById,interfacesById:data?.interfacesById,blockersById:data?.blockersById}};
+        native:{status,warnings:data?.warnings||[]},observations:snapshotNativeObservations(data)};
       const results=await evaluateObservables(doc,requests,execution);
       if(sequence!==this.sequence||revision!==s.revision)return;
       this.currentResults=results;this.resultRevision=revision;
@@ -161,7 +161,7 @@ export class QualifiedUI {
         $('prediction-note').textContent='The general scene does not assert a unique optical route. The requested analytical result uses a validated restricted model and its stated illumination/route conditions; it is not a native image detection.';
       }
     })().catch(error=>{
-      if(sequence===this.sequence||revision===s.revision)$('observable-results').textContent='Requested results unavailable: '+error.message;
+      if(sequence===this.sequence&&revision===s.revision)$('observable-results').textContent='Requested results unavailable: '+error.message;
     });
   }
 }

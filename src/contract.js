@@ -42,6 +42,10 @@ export const GENERAL_SCOPE = Object.freeze({
   'ideal-curved-mirror': Object.freeze({min:0,max:2}),
   'circular-arc-mirror': Object.freeze({min:0,max:2})
 });
+// Largest currently admitted arrangement: general sources/lenses/mirrors/stops/detectors.
+// Do not sum isolated optical-family limits, which cannot coexist.
+export const MAX_AUTHORING_COMPONENTS = ['point-source','ideal-lens','plane-mirror',
+  'line-blocker','ray-detector'].reduce((total,type)=>total+GENERAL_SCOPE[type].max,0);
 export const COMPONENT_BOUNDS = Object.freeze({
   coordinateMm: Object.freeze([-10000,10000]),
   positiveLengthMm: Object.freeze([1,10000]),

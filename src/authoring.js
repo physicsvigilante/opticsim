@@ -1,12 +1,13 @@
 // Small LLM authoring view over the EXISTING strict opticsim scene contract.
 // Interpret/choose physics outside this module. No new ray tracing, geometry DSL,
 // physical parameter guessing, implicit native JSON or network service.
+import {NATIVE_OBSERVATION_KEYS} from './native-observations.js';
 import {PRISM_TYPE,prismVertices} from './triangular-prism.js';
 import {POLYGON_TYPE,polygonVertices} from './polygon-dielectric.js';
 import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
 import {isCurved,curvedPoints} from './curved-mirrors.js';
 import {validate,UPSTREAM,SAMPLING_PRESETS,COMPONENT_TYPES,componentParameterNames,
-  GENERAL_SCOPE,COMPONENT_BOUNDS,LENGTH_PARAMETERS,mirrorEndpoints} from './contract.js';
+  GENERAL_SCOPE,MAX_AUTHORING_COMPONENTS,COMPONENT_BOUNDS,LENGTH_PARAMETERS,mirrorEndpoints} from './contract.js';
 
 const lengthScales=Object.freeze({mm:1,cm:10,m:1000});
 const policies=Object.freeze({
@@ -57,7 +58,7 @@ export function capabilities() {
     opaqueLineBlockers:{model:'general-component-tracing',nativeType:'Blocker',max:2,scope:'Up to two finite fully opaque line absorbers, with existing general sources/lenses/plane mirrors and external detectors. Native sampled absorption counts; no shadow visibility or image inference.'},
     polygonDielectrics:{schemaVersion:9,model:'polygon-dielectric-tracing',scope:'One strictly convex four-vertex dielectric, 1–4 exact rays and 0–2 external detectors; no other optics or nested media',geometry:'Four explicit vertices; edges and altitudes >=1 mm; all four faces are finite'},
     triangularPrisms:{schemaVersion:8,model:'triangular-prism-tracing',scope:'One stationary triangle; 1–4 explicit single rays; 0–2 external detectors; no other optics',geometry:'Three explicit vertices in either winding; edges and altitudes >=1 mm; initial corner rays excluded; no face route supplied'},
-    interfaceVersion:1,canonicalFormat:'ray-optics-2d',schemaVersion:4,
+    interfaceVersion:1,canonicalFormat:'ray-optics-2d',schemaVersion:4,maxComponents:MAX_AUTHORING_COMPONENTS,
     circularDielectric:{schemaVersion:7,model:'circular-dielectric-tracing',scope:'Exactly one stationary circular region; 1–4 explicit single rays inside or outside; 0–2 external detectors; no other optics or nested regions',indices:'Required inside/outside absolute indices [1,4]; native ratio inside/outside',radius:'Positive radius >=2 mm; complete circle within coordinate bounds',partialReflection:'Required boolean; false explicitly omits Fresnel partial reflections, not TIR',clearance:'0.01 mm source/boundary and detector/circle separation; initial forward near-tangent rays within 0.01 mm are unsupported'},
     curvedMirrors:{schemaVersion:6,model:'curved-mirror-tracing',scope:'1–2 ideal/circular-arc mirrors; 1–4 sources; 0–2 plane mirrors and detectors; disjoint aperture disks; no lenses or refraction',normal:'Front-facing normal; f>0 or radius>0 means concave toward front; all dimensions explicit'},
     planarMedia:{schemaVersion:5,model:'planar-media-tracing',interfaces:'1–4 parallel consistently oriented planes; matching adjacent indices',sources:'1–4 single-ray emitters',lenses:'unsupported',indices:'absolute positive indices [1,4], normalized as native ratios',partialReflection:'required boolean; false explicitly neglects Fresnel partial reflection, not TIR'},
@@ -81,7 +82,7 @@ export function capabilities() {
     requiredInput:['lengthUnit','components'],optionalInput:['title','runPolicy'],
     physicalPolicy:'All physical parameter values are required. Full-circle inactive angles are explicitly filled, not measured. No optical component or missing physical information is invented.',
     opticalGeometry:'Thin ideal lenses are vertical and centred at y=0. Mirror and detector orientationDeg is the tangent in y-up coordinates. Native surfaces must not intersect or overlap.',
-    observations:['emissionsById','reflectionsById','detectorsById','interfacesById','blockersById'],
+    observations:[...NATIVE_OBSERVATION_KEYS],
     limitations:['native finite-ray sampling','signed relative detector power is not watts',
       'no image prediction for unconstrained general tracing','no source-specific detector provenance']
   };
@@ -107,8 +108,8 @@ export function inspectAuthoringRequest(request){
   if(own(request,'title')&&(typeof request.title!=='string'||request.title.length>120))
     issues.push(issue('$.title','INVALID_TITLE','Expected a title of at most 120 characters'));
   if(!own(request,'components'))return issues;
-  if(!Array.isArray(request.components)||request.components.length<1||request.components.length>14){
-    issues.push(issue('$.components','INVALID_COMPONENTS','Expected 1–14 bounded component objects'));
+  if(!Array.isArray(request.components)||request.components.length<1||request.components.length>MAX_AUTHORING_COMPONENTS){
+    issues.push(issue('$.components','INVALID_COMPONENTS','Expected 1–'+MAX_AUTHORING_COMPONENTS+' bounded component objects'));
     return issues;
   }
   const number=(key,value,path,type=null)=>{

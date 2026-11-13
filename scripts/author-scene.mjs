@@ -9,6 +9,7 @@ import {fileURLToPath} from 'node:url';
 import {capabilities,prepareScene,reviseScene,AuthoringError} from '../src/authoring.js';
 import {problemCapabilities,resolveProblemRequest} from '../src/problem-authoring.js';
 import {serializeSave} from '../src/contract.js';
+import {snapshotNativeObservations} from '../src/native-observations.js';
 import {checkCandidate} from '../skills/sim-ro-image-to-scene/scripts/check-scene.mjs';
 import {reserveAuthoringOutput,writeEvidence} from './authoring-evidence.mjs';
 
@@ -45,13 +46,7 @@ export function evaluateDocument(doc,core) {
       truncation:diag.truncation??null,undefinedBehavior:diag.undefinedBehavior??null,
       errors:diag.errors||[],warnings
     },
-    observations:completed?{
-      emissionsById:diag.emissionsById,
-      reflectionsById:diag.reflectionsById,
-      detectorsById:diag.detectorsById,
-      interfacesById:diag.interfacesById,
-      blockersById:diag.blockersById
-    }:null,
+    observations:completed?snapshotNativeObservations(diag):null,
     measurementState,analysis:{status:run.analysis.status,reason:run.analysis.reason},
     executionPassed:run.executionPassed,
     interpretation:'not-assessed-by-engine',questionSupport:'not-assessed-by-engine'

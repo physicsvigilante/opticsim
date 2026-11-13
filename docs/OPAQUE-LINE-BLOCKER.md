@@ -23,3 +23,12 @@ The bundled `blocker-detector` viewer scene and `examples/blocker-detector.json`
 The existing authoring/preflight, qualified scene packages, atomic physical edit history, immutable parameter sweeps, Fit and static viewer are reused. Node tests cover real native object creation, observed ray counts and zeros, source sampling, geometry refusal, backward schema isolation, stale/incomplete suppression and provenance. The CLI acceptance records eight fully synthetic cases and a three-point blocker sweep, including an invalid intersection. The Chrome script verifies physical edits, light rendering, export/reopen, invalid overlap and narrow-screen Fit.
 
 The original JEE source archive, previous sealed evaluations, PhyDemo pin, core optical formulas, model API, and public deployment remain unchanged. Finite circles, apertures with holes and continuous visibility are future separate capabilities.
+
+## Reviewed shared safeguards
+
+The authoring ceiling is derived from these existing family counts: at most
+**16** general-scene components, still subject to all individual count and
+geometry limits. Both native result channels and published capability metadata
+are copied defensively. Async result evaluation binds to one invocation, and
+stale UI errors cannot overwrite current readouts. See [review and regression
+evidence](BLOCKER-REVIEW.md). No additional optical primitive is implied.

@@ -19,7 +19,7 @@ const kinds=Object.freeze({
   'ideal-image':{type:'point-source',unit:'mm; magnification dimensionless'}
 });
 export function observableCapabilities(){
-  return {format:'opticsim-observables-v1',maxRequests:16,kinds,
+  return {format:'opticsim-observables-v1',maxRequests:16,kinds:structuredClone(kinds),
     limits:['Native counts are sampled, not continuous coverage.',
       'Ideal image is conditional analysis, never native image detection.',
       'A requested result does not certify interpretation of its source question.',
@@ -61,6 +61,9 @@ function conditionalImage(doc){
   return {reason:'No existing analytical model satisfies this complete arrangement. No component is removed or replaced.'};
 }
 export async function evaluateObservables(doc,requests,execution){
+  // Bind all reads to one invocation before the asynchronous scene hash.
+  // A caller may begin the next revision while the digest is outstanding.
+  [doc,requests,execution]=structuredClone([doc,requests,execution]);
   validate(doc);validateObservables(requests);
   const canonicalSha256=await sceneHash(doc);
   const fresh=execution?.canonicalSha256===canonicalSha256;
