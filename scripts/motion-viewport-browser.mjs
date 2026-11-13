@@ -47,6 +47,10 @@ async function main(){
   }
   // Camera is a reusable presentation control, not a field in U2 or in
   // source-motion data. Real Chrome replays the same accepted native scene.
+  // Restore desktop viewport before testing real pointer interactions.
+  await cdp.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1100,deviceScaleFactor:1,mobile:false});
+  await cdp.send('Page.navigate',{url:pathToFileURL(join(root,'test-artifacts/motion-demo/index.html')).href});
+  await until(state,s=>s?.state==='completed'&&s.viewport,'zoom interaction page');
   const baseline=await change('camera-mode','motion');
   const beforeZoom=await seek(30),physicalCounts=beforeZoom.counts,originalHash=beforeZoom.hash;
   assert.equal(beforeZoom.zoom,'100%');
