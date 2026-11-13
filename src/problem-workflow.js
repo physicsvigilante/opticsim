@@ -23,7 +23,7 @@ export function problemWorkflowCapabilities(){
       ...Object.fromEntries(mirrorAngularCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:MIRROR_QUERY_FORMAT}])),
       ...Object.fromEntries(Object.entries(observableKinds).map(([k,v])=>[k,{...v,route:k==='ideal-image'?'existing-analysis-with-native-gate':'native-observation'}]))},
     authoring:problemCapabilities(),curvedMirrors:curvedQueryCapabilities(),angular:angularCapabilities(),mirrorAngular:mirrorAngularCapabilities(),observables:observableCapabilities(),
-    policy:'One request file; route by kind, never by answers or expected values. Unknown kinds remain unavailable. No physical repairs or method fallback. Angular-only requests do not trigger native work unless verifyNative is true. Interpretation remains author-provided and unverified.'};
+    policy:'One request file; route by kind, never by answers or expected values. Native componentId may be omitted only when exactly one compatible authored component exists; its binding is recorded, not guessed from geometry or ray paths. Ambiguous or absent targets remain unresolved. No physical repairs or method fallback. Angular-only requests do not trigger native work unless verifyNative is true. Interpretation remains author-provided and unverified.'};
 }
 function validateEnvelope(input){
   if(!isRecord(input)||Object.keys(input).some(k=>!['format','physical','requests','interpretation','illustration','verifyNative'].includes(k))||
@@ -54,8 +54,8 @@ export function planProblem(input){
   validateEnvelope(input);
   // Snapshot now, before any asynchronous run or observer can see caller edits.
   const request=structuredClone(input),physical=request.physical;
-  const nativeRequests=request.requests.filter(r=>own(observableKinds,r.kind));
-  const needsNative=nativeRequests.length>0||request.verifyNative===true;
+  const authoredNativeRequests=request.requests.filter(r=>own(observableKinds,r.kind));
+  const needsNative=authoredNativeRequests.length>0||request.verifyNative===true;
   let preparation=null,scene=null,sceneConflict=false;
   if(physical&&physical.format!==ANGLE_FACTS_FORMAT&&physical.format!==MIRROR_FACTS_FORMAT&&physical.format!==CURVED_FACTS_FORMAT){
     preparation=resolveProblemRequest(physical,{illustration:request.illustration===true});
@@ -132,11 +132,40 @@ export function planProblem(input){
       status:invalid?'invalid-input':preparation?.status==='unsupported'?'unavailable':'needs-information',
       reasonCode:invalid?'INVALID_PROBLEM_INPUT':sceneConflict?'CONFLICTING_FORWARD_SCENES':'NATIVE_SCENE_REQUIRED',reason};
   }
+
+  // One deterministic reduction in LLM work: when a request names its quantity
+  // but not an ID, bind it ONLY if the prepared, unchanged scene contains
+  // exactly one component of a compatible physical type. This is not optical
+  // path reconstruction, source attribution or a guessed apparatus.
+  // The original submitted request remains byte-bound to inputSha256.
+  const nativeRequests=[],targetBindings=[];
+  if(scene&&!invalid){
+    for(const r of authoredNativeRequests){
+      if(own(r,'componentId')){nativeRequests.push(r);continue;}
+      const type=observableKinds[r.kind].type,types=Array.isArray(type)?type:[type];
+      const candidates=scene.physics.components.filter(c=>types.includes(c.type));
+      if(candidates.length===1){
+        const componentId=candidates[0].id;
+        nativeRequests.push({...r,componentId});
+        targetBindings.push({requestId:r.id,kind:r.kind,componentId,
+          rule:'sole-compatible-authored-component'});
+      }else{
+        const index=results.findIndex(x=>x.id===r.id);
+        results[index]={...empty(r,candidates.length?'needs-information':'unavailable',
+          candidates.length?'AMBIGUOUS_COMPONENT_TARGET':'NO_COMPATIBLE_COMPONENT',
+          candidates.length?'Specify componentId: multiple compatible components are authored.':
+            'No compatible physical component is present in this scene.'),
+          candidateComponentIds:candidates.map(c=>c.id)};
+      }
+    }
+  }
+  const canRun=needsNative&&!!scene&&!invalid&&
+    (request.verifyNative===true||nativeRequests.length>0);
   const {prepared:ignored,...prep}=preparation||{};
   return {format:'opticsim-problem-plan-v1',request,results,calculations,
-    preparation:preparation?prep:null,scene,diagnostics,
-    native:{required:needsNative,canRun:needsNative&&!!scene&&!invalid,
-      reason:!needsNative?'No registered native result or verification requested.':!scene?'No unambiguous validated forward scene.':null},
+    preparation:preparation?prep:null,scene,diagnostics,targetBindings,
+    native:{required:needsNative,canRun,
+      reason:!needsNative?'No registered native result or verification requested.':!scene?'No unambiguous validated forward scene.':!canRun?'No uniquely determined native measurement target.':null},
     nativeRequests,interpretation:'author-provided-not-independently-verified',
     questionSupport:'not-assessed-by-engine'};
 }
