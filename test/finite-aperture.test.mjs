@@ -111,7 +111,7 @@ test('strict authoring rejects missing/incorrect opening length, invalid arms, l
   r=>aperture(r).openingLength='30',r=>aperture(r).openingLength=79,
   r=>aperture(r).openingLength=80,r=>aperture(r).openingLength=100,
   r=>aperture(r).length=31,r=>aperture(r).length=0,
-  r=>aperture(r).orientationDeg=181,r=>aperture(r).x=10000,
+  r=>aperture(r).orientationDeg=181,r=>aperture(r).y=9990,
   r=>aperture(r).x=-200
  ];
  for(const [i,edit] of bad.entries())assert.throws(()=>build(edit),'invalid aperture '+i);

@@ -39,7 +39,7 @@ test('six preview rays hit the native circular absorber; no downstream rays cros
  assert.equal(o.results[0].status,'available');
  assert.equal(o.results[0].method,'native-observation');
  assert.equal(o.questionSupport,'not-assessed-by-engine');
- assert.deepEqual(observableCapabilities().kinds['blocker-absorptions'].type,['line-blocker','circle-blocker']);
+ assert.deepEqual(observableCapabilities().kinds['blocker-absorptions'].type,['line-blocker','circle-blocker','finite-aperture']);
 });
 
 test('translated circular stop clears the source cone; a no-stop native run is an independent reference',async()=>{
