@@ -109,6 +109,10 @@ async function main(){
   assert.ok(!s.results||s.results.every(r=>!['available','qualified'].includes(r.status)));check('Invalid geometry clears old qualified readings and blocks export');
   await upload(b.oblique);await until(state,s=>s.status==='completed'&&s.results?.[0]?.value===2,'restore for resize');
   await cdp.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:false});
+  // ResizeObserver intentionally coalesces resize for 100 ms. A previous
+  // completed state does not prove that backing canvas pixels match the new CSS
+  // viewport; wait for the actual dimensions before fitting or taking a shot.
+  await until(()=>evaluate("(()=>{const r=document.getElementById('stage').getBoundingClientRect();return ['light','below','above','grid'].every(id=>{const c=document.getElementById(id);return c.width===Math.max(200,Math.round(r.width))&&c.height===Math.max(200,Math.round(r.height));});})()"),Boolean,'narrow backing canvas dimensions');
   await until(state,s=>s.status==='completed'&&!s.fitDisabled,'narrow view');
   await evaluate('document.getElementById("fit-results").click()');s=await until(state,s=>s.status==='completed'&&!s.fitDisabled,'narrow fit');
   assert.equal(s.results[0].value,2);assert.equal(s.results[3].value,1);check('Narrow viewport and fit preserve actual native readings');await shot('circular-mobile');
