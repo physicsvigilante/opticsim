@@ -124,3 +124,21 @@ test('physically incorrect but runnable model requests do not receive factual fi
  assert.equal(scored.kindFidelity,true);
  assert.equal(scored.physicalFidelity,false);
 });
+
+test('malformed model request is recorded as a first-attempt failure, and later cases are still reviewed offline',async()=>{
+ const f=files(),captureDir=resolve(f.base,'malformed-capture');mkdirSync(captureDir,{recursive:true});
+ const replies=[JSON.stringify({request:{format:'wrong-format'}}),JSON.stringify({cannotAuthor:'The focal length was not supplied.'})];
+ let index=0,calls=0;
+ const capture=await collectOnce({questions:f.questions,commitment:f.commitment,maxCases:2,
+  send:async()=>({content:replies[index++],model:'MOCK-OFFLINE'}),
+  onAttempt:async a=>writeFileSync(resolve(captureDir,a.id+'.first.json'),JSON.stringify(a,null,2)+'\n',{flag:'wx'})});
+ capture.commitmentSha256=readJSON(f.commitmentPath).digest;capture.modelRequested='MOCK-OFFLINE';
+ const cap=resolve(captureDir,'capture.json'),bytes=JSON.stringify(capture,null,2)+'\n';writeFileSync(cap,bytes,{flag:'wx'});
+ const report=await runReview({questionsPath:f.questionPath,referencePath:f.referencePath,
+  commitmentPath:f.commitmentPath,capturePath:cap,outPath:resolve(f.base,'malformed-review'),
+  execute:()=>{calls++;throw Error('Neither response may execute native physics');}});
+ assert.equal(calls,0);assert.equal(report.rows.length,2);
+ assert.equal(report.rows[0].errorCode,'INVALID_MODEL_REQUEST');assert.equal(report.rows[0].exactAuthoring,false);
+ assert.equal(report.rows[1].responseKind,'declined');assert.equal(report.counts.nativeAttempted,0);
+ assert.equal(readFileSync(cap,'utf8'),bytes);
+});

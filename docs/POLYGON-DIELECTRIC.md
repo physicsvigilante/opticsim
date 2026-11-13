@@ -66,4 +66,9 @@ New checks are placed in the **existing refraction workflow**, sharing setup and
 
 ## Next constraints
 
+Triangle and quadrilateral adapters now share `finite-glass-geometry.js` for
+finite faces, native `Glass` compilation and identification of actual native
+hits. Their admission validators, vertex counts and clearance policies remain
+separate; extracting helpers does not admit a new shape or relax v8/v9 bounds.
+
 General **N-vertex** polygons, mixed finite polygon + mirror/lens scenes, arbitrary curved caps, repeated internal branches with unique source provenance, and physical wave/phase/dispersion remain future increments. Incremental composition should factor a region/face validator across prism and polygon families **without** silently broadening old v8 admissibility. The owner deferred multi-ray refraction sources; this milestone does not re-enable them.

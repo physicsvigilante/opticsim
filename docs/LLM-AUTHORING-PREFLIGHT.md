@@ -20,7 +20,12 @@ If multiple components match, the request remains `needs-information` with
 `AMBIGUOUS_COMPONENT_TARGET` and the candidate IDs. If none match it remains
 `unavailable` with `NO_COMPATIBLE_COMPONENT`. No source, mirror, ray path,
 material, brightness, angle or missing measurement component is invented.
-Explicit `componentId` values are never silently reassigned or corrected.
+Explicit `componentId` values are never silently reassigned or corrected. A
+missing named ID is `needs-information` (`UNKNOWN_COMPONENT_TARGET`); a named
+component of the wrong physical type is `unavailable`
+(`INCOMPATIBLE_COMPONENT_TARGET`). Both list compatible candidate IDs and
+are excluded from native measurement requests. Other valid requests may still
+run; `verifyNative:true` remains an explicit opt-in to verify the scene itself.
 
 This is purely a unique-ID selection, **not** a proof that a ray actually hits
 that component, that its first event comes from any particular source, or that
@@ -51,7 +56,8 @@ present even when a different calculation is conditionally available.
 data-only unknown quantities with no native run.
 
 A status of `blocked` or `invalid-input` exits with code 2; a malformed
-input report exits 1. A native-ready or all-conditional analytical report
+input report exits 1 and explicitly records `native.calls: 0`, so malformed
+first attempts can be scored without aborting the rest of an evaluation. A native-ready or all-conditional analytical report
 exits 0. The original input SHA-256 is displayed so the later full command
 can be related to this exact submission.
 

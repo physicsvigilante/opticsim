@@ -8,6 +8,7 @@ import {existsSync,mkdirSync,readFileSync,writeFileSync} from 'node:fs';
 import {resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {prepareScene} from '../../src/authoring.js';
+import {LENGTH_PARAMETERS} from '../../src/contract.js';
 import {planProblem} from '../../src/problem-workflow.js';
 import {runProblemEvidence} from '../../scripts/run-problem.mjs';
 import {evaluateDocument} from '../../scripts/author-scene.mjs';
@@ -30,13 +31,15 @@ const exact=(name)=>{
  return {bytes,data:JSON.parse(bytes.toString('utf8')),sha256:sha256(bytes)};
 };
 const kindTypes=observableCapabilities().kinds;
-const lengthKey=/^(?:x[123]?|y[123]?|focalLength|apertureHeight|length|radius)$/;
+// Use the live physical registry: later vertex coordinates must not silently
+// escape unit conversion in invalid/missing-fact controls or stable-ID scoring.
+const lengthKeys=new Set(LENGTH_PARAMETERS);
 const scale={mm:1,cm:10,m:1000};
 const sortObject=obj=>Object.fromEntries(Object.entries(obj).sort(([a],[b])=>a.localeCompare(b)));
 const signature=(component,units,includeId)=>{
  if(!component||typeof component.type!=='string'||!component.parameters)return null;
  const params=Object.fromEntries(Object.entries(component.parameters).map(([k,v])=>
-  [k,typeof v==='number'&&lengthKey.test(k)?Number((v*units).toFixed(7)):v]));
+  [k,typeof v==='number'&&lengthKeys.has(k)?Number((v*units).toFixed(7)):v]));
  const emission=component.type==='point-source'&&component.emission?component.emission.mode==='full-circle'?
   {mode:'full-circle'}:component.emission.mode==='single-ray'?
   {mode:'single-ray',directionDeg:component.emission.directionDeg}:

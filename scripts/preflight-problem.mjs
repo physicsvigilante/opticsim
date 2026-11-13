@@ -19,7 +19,7 @@ function main(args){
   catch(error){
     const report={format:'opticsim-problem-preflight-v1',inputSha256,
       status:'rejected',issues:error.issues||[{code:'INVALID_PROBLEM_ENVELOPE',message:error.message}],
-      native:{status:'not-run'},questionSupport:'not-assessed-by-engine'};
+      native:{status:'not-run',calls:0},questionSupport:'not-assessed-by-engine'};
     console.log(JSON.stringify(report,null,2));process.exitCode=1;return;
   }
   const results=plan.results.map(({id,kind,status,value,reasonCode,reason,...rest})=>({

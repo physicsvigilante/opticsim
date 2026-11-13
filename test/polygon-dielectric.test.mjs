@@ -232,3 +232,41 @@ test('multiple independent native sources aggregate face counts without inventin
  assert.equal(m.faces['face-12'].interactions,2);assert.equal(m.faces['face-34'].interactions,2);
  assert.equal(m.faces['face-34'].first.sourceId,undefined);
 });
+
+test('shared finite-face helpers retain raw native observer behavior and independent copies',()=>{
+ const d=build(i=>{src(i).emission.directionDeg=12;poly(i).partialReflection=true;}),a=core.loadDocument(d),b=core.loadDocument(d),
+  oa=a.scene.objs[a.idMap.get('G1')],ob=b.scene.objs[b.idMap.get('G1')],native=oa.onRayIncident;
+ let calls=0;oa.onRayIncident=function(...args){calls++;return native.apply(this,args);};
+ const observer=core.observeInterfaceSet(d,a.scene,a.idMap);
+ const r={p1:{x:-200,y:-10},p2:{x:-180,y:-10-20*Math.tan(12*Math.PI/180)},brightness_s:.05,brightness_p:.05,gap:true};
+ const ra=structuredClone(r),rb=structuredClone(r),hit=oa.checkRayIntersects(ra);
+ const expected=ob.onRayIncident(rb,0,structuredClone(hit),[]),actual=oa.onRayIncident(ra,0,structuredClone(hit),[]);
+ assert.equal(calls,1);assert.deepEqual(actual,expected);assert.deepEqual(ra,rb);
+ assert.equal(observer.byId.G1.interactions,1);assert.equal(Object.keys(observer.byId.G1.faces).length,4);
+ const copy=observer.byId;copy.G1.faces['face-12'].first.branches[0].direction.x=99;
+ assert.notEqual(observer.byId.G1.faces['face-12'].first.branches[0].direction.x,99);
+});
+test('nonrectangular four-face geometries satisfy local Snell and reflection invariants across rotations and index ratios',()=>{
+ let completed=0,tir=0;
+ for(const skew of [-20,0,30])for(const rotation of [-67,0,23])for(const heading of [-12,0,16])for(const [ni,no] of [[1.5,1],[1,1.6]]){
+  const d=build(i=>{
+   i.lengthUnit='mm';const p=poly(i),s=src(i),v=[[0,-100],[skew,100],[150+skew,100],[150,-100]];
+   const a=rotation*Math.PI/180,rot=(x,y)=>[Math.cos(a)*x-Math.sin(a)*y,Math.sin(a)*x+Math.cos(a)*y];
+   for(let k=1;k<=4;k++)[p['x'+k],p['y'+k]]=rot(...v[k-1]);
+   [s.parameters.x,s.parameters.y]=rot(-250,11);s.emission.directionDeg=rotation+heading;
+   p.insideIndex=ni;p.outsideIndex=no;
+  }),s=run(d);
+  assert.equal(s.native.status,'completed',JSON.stringify({skew,rotation,heading,ni,no,native:s.native}));completed++;
+  const m=meter(s);assert.equal(m.invalidObservations,0);assert.ok(m.interactions>0);tir+=m.totalInternalReflections;
+  for(const f of Object.values(m.faces))if(f.first){const e=f.first;
+   for(const b of e.branches){
+    if(b.kind==='transmitted')near(e.incidentIndex*cross(e.incidentDirection,e.outwardNormal),e.destinationIndex*cross(b.direction,e.outwardNormal));
+    if(b.kind==='reflected'){
+     near(dot(e.incidentDirection,e.outwardNormal),-dot(b.direction,e.outwardNormal));
+     near(cross(e.incidentDirection,e.outwardNormal),cross(b.direction,e.outwardNormal));
+    }
+   }
+  }
+ }
+ assert.equal(completed,54);
+});

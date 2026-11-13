@@ -1,3 +1,4 @@
+import {distanceToFiniteSegment,finiteGlassFaces,compileFiniteGlass,finiteGlassEncounter} from './finite-glass-geometry.js';
 // Four-vertex convex dielectric geometry. Native Glass owns every ray.
 // This layer validates a bounded polygon and identifies ONLY actual native hits.
 export const POLYGON_TYPE='polygon-dielectric';
@@ -10,24 +11,10 @@ export const polygonVertices=p=>[1,2,3,4].map(i=>({x:p['x'+i],y:p['y'+i]}));
 const delta=(a,b)=>({x:b.x-a.x,y:b.y-a.y});
 const dot=(a,b)=>a.x*b.x+a.y*b.y;
 const cross=(a,b)=>a.x*b.y-a.y*b.x;
-const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-const pointSegmentDistance=(p,a,b)=>{
-  const ab=delta(a,b),ap=delta(a,p),t=Math.max(0,Math.min(1,dot(ap,ab)/dot(ab,ab)));
-  return distance(p,{x:a.x+t*ab.x,y:a.y+t*ab.y});
-};
-const keys=['face-12','face-23','face-34','face-41'];
-export function polygonFaces(p){
-  const v=polygonVertices(p),w=Math.sign(cross(delta(v[0],v[1]),delta(v[0],v[2])));
-  return v.map((a,i)=>{
-    const b=v[(i+1)%4],d=delta(a,b),length=Math.hypot(d.x,d.y);
-    return {id:keys[i],a,b,length,normal:{x:w*d.y/length,y:-w*d.x/length}};
-  });
-}
+const pointSegmentDistance=distanceToFiniteSegment;
+export function polygonFaces(p){return finiteGlassFaces(polygonVertices(p));}
 export function compilePolygon(component){
-  const p=component.parameters;
-  return {type:'Glass',path:polygonVertices(p).map(v=>({x:v.x,y:-v.y,arc:false})),
-    notDone:false,refIndex:p.insideIndex/p.outsideIndex,
-    partialReflect:p.partialReflection};
+  return compileFiniteGlass(component.parameters,polygonVertices(component.parameters));
 }
 export function validatePolygonGeometry(components,endpoints,fail){
   const path='$.physics.components',polygons=components.filter(c=>c.type===POLYGON_TYPE),
@@ -66,14 +53,6 @@ export function validatePolygonGeometry(components,endpoints,fail){
   }
 }
 export function polygonEncounter(component,nativePoint,incoming){
-  const p=component.parameters,point={x:nativePoint.x,y:-nativePoint.y},
-    v=polygonVertices(p),faces=polygonFaces(p),
-    near=faces.filter(f=>pointSegmentDistance(point,f.a,f.b)<=1e-5);
-  if(near.length!==1||v.some(a=>distance(point,a)<POLYGON_CLEARANCE_MM))
-    return {point,normal:{x:NaN,y:NaN},faceId:null,invalid:true};
-  const face=near[0],normal=face.normal,
-    leaving=incoming&&dot(incoming,normal)>0;
-  return {point,normal,faceId:face.id,from:leaving?'inside':'outside',
-    incidentIndex:leaving?p.insideIndex:p.outsideIndex,
-    destinationIndex:leaving?p.outsideIndex:p.insideIndex};
+  return finiteGlassEncounter(component.parameters,polygonVertices(component.parameters),
+    nativePoint,incoming,POLYGON_CLEARANCE_MM);
 }
