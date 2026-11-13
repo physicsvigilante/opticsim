@@ -1,0 +1,28 @@
+name: Native dielectric feasibility (one-off branch probe)
+on:
+  push:
+    branches: [feature/native-dielectric-probe]
+    paths:
+      - scripts/native-dielectric-probe.mjs
+      - .github/workflows/native-dielectric-probe.yml
+permissions:
+  contents: read
+jobs:
+  native-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - run: node scripts/build.mjs --test
+      - run: node scripts/native-dielectric-probe.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-dielectric-probe-evidence
+          path: test-artifacts/native-dielectric-probe/
+          if-no-files-found: ignore
+          retention-days: 7
