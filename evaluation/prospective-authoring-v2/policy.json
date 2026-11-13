@@ -1,0 +1,47 @@
+{
+  "format": "opticsim-prospective-policy-v2",
+  "frozenEngineCommit": "954662c4e0a8c189492da91410a020e646ca2cd0",
+  "archive": {
+    "name": "08_Ray_Optics_Explanations.zip",
+    "sha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939"
+  },
+  "seed": "opticsim-2026-11-13-prospective-v2-1-per-section",
+  "sections": [
+    {
+      "id": "P01",
+      "prefix": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/"
+    },
+    {
+      "id": "P02",
+      "prefix": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/"
+    },
+    {
+      "id": "P03",
+      "prefix": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/"
+    },
+    {
+      "id": "P04",
+      "prefix": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/"
+    },
+    {
+      "id": "P05",
+      "prefix": "08_Ray_Optics_Explanations/05_Prism/Problems/"
+    },
+    {
+      "id": "P06",
+      "prefix": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/"
+    },
+    {
+      "id": "P07",
+      "prefix": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/"
+    },
+    {
+      "id": "P08",
+      "prefix": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/"
+    }
+  ],
+  "maxImageBytes": 512000,
+  "rule": "One numeric PNG per fixed section, smallest SHA256(seed+'|'+path) after metadata-only eligibility and tracked-full-path exclusion. No replacement after opening.",
+  "solutionsRead": false,
+  "limitations": "Tracked prior full-path mentions are not proof of no incidental previous exposure; this will be a same-assistant development trial, not an independent model benchmark."
+}

@@ -1,0 +1,32 @@
+name: Frozen original-problem selection (metadata first)
+on:
+  push:
+    branches: [feature/prospective-authoring-v2]
+    paths:
+      - evaluation/prospective-authoring-v2/policy.json
+      - evaluation/prospective-authoring-v2/selection.json
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: node --check evaluation/prospective-authoring-v2/prepare.mjs
+      - name: No problem images before committed selection
+        run: |
+          if test -f evaluation/prospective-authoring-v2/selection.json; then
+            node evaluation/prospective-authoring-v2/prepare.mjs extract
+          else
+            node evaluation/prospective-authoring-v2/prepare.mjs select
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frozen-prospective-preparation
+          path: test-artifacts/prospective-authoring-v2/
+          if-no-files-found: error
+          retention-days: 7
