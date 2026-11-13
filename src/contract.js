@@ -1,4 +1,5 @@
 import {PRISM_TYPE,PRISM_PARAMETERS,validatePrismGeometry} from './triangular-prism.js';
+import {POLYGON_TYPE,POLYGON_PARAMETERS,validatePolygonGeometry} from './polygon-glass.js';
 import {CIRCULAR_TYPE,CIRCULAR_PARAMETERS,validateCircularGeometry} from './circular-dielectric.js';
 import {CURVED_PARAMETERS,isCurved,validateCurvedGeometry} from './curved-mirrors.js';
 import {PLANAR_TYPE,PLANAR_PARAMETERS,validatePlanarGeometry} from './planar-media.js';
@@ -22,11 +23,11 @@ function choice(value, choices, path) { if (!choices.includes(value)) fail(path,
 const parameters = { 'point-source': ['x', 'y'], 'ideal-lens': ['x', 'focalLength', 'apertureHeight'],
   'plane-mirror': ['x', 'y', 'orientationDeg', 'length'],
   'ray-detector': ['x', 'y', 'orientationDeg', 'length'],
-  [PLANAR_TYPE]: [...PLANAR_PARAMETERS], [CIRCULAR_TYPE]: [...CIRCULAR_PARAMETERS], [PRISM_TYPE]: [...PRISM_PARAMETERS], ...CURVED_PARAMETERS };
+  [PLANAR_TYPE]: [...PLANAR_PARAMETERS], [CIRCULAR_TYPE]: [...CIRCULAR_PARAMETERS], [PRISM_TYPE]: [...PRISM_PARAMETERS], [POLYGON_TYPE]: [...POLYGON_PARAMETERS], ...CURVED_PARAMETERS };
 // Shared authoring/validator definitions. General composition relaxes mandatory
 // apparatus types; it does not relax numerical, geometric or runtime limits.
 export const COMPONENT_TYPES = Object.freeze(Object.keys(parameters));
-export const LENGTH_PARAMETERS = Object.freeze(['x','y','x1','y1','x2','y2','x3','y3','focalLength','apertureHeight','length','radius']);
+export const LENGTH_PARAMETERS = Object.freeze(['x','y','x1','y1','x2','y2','x3','y3','x4','y4','focalLength','apertureHeight','length','radius']);
 export const GENERAL_SCOPE = Object.freeze({
   'point-source': Object.freeze({min:1,max:4}),
   'ideal-lens': Object.freeze({min:0,max:4}),
@@ -35,6 +36,7 @@ export const GENERAL_SCOPE = Object.freeze({
   [PLANAR_TYPE]: Object.freeze({min:0,max:4}),
   [CIRCULAR_TYPE]: Object.freeze({min:0,max:1}),
   [PRISM_TYPE]: Object.freeze({min:0,max:1}),
+  [POLYGON_TYPE]: Object.freeze({min:0,max:1}),
   'ideal-curved-mirror': Object.freeze({min:0,max:2}),
   'circular-arc-mirror': Object.freeze({min:0,max:2})
 });
@@ -53,8 +55,8 @@ export function componentParameterNames(type, version = 4) {
   if (!Object.hasOwn(parameters,type)) return null;
   return [...parameters[type], ...(version >= 2 && type === 'point-source' ? ['brightness'] : [])];
 }
-// Legacy versions stay isolated; circular scenes use v7 and triangular prisms v8.
-export function validate(doc) { return validateVersion(doc, doc?.schemaVersion===8?8:doc?.schemaVersion===7?7:doc?.schemaVersion===6?6:doc?.schemaVersion===5?5:4); }
+// Legacy versions stay isolated; finite quadrilateral glass is new v9 only.
+export function validate(doc) { return validateVersion(doc, doc?.schemaVersion===9?9:doc?.schemaVersion===8?8:doc?.schemaVersion===7?7:doc?.schemaVersion===6?6:doc?.schemaVersion===5?5:4); }
 function validateVersion(doc, version) {
   object(doc, ['format', 'schemaVersion', 'adapterVersion', 'upstreamCommit', 'physics', 'presentation', 'simulation'], '$');
   choice(doc.format, ['ray-optics-2d'], '$.format');
@@ -65,7 +67,7 @@ function validateVersion(doc, version) {
   object(p, ['lengthUnit', 'coordinates', 'model', 'components'], '$.physics');
   choice(p.lengthUnit, ['mm'], '$.physics.lengthUnit');
   choice(p.coordinates, ['x-right-y-up'], '$.physics.coordinates');
-  const models = version===8?['triangular-prism-tracing']:version===7?['circular-dielectric-tracing']:version===6?['curved-mirror-tracing']:version===5?['planar-media-tracing']:['ideal-thin-lens-geometric', ...(version >= 3 ? ['plane-mirror-geometric'] : []), ...(version >= 4 ? ['lens-mirror-return-geometric', 'mixed-lens-mirror-tracing', 'general-component-tracing'] : [])];
+  const models = version===9?['polygon-glass-tracing']:version===8?['triangular-prism-tracing']:version===7?['circular-dielectric-tracing']:version===6?['curved-mirror-tracing']:version===5?['planar-media-tracing']:['ideal-thin-lens-geometric', ...(version >= 3 ? ['plane-mirror-geometric'] : []), ...(version >= 4 ? ['lens-mirror-return-geometric', 'mixed-lens-mirror-tracing', 'general-component-tracing'] : [])];
   choice(p.model, models, '$.physics.model');
   if (!Array.isArray(p.components) || p.components.length > 32) fail('$.physics.components', 'expected a bounded component array');
   const ids = new Set();
@@ -74,7 +76,7 @@ function validateVersion(doc, version) {
     object(c, ['id', 'type', 'parameters', ...(version >= 2 && c?.type === 'point-source' ? ['emission'] : [])], path);
     if (typeof c.id !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(c.id) || ids.has(c.id)) fail(`${path}.id`, 'expected a unique stable ID (letters, digits, underscores, hyphens)');
     ids.add(c.id);
-    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)) :
+    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)) :
       version >= 3 ? ['point-source', 'ideal-lens', 'plane-mirror'] :
       ['point-source', 'ideal-lens'], `${path}.type`);
     object(c.parameters, componentParameterNames(c.type,version), `${path}.parameters`);
@@ -92,7 +94,7 @@ function validateVersion(doc, version) {
     }
     if (version >= 2 && c.type === 'point-source') {
       object(c.emission, ['mode', 'directionDeg', 'angleDeg'], `${path}.emission`);
-      choice(c.emission.mode, version===6?['single-ray','full-circle','directional']:(version===5||version===7||version===8)?['single-ray']:['full-circle', 'directional'], `${path}.emission.mode`);
+      choice(c.emission.mode, version===6?['single-ray','full-circle','directional']:(version===5||version===7||version===8||version===9)?['single-ray']:['full-circle', 'directional'], `${path}.emission.mode`);
       number(c.emission.directionDeg, -180, 180, `${path}.emission.directionDeg`);
       number(c.emission.angleDeg, 1, 180, `${path}.emission.angleDeg`);
     }
@@ -101,7 +103,11 @@ function validateVersion(doc, version) {
   // cardinality or analytical path. One reusable measurement layer serves all
   // current-v4 arrangements; the original optical scope checks stay unchanged.
   const opticalComponents=p.components.filter(c=>c.type!=='ray-detector');
-  if(p.model==='triangular-prism-tracing'){
+  if(p.model==='polygon-glass-tracing'){
+    validatePolygonGeometry(p.components,mirrorEndpoints,fail);
+    validateMixedTraceScope(opticalComponents.filter(c=>c.type!==POLYGON_TYPE),true);
+  }
+  else if(p.model==='triangular-prism-tracing'){
     validatePrismGeometry(p.components,mirrorEndpoints,fail);
     validateMixedTraceScope(opticalComponents.filter(c=>c.type!==PRISM_TYPE),true);
   }

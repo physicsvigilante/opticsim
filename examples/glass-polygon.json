@@ -1,0 +1,25 @@
+{
+  "format":"opticsim-problem-v1",
+  "physical":{
+    "lengthUnit":"cm",
+    "title":"Synthetic convex glass quadrilateral: native entry and exit",
+    "components":[
+      {"id":"S1","type":"point-source","parameters":{"x":-20,"y":-1,"brightness":0.5},"emission":{"mode":"single-ray","directionDeg":8}},
+      {"id":"G1","type":"glass-polygon","parameters":{"x1":0,"y1":-8,"x2":0,"y2":8,"x3":12,"y3":8,"x4":12,"y4":-8,"insideIndex":1.5,"outsideIndex":1,"partialReflection":false}},
+      {"id":"D1","type":"ray-detector","parameters":{"x":24,"y":0,"orientationDeg":90,"length":18}}
+    ]
+  },
+  "requests":[
+    {"id":"encounters","kind":"interface-interactions","componentId":"G1"},
+    {"id":"faces","kind":"interface-face-events","componentId":"G1"},
+    {"id":"first","kind":"interface-first-event","componentId":"G1"},
+    {"id":"detector","kind":"detector-crossings","componentId":"D1"}
+  ],
+  "interpretation":{
+    "requestedResult":"Demonstrate explicit convex four-vertex glass and native face observations, not a solved original JEE question.",
+    "stated":[],"derived":[],
+    "assumptions":["Entire configuration is synthetic software-control data, not an original textbook question.","One stationary strictly convex homogeneous four-vertex region, in 2D, surrounded by a uniform external medium.","partialReflection=false explicitly omits Fresnel partial reflections while retaining native total internal reflection."],
+    "unknowns":["No source-specific branched ray history, continuum throughput, image or unseen-question answer is inferred."]
+  },
+  "illustration":false,"verifyNative":false
+}

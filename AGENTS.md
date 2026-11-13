@@ -120,3 +120,18 @@
   glass, blockers, screens, or beams is **not** permission to extend existing
   v4–v8 scope; require separate feature review and merge approval. The
   source-only transfer workflow is temporary and must not reach main.
+
+- Convex polygon glass v9 uses exactly one explicitly four-vertex, strictly
+  convex `glass-polygon`, 1–4 exact single rays and 0–2 external detectors.
+  All four coordinate pairs, inside/outside refractive indices and the Fresnel
+  policy are required; never invent a rectangle/paperweight size. It compiles
+  one unchanged native `Glass`, with per-face actual native incident summaries
+  using the shared finite-glass geometry, not a source-specific ray history.
+  Ensure convex/nonintersecting shape, edge/altitude>=1 mm, source/vertex
+  clearance, outside detector separation and v4–v8 scene isolation. No other
+  optics, nesting, arbitrary polygons, curved faces, motion, parallel beams or
+  3D image claims in v9. Fresnel-off omits partial reflection, retains native
+  TIR, and complete-run/hash gates reject truncation and corner ambiguities.
+  Review docs/POLYGON-GLASS.md; this capability does not reinterpret sealed
+  JEE first attempts. The initial validation includes both native PhyDemo
+  measurements and existing triangle regressions.

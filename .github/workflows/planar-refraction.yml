@@ -38,6 +38,10 @@ jobs:
         run: node scripts/triangular-prism-acceptance.mjs
       - name: Prism browser edits, native TIR and qualified export
         run: node scripts/triangular-prism-browser.mjs
+      - name: Native four-sided polygon glass, geometry/qualification and vertex sweep
+        run: node scripts/polygon-glass-acceptance.mjs
+      - name: Real Chrome polygon glass edits, TIR, incomplete suppression and exports
+        run: node scripts/polygon-glass-browser.mjs
       - name: Package existing allowlisted static viewer (not a deployment)
         run: node scripts/pack-demo.mjs
       - uses: actions/upload-artifact@v4
@@ -52,6 +56,8 @@ jobs:
             test-artifacts/browser-circular-dielectric/
             test-artifacts/llm-authoring/triangular-prism/
             test-artifacts/browser-triangular-prism/
+            test-artifacts/llm-authoring/polygon-glass/
+            test-artifacts/browser-polygon-glass/
           if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v4

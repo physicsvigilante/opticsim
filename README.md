@@ -4,6 +4,16 @@ A standalone-browser-capable optical bench powered by PhyDemo Ray Optics Simulat
 pinned to **811f508d2b070898c241a568b0c167dcb8645251**. Browser runtime resources
 are local. No LLM request is needed to open, simulate, or edit supported scenes.
 
+## Bounded convex polygon glass (proposed v9 extension)
+
+An explicitly authored four-vertex **convex** glass cross section can be
+compiled into one unchanged pinned native PhyDemo `Glass`. It reuses our
+triangle's bounded native surface observations, the unified problem workflow,
+qualified physical edits and the same browser. It is *not* arbitrary glass,
+nested media, or a JEE answer solver; the full standalone scope and acceptance
+are in [docs/POLYGON-GLASS.md](docs/POLYGON-GLASS.md). Single-ray sources remain
+the only supported emitters for refractive media in this increment.
+
 ## JEE Optical Systems Atlas — capability discovery, not problem solving
 
 The [Optical Systems Atlas](evaluation/optical-systems-atlas-v1/README.md)
