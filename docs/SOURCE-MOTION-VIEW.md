@@ -41,7 +41,7 @@ ratio. The default opening still fits the whole sampled motion when supported.
 
 Camera inputs only modify a temporary rendering copy and can cause the *same*
 native frame to be retraced for display. They do not alter source motion,
-the accepted scene, mirror dimensions, ray-emission policy, numerical budgets,
+the accepted scene, stationary optical aperture, ray-emission policy, numerical budgets,
 experiment identity, qualified static-scene exports or conditional formulas.
 Frame evidence records the temporary display adjustment separately.
 
@@ -49,7 +49,11 @@ The generalization strategy is to add **small validated capabilities per
 new problem family**: motion laws, observable calculations and supported native
 geometry evolve separately, while camera/presentation and provenance remain
 shared. For now the physics scope is still one uniformly translating source
-and one stationary curved mirror (optional detectors). More general movement
+and either a stationary curved mirror (canonical v6) or a stationary ideal
+thin lens (canonical v4), with optional passive detectors. The same camera
+fits the lens's existing finite aperture endpoints as it does curved-mirror
+endpoints, and includes supported finite real and virtual image points while
+withholding infinity. More general movement
 or optical combinations must be designed and tested when new examples justify
 them; camera zoom does not imply support for arbitrary moving apparatus.
 
