@@ -48,7 +48,7 @@ export function validateExplorationReference(ref,questions){
  for(const [i,row] of ref.cases.entries()){
    const q=questions.cases[i];
    if(!hasOnly(row,['id','classification','expectedAction','expectedPhysics','expectedAdditionalTargets',
-    'expectedFirstStatus','reviewNote','reasonCode'])||
+    'expectedFirstStatus','reviewNote','reasonCode','sourceNamedNewComponentIds'])||
      row.id!==q.id||!names.has(row.classification)||!validText(row.reviewNote))
      throw Error(q.id+': invalid reference adjudication or case order');
    if(row.classification==='supported'){
@@ -78,6 +78,8 @@ export function validateExplorationReference(ref,questions){
        throw Error(q.id+': reference cannot silently migrate a physical model family or length gauge');
      const oldComponents=q.baseline.scene.physics.components,newComponents=doc.physics.components;
      const priorIds=new Set(oldComponents.map(x=>x.id)),nextIds=new Set(newComponents.map(x=>x.id));
+     if(row.expectedAction!=='structure'&&row.sourceNamedNewComponentIds!==undefined)
+       throw Error(q.id+': sourceNamedNewComponentIds applies only to explicit structural references');
      if(row.expectedAction==='observe'&&canonicalJSON(doc.physics)!==canonicalJSON(q.baseline.scene.physics))
        throw Error(q.id+': observation-only reference cannot modify physics');
      if(row.expectedAction==='revise'){
@@ -88,6 +90,14 @@ export function validateExplorationReference(ref,questions){
      }
      if(row.expectedAction==='structure'){
        const alteredIds=[...priorIds].filter(id=>!nextIds.has(id)),newIds=[...nextIds].filter(id=>!priorIds.has(id));
+       // v1 scores structural equality by stable ID. Unnamed new components
+       // have author-assigned IDs and need a separate identity-isomorphism
+       // rubric; do not falsely grade them as physical mistakes.
+       const named=row.sourceNamedNewComponentIds;
+       if(!Array.isArray(named)||named.some(id=>typeof id!=='string'||!idPattern.test(id))||
+          new Set(named).size!==named.length||
+          canonicalJSON([...named].sort())!==canonicalJSON([...newIds].sort()))
+         throw Error(q.id+': structural v1 reference requires all new component IDs explicitly source-named and adjudicated; unnamed new IDs need a separate matching rubric');
        if(!alteredIds.length&&!newIds.length)
          throw Error(q.id+': structural reference must add or remove at least one stable component identity');
        const retainedOld=oldComponents.filter(x=>nextIds.has(x.id));
