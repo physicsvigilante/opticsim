@@ -14,6 +14,8 @@ import {initialQualification,recordQualifiedEdit,createQualifiedBundle,parseQual
 import {runParameterSweep,plotSamples} from '../../src/parameter-sweep.js';
 import {reserveAuthoringOutput} from '../../scripts/authoring-evidence.mjs';
 import {canonicalJSON} from '../../src/qualified-utils.js';
+import {compareScenario} from './comparison.mjs';
+export {compareScenario} from './comparison.mjs';
 const root=fileURLToPath(new URL('../../',import.meta.url));
 const require=createRequire(import.meta.url);
 const core=require('../../dist/test-core.cjs');
@@ -22,10 +24,8 @@ const gitBlob=b=>createHash('sha1').update(Buffer.concat([Buffer.from('blob '+b.
 const pretty=x=>JSON.stringify(x,null,2)+'\n';
 const planPath=resolve(root,'evaluation/reusable-model-v1/plan.json');
 export const PLAN_BLOB='75ec9471d9107d4e6ee3408ac13269299d5e3a2c';
-const allowedStatuses=new Set(['available','qualified','conditional']);
 const evaluate=doc=>evaluateDocument(doc,core);
 const get=(doc,id)=>doc.physics.components.find(c=>c.id===id);
-
 function physicalAnswerCheck(doc,result){
  const image=result.results.find(r=>r.kind==='ideal-image');
  if(image?.status!=='conditional')return {status:'not-applicable',reason:'No supported conditional ideal-image result; native tracing remains separate.'};
@@ -37,41 +37,6 @@ function physicalAnswerCheck(doc,result){
  return {status:'checked-conditional-ideal',conjugateResidual,transverseResidual,
   nativeImageDetected:false,limitations:'Ideal Gaussian relation and height, not a detected native ray intersection.'};
 }
-
-// Advisory comparison classification, not a new public mathematical solver.
-// Only observations with the same exact request ID, type, unit and method can
-// be treated as comparable, and native counts need matching sampling policies.
-export function compareScenario(baseline,scenario){
- const samePhysics=canonicalJSON(baseline.doc.physics)===canonicalJSON(scenario.doc.physics);
- const sameNumerics=canonicalJSON(baseline.doc.simulation)===canonicalJSON(scenario.doc.simulation);
- const sameModel=baseline.doc.physics.model===scenario.doc.physics.model;
- const sameUnit=baseline.doc.physics.lengthUnit===scenario.doc.physics.lengthUnit;
- const entries=scenario.results.results.map(r=>{
-   const orig=baseline.results.results.find(x=>x.id===r.id&&x.kind===r.kind&&x.componentId===r.componentId);
-   const conditions={matchingTarget:!!orig,sameMethod:!!orig&&orig.method===r.method,
-     sameUnit:!!orig&&orig.unit===r.unit,samePhysicalModel:sameModel,
-     sameLengthUnit:sameUnit,sameNumericalPolicy:sameNumerics};
-   const bothQualified=!!orig&&allowedStatuses.has(orig.status)&&allowedStatuses.has(r.status);
-   let comparison='not-comparable',reason;
-   if(!orig)reason='No exact named request and component target in baseline; new observations are not invented for the original state.';
-   else if(!bothQualified)reason='At least one result is unavailable, suppressed, pending or otherwise not accepted.';
-   else if(!conditions.sameMethod||!conditions.sameUnit||!sameModel||!sameUnit)
-     reason='Result method, units or physical model differ.';
-   else if(r.method==='native-observation'&&!sameNumerics)
-     reason='Native sampled counts/power use different numerical policies; brightness clipping may affect readings. Not a physical change claim.';
-   else if(r.status==='conditional'&&orig.status==='conditional')
-     comparison='conditional-ideal-comparison';
-   else if(r.method==='native-observation'&&sameNumerics)
-     comparison='sampled-native-comparison';
-   else reason='Result provenance is not an agreed comparison contract.';
-   return {id:r.id,kind:r.kind,conditions,comparison,
-     ...(reason?{reason}:{}), ...(comparison!=='not-comparable'?{baselineStatus:orig.status,scenarioStatus:r.status}:{}),
-     interpretation:'Comparison eligibility only, not proof of a physical causal law.'};
- });
- return {baselineSceneSha256:baseline.bundle.sceneSha256,
-   scenarioSceneSha256:scenario.bundle.sceneSha256,samePhysics,sameNumerics,entries};
-}
-
 export async function runExploration({outputPath=resolve(root,'test-artifacts/llm-authoring/reusable-model-v1')}={}){
  const planBytes=readFileSync(planPath),plan=JSON.parse(planBytes);
  assert.equal(gitBlob(planBytes),PLAN_BLOB,'Frozen scenario selections changed; do not repair after evidence');
@@ -119,7 +84,7 @@ export async function runExploration({outputPath=resolve(root,'test-artifacts/ll
     'Conditional ideal images are analytical coordinates, never native detected images.',
     'Changing density may change brightness clipping, invalidating naive count/power comparisons.',
     'Structural addition uses canonical clone+validate in this evaluation; reviseScene has no public append-component operation.',
-    'No LLM or teacher authored new requests in a blind evaluation; workload is counted from explicit planned deltas, not tokens.']
+    'These are assistant-authored classroom proposals; no independent teacher or model authored a blind evaluation.']
  };
  const check=(label,condition,detail=null)=>{assert.ok(condition,label);report.checks.push({label,passed:true,detail});};
  const instances=new Map();
@@ -138,6 +103,7 @@ export async function runExploration({outputPath=resolve(root,'test-artifacts/ll
    check(p.id+' did not mutate request, qualified baseline or authored scene',canonicalJSON(baselineBundle)===originalBaseline&&serializeSave(doc)===originalDoc);
    const independentMath=physicalAnswerCheck(doc,results);
    const row={id:p.id,route,sourceGiven:p.kind==='original-source',teacherHypothetical:!['original-source','passive-observation'].includes(p.kind),
+     proposalAuthor:'same-assistant; hypothetical classroom investigation, not a teacher participant',
      kind:p.kind,sceneSha256:bundle.sceneSha256,integritySha256:bundle.integritySha256,
      nativeStatus:execution.summary.native.status,executionPassed:execution.summary.executionPassed,
      measurements:execution.summary.observations,sourceBrightnessScale:execution.summary.observations?.emissionsById?.['source-1']?.brightnessScale??null,
@@ -146,12 +112,13 @@ export async function runExploration({outputPath=resolve(root,'test-artifacts/ll
    report.scenarios.push(row);
    write('scene.json',originalDoc);write('qualified-scene.json',bundle);
    write('results.json',results);write('native.json',execution.summary);
-   write('scenario-origin.json',{sourceGiven:row.sourceGiven,teacherHypothetical:row.teacherHypothetical,
+   write('scenario-origin.json',{sourceGiven:row.sourceGiven,teacherHypothetical:row.teacherHypothetical,proposalAuthor:row.proposalAuthor,
      intervention:p,route,baselineSceneSha256:baselineBundle.sceneSha256,
      sourceFactsPreserved:'Original source fixture and SHA remain in the unchanged baseline and qualification origin.'});
    instances.set(p.id,{doc:structuredClone(doc),bundle,results,execution,row});
    return row;
  }
+ try{
  const baselineSpec=plan.investigations[0];
  const baseline=await accepted(baselineSpec,baselineDoc,observables,qualification,'source-backed-prepared-scene');
  check('Original source component/parameter identity preserved',canonicalJSON(baselineDoc.physics.components)===canonicalJSON(source.physics.components));
@@ -184,7 +151,6 @@ export async function runExploration({outputPath=resolve(root,'test-artifacts/ll
        canonicalJSON(doc.physics)===canonicalJSON(baselineDoc.physics)&&canonicalJSON(doc.simulation)===canonicalJSON(baselineDoc.simulation));
    check(p.id+' always branches from initial baseline, not a prior hypothetical',serializeSave(baselineDoc)===originalSourceSerialization);
  }
- // Validate/refuse independently; invalid scenarios never reach the native core.
  for(const p of plan.negativeControls){
    let failure=null;
    try{
@@ -197,7 +163,6 @@ export async function runExploration({outputPath=resolve(root,'test-artifacts/ll
    report.rejections.push({id:p.id,kind:p.kind,baselineSceneSha256:baselineBundle.sceneSha256,accepted:false,
      physicalProposedValue:p.changes??p.component,nativeCalls:0,reason:failure,sourceGiven:false});
  }
- // Existing bounded parameter sweep revalidates every sample independently.
  const sweepSpec={format:plan.sweep.format,expectedSceneSha256:baselineBundle.sceneSha256,
    parameter:structuredClone(plan.sweep.parameter),values:[...plan.sweep.values],plot:structuredClone(plan.sweep.plot)};
  const sweepInputs=canonicalJSON(sweepSpec);
@@ -219,12 +184,11 @@ export async function runExploration({outputPath=resolve(root,'test-artifacts/ll
    completedSamples:sweep.completedSamples,failedSamples:sweep.failedSamples,
    samples:sweep.samples,plot:plotSamples(sweep)};
  save('sweep-report.json',sweep);
- // Deliberately refuse comparisons that would mislabel sampling changes as
- // physical effects. The appended detector has no original counterpart.
  const baselineInstance=instances.get('baseline');
  for(const p of plan.investigations.slice(1)){
-   const comp=compareScenario(baselineInstance,instances.get(p.id));
+   const comp=await compareScenario(baselineInstance,instances.get(p.id));
    report.comparisons.push({id:p.id,...comp});
+   check(p.id+' comparison uses complete current hash-bound evidence',comp.evidenceChecks.baseline.accepted&&comp.evidenceChecks.scenario.accepted);
    if(p.id==='density-025'){
      check('Sampling change never certifies native counts or relative power as physical differences',
        comp.entries.filter(e=>e.kind!=='ideal-image').every(e=>e.comparison==='not-comparable')&&
@@ -246,9 +210,12 @@ export async function runExploration({outputPath=resolve(root,'test-artifacts/ll
  check('Original baseline is still hash-identical after every branch and sweep',
    canonicalJSON(baselineBundle)===immutable&&serializeSave(baselineDoc)===originalSourceSerialization);
  report.checkCounts={passed:report.checks.length,failed:0};
- report.status='checks-passed';
- save('report.json',report);
- return report;
+ report.status='checks-passed';save('report.json',report);return report;
+ }catch(error){
+  report.status='checks-failed';report.failure={name:error.name,message:error.message};
+  report.checkCounts={passed:report.checks.length,failed:1};
+  save('failure.json',report);throw error;
+ }
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))
  runExploration().then(r=>console.log('Reusable-model exploration '+JSON.stringify({
