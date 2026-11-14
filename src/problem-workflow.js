@@ -1,6 +1,7 @@
 // Deterministic dispatch only. Physics, angular algebra, qualification and
 // native result gating stay in their existing implementations.
 import {analyzeCurvedMirrorQuery,curvedQueryCapabilities,CURVED_FACTS_FORMAT,CURVED_QUERY_FORMAT} from './curved-mirror-queries.js';
+import {analyzeReducedInverseQuery,reducedInverseCapabilities,INVERSE_FACTS_FORMAT,INVERSE_QUERY_FORMAT} from './reduced-inverse-queries.js';
 import {problemCapabilities,resolveProblemRequest} from './problem-authoring.js';
 import {analyzePlanarAngleQuery,angularCapabilities,ANGLE_QUERY_FORMAT,ANGLE_FACTS_FORMAT} from './planar-angle-queries.js';
 import {analyzePlaneMirrorAngleQuery,mirrorAngularCapabilities,MIRROR_FACTS_FORMAT,MIRROR_QUERY_FORMAT} from './mirror-angle-queries.js';
@@ -10,6 +11,7 @@ import {canonicalJSON,isRecord,boundedText} from './qualified-utils.js';
 export const PROBLEM_FORMAT='opticsim-problem-v1';
 const own=(x,k)=>Object.hasOwn(x,k);
 const curvedKinds=new Set(curvedQueryCapabilities().kinds);
+const inverseKinds=new Set(reducedInverseCapabilities().kinds);
 const angularKinds=new Set(angularCapabilities().kinds);
 const mirrorKinds=new Set(mirrorAngularCapabilities().kinds);
 const observableKinds=observableCapabilities().kinds;
@@ -17,12 +19,13 @@ const empty=(r,status,code,reason)=>({id:r.id,kind:r.kind,status,value:null,meth
 export function problemWorkflowCapabilities(){
   return {format:PROBLEM_FORMAT,version:1,maxRequests:16,maxCalculations:4,
     required:['format','physical','requests'],optional:['interpretation','illustration','verifyNative'],
-    physical:'Existing minimal authoring request, existing reduced planar-angular facts, or null when unsupported. No new apparatus fields.',
-    requestKinds:{...Object.fromEntries(curvedQueryCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:CURVED_QUERY_FORMAT}])),
+    physical:'Existing minimal authoring request, reduced angular/mirror/inverse facts, or null. No invented apparatus fields.',
+    requestKinds:{...Object.fromEntries(reducedInverseCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:INVERSE_QUERY_FORMAT}])),
+      ...Object.fromEntries(curvedQueryCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:CURVED_QUERY_FORMAT}])),
       ...Object.fromEntries(angularCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:ANGLE_QUERY_FORMAT}])),
       ...Object.fromEntries(mirrorAngularCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:MIRROR_QUERY_FORMAT}])),
       ...Object.fromEntries(Object.entries(observableKinds).map(([k,v])=>[k,{...v,route:k==='ideal-image'?'existing-analysis-with-native-gate':'native-observation'}]))},
-    authoring:problemCapabilities(),curvedMirrors:curvedQueryCapabilities(),angular:angularCapabilities(),mirrorAngular:mirrorAngularCapabilities(),observables:observableCapabilities(),
+    authoring:problemCapabilities(),curvedMirrors:curvedQueryCapabilities(),reducedInverse:reducedInverseCapabilities(),angular:angularCapabilities(),mirrorAngular:mirrorAngularCapabilities(),observables:observableCapabilities(),
     policy:'One request file; route by kind, never by answers or expected values. Native componentId may be omitted only when exactly one compatible authored component exists; its binding is recorded, not guessed from geometry or ray paths. Ambiguous or absent targets remain unresolved. No physical repairs or method fallback. Angular-only requests do not trigger native work unless verifyNative is true. Interpretation remains author-provided and unverified.'};
 }
 function validateEnvelope(input){
@@ -37,8 +40,10 @@ function validateEnvelope(input){
     if(!isRecord(r))throw Error('Invalid requested quantity');
     boundedText(r.id,'Request ID',64);boundedText(r.kind,'Request kind',80);
     if(ids.has(r.id))throw Error('Duplicate request ID');ids.add(r.id);
-    if(curvedKinds.has(r.kind)||mirrorKinds.has(r.kind)||angularKinds.has(r.kind)){if(++angularCount>4)throw Error('At most four analytical calculations per problem');}
-    if(curvedKinds.has(r.kind)){
+    if(curvedKinds.has(r.kind)||inverseKinds.has(r.kind)||mirrorKinds.has(r.kind)||angularKinds.has(r.kind)){if(++angularCount>4)throw Error('At most four analytical calculations per problem');}
+    if(inverseKinds.has(r.kind)){
+      if(Object.keys(r).some(k=>!['id','kind'].includes(k)))throw Error('Unsupported inverse request field');
+    }else if(curvedKinds.has(r.kind)){
       if(Object.keys(r).some(k=>!['id','kind','componentId'].includes(k)))throw Error('Unsupported curved-mirror request field');
     }else if(mirrorKinds.has(r.kind)){
       const keys=['id','kind','referenceMirrorId','outgoingRelation','angleConvention'];
@@ -57,13 +62,24 @@ export function planProblem(input){
   const authoredNativeRequests=request.requests.filter(r=>own(observableKinds,r.kind));
   const needsNative=authoredNativeRequests.length>0||request.verifyNative===true;
   let preparation=null,scene=null,sceneConflict=false;
-  if(physical&&physical.format!==ANGLE_FACTS_FORMAT&&physical.format!==MIRROR_FACTS_FORMAT&&physical.format!==CURVED_FACTS_FORMAT){
+  if(physical&&physical.format!==ANGLE_FACTS_FORMAT&&physical.format!==MIRROR_FACTS_FORMAT&&physical.format!==CURVED_FACTS_FORMAT&&physical.format!==INVERSE_FACTS_FORMAT){
     preparation=resolveProblemRequest(physical,{illustration:request.illustration===true});
     scene=preparation.prepared?.document??null;
   }
   const calculations=[],results=[];
   for(const r of request.requests){
-    if(curvedKinds.has(r.kind)){
+    if(inverseKinds.has(r.kind)){
+      if(!physical){results.push(empty(r,'needs-information','NO_PHYSICAL_FACTS','Reduced inverse calculation requires explicitly stated physical facts.'));continue;}
+      const {id,...fields}=r,query={format:INVERSE_QUERY_FORMAT,...fields};
+      try{
+        const result=analyzeReducedInverseQuery(physical,query);
+        calculations.push({id,query,result});
+        results.push({id,kind:r.kind,status:result.status,value:result.value??null,method:result.method,
+          reasonCode:result.reasonCode??null,reason:result.reason??null,
+          ...(result.candidates?{candidates:result.candidates}:{}),
+          assumptions:result.assumptions,limitations:result.limitations,nativeObservation:false});
+      }catch(e){results.push(empty(r,e.code==='MISSING_FACTS'?'needs-information':e.code==='UNSUPPORTED_MODEL'||e.code==='UNSUPPORTED_SCOPE'?'unavailable':'invalid-input',e.code||'INVALID_INVERSE_FACTS',e.message));}
+    }else if(curvedKinds.has(r.kind)){
       if(!physical){results.push(empty(r,'needs-information','MISSING_FACTS','Curved mirror properties and object data are required.'));continue;}
       const {id,...fields}=r,query={format:CURVED_QUERY_FORMAT,...fields};
       try{
