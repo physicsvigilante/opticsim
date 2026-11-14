@@ -1,6 +1,6 @@
 // Fixed regression inputs for the composition-validation extraction.
 // These are software controls, not independent interpretations of source problems.
-import {readFileSync,readdirSync} from 'node:fs';
+import {readFileSync} from 'node:fs';
 import {prepareScene} from '../../src/authoring.js';
 import {parseSave} from '../../src/contract.js';
 const root=new URL('../../',import.meta.url);
@@ -8,7 +8,10 @@ const read=path=>readFileSync(new URL(path,root),'utf8');
 export function compositionCompatibilityCases(){
   const cases=[];
   const add=(id,document)=>cases.push({id,document});
-  for(const name of readdirSync(new URL('scenes/',root)).filter(n=>n.endsWith('.json')).sort())
+  // Membership was frozen with PR #66; newer scenes have separate feature tests.
+  const names=JSON.parse(read('test/fixtures/composition-compatibility-baseline.json')).records
+    .filter(r=>r.id.startsWith('scene/')).map(r=>r.id.slice(6));
+  for(const name of names)
     add('scene/'+name,JSON.parse(read('scenes/'+name)));
   for(const name of ['legacy-v1','legacy-v2','legacy-v3-lens','legacy-v3-mirror'])
     cases.push({id:'legacy/'+name,text:read('test/fixtures/'+name+'.json')});

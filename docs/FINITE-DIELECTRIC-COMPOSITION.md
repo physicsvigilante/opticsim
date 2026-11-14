@@ -5,6 +5,9 @@ PhyDemo `Glass`, `Mirror`, `SingleRay` and `Detector` objects. It adds geometry
 admission rules, not new components, optical laws, a ray solver, a route
 controller, an LLM provider, or an analytical image model.
 
+A separately versioned v11 extension supports one or two mirrors in this same
+family. See `TWO-MIRROR-COMPOSITION.md`. The v10 rules below remain unchanged.
+
 ## Explicit scope
 
 - Exactly one stationary, strictly convex four-vertex `polygon-dielectric`.

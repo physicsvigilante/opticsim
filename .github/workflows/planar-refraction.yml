@@ -46,6 +46,10 @@ jobs:
         run: node scripts/finite-composition-acceptance.mjs
       - name: Composition browser edits, misses, incomplete results and qualified exports
         run: node scripts/finite-composition-browser.mjs
+      - name: Native two-mirror composition, qualified structural branches and sweep
+        run: node scripts/two-mirror-composition-acceptance.mjs
+      - name: Two-mirror browser edits, identity preservation and incomplete suppression
+        run: node scripts/two-mirror-composition-browser.mjs
       - name: Package existing allowlisted static viewer (not a deployment)
         run: node scripts/pack-demo.mjs
       - uses: actions/upload-artifact@v4
@@ -64,6 +68,8 @@ jobs:
             test-artifacts/browser-polygon-dielectric/
             test-artifacts/llm-authoring/finite-composition/
             test-artifacts/browser-finite-composition/
+            test-artifacts/llm-authoring/two-mirror-composition/
+            test-artifacts/browser-two-mirror-composition/
           if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v4
