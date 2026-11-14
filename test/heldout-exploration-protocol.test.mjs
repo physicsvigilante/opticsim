@@ -105,6 +105,7 @@ test('offline reviewer reference must be complete, physically supported and reje
 test('adjudicated reference actions cannot quietly require a different class of physics operation',async()=>{
  const f=await scenario(),wrongAction=structuredClone(f.reference);
  wrongAction.cases[1].expectedAction='revise';
+ delete wrongAction.cases[1].sourceNamedNewComponentIds;
  assert.throws(()=>validateExplorationReference(wrongAction,f.questions),/targeted parameter reference/);
  const wrongStructure=structuredClone(f.reference);
  wrongStructure.cases[0].expectedAction='structure';
