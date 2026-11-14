@@ -1,4 +1,4 @@
-import {FINITE_COMPOSITION_MODEL,isFiniteCompositionVersion,validateFiniteDielectricComposition} from './finite-dielectric-composition.js';
+import {FINITE_COMPOSITION_MODEL,isFiniteCompositionVersion,isFiniteCompositionRegion,validateFiniteDielectricComposition} from './finite-dielectric-composition.js';
 import {PRISM_TYPE,PRISM_PARAMETERS,validatePrismGeometry} from './triangular-prism.js';
 import {POLYGON_TYPE,POLYGON_PARAMETERS,validatePolygonGeometry} from './polygon-dielectric.js';
 import {CIRCULAR_TYPE,CIRCULAR_PARAMETERS,validateCircularGeometry} from './circular-dielectric.js';
@@ -122,7 +122,7 @@ function validateVersion(doc, version) {
   const opticalComponents=p.components.filter(c=>c.type!=='ray-detector');
   if(p.model===FINITE_COMPOSITION_MODEL){
     validateFiniteDielectricComposition(p.components,mirrorEndpoints,fail,version);
-    validateMixedTraceScope(opticalComponents.filter(c=>c.type!==POLYGON_TYPE),true);
+    validateMixedTraceScope(opticalComponents.filter(c=>!isFiniteCompositionRegion(c.type)),true);
   }
   else if(p.model==='polygon-dielectric-tracing'){
     validatePolygonGeometry(p.components,mirrorEndpoints,fail);

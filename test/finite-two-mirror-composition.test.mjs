@@ -28,7 +28,7 @@ test('v11 composes one or two mirrors in the same family without widening v9/v10
  assert.equal(c.schemaVersion,11);assert.deepEqual(c.counts['plane-mirror'],{min:1,max:2});
  c.counts['plane-mirror'].max=99;delete c.counts['polygon-dielectric'];
  assert.deepEqual(capabilities().extendedFiniteDielectricComposition.counts['plane-mirror'],{min:1,max:2});
- for(const version of [4,5,6,7,8,9,10,12,'11']){const bad=structuredClone(d);bad.schemaVersion=bad.adapterVersion=version;assert.throws(()=>validate(bad));}
+ for(const version of [4,5,6,7,8,9,10,13,'11']){const bad=structuredClone(d);bad.schemaVersion=bad.adapterVersion=version;assert.throws(()=>validate(bad));}
  const one=request();one.components=one.components.filter(c=>c.id!=='M2');const historical=doc(one);
  assert.equal(historical.schemaVersion,10);
  assert.throws(()=>reviseComponents(historical,patch([{op:'add',lengthUnit:'mm',component:part(r,'M2')}])),/one external plane mirror/);

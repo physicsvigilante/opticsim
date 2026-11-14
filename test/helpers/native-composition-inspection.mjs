@@ -10,7 +10,7 @@ export function transform(r,rotation,scale=1,tx=0,ty=0){
  const a=rotation*Math.PI/180,point=(x,y)=>({x:tx+scale*(x*Math.cos(a)-y*Math.sin(a)),y:ty+scale*(x*Math.sin(a)+y*Math.cos(a))});
  const wrap=x=>((x+180)%360+360)%360-180;
  for(const c of r.components){const p=c.parameters;
-  if(c.type==='polygon-dielectric')for(let i=1;i<=4;i++){const q=point(p['x'+i],p['y'+i]);p['x'+i]=q.x;p['y'+i]=q.y;}
+  if(['polygon-dielectric','triangular-prism'].includes(c.type))for(let i=1;i<=(c.type==='triangular-prism'?3:4);i++){const q=point(p['x'+i],p['y'+i]);p['x'+i]=q.x;p['y'+i]=q.y;}
   else{Object.assign(p,point(p.x,p.y));if('length' in p)p.length*=scale;if('orientationDeg' in p)p.orientationDeg=wrap(p.orientationDeg+rotation);}
   if(c.emission)c.emission.directionDeg=wrap(c.emission.directionDeg+rotation);
  }return r;
@@ -43,10 +43,11 @@ export function inspectNative(d){
    const a=p.orientationDeg*Math.PI/180,n={x:-Math.sin(a),y:Math.cos(a)};
    for(const v of e.outgoing){close(v.x,e.incoming.x-2*dot(e.incoming,n)*n.x);close(v.y,e.incoming.y-2*dot(e.incoming,n)*n.y);}
   }
-  if(c.type==='polygon-dielectric'){
-   const v=[1,2,3,4].map(i=>({x:p['x'+i],y:p['y'+i]}));
-   const winding=Math.sign(v.reduce((s,a,i)=>s+cross(a,v[(i+1)%4]),0));
-   const face=v.map((a,i)=>{const b=v[(i+1)%4],edge={x:b.x-a.x,y:b.y-a.y},len=Math.hypot(edge.x,edge.y);
+  if(['polygon-dielectric','triangular-prism'].includes(c.type)){
+   const indices=c.type==='triangular-prism'?[1,2,3]:[1,2,3,4];
+   const v=indices.map(i=>({x:p['x'+i],y:p['y'+i]}));
+   const winding=Math.sign(v.reduce((s,a,i)=>s+cross(a,v[(i+1)%v.length]),0));
+   const face=v.map((a,i)=>{const b=v[(i+1)%v.length],edge={x:b.x-a.x,y:b.y-a.y},len=Math.hypot(edge.x,edge.y);
     const offset={x:e.point.x-a.x,y:e.point.y-a.y};return {n:{x:winding*edge.y/len,y:-winding*edge.x/len},distance:Math.abs(cross(edge,offset))/len,t:dot(edge,offset)/(len*len)};
    }).filter(f=>f.distance<1e-6&&f.t>0&&f.t<1);
    assert.equal(face.length,1);const n=face[0].n,leaving=dot(e.incoming,n)>0;
