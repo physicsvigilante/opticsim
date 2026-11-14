@@ -36,7 +36,7 @@ export class ExplorationUI {
   this.root.append(labelled('Proposed JSON revision',this.proposal),actions,this.previewText);
   this.name=el('input','explore-name');this.name.type='text';this.name.maxLength=80;this.name.placeholder='Name this scenario';
   this.saveButton=button('explore-capture','Save completed scenario',()=>this.capture());
-  this.select=el('select','explore-scenarios');this.select.onchange=()=>{this.comparison=null;this.comparisonText.textContent='Select Compare to inspect these saved runs.';this.refresh();};
+  this.select=el('select','explore-scenarios');this.select.onchange=()=>{this.comparison=null;delete this.comparisonText.dataset.report;this.comparisonText.textContent='Select Compare to inspect these saved runs.';this.refresh();};
   this.restoreButton=button('explore-restore','Load saved scenario and retrace',()=>this.restore());
   this.exportButton=button('explore-export','Download selected qualified scene',()=>this.exportScene());
   this.compareButton=button('explore-compare','Compare selected with baseline',()=>this.compare());
@@ -89,7 +89,7 @@ export class ExplorationUI {
   const first=await this.currentSnapshot('Baseline',true);
   // Only qualification/readout selection changes, not physical apparatus or rays.
   this.qualified.commit({qualification:first.bundle.qualification,requests:first.bundle.observables});
-  this.saved=[first];this.intent=null;this.comparison=null;this.invalidatePreview();this.setOptions(0);
+  this.saved=[first];this.intent=null;this.comparison=null;delete this.comparisonText.dataset.report;this.invalidatePreview();this.setOptions(0);
   this.status.textContent='Baseline preserved. Edit directly or export context for a hypothetical investigation.';
   this.comparisonText.textContent='One completed baseline saved. Source provenance: '+first.bundle.qualification.origin.preparationStatus+'.';
   this.root.dataset.scenarios='1';
@@ -124,7 +124,7 @@ export class ExplorationUI {
   const snapshot=await this.currentSnapshot(this.name.value);
   if(!same(snapshot.bundle.qualification.origin,this.saved[0].bundle.qualification.origin))
    throw Error('This is a different model origin. Start a new exploration rather than mixing source baselines.');
-  this.saved.push(snapshot);this.setOptions(this.saved.length-1);this.comparison=null;
+  this.saved.push(snapshot);this.setOptions(this.saved.length-1);this.comparison=null;delete this.comparisonText.dataset.report;this.comparisonText.textContent='Select Compare to inspect these saved runs.';
   this.root.dataset.scenarios=String(this.saved.length);this.status.textContent='Saved '+snapshot.label+' with its own complete native evidence. Baseline unchanged.';
  }
  selected(){const s=this.saved[Number(this.select.value)];if(!s)throw Error('Select a saved scenario.');return structuredClone(s);}
