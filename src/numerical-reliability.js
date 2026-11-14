@@ -7,23 +7,39 @@ export const NATIVE_REPLAY_MODES=Object.freeze({
   default:Object.freeze({nativeColorMode:'default',weakReflectedRayCutoff:0.01}),
   linear:Object.freeze({nativeColorMode:'linear',weakReflectedRayCutoff:0.000001})
 });
-function numericalTraceFindings(doc,trace){
+export function numericalTraceFindings(doc,trace){
   const findings=[],interfaces=new Map(doc.physics.components
     .filter(c=>c.type==='planar-interface').map(c=>[c.id,c.parameters]));
   // Diagnostic tolerances do NOT decide physical intersections, refract rays,
   // change solver precision or authorize requested measurements.
-  for(let i=1;i<trace.length;i++){
-    const prev=trace[i-1],next=trace[i],p=interfaces.get(next.interfaceId);
-    if(!p||prev.interfaceId!==next.interfaceId||next.incidentDistanceMm==null)continue;
+  // The upstream simulator processes pending-ray slots in rounds. Interface
+  // callbacks from different slots can be interleaved, so neighboring trace
+  // entries are NOT necessarily successive interactions of one native ray.
+  const previousBySlot=new Map();
+  for(let i=0;i<trace.length;i++){
+    const next=trace[i];
+    if(!Number.isSafeInteger(next.rayIndex)||next.rayIndex<0)continue;
+    const prior=previousBySlot.get(next.rayIndex);
+    previousBySlot.set(next.rayIndex,{event:next,index:i});
+    if(!prior)continue;
+    const {event:prev,index:prevIndex}=prior,p=interfaces.get(next.interfaceId);
+    if(!p||prev.interfaceId!==next.interfaceId||!Number.isFinite(next.incidentDistanceMm))continue;
+    // The same slot can only be called a rehit when this segment starts
+    // where its previous native interface encounter ended (within a
+    // diagnostic tolerance, not an intersection/solver tolerance).
+    const continuity=prev.incidentPoint&&next.rayStart?
+      Math.hypot(prev.incidentPoint.x-next.rayStart.x,
+        prev.incidentPoint.y-next.rayStart.y):Infinity;
+    if(!Number.isFinite(continuity)||continuity>.001)continue;
     const a=p.normalDeg*Math.PI/180,n={x:Math.cos(a),y:Math.sin(a)};
     const d=prev.outgoingPrimaryDirection;
     const projection=d?Math.abs(d.x*n.x+d.y*n.y):Infinity;
     if(next.incidentDistanceMm<.001&&projection<1e-5){
       findings.push({code:'NEAR_TANGENT_SAME_INTERFACE_REHIT',level:'diagnostic',
-        interfaceId:next.interfaceId,traceIndices:[i-1,i],
-        incidentDistanceMm:next.incidentDistanceMm,
+        interfaceId:next.interfaceId,rayIndex:next.rayIndex,
+        traceIndices:[prevIndex,i],incidentDistanceMm:next.incidentDistanceMm,
         precedingOutgoingNormalProjection:projection,
-        meaning:'The native ray re-intersected its previous boundary after a microscopic near-tangent step. This suggests a numerical grazing ambiguity, not a validated second physical event.'});
+        meaning:'The same native pending-ray slot re-intersected its previous boundary after a microscopic near-tangent step. This suggests a numerical grazing ambiguity, not a validated second physical event.'});
       break;
     }
   }

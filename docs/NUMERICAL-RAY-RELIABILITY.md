@@ -105,6 +105,15 @@ intersections millions to billions of millimetres away, before the
 configured depth limit truncates the run. Default and linear modes
 show the same trajectory and failure.
 
+The self-rehit diagnostic now correlates callbacks by the same native
+pending-ray slot and checks continuity from the preceding hit to the next
+segment's start. Adjacent callbacks from different rays are not treated as a
+single ray history. This prevents a false-positive diagnosis when the native
+simulator interleaves rays. A slot can eventually be reused, so geometric
+continuity is required as well. These conservative checks only classify
+bounded diagnostic evidence; they do not suppress, alter or repair any native
+ray interaction.
+
 The replay emits diagnostic codes **NEAR_TANGENT_SAME_INTERFACE_REHIT**
 and **EXTREME_GRAZING_TRAVEL**; they are not accepted physical results
 and they do not change native behavior. The short self-rehit explains the

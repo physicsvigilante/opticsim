@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 import {prepareScene} from '../src/authoring.js';
-import {nativeNumericalReplay,NATIVE_REPLAY_MODES} from '../src/numerical-reliability.js';
+import {nativeNumericalReplay,NATIVE_REPLAY_MODES,numericalTraceFindings} from '../src/numerical-reliability.js';
 import {evaluateDocument} from '../scripts/author-scene.mjs';
 const core=createRequire(import.meta.url)('../dist/test-core.cjs');
 const first=JSON.parse(readFileSync(new URL('../evaluation/original-refraction-pair-v1/first-attempt.json',import.meta.url)));
@@ -68,4 +68,26 @@ test('exact-critical diagnostic never silently promotes a partial run into accep
   const stable=nativeNumericalReplay(off,core,'default');
   assert.equal(stable.status,'completed');
   assert.ok(!stable.numericalFindings.some(x=>x.code==='NEAR_TANGENT_SAME_INTERFACE_REHIT'));
+});
+
+test('grazing rehit diagnostic requires a continuous native ray slot, not adjacent unrelated rays',()=>{
+  const scene={physics:{components:[{id:'I',type:'planar-interface',parameters:{normalDeg:0}}]}};
+  const first={rayIndex:4,interfaceId:'I',rayStart:{x:-1,y:0},incidentPoint:{x:0,y:0},
+    incidentDistanceMm:1,outgoingPrimaryDirection:{x:1e-6,y:1}};
+  const second={rayIndex:4,interfaceId:'I',rayStart:{x:0,y:0},
+    incidentPoint:{x:1e-11,y:1e-5},incidentDistanceMm:1e-5,
+    outgoingPrimaryDirection:{x:1,y:0}};
+  const rehits=trace=>numericalTraceFindings(scene,trace)
+    .filter(f=>f.code==='NEAR_TANGENT_SAME_INTERFACE_REHIT');
+  assert.equal(rehits([first,second]).length,1);
+  assert.deepEqual(rehits([first,second])[0].traceIndices,[0,1]);
+  // Native scheduling can interleave callbacks from another pending-ray slot.
+  const unrelated={...second,rayIndex:7};
+  assert.equal(rehits([first,unrelated]).length,0);
+  assert.deepEqual(rehits([first,unrelated,second])[0].traceIndices,[0,2]);
+  // A reused slot without geometric continuity is not the same ray's rehit.
+  assert.equal(rehits([first,{...second,rayStart:{x:2,y:0}}]).length,0);
+  assert.equal(rehits([first,{...second,interfaceId:'I2'}]).length,0);
+  assert.equal(rehits([{...first,rayIndex:null},second]).length,0);
+  assert.equal(rehits([first,{...second,incidentDistanceMm:.01}]).length,0);
 });
