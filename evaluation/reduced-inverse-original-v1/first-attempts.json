@@ -1,0 +1,223 @@
+{
+  "format": "opticsim-reduced-inverse-original-first-attempts-v1",
+  "selectionFreezeCommit": "65ae404522f6015c09496c885ae106c4661f33ab",
+  "selectionSha256": "a2b1860df5fd9a1034b9269f882f28f101a0b6aa739c754e4141733d0f8f6888",
+  "sourceArchiveSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+  "imageTransferRun": 43551695262,
+  "createdBy": "GPT-6 in the same project conversation; self-authored and not independently reviewed",
+  "solutionsReadBeforeFirstAttempt": false,
+  "independentModel": false,
+  "independentReviewers": 0,
+  "externalModelCalls": 0,
+  "repairs": 0,
+  "note": "Fixed original requested results preserved; no invalid requests are replaced with convenient new inverse calculations. Manual mathematical reasoning is not a native Opticsim result or answer key.",
+  "cases": [
+    {
+      "id": "V01",
+      "problemSha256": "a15f1ff79789a75d8f85d70a1e218381bea3211e48822acaf5aec2645cfbf461",
+      "attemptNumber": 1,
+      "originalRequestedKind": "two-plane-mirror-angle-inverse",
+      "firstManualAnswer": {
+        "status": "manual-derived",
+        "expression": "theta=60 deg",
+        "derivation": "Take M1 tangent 0 deg, M2 theta. A left-going incident 180-deg direction reflects on M2 to 2theta-180; after M1 the outgoing direction is 180-2theta. Equate this to the shown +theta outgoing parallel M2: theta=60 deg."
+      },
+      "originalProblemFacts": [
+        "Incident light ray is parallel to M1 and first strikes M2",
+        "After two reflections outgoing light ray parallel to M2",
+        "M1 and M2 form unknown acute angle theta"
+      ],
+      "newInverseCapability": {
+        "directlyApplicable": false,
+        "reason": "Unknown mirror inclination inferred from two-bounce directed geometry; reduced point-reflection query requires both point coordinates and known tangent, so it does not answer theta."
+      },
+      "submittedRequest": {
+        "format": "opticsim-problem-v1",
+        "physical": null,
+        "requests": [
+          {
+            "id": "original",
+            "kind": "two-plane-mirror-angle-inverse"
+          }
+        ]
+      }
+    },
+    {
+      "id": "V02",
+      "problemSha256": "93ce8788da172015e2fb09839a9c6e8c3095b26a69f376f4fdef57953be7cb10",
+      "attemptNumber": 1,
+      "originalRequestedKind": "finite-mirror-continuous-visibility-interval",
+      "firstManualAnswer": {
+        "status": "manual-derived-conditional",
+        "expression": "greatest visible interval = 3d",
+        "derivation": "Reflect source to virtual point at -L; from observer plane at +2L, the line joining virtual source to observer intersects the finite mirror one third of the observer's transverse displacement from the centre. Mirror coordinate lies in [-d/2,d/2], so observer displacement lies in [-3d/2,3d/2], total 3d.",
+        "assumptions": [
+          "2D paraxial-free ray geometry",
+          "Point observer and point source",
+          "Mirror spans width d symmetrically"
+        ]
+      },
+      "originalProblemFacts": [
+        "Plane mirror width d",
+        "Point source at perpendicular distance L",
+        "Observer moves along a line parallel to mirror at distance 2L",
+        "Question asks greatest visible travel interval"
+      ],
+      "newInverseCapability": {
+        "directlyApplicable": false,
+        "reason": "New point-reflection query validates one specified pair of points but does not invert a continuous visible-observer interval or certify visibility theorem."
+      },
+      "submittedRequest": {
+        "format": "opticsim-problem-v1",
+        "physical": null,
+        "requests": [
+          {
+            "id": "original",
+            "kind": "finite-mirror-continuous-visibility-interval"
+          }
+        ]
+      }
+    },
+    {
+      "id": "V03",
+      "problemSha256": "3006a587ce4e547281940a6f54f53ca792a8d3a62640c7a323c5dd83376b50e0",
+      "attemptNumber": 1,
+      "originalRequestedKind": "displaced-curved-mirror-halves-image-separation",
+      "firstManualAnswer": {
+        "status": "manual-derived-conditional",
+        "expression": "Two real images at axial distance 50 cm, separated transversely by 2 cm",
+        "derivation": "Gaussian mirror equation gives v=50 cm and magnification -1. With half-axes shifted ±0.5 cm relative to the original object axis, each shifted mirror maps the source to an image displaced twice its axis shift: image transverse coordinates ±1 cm.",
+        "assumptions": [
+          "Both mirror halves behave as paraxial concave segments with parallel shifted axes"
+        ]
+      },
+      "originalProblemFacts": [
+        "Concave mirror has f=25 cm",
+        "Point source on axis at object distance u=50 cm",
+        "Mirror is cut into two parts, transverse separation 1 cm"
+      ],
+      "newInverseCapability": {
+        "directlyApplicable": false,
+        "reason": "Off-axis displaced mirror halves/paired image positions are not output by a focal-length inverse requiring unknown focal length."
+      },
+      "submittedRequest": {
+        "format": "opticsim-problem-v1",
+        "physical": null,
+        "requests": [
+          {
+            "id": "original",
+            "kind": "displaced-curved-mirror-halves-image-separation"
+          }
+        ]
+      }
+    },
+    {
+      "id": "V04",
+      "problemSha256": "4211fca9c5305da65e9e9d959bf0d079493bd50e0483090727abed0c75af444b",
+      "attemptNumber": 1,
+      "originalRequestedKind": "graphical-curved-mirror-pole-focus-reconstruction",
+      "firstManualAnswer": {
+        "status": "manual-partial",
+        "expression": "Concave mirror is required for a real-object inverted image; pole and focus must be constructed separately for the two height cases",
+        "derivation": "For a real object, a convex mirror yields an erect virtual image, not the transverse inversion drawn here. A precise pole/focus construction needs geometric ray directions/positions supplied or interpreted from the diagram.",
+        "limitations": [
+          "Not a full two-case graphical construction; drawing is not a calibrated numerical coordinate system."
+        ]
+      },
+      "originalProblemFacts": [
+        "Object O shown above AB principal axis",
+        "Image I shown below AB",
+        "Question asks curvature and construction for both relative heights"
+      ],
+      "newInverseCapability": {
+        "directlyApplicable": false,
+        "reason": "Graphical inverse cannot be reduced to bounded numeric object distance and signed magnification without a declared measurement scale/pole."
+      },
+      "submittedRequest": {
+        "format": "opticsim-problem-v1",
+        "physical": null,
+        "requests": [
+          {
+            "id": "original",
+            "kind": "graphical-curved-mirror-pole-focus-reconstruction"
+          }
+        ]
+      }
+    },
+    {
+      "id": "V05",
+      "problemSha256": "f26b8374f0bd334d9c0dc20b4cf2c0a1adacd1ad52e6b309ef7bff4b05da0dab",
+      "attemptNumber": 1,
+      "originalRequestedKind": "silvered-equiconvex-lens-effective-mirror-focal",
+      "firstManualAnswer": {
+        "status": "manual-derived-under-approximation",
+        "expression": "Equivalent concave mirror, focal length 15 cm",
+        "derivation": "Lens-maker gives R=2(μ-1) f_lens=60 cm. For the zero-thickness silvered lens, two passes through refraction and one curved reflection combine to 1/F=2/f_lens+2/R=4/60=1/15 cm^-1.",
+        "assumptions": [
+          "Thin lens",
+          "Paraxial rays in air",
+          "Perfect silvered curved rear face"
+        ]
+      },
+      "originalProblemFacts": [
+        "Equiconvex thin lens in air, μ=1.5, f_lens=60 cm",
+        "One curved face silvered",
+        "Find mirror type and equivalent focal length"
+      ],
+      "newInverseCapability": {
+        "directlyApplicable": false,
+        "reason": "Combined refracting silvered lens is not a single ideal-lens/curved-mirror inverse request. Do not pretend this forward-equivalent power is an Opticsim result."
+      },
+      "submittedRequest": {
+        "format": "opticsim-problem-v1",
+        "physical": null,
+        "requests": [
+          {
+            "id": "original",
+            "kind": "silvered-equiconvex-lens-effective-mirror-focal"
+          }
+        ]
+      }
+    },
+    {
+      "id": "V06",
+      "problemSha256": "bd62fe1e9c2a91fb26c18700da1dcd97fede1c00f593889e32b56a9d3b971e59",
+      "attemptNumber": 1,
+      "originalRequestedKind": "symbolic-silvered-lens-paraxial-equivalence-proof",
+      "firstManualAnswer": {
+        "status": "manual-derived-under-approximation",
+        "expression": "F = r / (4μ - 2)",
+        "derivation": "Thin equiconvex lens power is 1/f_lens=2(μ-1)/r. For the silvered surface, effective double-pass paraxial power is 1/F=2/f_lens+2/r=[4(μ-1)+2]/r=(4μ-2)/r.",
+        "assumptions": [
+          "Thin element",
+          "Paraxial optics",
+          "Air surroundings",
+          "Curved-surface silvering"
+        ],
+        "limitations": [
+          "The expression to be proved is already present in the original problem; it is not an independent prediction."
+        ]
+      },
+      "originalProblemFacts": [
+        "Thin converging lens with each surface curvature radius r",
+        "One curved face silvered",
+        "Material index μ",
+        "Desired equivalent concave mirror F=r/(4μ-2) appears in problem"
+      ],
+      "newInverseCapability": {
+        "directlyApplicable": false,
+        "reason": "Symbolic thin-lens plus curved reflection power composition is outside the current reduced-facts focal inverse."
+      },
+      "submittedRequest": {
+        "format": "opticsim-problem-v1",
+        "physical": null,
+        "requests": [
+          {
+            "id": "original",
+            "kind": "symbolic-silvered-lens-paraxial-equivalence-proof"
+          }
+        ]
+      }
+    }
+  ]
+}
