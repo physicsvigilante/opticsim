@@ -32,7 +32,9 @@ const requestKindRegistry=()=>({
 });
 const empty=(r,status,code,reason)=>({id:r.id,kind:r.kind,status,value:null,method:null,reasonCode:code,reason});
 export function problemWorkflowCapabilities(){
-  return {format:PROBLEM_FORMAT,version:1,maxRequests:16,maxCalculations:4,
+  // Capability consumers must not be able to mutate dispatcher target types,
+  // nested fact contracts, or a solver's shared list of registered kinds.
+  return structuredClone({format:PROBLEM_FORMAT,version:1,maxRequests:16,maxCalculations:4,
     required:['format','physical','requests'],optional:['interpretation','illustration','verifyNative'],
     physical:'Existing minimal authoring request, reduced angular/mirror/inverse facts, or null. No invented apparatus fields.',
     requestKinds:requestKindRegistry(),
@@ -42,7 +44,7 @@ export function problemWorkflowCapabilities(){
         'Known method does not prove original question fidelity; wrong or unregistered kinds stay unrepresented.',
         'An authoring-scene fact family match is not sufficient for physical validity or native run completion.']},
     authoring:problemCapabilities(),curvedMirrors:curvedQueryCapabilities(),reducedInverse:reducedInverseCapabilities(),angular:angularCapabilities(),mirrorAngular:mirrorAngularCapabilities(),observables:observableCapabilities(),
-    policy:'One request file; route by kind, never by answers or expected values. Native componentId may be omitted only when exactly one compatible authored component exists; its binding is recorded, not guessed from geometry or ray paths. Ambiguous or absent targets remain unresolved. No physical repairs or method fallback. Angular-only requests do not trigger native work unless verifyNative is true. Interpretation remains author-provided and unverified.'};
+    policy:'One request file; route by kind, never by answers or expected values. Native componentId may be omitted only when exactly one compatible authored component exists; its binding is recorded, not guessed from geometry or ray paths. Ambiguous or absent targets remain unresolved. No physical repairs or method fallback. Angular-only requests do not trigger native work unless verifyNative is true. Interpretation remains author-provided and unverified.'});
 }
 function validateEnvelope(input){
   if(!isRecord(input)||Object.keys(input).some(k=>!['format','physical','requests','interpretation','illustration','verifyNative'].includes(k))||

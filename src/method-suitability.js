@@ -12,6 +12,8 @@ const unresolved=Object.freeze({
  'unavailable':'unavailable',
  'multiple-solutions':'ambiguous-candidates',
  'numerically-indeterminate':'numerically-indeterminate',
+ 'partially-unavailable':'partially-unavailable',
+ 'partially-indeterminate':'partially-indeterminate',
  'suppressed':'native-suppressed'
 });
 const physicalFamily=physical=>!physical?'absent':
@@ -34,8 +36,10 @@ export function assessMethodSuitability(plan,registry,factContracts){
    if(!row||row.kind!==request.kind)throw Error('Planner and request identity mismatch');
    const spec=own(registry,request.kind)?registry[request.kind]:null;
    const registered=spec!==null,route=spec?.route??null;
+   // Returned evidence must never expose the internal contract arrays. Each
+   // entry gets its own copy, including two requests sharing one contract.
    const acceptedFamilies=!registered?[]:spec?.contract?
-    (factContracts[spec.contract]||[]):['authoring-scene'];
+    [...(factContracts[spec.contract]||[])]:['authoring-scene'];
    const familyCompatibility=!registered?'not-assessed':physical==='absent'?'no-physical-facts':
      acceptedFamilies.includes(physical)?'form-compatible':'form-mismatch';
    const status=row.status;
@@ -57,11 +61,12 @@ export function assessMethodSuitability(plan,registry,factContracts){
  });
  const count=kind=>entries.filter(e=>e.readiness===kind).length;
  return {format:METHOD_SUITABILITY_FORMAT,source:'validated-opticsim-problem-plan',
+   phase:'pre-execution-plan',
    basedOn:'exact author-selected result kinds and current dispatcher outcomes',
    originalQuestionFidelity:'not-assessed-by-engine',
    noAutomaticKindSubstitution:true,
    auditActions:{nativeSimulatorCalls:0,externalModelCalls:0,repairs:0},
-   note:'A registered kind or executable scene does not prove that the model interpreted the original problem faithfully. Unknown kinds are not mapped by text similarity.',
+   note:'This is the pre-execution method assessment. Final measurements and native status are recorded separately. A registered kind or executable scene does not prove faithful interpretation of the original problem. Unknown kinds are not mapped by text similarity.',
    totalRequests:entries.length,registeredRequests:entries.filter(e=>e.registered).length,
    unregisteredRequests:count('unregistered-kind'),
    pendingNativeRequests:count('requires-native-execution'),

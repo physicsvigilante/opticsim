@@ -3,7 +3,7 @@
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {resolve} from 'node:path';
-import {planProblem,problemWorkflowCapabilities} from '../src/problem-workflow.js';
+import {planProblem,problemWorkflowCapabilities,resultCoverage} from '../src/problem-workflow.js';
 const sha256=bytes=>createHash('sha256').update(bytes).digest('hex');
 function main(args){
   if(args.length===1&&args[0]==='capabilities'){
@@ -24,7 +24,13 @@ function main(args){
   }
   const results=plan.results.map(({id,kind,status,value,reasonCode,reason,...rest})=>({
     id,kind,status,value,reasonCode,reason,...rest}));
-  const blocker=results.some(x=>['needs-information','invalid-input','unavailable','multiple-solutions','numerically-indeterminate'].includes(x.status));
+  // Recognize success positively. Partial or new unresolved statuses must not
+  // slip through an incomplete list of failure names. A pending measurement
+  // is ready only when it belongs to the executable, target-validated plan.
+  const executableIds=new Set(plan.nativeRequests.map(r=>r.id));
+  const pendingReady=results.filter(r=>r.status==='pending'&&plan.native.canRun&&executableIds.has(r.id)).length;
+  const blocker=resultCoverage(results).available+pendingReady!==results.length||
+    (plan.native.required&&!plan.native.canRun);
   const status=plan.preparation?.status==='invalid-input'||results.some(x=>x.status==='invalid-input')?'invalid-input':
     blocker||plan.preparation?.status==='unsupported'?'blocked':
     plan.native.canRun?'native-ready':'no-native-required';
