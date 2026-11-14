@@ -1,0 +1,290 @@
+{
+  "format": "opticsim-reduced-inverse-controls-v1",
+  "provenance": "Already exposed example facts; software controls, not new original examination answers",
+  "cases": [
+    {
+      "id": "reflection-point",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "format": "opticsim-reduced-inverse-facts-v1",
+          "model": "plane-mirror",
+          "lengthUnit": "cm",
+          "mirror": {
+            "x": 0,
+            "y": 0,
+            "tangentDeg": 0
+          },
+          "points": {
+            "A": {
+              "x": 0,
+              "y": 5
+            },
+            "B": {
+              "x": 20,
+              "y": 20
+            }
+          }
+        },
+        "requests": [
+          {
+            "id": "hit",
+            "kind": "plane-mirror-reflection-point"
+          }
+        ]
+      },
+      "status": "conditional",
+      "exitCode": 0,
+      "x": 4
+    },
+    {
+      "id": "mirror-magnification",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "format": "opticsim-reduced-inverse-facts-v1",
+          "model": "spherical-mirror-paraxial",
+          "lengthUnit": "m",
+          "signConvention": "real-object-positive",
+          "observations": [
+            {
+              "id": "O1",
+              "objectDistance": 2.5,
+              "signedMagnification": 4
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "f",
+            "kind": "paraxial-focal-length-inverse"
+          }
+        ]
+      },
+      "status": "conditional",
+      "exitCode": 0,
+      "focalLength": 3.3333333333333335
+    },
+    {
+      "id": "two-unsigned-lens",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "format": "opticsim-reduced-inverse-facts-v1",
+          "model": "ideal-thin-lens",
+          "lengthUnit": "cm",
+          "signConvention": "real-object-positive",
+          "observations": [
+            {
+              "id": "far",
+              "objectDistance": 16,
+              "absoluteMagnification": 3
+            },
+            {
+              "id": "near",
+              "objectDistance": 8,
+              "absoluteMagnification": 3
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "f",
+            "kind": "paraxial-focal-length-inverse"
+          }
+        ]
+      },
+      "status": "conditional",
+      "exitCode": 0,
+      "focalLength": 12
+    },
+    {
+      "id": "ambiguous-unsigned",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "format": "opticsim-reduced-inverse-facts-v1",
+          "model": "ideal-thin-lens",
+          "lengthUnit": "cm",
+          "signConvention": "real-object-positive",
+          "observations": [
+            {
+              "id": "far",
+              "objectDistance": 16,
+              "absoluteMagnification": 3
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "f",
+            "kind": "paraxial-focal-length-inverse"
+          }
+        ]
+      },
+      "status": "multiple-solutions",
+      "reasonCode": "AMBIGUOUS_IMAGE_ORIENTATION",
+      "exitCode": 2,
+      "candidates": 2
+    },
+    {
+      "id": "outside-finite-mirror",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "format": "opticsim-reduced-inverse-facts-v1",
+          "model": "plane-mirror",
+          "lengthUnit": "cm",
+          "mirror": {
+            "x": 0,
+            "y": 0,
+            "tangentDeg": 0,
+            "length": 6
+          },
+          "points": {
+            "A": {
+              "x": 0,
+              "y": 5
+            },
+            "B": {
+              "x": 20,
+              "y": 20
+            }
+          }
+        },
+        "requests": [
+          {
+            "id": "hit",
+            "kind": "plane-mirror-reflection-point"
+          }
+        ]
+      },
+      "status": "unavailable",
+      "reasonCode": "REFLECTION_MISSES_FINITE_MIRROR",
+      "exitCode": 2
+    },
+    {
+      "id": "inconsistent-lens",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "format": "opticsim-reduced-inverse-facts-v1",
+          "model": "ideal-thin-lens",
+          "lengthUnit": "cm",
+          "signConvention": "real-object-positive",
+          "observations": [
+            {
+              "id": "A",
+              "objectDistance": 16,
+              "signedMagnification": -3
+            },
+            {
+              "id": "B",
+              "objectDistance": 9,
+              "signedMagnification": 3
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "f",
+            "kind": "paraxial-focal-length-inverse"
+          }
+        ]
+      },
+      "status": "unavailable",
+      "reasonCode": "INCONSISTENT_PARAXIAL_OBSERVATIONS",
+      "exitCode": 2
+    },
+    {
+      "id": "missing-object-distance",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "format": "opticsim-reduced-inverse-facts-v1",
+          "model": "spherical-mirror-paraxial",
+          "lengthUnit": "m",
+          "signConvention": "real-object-positive",
+          "observations": [
+            {
+              "id": "A",
+              "signedMagnification": 4
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "f",
+            "kind": "paraxial-focal-length-inverse"
+          }
+        ]
+      },
+      "status": "needs-information",
+      "reasonCode": "MISSING_FACTS",
+      "exitCode": 2
+    },
+    {
+      "id": "near-unit-erect",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "format": "opticsim-reduced-inverse-facts-v1",
+          "model": "spherical-mirror-paraxial",
+          "lengthUnit": "m",
+          "signConvention": "real-object-positive",
+          "observations": [
+            {
+              "id": "A",
+              "objectDistance": 2.5,
+              "signedMagnification": 1.000000000001
+            }
+          ]
+        },
+        "requests": [
+          {
+            "id": "f",
+            "kind": "paraxial-focal-length-inverse"
+          }
+        ]
+      },
+      "status": "numerically-indeterminate",
+      "reasonCode": "NEAR_UNIT_MAGNIFICATION",
+      "exitCode": 2
+    },
+    {
+      "id": "opposite-mirror-sides",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": {
+          "format": "opticsim-reduced-inverse-facts-v1",
+          "model": "plane-mirror",
+          "lengthUnit": "cm",
+          "mirror": {
+            "x": 0,
+            "y": 0,
+            "tangentDeg": 0
+          },
+          "points": {
+            "A": {
+              "x": 0,
+              "y": 5
+            },
+            "B": {
+              "x": 20,
+              "y": -20
+            }
+          }
+        },
+        "requests": [
+          {
+            "id": "hit",
+            "kind": "plane-mirror-reflection-point"
+          }
+        ]
+      },
+      "status": "unavailable",
+      "reasonCode": "OPPOSITE_MIRROR_SIDES",
+      "exitCode": 2
+    }
+  ]
+}
