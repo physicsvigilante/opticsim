@@ -1,7 +1,7 @@
 // Small LLM authoring view over the EXISTING strict opticsim scene contract.
 // Interpret/choose physics outside this module. No new ray tracing, geometry DSL,
 // physical parameter guessing, implicit native JSON or network service.
-import {FINITE_COMPOSITION_MODEL,FINITE_COMPOSITION_VERSION} from './finite-dielectric-composition.js';
+import {FINITE_COMPOSITION_MODEL,FINITE_COMPOSITION_VERSION,isFiniteCompositionVersion,finiteCompositionVersionFor,extendedFiniteCompositionPolicy} from './finite-dielectric-composition.js';
 import {NATIVE_OBSERVATION_KEYS} from './native-observations.js';
 import {PRISM_TYPE,prismVertices} from './triangular-prism.js';
 import {POLYGON_TYPE,polygonVertices} from './polygon-dielectric.js';
@@ -61,6 +61,7 @@ export function capabilities() {
     opaqueLineBlockers:{model:'general-component-tracing',nativeType:'Blocker',max:2,combinedStopMax:2,scope:'Up to two finite fully opaque line absorbers, sharing the combined two-stop limit with circles. Native sampled absorption counts; no shadow visibility or image inference.'},
     opaqueCircularBlockers:{model:'general-component-tracing',nativeType:'CircleBlocker',max:2,combinedStopMax:2,geometry:'Explicit 2D centre (x,y) and positive radius >=1 mm; entire disk within coordinate bounds; disjoint from sources, finite surfaces, detectors and other opaque circles',scope:'Fully opaque native circle boundaries with no wavelength filter; measured absorbed sampled rays only, not continuous shadow, 3D sphere, image, or visibility.'},
     finiteApertures:{model:'general-component-tracing',nativeType:'Aperture',max:2,combinedStopMax:2,geometry:'Explicit centre x,y, tangent orientationDeg, full length and central openingLength; both opaque arms at least 1 mm; 0.01 mm clearance from other finite surfaces',scope:'Native planar segment with transparent gap; native absorber counts only, not continuous transmission, irradiance, diffraction or detected image.'},
+    extendedFiniteDielectricComposition:extendedFiniteCompositionPolicy(),
     finiteDielectricComposition:{schemaVersion:FINITE_COMPOSITION_VERSION,model:FINITE_COMPOSITION_MODEL,
       scope:'One strictly convex four-vertex dielectric, exactly one external finite plane mirror, 1–4 explicit single rays and 0–2 external detectors; no lenses, stops, other media or motion',
       geometry:'Existing polygon rules; mirror/detectors entirely beyond a separating face by 0.01 mm; external segments mutually separated by 0.01 mm',
@@ -239,8 +240,9 @@ export function prepareScene(request) {
   const prism=components.some(c=>c.type===PRISM_TYPE),polygon=components.some(c=>c.type===POLYGON_TYPE);
   const planar=components.some(c=>c.type==='planar-interface'),curved=components.some(c=>isCurved(c.type));
   const finiteComposition=polygon&&components.some(c=>c.type==='plane-mirror');
+  const compositionVersion=finiteComposition?finiteCompositionVersionFor(components):null;
   const doc={
-    format:'ray-optics-2d',schemaVersion:finiteComposition?FINITE_COMPOSITION_VERSION:polygon?9:prism?8:circular?7:curved?6:planar?5:4,adapterVersion:finiteComposition?FINITE_COMPOSITION_VERSION:polygon?9:prism?8:circular?7:curved?6:planar?5:4,upstreamCommit:UPSTREAM,
+    format:'ray-optics-2d',schemaVersion:finiteComposition?compositionVersion:polygon?9:prism?8:circular?7:curved?6:planar?5:4,adapterVersion:finiteComposition?compositionVersion:polygon?9:prism?8:circular?7:curved?6:planar?5:4,upstreamCommit:UPSTREAM,
     physics:{lengthUnit:'mm',coordinates:'x-right-y-up',
       model:finiteComposition?FINITE_COMPOSITION_MODEL:polygon?'polygon-dielectric-tracing':prism?'triangular-prism-tracing':circular?'circular-dielectric-tracing':curved?'curved-mirror-tracing':planar?'planar-media-tracing':'general-component-tracing',components},
     presentation:{title,view:camera(components),mode:'rays',grid:false},
@@ -288,7 +290,7 @@ export function reviseScene(document,patch){
     if(seen.has(identity)){issues.push(issue(path,'DUPLICATE_CHANGE','Update a field only once per revision'));continue;}
     seen.add(identity);
     if(change.section==='emission'&&change.key==='mode'){
-      if(own(change,'unit')||!(document.schemaVersion===6?['single-ray','full-circle','directional']:(document.schemaVersion===5||document.schemaVersion===7||document.schemaVersion===8||document.schemaVersion===9||document.schemaVersion===FINITE_COMPOSITION_VERSION)?['single-ray']:['full-circle','directional']).includes(change.value))
+      if(own(change,'unit')||!(document.schemaVersion===6?['single-ray','full-circle','directional']:(document.schemaVersion===5||document.schemaVersion===7||document.schemaVersion===8||document.schemaVersion===9||isFiniteCompositionVersion(document.schemaVersion))?['single-ray']:['full-circle','directional']).includes(change.value))
         issues.push(issue(path+'.value','INVALID_MODE','Expected full-circle or directional without units'));
       else component.emission.mode=change.value;
       continue;
@@ -381,7 +383,7 @@ export function reviseComponents(document,patch){
       checkObject(author.emission,cp+'.emission',['mode','directionDeg','angleDeg'],['mode']);
       const mode=author.emission.mode;
       const modes=document.schemaVersion===6?['single-ray','full-circle','directional']:
-        [5,7,8,9,FINITE_COMPOSITION_VERSION].includes(document.schemaVersion)?['single-ray']:['full-circle','directional'];
+        ([5,7,8,9].includes(document.schemaVersion)||isFiniteCompositionVersion(document.schemaVersion))?['single-ray']:['full-circle','directional'];
       if(!modes.includes(mode))
         fail([issue(cp+'.emission.mode','INVALID_MODE','Emission mode not admitted by this optical model')]);
       const requiredAngles=mode==='directional'?['directionDeg','angleDeg']:

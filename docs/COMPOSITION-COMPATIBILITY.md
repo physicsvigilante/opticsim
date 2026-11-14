@@ -1,9 +1,9 @@
 # Composition compatibility and shared validation
 
-This is a behavior-preserving foundation, **not a broader composition contract**.
-It extracts reusable admission-time geometry while leaving each saved model's
-allowed components, counts, material rules, emission modes and numerical policy
-unchanged. It does not admit glass plus two mirrors or any other new combination.
+The shared-validation foundation preserves historical contracts. A separately
+versioned v11 extension now admits one or two external plane mirrors with one
+finite quadrilateral, using those shared checks. Other combinations remain
+unsupported. See `TWO-MIRROR-COMPOSITION.md` for the explicit extension and tests.
 The production PhyDemo pin remains `811f508d2b070898c241a568b0c167dcb8645251`.
 
 ## Existing compatibility matrix
@@ -28,13 +28,15 @@ pairwise compatibility is insufficient to admit a complete apparatus.
 | v8 `triangular-prism-tracing` | 1-4 | Exactly 1 finite triangular dielectric; no mirrors or other optics | 0-2 external |
 | v9 `polygon-dielectric-tracing` | 1-4 | Exactly 1 strictly convex four-vertex dielectric; no mirrors or other optics | 0-2 external |
 | v10 `finite-dielectric-composition` | 1-4 | Exactly 1 strictly convex four-vertex dielectric and exactly 1 external finite plane mirror | 0-2 external |
+| v11 `finite-dielectric-composition` | 1-4 | Exactly 1 strictly convex four-vertex dielectric and 1-2 external finite plane mirrors | 0-2 external |
 
 v1 has the historical source representation; migration preserves its brightness
 and sampling values. v2-v4 support full-circle/directional point-source emission.
-v6 additionally supports exact single rays; v5 and v7-v10 require explicitly
+v6 additionally supports exact single rays; v5 and v7-v11 require explicitly
 directed single rays. Older saved documents are validated before the existing
-v1-to-v4 migration. v5-v10 stay in their declared families. No new migration,
-automatic model selection, physical defaults or revision operation is added here.
+v1-to-v4 migration. v5-v11 stay in their declared families. New minimal requests
+with two mirrors prepare v11; saved v10 scenes do not silently upgrade. No new
+physical defaults or revision operation is added.
 
 All geometry restrictions still apply, including finite aperture sizes, source
 separation, supporting-line exclusions, bounds and nonintersections. A maximum
@@ -105,11 +107,12 @@ Deliberately changing a historical fixture or its behavior requires explicit
 review of its fingerprint; a hash match is regression evidence, not proof of
 physical correctness or independent interpretation fidelity.
 
+The historical corpus membership is frozen; newer scenes are checked separately.
 Run `npm test` for the shared and historical regressions. Existing workflows
 build and exercise the browser without a new workflow or public deployment.
 This foundation changes no native adapter, observer, source emission, optics law,
 threshold, interaction budget, authoring API, UI control or PhyDemo pin.
 
-A later, separately reviewed milestone may admit another combination through
-explicit compatibility rules and physical tests. This extraction alone does
-not authorize it; PR #64's numerical candidate remains outside production.
+The v11 extension is a bounded use of shared compatibility rules, not permission
+for arbitrary mixtures. Further components still require separate physical
+verification; PR #64's numerical candidate remains outside production.

@@ -1,4 +1,4 @@
-import {FINITE_COMPOSITION_MODEL,FINITE_COMPOSITION_VERSION,validateFiniteDielectricComposition} from './finite-dielectric-composition.js';
+import {FINITE_COMPOSITION_MODEL,isFiniteCompositionVersion,validateFiniteDielectricComposition} from './finite-dielectric-composition.js';
 import {PRISM_TYPE,PRISM_PARAMETERS,validatePrismGeometry} from './triangular-prism.js';
 import {POLYGON_TYPE,POLYGON_PARAMETERS,validatePolygonGeometry} from './polygon-dielectric.js';
 import {CIRCULAR_TYPE,CIRCULAR_PARAMETERS,validateCircularGeometry} from './circular-dielectric.js';
@@ -71,7 +71,7 @@ export function componentParameterNames(type, version = 4) {
   return [...parameters[type], ...(version >= 2 && type === 'point-source' ? ['brightness'] : [])];
 }
 // Legacy versions stay isolated; circular scenes use v7 and triangular prisms v8.
-export function validate(doc) { return validateVersion(doc, doc?.schemaVersion===FINITE_COMPOSITION_VERSION?FINITE_COMPOSITION_VERSION:doc?.schemaVersion===9?9:doc?.schemaVersion===8?8:doc?.schemaVersion===7?7:doc?.schemaVersion===6?6:doc?.schemaVersion===5?5:4); }
+export function validate(doc) { return validateVersion(doc, isFiniteCompositionVersion(doc?.schemaVersion)?doc.schemaVersion:doc?.schemaVersion===9?9:doc?.schemaVersion===8?8:doc?.schemaVersion===7?7:doc?.schemaVersion===6?6:doc?.schemaVersion===5?5:4); }
 function validateVersion(doc, version) {
   object(doc, ['format', 'schemaVersion', 'adapterVersion', 'upstreamCommit', 'physics', 'presentation', 'simulation'], '$');
   choice(doc.format, ['ray-optics-2d'], '$.format');
@@ -82,7 +82,7 @@ function validateVersion(doc, version) {
   object(p, ['lengthUnit', 'coordinates', 'model', 'components'], '$.physics');
   choice(p.lengthUnit, ['mm'], '$.physics.lengthUnit');
   choice(p.coordinates, ['x-right-y-up'], '$.physics.coordinates');
-  const models = version===FINITE_COMPOSITION_VERSION?[FINITE_COMPOSITION_MODEL]:version===9?['polygon-dielectric-tracing']:version===8?['triangular-prism-tracing']:version===7?['circular-dielectric-tracing']:version===6?['curved-mirror-tracing']:version===5?['planar-media-tracing']:['ideal-thin-lens-geometric', ...(version >= 3 ? ['plane-mirror-geometric'] : []), ...(version >= 4 ? ['lens-mirror-return-geometric', 'mixed-lens-mirror-tracing', 'general-component-tracing'] : [])];
+  const models = isFiniteCompositionVersion(version)?[FINITE_COMPOSITION_MODEL]:version===9?['polygon-dielectric-tracing']:version===8?['triangular-prism-tracing']:version===7?['circular-dielectric-tracing']:version===6?['curved-mirror-tracing']:version===5?['planar-media-tracing']:['ideal-thin-lens-geometric', ...(version >= 3 ? ['plane-mirror-geometric'] : []), ...(version >= 4 ? ['lens-mirror-return-geometric', 'mixed-lens-mirror-tracing', 'general-component-tracing'] : [])];
   choice(p.model, models, '$.physics.model');
   if (!Array.isArray(p.components) || p.components.length > 32) fail('$.physics.components', 'expected a bounded component array');
   const ids = new Set();
@@ -111,7 +111,7 @@ function validateVersion(doc, version) {
       fail(`${path}.parameters.openingLength`, 'central opening must leave two opaque arms at least 1 mm long');
     if (version >= 2 && c.type === 'point-source') {
       object(c.emission, ['mode', 'directionDeg', 'angleDeg'], `${path}.emission`);
-      choice(c.emission.mode, version===6?['single-ray','full-circle','directional']:(version===5||version===7||version===8||version===9||version===FINITE_COMPOSITION_VERSION)?['single-ray']:['full-circle', 'directional'], `${path}.emission.mode`);
+      choice(c.emission.mode, version===6?['single-ray','full-circle','directional']:(version===5||version===7||version===8||version===9||isFiniteCompositionVersion(version))?['single-ray']:['full-circle', 'directional'], `${path}.emission.mode`);
       number(c.emission.directionDeg, -180, 180, `${path}.emission.directionDeg`);
       number(c.emission.angleDeg, 1, 180, `${path}.emission.angleDeg`);
     }
@@ -121,7 +121,7 @@ function validateVersion(doc, version) {
   // current-v4 arrangements; the original optical scope checks stay unchanged.
   const opticalComponents=p.components.filter(c=>c.type!=='ray-detector');
   if(p.model===FINITE_COMPOSITION_MODEL){
-    validateFiniteDielectricComposition(p.components,mirrorEndpoints,fail);
+    validateFiniteDielectricComposition(p.components,mirrorEndpoints,fail,version);
     validateMixedTraceScope(opticalComponents.filter(c=>c.type!==POLYGON_TYPE),true);
   }
   else if(p.model==='polygon-dielectric-tracing'){

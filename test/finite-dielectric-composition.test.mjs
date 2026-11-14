@@ -134,7 +134,12 @@ test('no extra optical families or missing physical values enter the composition
   {id:'M2',type:'plane-mirror',parameters:{x:80,y:0,length:30,orientationDeg:90}},
   {id:'L1',type:'ideal-lens',parameters:{x:80,focalLength:20,apertureHeight:30}},
   {id:'B1',type:'line-blocker',parameters:{x:80,y:0,length:20,orientationDeg:90}},
-  {...part(request(),'G1'),id:'G2'}]){const r=request();r.components.push(added);assert.throws(()=>doc(r));}
+  {...part(request(),'G1'),id:'G2'}]){
+  // Historical v10 must still reject extra optics; new two-mirror authoring
+  // intentionally selects v11 and is tested separately. No migration here.
+  const d=doc();d.physics.components.push(added);assert.throws(()=>validate(d));
+  if(added.id!=='M2'){const r=request();r.components.push(added);assert.throws(()=>doc(r));}
+ }
  for(const key of ['outsideIndex','insideIndex','partialReflection','x4']){const r=request();delete part(r,'G1').parameters[key];assert.throws(()=>doc(r),/Required/);}
  for(const key of ['length','orientationDeg']){const r=request();delete part(r,'M1').parameters[key];assert.throws(()=>doc(r),/Required/);}
  const fan=request();part(fan,'S1').emission={mode:'directional',directionDeg:0,angleDeg:20};assert.throws(()=>doc(fan),/single-ray/);

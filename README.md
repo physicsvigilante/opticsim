@@ -480,3 +480,11 @@ image detector, new motion model or textbook-specific solver is implied.
 ### Finite dielectric composition pilot
 
 Schema v10 combines one convex four-vertex glass region, one external finite plane mirror, 1–4 explicit single rays and optional external detectors using the unchanged pinned native engine. Older schemas retain their scopes. See [scope, numerical limits and verification](docs/FINITE-DIELECTRIC-COMPOSITION.md) and the synthetic [unified request](examples/finite-dielectric-composition.json). The existing viewer menu includes “Finite glass + external mirror”; no prescribed ray path or image prediction is implied.
+
+### Finite glass with two mirrors
+
+The existing composition family now has a bounded v11 contract with one convex
+four-vertex dielectric, one or two external plane mirrors, explicit single rays
+and optional external detectors. The viewer includes **Finite glass + two external
+mirrors**. Historical v10 remains exactly one mirror; no automatic migration,
+engine repin or numerical-budget change. See [the scope and verification](docs/TWO-MIRROR-COMPOSITION.md).
