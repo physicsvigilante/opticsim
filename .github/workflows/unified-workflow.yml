@@ -23,6 +23,8 @@ jobs:
         run: node scripts/general-composition-acceptance.mjs
       - name: Run reduced inverse fact controls without native execution
         run: node scripts/reduced-inverse-acceptance.mjs
+      - name: Replay six frozen original inverse-scope requests, without image substitution
+        run: node evaluation/reduced-inverse-original-v1/replay.mjs
       - name: Replay three GPT-6 same-chat authored first attempts (not independent)
         run: node evaluation/self-reviewed-pilot-v1/replay.mjs
       - name: Replay ten frozen original problems without answer substitution
@@ -51,6 +53,7 @@ jobs:
             test-artifacts/llm-authoring/unified-original-trial/
             test-artifacts/llm-authoring/general-composition-v1/
             test-artifacts/llm-authoring/reduced-inverse/
+            test-artifacts/llm-authoring/reduced-inverse-original-v1/
             test-artifacts/llm-authoring/self-reviewed-pilot-v1/
             test-artifacts/llm-authoring/real-ten-v1/
           if-no-files-found: error

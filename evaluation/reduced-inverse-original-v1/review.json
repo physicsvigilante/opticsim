@@ -1,0 +1,72 @@
+{
+  "format": "opticsim-reduced-inverse-original-review-v1",
+  "firstAttemptFreezeCommit": "dd5a095bf3dc9ac8f68cf6bed6aba68cccfa9aec",
+  "firstAttemptGitBlob": "b57d10d9688380d92dffc047aea0a47c4d2c493f",
+  "problemTransferRun": 43551695262,
+  "solutionTransferRun": 43552028543,
+  "selectionSha256": "a2b1860df5fd9a1034b9269f882f28f101a0b6aa739c754e4141733d0f8f6888",
+  "originalSourceSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+  "author": "Same GPT-6 assistant who froze the source interpretations; not independently reviewed",
+  "solutionsReadAfterFreeze": true,
+  "reviewSummary": {
+    "questions": 6,
+    "newInverseDirectlyApplicable": 0,
+    "originalQuantitiesAvailableFromSubmittedRequests": 0,
+    "nativeCallsForOriginalRequests": 0,
+    "manualAgreements": 3,
+    "manualAgreementsWithSignConvention": 1,
+    "partialManualAnswers": 1,
+    "alreadyGivenFormulaDerivations": 1
+  },
+  "limitations": [
+    "New reduced inverse v1 does not automatically accept symbolic, moving-observer, curved-mirror-half or silvered-lens tasks.",
+    "Manual answers are outside Opticsim's original registered result kinds. Agreement with a source solution does not count as native question coverage.",
+    "An unregistered descriptive request shows no result from that request, not impossibility of every possible reduction.",
+    "Problems are previously unreviewed in this repository's documented atlas/trial, not independently verified unseen to the model.",
+    "No independently reviewed key, provider inference, new native ray tracer, or numerical source/geometry invention."
+  ],
+  "cases": [
+    {
+      "id": "V01",
+      "solutionSha256": "72970a696a7891947d04116a1e873ba490fe3671dbb75446a33ba028698b4422",
+      "assessment": "manual-agreement",
+      "key": "Mirror inclination theta=60 degrees",
+      "discussion": "First direction-reflection calculation gives 60 degrees, same as the key. This is a two-bounce unknown-inclination query, not a point-reflection coordinate."
+    },
+    {
+      "id": "V02",
+      "solutionSha256": "a4e4f6620fcc83584e66a341e13bccf27efeb37b9f16ddbbc068c1598ef2aed2",
+      "assessment": "manual-agreement",
+      "key": "Maximum visible travel interval 3d",
+      "discussion": "Same first geometric bound. The new point-reflection query is not a continuous observer-interval theorem."
+    },
+    {
+      "id": "V03",
+      "solutionSha256": "9675f92254a9f783b102680283936d189b6fa2e6c1ea5cc5a4a9c26044c1f8cd",
+      "assessment": "manual-agreement",
+      "key": "Two real images at 50 cm and transversely separated by 2 cm",
+      "discussion": "The two shifted optical axes and -1 magnification agree. The solution uses an opposite sign convention for image distance. This is not a focal-length inverse."
+    },
+    {
+      "id": "V04",
+      "solutionSha256": "0787802832c3c2cf33883e4f7a01d4a75ee366752ac54bcf14987d17c325c2a9",
+      "assessment": "partial-manual-answer",
+      "key": "Concave mirror plus two alternative complete ray constructions locating pole P and focus F",
+      "discussion": "The first attempt identified concave curvature but did not specify the two full pole/focus construction sequences; no full-answer credit. Drawing is not calibrated for a numerical inverse."
+    },
+    {
+      "id": "V05",
+      "solutionSha256": "52745857506246b73c8d8f8d41d2abb9a37a6b1a60789f32dcd7fc113af80c4f",
+      "assessment": "manual-agreement-with-sign-convention",
+      "key": "Equivalent concave mirror with F=-15 cm under the key Cartesian sign convention",
+      "discussion": "First attempt gave focal length magnitude 15 cm, explicitly concave, using real-positive focal-sign language. The key uses F=-15 cm. Record physical agreement but not identical signed output; silvered lens composition is not covered by the new reduced inverse."
+    },
+    {
+      "id": "V06",
+      "solutionSha256": "e6e64d5da41128c011efbcca3920732cc2cb9e25dd55c90ee35b7a90fd9e3886",
+      "assessment": "formula-already-in-question",
+      "key": "Concave-equivalent signed F=-r/(4μ-2), magnitude r/(4μ-2)",
+      "discussion": "The formula already appeared in the question; the first derivation reproduces its power relation. The key uses negative Cartesian sign for concave F; first states magnitude with concave classification. Do not grade it as an independently inferred new relation."
+    }
+  ]
+}
