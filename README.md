@@ -476,3 +476,7 @@ See [`docs/TRIANGULAR-PRISM.md`](docs/TRIANGULAR-PRISM.md) and the synthetic
 triangular-prism example after building, or load a qualified acceptance bundle.
 Truncated Fresnel runs remain incomplete; no arbitrary polygon, nested medium,
 image detector, new motion model or textbook-specific solver is implied.
+
+### Finite dielectric composition pilot
+
+Schema v10 combines one convex four-vertex glass region, one external finite plane mirror, 1–4 explicit single rays and optional external detectors using the unchanged pinned native engine. Older schemas retain their scopes. See [scope, numerical limits and verification](docs/FINITE-DIELECTRIC-COMPOSITION.md) and the synthetic [unified request](examples/finite-dielectric-composition.json). The existing viewer menu includes “Finite glass + external mirror”; no prescribed ray path or image prediction is implied.
