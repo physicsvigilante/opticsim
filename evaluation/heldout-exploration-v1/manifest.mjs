@@ -76,8 +76,25 @@ export function validateExplorationReference(ref,questions){
      if(doc.physics.model!==q.baseline.scene.physics.model||
        doc.physics.lengthUnit!==q.baseline.scene.physics.lengthUnit)
        throw Error(q.id+': reference cannot silently migrate a physical model family or length gauge');
+     const oldComponents=q.baseline.scene.physics.components,newComponents=doc.physics.components;
+     const priorIds=new Set(oldComponents.map(x=>x.id)),nextIds=new Set(newComponents.map(x=>x.id));
      if(row.expectedAction==='observe'&&canonicalJSON(doc.physics)!==canonicalJSON(q.baseline.scene.physics))
        throw Error(q.id+': observation-only reference cannot modify physics');
+     if(row.expectedAction==='revise'){
+       if(oldComponents.length!==newComponents.length||
+          oldComponents.some((x,i)=>newComponents[i]?.id!==x.id||newComponents[i]?.type!==x.type)||
+          canonicalJSON(doc.physics)===canonicalJSON(q.baseline.scene.physics))
+         throw Error(q.id+': targeted parameter reference must change existing physical fields without restructuring the system');
+     }
+     if(row.expectedAction==='structure'){
+       const alteredIds=[...priorIds].filter(id=>!nextIds.has(id)),newIds=[...nextIds].filter(id=>!priorIds.has(id));
+       if(!alteredIds.length&&!newIds.length)
+         throw Error(q.id+': structural reference must add or remove at least one stable component identity');
+       const retainedOld=oldComponents.filter(x=>nextIds.has(x.id));
+       const retainedNew=newComponents.filter(x=>priorIds.has(x.id));
+       if(canonicalJSON(retainedOld)!==canonicalJSON(retainedNew))
+         throw Error(q.id+': structural reference must preserve every surviving component and their original order');
+     }
      const expectedIds=new Set(doc.physics.components.map(x=>x.id));
      if(row.expectedAdditionalTargets.some(x=>!expectedIds.has(x.componentId)))
        throw Error(q.id+': reviewed target not present in expected apparatus');
