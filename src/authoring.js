@@ -66,6 +66,17 @@ export function capabilities() {
     circularDielectric:{schemaVersion:7,model:'circular-dielectric-tracing',scope:'Exactly one stationary circular region; 1–4 explicit single rays inside or outside; 0–2 external detectors; no other optics or nested regions',indices:'Required inside/outside absolute indices [1,4]; native ratio inside/outside',radius:'Positive radius >=2 mm; complete circle within coordinate bounds',partialReflection:'Required boolean; false explicitly omits Fresnel partial reflections, not TIR',clearance:'0.01 mm source/boundary and detector/circle separation; initial forward near-tangent rays within 0.01 mm are unsupported'},
     curvedMirrors:{schemaVersion:6,model:'curved-mirror-tracing',scope:'1–2 ideal/circular-arc mirrors; 1–4 sources; 0–2 plane mirrors and detectors; disjoint aperture disks; no lenses or refraction',normal:'Front-facing normal; f>0 or radius>0 means concave toward front; all dimensions explicit'},
     planarMedia:{schemaVersion:5,model:'planar-media-tracing',interfaces:'1–4 parallel consistently oriented planes; matching adjacent indices',sources:'1–4 single-ray emitters',lenses:'unsupported',indices:'absolute positive indices [1,4], normalized as native ratios',partialReflection:'required boolean; false explicitly neglects Fresnel partial reflection, not TIR'},
+    structuralRevisions:{
+      format:'opticsim-component-revision-v1',
+      method:'reviseComponents (atomic, validated, stable-ID add/remove)',
+      maxOperations:8,add:{op:'add',lengthUnit:['mm','cm','m'],
+        component:{required:['id','type','parameters'],sourceAlsoRequires:'emission.mode; active directional/single-ray angles explicit'}},
+      remove:{op:'remove',required:['id']},
+      limits:['Valid canonical baseline and admitted family only; component identity cannot be reused in the same revision.',
+        'Every new physical parameter is explicit; only inactive full-circle emission angles may use existing mechanical defaults.',
+        'No implicit numerical-policy, camera or model-family changes; no automatic result-target reassignment.',
+        'Rejected atomic revision does not mutate the baseline or run native optics.']
+    },
     model:'general-component-tracing',nativeUpstreamCommit:UPSTREAM,
     lengthUnits:Object.keys(lengthScales),coordinates:'x-right-y-up',
     lengthParameters:[...lengthKeys],
@@ -303,4 +314,90 @@ export function reviseScene(document,patch){
   try{validate(next);}catch(error){fail([issue(error.path||'$',
     error.code||'INVALID_SCENE',error.message)]);}
   return {document:next,changesApplied:patch.changes.length};
+}
+
+
+// Atomic, bounded physical-structure edits to an already validated scene.
+// A new component is authored in the SAME minimal physical vocabulary as
+// prepareScene, without re-supplying or rebuilding unchanged components.
+// The existing strict canonical validator alone determines which arrangements
+// are physically/numerically admitted; no cross-family migration is implied.
+export const COMPONENT_REVISION_FORMAT='opticsim-component-revision-v1';
+export function reviseComponents(document,patch){
+  try{validate(document);}catch(error){
+    fail([issue(error.path||'$','INVALID_BASE',error.message)]);
+  }
+  checkObject(patch,'$',['format','operations'],['format','operations']);
+  if(patch.format!==COMPONENT_REVISION_FORMAT)
+    fail([issue('$.format','UNSUPPORTED_FORMAT','Expected '+COMPONENT_REVISION_FORMAT)]);
+  if(!Array.isArray(patch.operations)||patch.operations.length<1||patch.operations.length>8)
+    fail([issue('$.operations','INVALID_OPERATIONS','Expected 1–8 atomic add/remove operations')]);
+  const next=structuredClone(document);
+  const baselineIds=new Set(document.physics.components.map(c=>c.id));
+  const touched=new Set(),added=[],removed=[];
+  for(const [i,operation] of patch.operations.entries()){
+    const path='$.operations['+i+']';
+    if(!isObject(operation))fail([issue(path,'EXPECTED_OBJECT','Expected a physical add/remove operation')]);
+    if(operation.op==='remove'){
+      checkObject(operation,path,['op','id'],['op','id']);
+      if(typeof operation.id!=='string'||!idPattern.test(operation.id))
+        fail([issue(path+'.id','INVALID_ID','A stable component ID is required')]);
+      if(touched.has(operation.id))
+        fail([issue(path+'.id','DUPLICATE_OPERATION','One structural operation per component identity')]);
+      touched.add(operation.id);
+      if(!baselineIds.has(operation.id))
+        fail([issue(path+'.id','UNKNOWN_COMPONENT','Cannot remove an absent baseline component')]);
+      const index=next.physics.components.findIndex(c=>c.id===operation.id);
+      if(index<0)fail([issue(path+'.id','UNKNOWN_COMPONENT','Component is no longer present')]);
+      next.physics.components.splice(index,1);
+      removed.push(operation.id);
+      continue;
+    }
+    if(operation.op!=='add')
+      fail([issue(path+'.op','UNSUPPORTED_OPERATION','Use add or remove; use reviseScene to edit existing fields')]);
+    checkObject(operation,path,['op','lengthUnit','component'],['op','lengthUnit','component']);
+    const scale=units(operation.lengthUnit,path+'.lengthUnit');
+    const author=operation.component,cp=path+'.component';
+    checkObject(author,cp,['id','type','parameters','emission'],['id','type','parameters']);
+    if(typeof author.id!=='string'||!idPattern.test(author.id))
+      fail([issue(cp+'.id','INVALID_ID','An explicitly chosen new stable component ID is required')]);
+    if(touched.has(author.id)||baselineIds.has(author.id))
+      fail([issue(cp+'.id','DUPLICATE_ID','A component ID cannot be reused or replaced in one structural revision')]);
+    touched.add(author.id);
+    if(!COMPONENT_TYPES.includes(author.type))
+      fail([issue(cp+'.type','UNSUPPORTED_COMPONENT','Not a registered physical component type')]);
+    const required=componentParameterNames(author.type);
+    checkObject(author.parameters,cp+'.parameters',required,required);
+    const parameters=Object.fromEntries(required.map(key=>[key,canonicalValue(
+      key,author.parameters[key],scale,cp+'.parameters.'+key)]));
+    const component={id:author.id,type:author.type,parameters};
+    if(author.type==='point-source'){
+      checkObject(author.emission,cp+'.emission',['mode','directionDeg','angleDeg'],['mode']);
+      const mode=author.emission.mode;
+      const modes=document.schemaVersion===6?['single-ray','full-circle','directional']:
+        [5,7,8,9].includes(document.schemaVersion)?['single-ray']:['full-circle','directional'];
+      if(!modes.includes(mode))
+        fail([issue(cp+'.emission.mode','INVALID_MODE','Emission mode not admitted by this optical model')]);
+      const requiredAngles=mode==='directional'?['directionDeg','angleDeg']:
+        mode==='single-ray'?['directionDeg']:[];
+      for(const key of requiredAngles)if(!own(author.emission,key))
+        fail([issue(cp+'.emission.'+key,'MISSING_VALUE','The active physical emission angle must be explicit')]);
+      component.emission={
+        mode,directionDeg:own(author.emission,'directionDeg')?
+          canonicalValue('directionDeg',author.emission.directionDeg,1,cp+'.emission.directionDeg'):0,
+        angleDeg:own(author.emission,'angleDeg')?
+          canonicalValue('angleDeg',author.emission.angleDeg,1,cp+'.emission.angleDeg'):30
+      };
+    }else if(own(author,'emission'))
+      fail([issue(cp+'.emission','UNSUPPORTED_FIELD','Only point sources have emission')]);
+    next.physics.components.push(component);
+    added.push(author.id);
+  }
+  // Important: preserve the original model family and all current numerical,
+  // source, and presentation state. Re-validation covers interaction/overlap,
+  // cardinality, source clearance and supported combinations for ALL components.
+  try{validate(next);}catch(error){
+    fail([issue(error.path||'$.physics',error.code||'INVALID_SCENE',error.message)]);
+  }
+  return {document:next,operationsApplied:patch.operations.length,addedIds:added,removedIds:removed};
 }
