@@ -74,8 +74,10 @@ test('private revision questions are qualified, strict, source-identified and ex
  const damaged=structuredClone(f.questions);damaged.cases[0].baseline.scene.physics.components[1].parameters.focalLength=40;
  await assert.rejects(validateExplorationQuestions(damaged),/integrity mismatch/);
  const withoutSource=structuredClone(f.questions);
- withoutSource.cases[0].baseline.qualification.interpretation.source=undefined;
- await assert.rejects(validateExplorationQuestions(withoutSource),/integrity|source/);
+ delete withoutSource.cases[0].baseline.qualification.interpretation.source;
+ const ungrounded=withoutSource.cases[0].baseline;
+ withoutSource.cases[0].baseline=await createQualifiedBundle(ungrounded.scene,ungrounded.qualification,ungrounded.observables);
+ await assert.rejects(validateExplorationQuestions(withoutSource),/source/);
 });
 test('offline reviewer reference must be complete, physically supported and reject unsupported target/family',async()=>{
  const f=await scenario();
@@ -128,7 +130,8 @@ test('raw first responses and malformed text are retained with exactly one call 
  assert.equal(parseExplorationAnswer('{"proposal":{},"extra":"bad"}').kind,'invalid');
 });
 test('external model capture requires explicit private transfer authorization, without contacting provider',async()=>{
- await assert.rejects(captureMain([],{}),/Explicit OPTICSIM_EXTERNAL_DATA_APPROVED/);
+ await assert.rejects(captureMain(['--questions','absent.json','--commitment','absent.json','--out','absent'],{}),
+  /Explicit OPTICSIM_EXTERNAL_DATA_APPROVED/);
 });
 test('parameter and structural model proposals preserve the source and use original engine validators',async()=>{
  const f=await scenario();
