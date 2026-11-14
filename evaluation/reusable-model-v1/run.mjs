@@ -198,7 +198,8 @@ export async function runExploration({outputPath=resolve(root,'test-artifacts/ll
      physicalProposedValue:p.changes??p.component,nativeCalls:0,reason:failure,sourceGiven:false});
  }
  // Existing bounded parameter sweep revalidates every sample independently.
- const sweepSpec={...structuredClone(plan.sweep),expectedSceneSha256:baselineBundle.sceneSha256};
+ const sweepSpec={format:plan.sweep.format,expectedSceneSha256:baselineBundle.sceneSha256,
+   parameter:structuredClone(plan.sweep.parameter),values:[...plan.sweep.values],plot:structuredClone(plan.sweep.plot)};
  const sweepInputs=canonicalJSON(sweepSpec);
  const sweep=await runParameterSweep(baselineBundle,sweepSpec,{
    execute:doc=>{report.nativeCalls.sweep++;return evaluate(doc);},
