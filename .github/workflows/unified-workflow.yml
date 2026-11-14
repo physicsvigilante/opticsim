@@ -19,6 +19,15 @@ jobs:
       - run: npm test
       - name: Teaching-fidelity source preservation and native physical checks
         run: node evaluation/teaching-fidelity-v1/run.mjs
+      - name: Exercise one immutable model across physically validated teacher scenarios
+        run: node evaluation/reusable-model-v1/run.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reusable-model-exploration-evidence
+          path: test-artifacts/llm-authoring/reusable-model-v1/
+          if-no-files-found: error
+          retention-days: 14
       - name: Build unchanged existing browser for teaching tasks
         run: npm run build
       - name: Exercise existing teaching controls in actual Chrome
