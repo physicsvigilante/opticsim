@@ -50,6 +50,7 @@ async function scenario(){
   {id:'H1',classification:'supported',expectedAction:'revise',expectedPhysics:expectedPhysical1,
    expectedAdditionalTargets:[],reviewNote:'The exact focal length is a new hypothetical; all other fields retained.'},
   {id:'H2',classification:'supported',expectedAction:'structure',expectedPhysics:expectedPhysical2,
+   sourceNamedNewComponentIds:['Probe'],
    expectedAdditionalTargets:[{kind:'detector-crossings',componentId:'Probe'}],
    reviewNote:'Passive detector reads real native sampled rays, not an image or per-source attribution.'},
   {id:'H3',classification:'missing',expectedFirstStatus:'needs-information',
@@ -90,6 +91,11 @@ test('offline reviewer reference must be complete, physically supported and reje
  const badTarget=structuredClone(f.reference);
  badTarget.cases[1].expectedAdditionalTargets=[{kind:'detector-crossings',componentId:'Absent'}];
  assert.throws(()=>validateExplorationReference(badTarget,f.questions),/not present/);
+ const unnamed=structuredClone(f.reference);delete unnamed.cases[1].sourceNamedNewComponentIds;
+ assert.throws(()=>validateExplorationReference(unnamed,f.questions),/all new component IDs explicitly source-named/);
+ const unrelated=structuredClone(f.reference);
+ unrelated.cases[1].sourceNamedNewComponentIds=['Unexpected'];
+ assert.throws(()=>validateExplorationReference(unrelated,f.questions),/all new component IDs explicitly source-named/);
  const unsupported=structuredClone(f.reference);
  unsupported.cases[0].expectedPhysics.model='triangular-prism-tracing';
  assert.throws(()=>validateExplorationReference(unsupported,f.questions),/model|Unsupported|invalid/);
