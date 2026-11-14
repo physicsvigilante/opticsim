@@ -23,6 +23,9 @@ jobs:
         run: node scripts/native-numerical-acceptance.mjs
       - name: Isolate native near-critical intersections against exact recorded-line geometry
         run: node scripts/grazing-intersection-probe.mjs
+      - name: Compare experimental relative intersections without changing production tracing
+        if: ${{ !cancelled() }}
+        run: node scripts/relative-intersection-experiment.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -31,5 +34,6 @@ jobs:
             test-artifacts/llm-authoring/numerical-reliability/
             test-artifacts/llm-authoring/numerical-replay-acceptance/
             test-artifacts/llm-authoring/grazing-intersection/
+            test-artifacts/llm-authoring/relative-intersection/
           if-no-files-found: error
           retention-days: 14
