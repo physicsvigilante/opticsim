@@ -235,7 +235,7 @@ export async function runExploration({outputPath=resolve(root,'test-artifacts/ll
    if(p.id==='focal-150'||p.id==='source-shift')
      check(p.id+' preserves numerical comparability and changes the conditional ideal image',
        comp.sameNumerics&&comp.entries.some(e=>e.kind==='ideal-image'&&e.comparison==='conditional-ideal-comparison')&&
-       instances.get(p.id).row.results[0].value.x!==baseline.row.results[0].value.x);
+       instances.get(p.id).row.results[0].value.x!==baseline.results[0].value.x);
  }
  check('Passive readouts cannot alter the native model or measurement results',
    instances.get('readouts-only').row.sceneSha256===baseline.sceneSha256&&
