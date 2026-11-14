@@ -1,0 +1,46 @@
+name: Temporary verified composition source transfer
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.dev/**', '.github/workflows/composition-bootstrap.yml']
+permissions:
+  contents: write
+jobs:
+  assemble:
+    if: github.event.pull_request.number == 65 && github.head_ref == 'feature/finite-dielectric-composition' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - name: Transfer exact locally tested sources
+        run: |
+          node .dev/composition-core.mjs
+          node .dev/composition-example.mjs
+          node .dev/composition-integration.mjs
+      - run: npm test
+      - run: npm run build
+      - run: node scripts/finite-composition-acceptance.mjs
+      - run: node scripts/finite-composition-browser.mjs
+      - run: npm run demo:package
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: composition-bootstrap-evidence
+          path: |
+            test-artifacts/llm-authoring/finite-composition/
+            test-artifacts/browser-finite-composition/
+          retention-days: 3
+          if-no-files-found: warn
+      - name: Publish verified files to this draft branch and remove temporary transport
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: node .dev/composition-publish.mjs
+# Temporary: deleted by the final step. No main update, deployment or merge.
