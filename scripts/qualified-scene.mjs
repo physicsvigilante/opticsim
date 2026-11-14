@@ -8,7 +8,7 @@ import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {problemCapabilities,resolveProblemRequest} from '../src/problem-authoring.js';
 import {angularCapabilities} from '../src/planar-angle-queries.js';
-import {reviseScene,AuthoringError} from '../src/authoring.js';
+import {reviseScene,reviseComponents,AuthoringError} from '../src/authoring.js';
 import {evaluateDocument} from './author-scene.mjs';
 import {reserveAuthoringOutput,writeEvidence} from './authoring-evidence.mjs';
 import {observableCapabilities,validateObservables,evaluateObservables} from '../src/observables.js';
@@ -21,7 +21,7 @@ function read(path){
   if(bytes.length>1024*1024)throw Error('Input exceeds 1 MB');
   return bytes;
 }
-function usage(){return 'Usage: node scripts/qualified-scene.mjs capabilities | create <request.json> [--illustrate] [--observables <array.json>] [--interpretation <notes.json>] [--out test-artifacts/llm-authoring/<fresh>] | revise <qualified-scene.json> <changes.json> [--out <fresh>]';}
+function usage(){return 'Usage: node scripts/qualified-scene.mjs capabilities | create <request.json> [--illustrate] [--observables <array.json>] [--interpretation <notes.json>] [--out test-artifacts/llm-authoring/<fresh>] | revise <qualified-scene.json> <changes.json> [--out <fresh>] | structure <qualified-scene.json> <changes.json> [--out <fresh>]';}
 function report(summary,context,details=null){
   summary.inputSha256=context.inputSha256;
   if(context.output){
@@ -36,8 +36,8 @@ async function main(context){
     console.log(JSON.stringify({authoring:problemCapabilities(),results:observableCapabilities(),
       conditionalAngularQueries:angularCapabilities()},null,2));return;
   }
-  if(!['create','revise'].includes(command))throw Error(usage());
-  const count=command==='revise'?2:1;
+  if(!['create','revise','structure'].includes(command))throw Error(usage());
+  const count=command==='create'?1:2;
   if(args.length<count)throw Error(usage());
   const options={},seen=new Set();
   for(let i=count;i<args.length;i++){
@@ -74,7 +74,7 @@ async function main(context){
     const patch=sidecar('changes',args[1]);
     if(patch.expectedSha256!==prior.sceneSha256)throw Error('STALE_REVISION: expectedSha256 must match the qualified scene');
     const {expectedSha256,...changes}=patch;
-    doc=reviseScene(prior.scene,changes).document;
+    doc=(command==='structure'?reviseComponents(prior.scene,changes):reviseScene(prior.scene,changes)).document;
     qualification=recordQualifiedEdit(prior.scene,doc,prior.qualification);requests=prior.observables;
     context.parentIntegritySha256=prior.integritySha256;
   }
