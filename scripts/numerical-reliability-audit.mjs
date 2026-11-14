@@ -38,7 +38,7 @@ async function probe(id,name,request,requests){
     };
     const requestedResults=await evaluateObservables(canonical,requests,summary);
     const record={id,name,mode,nativeColorMode:result.nativeSceneColorMode,
-      threshold:result.nativeWeakBranchThreshold,status:result.status,
+      threshold:result.nativeWeakBranchThreshold,status:result.status,complete:result.complete,
       truncatedBrightness:result.diagnostic.truncation,
       processedRaySegments:result.diagnostic.processed,
       // Labels matter: partial native events are NOT accepted observables.
@@ -50,7 +50,9 @@ async function probe(id,name,request,requests){
       requestedResults,interactionTrace:result.diagnostic.interactionTrace,
       numericalFindings:result.numericalFindings,
       canonicalSha256:summary.canonicalSha256,
-      incompleteResultsWithheld:!result.complete&&requestedResults.results.every(r=>r.status==='suppressed')};
+      // Unavailable requests have no value, but do not determine native completion.
+      incompleteResultsWithheld:!result.complete&&requestedResults.results.every(r=>
+        ['suppressed','unavailable'].includes(r.status)&&r.value===null)};
     records.push(record);
     writeEvidence(resolve(out.directory,name+'-'+mode+'.json'),JSON.stringify(record,null,2)+'\n');
   }
@@ -84,6 +86,6 @@ writeEvidence(out.report,JSON.stringify(report,null,2)+'\n');
 const summarized=records.map(x=>({id:x.id,name:x.name,mode:x.mode,status:x.status,
   truncated:x.truncatedBrightness,
   I12:x.interfaceCounters.I12||null,I1A:x.interfaceCounters.I1A||null,
-  I23:x.interfaceCounters.I23||null,complete:!x.incompleteResultsWithheld}));
+  I23:x.interfaceCounters.I23||null,complete:x.complete}));
 console.log(JSON.stringify({status:'diagnostic-recorded',sourceHash:report.originalSha256,
   output:out.directory,records:summarized},null,2));

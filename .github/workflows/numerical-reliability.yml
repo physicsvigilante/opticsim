@@ -17,10 +17,12 @@ jobs:
           node-version: '24.19.0'
       - run: npm run setup
       - run: npm test
-      - name: Compare explicit native weak-branch numerical modes
-        run: node scripts/numerical-reliability-audit.mjs
+      - name: Compare native numerical modes and verify saved and console completion
+        run: node scripts/numerical-audit-report-acceptance.mjs
       - name: Replay a qualified scene under explicitly selected native numerical modes
         run: node scripts/native-numerical-acceptance.mjs
+      - name: Isolate native near-critical intersections against exact recorded-line geometry
+        run: node scripts/grazing-intersection-probe.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -28,5 +30,6 @@ jobs:
           path: |
             test-artifacts/llm-authoring/numerical-reliability/
             test-artifacts/llm-authoring/numerical-replay-acceptance/
+            test-artifacts/llm-authoring/grazing-intersection/
           if-no-files-found: error
           retention-days: 14
