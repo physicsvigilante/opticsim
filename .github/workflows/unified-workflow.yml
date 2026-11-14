@@ -23,6 +23,15 @@ jobs:
         run: node evaluation/reusable-model-v1/run.mjs
       - name: Verify hash-guarded structural revisions through the qualified native CLI
         run: node scripts/structural-revision-acceptance.mjs
+      - name: Record frozen cross-family revision decisions without repairing them
+        run: node evaluation/revision-transfer-v1/run.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: revision-transfer-evidence
+          path: test-artifacts/llm-authoring/revision-transfer-v1/
+          if-no-files-found: error
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
         with:
