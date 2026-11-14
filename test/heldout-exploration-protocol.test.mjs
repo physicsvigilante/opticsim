@@ -109,6 +109,7 @@ test('adjudicated reference actions cannot quietly require a different class of 
  assert.throws(()=>validateExplorationReference(wrongAction,f.questions),/targeted parameter reference/);
  const wrongStructure=structuredClone(f.reference);
  wrongStructure.cases[0].expectedAction='structure';
+ wrongStructure.cases[0].sourceNamedNewComponentIds=[];
  assert.throws(()=>validateExplorationReference(wrongStructure,f.questions),/structural reference|surviving component/);
 });
 test('redundant untouched-field edits are not credited as a minimal physical investigation',async()=>{
