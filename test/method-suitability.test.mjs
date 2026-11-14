@@ -4,11 +4,13 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {randomUUID,createHash} from 'node:crypto';
+import {createRequire} from 'node:module';
 import {resolve} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {planProblem,problemWorkflowCapabilities} from '../src/problem-workflow.js';
 import {assessMethodSuitability,METHOD_SUITABILITY_FORMAT} from '../src/method-suitability.js';
 import {runProblemEvidence} from '../scripts/run-problem.mjs';
+import {evaluateDocument} from '../scripts/author-scene.mjs';
 const read=name=>JSON.parse(readFileSync(new URL('../'+name,import.meta.url)));
 const existing=read('evaluation/real-ten-v1/first-attempts.json');
 const six=read('evaluation/reduced-inverse-original-v1/first-attempts.json');
@@ -164,4 +166,19 @@ test('method audit is persisted in both preflight and completed hash-bound offli
  assert.deepEqual(done.report.methodSuitability,pre.methodSuitability);
  assert.equal(done.report.inputSha256,createHash('sha256').update(original).digest('hex'));
  assert.ok(existsSync(resolve(done.output,'plan.json')));
+});
+
+test('an actual native run is counted in dispatch even though method selection itself performed zero calls',async()=>{
+ const q=JSON.parse(pilot.attempts[0].rawOutput).request;
+ const core=createRequire(import.meta.url)('../dist/test-core.cjs');
+ const run=await runProblemEvidence({inputBytes:bytes(q),outputPath:fresh(),
+  execute:scene=>evaluateDocument(scene,core)});
+ assert.equal(run.exitCode,0);
+ assert.equal(run.report.dispatch.nativeCalls,1);
+ assert.equal(run.report.native.status,'completed');
+ assert.deepEqual(run.report.methodSuitability.auditActions,
+  {nativeSimulatorCalls:0,externalModelCalls:0,repairs:0});
+ assert.equal(run.report.methodSuitability.pendingNativeRequests,3);
+ assert.equal(run.report.methodSuitability.entries.every(e=>e.readiness==='requires-native-execution'),true);
+ assert.equal(run.report.methodSuitability.originalQuestionFidelity,'not-assessed-by-engine');
 });
