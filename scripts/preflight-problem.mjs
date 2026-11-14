@@ -31,7 +31,7 @@ function main(args){
   const report={format:'opticsim-problem-preflight-v1',inputSha256,
     status,scenePrepared:!!plan.scene,
     preparation:plan.preparation,results,
-    targetBindings:plan.targetBindings,
+    targetBindings:plan.targetBindings,methodSuitability:plan.methodSuitability,
     native:{...plan.native,status:'not-run',calls:0},
     diagnostics:plan.diagnostics,
     interpretationAssessment:plan.interpretation,questionSupport:plan.questionSupport,

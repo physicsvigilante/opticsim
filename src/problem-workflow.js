@@ -1,6 +1,7 @@
 // Deterministic dispatch only. Physics, angular algebra, qualification and
 // native result gating stay in their existing implementations.
 import {analyzeCurvedMirrorQuery,curvedQueryCapabilities,CURVED_FACTS_FORMAT,CURVED_QUERY_FORMAT} from './curved-mirror-queries.js';
+import {assessMethodSuitability,METHOD_SUITABILITY_FORMAT} from './method-suitability.js';
 import {analyzeReducedInverseQuery,reducedInverseCapabilities,INVERSE_FACTS_FORMAT,INVERSE_QUERY_FORMAT} from './reduced-inverse-queries.js';
 import {problemCapabilities,resolveProblemRequest} from './problem-authoring.js';
 import {analyzePlanarAngleQuery,angularCapabilities,ANGLE_QUERY_FORMAT,ANGLE_FACTS_FORMAT} from './planar-angle-queries.js';
@@ -15,16 +16,31 @@ const inverseKinds=new Set(reducedInverseCapabilities().kinds);
 const angularKinds=new Set(angularCapabilities().kinds);
 const mirrorKinds=new Set(mirrorAngularCapabilities().kinds);
 const observableKinds=observableCapabilities().kinds;
+// References the live fact/query formats, not a second physics validator.
+const factContracts=Object.freeze({
+ [CURVED_QUERY_FORMAT]:[CURVED_FACTS_FORMAT,'authoring-scene'],
+ [INVERSE_QUERY_FORMAT]:[INVERSE_FACTS_FORMAT],
+ [ANGLE_QUERY_FORMAT]:[ANGLE_FACTS_FORMAT,'authoring-scene'],
+ [MIRROR_QUERY_FORMAT]:[MIRROR_FACTS_FORMAT]
+});
+const requestKindRegistry=()=>({
+ ...Object.fromEntries(reducedInverseCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:INVERSE_QUERY_FORMAT}])),
+ ...Object.fromEntries(curvedQueryCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:CURVED_QUERY_FORMAT}])),
+ ...Object.fromEntries(angularCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:ANGLE_QUERY_FORMAT}])),
+ ...Object.fromEntries(mirrorAngularCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:MIRROR_QUERY_FORMAT}])),
+ ...Object.fromEntries(Object.entries(observableKinds).map(([k,v])=>[k,{...v,route:k==='ideal-image'?'existing-analysis-with-native-gate':'native-observation'}]))
+});
 const empty=(r,status,code,reason)=>({id:r.id,kind:r.kind,status,value:null,method:null,reasonCode:code,reason});
 export function problemWorkflowCapabilities(){
   return {format:PROBLEM_FORMAT,version:1,maxRequests:16,maxCalculations:4,
     required:['format','physical','requests'],optional:['interpretation','illustration','verifyNative'],
     physical:'Existing minimal authoring request, reduced angular/mirror/inverse facts, or null. No invented apparatus fields.',
-    requestKinds:{...Object.fromEntries(reducedInverseCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:INVERSE_QUERY_FORMAT}])),
-      ...Object.fromEntries(curvedQueryCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:CURVED_QUERY_FORMAT}])),
-      ...Object.fromEntries(angularCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:ANGLE_QUERY_FORMAT}])),
-      ...Object.fromEntries(mirrorAngularCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:MIRROR_QUERY_FORMAT}])),
-      ...Object.fromEntries(Object.entries(observableKinds).map(([k,v])=>[k,{...v,route:k==='ideal-image'?'existing-analysis-with-native-gate':'native-observation'}]))},
+    requestKinds:requestKindRegistry(),
+    methodSuitability:{format:METHOD_SUITABILITY_FORMAT,mode:'exact-typed-request-diagnostic',
+      contractFamilies:structuredClone(factContracts),
+      limits:['No natural-language interpretation, image parsing or automatic method aliasing.',
+        'Known method does not prove original question fidelity; wrong or unregistered kinds stay unrepresented.',
+        'An authoring-scene fact family match is not sufficient for physical validity or native run completion.']},
     authoring:problemCapabilities(),curvedMirrors:curvedQueryCapabilities(),reducedInverse:reducedInverseCapabilities(),angular:angularCapabilities(),mirrorAngular:mirrorAngularCapabilities(),observables:observableCapabilities(),
     policy:'One request file; route by kind, never by answers or expected values. Native componentId may be omitted only when exactly one compatible authored component exists; its binding is recorded, not guessed from geometry or ray paths. Ambiguous or absent targets remain unresolved. No physical repairs or method fallback. Angular-only requests do not trigger native work unless verifyNative is true. Interpretation remains author-provided and unverified.'};
 }
@@ -190,12 +206,13 @@ export function planProblem(input){
   const canRun=needsNative&&!!scene&&!invalid&&
     (request.verifyNative===true||nativeRequests.length>0);
   const {prepared:ignored,...prep}=preparation||{};
-  return {format:'opticsim-problem-plan-v1',request,results,calculations,
+  const native={required:needsNative,canRun,
+    reason:!needsNative?'No registered native result or verification requested.':!scene?'No unambiguous validated forward scene.':!canRun?'No uniquely determined native measurement target.':null};
+  const plan={format:'opticsim-problem-plan-v1',request,results,calculations,
     preparation:preparation?prep:null,scene,diagnostics,targetBindings,
-    native:{required:needsNative,canRun,
-      reason:!needsNative?'No registered native result or verification requested.':!scene?'No unambiguous validated forward scene.':!canRun?'No uniquely determined native measurement target.':null},
-    nativeRequests,interpretation:'author-provided-not-independently-verified',
+    native,nativeRequests,interpretation:'author-provided-not-independently-verified',
     questionSupport:'not-assessed-by-engine'};
+  return {...plan,methodSuitability:assessMethodSuitability(plan,requestKindRegistry(),factContracts)};
 }
 export function resultCoverage(results){
   const available=results.filter(r=>['available','qualified','conditional'].includes(r.status));
