@@ -3,16 +3,8 @@
 // families, or change numerical budgets. Family validators own their policies.
 import {FINITE_APERTURE_TYPE,apertureGeometry,separatedSegmentDistance} from './finite-aperture.js';
 
-// Whole-system cardinality is necessary but never sufficient for admission.
-// Policies are owned by versioned families; geometry/material checks follow.
-export function compositionCardinalitiesMatch(components,counts,groups=[]){
-  if(components.some(c=>!Object.hasOwn(counts,c.type)))return false;
-  return Object.entries(counts).every(([type,{min,max}])=>{
-    const n=components.filter(c=>c.type===type).length;return n>=min&&n<=max;
-  })&&groups.every(({types,min,max})=>{
-    const n=components.filter(c=>types.includes(c.type)).length;return n>=min&&n<=max;
-  });
-}
+// Backward-compatible export; cardinality policy is owned by the shared registry.
+export {compositionCardinalitiesMatch} from './composition-profiles.js';
 
 // Mechanical surface construction shared by optical and detector validation.
 // A transparent aperture opening is NOT a solid segment. Whole-line endpoints

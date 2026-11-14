@@ -1,3 +1,4 @@
+import {compositionCountsMatch} from './composition-profiles.js';
 import {distanceToFiniteSegment,finiteGlassFaces,compileFiniteGlass,finiteGlassEncounter,segmentOutsideFiniteGlass} from './finite-glass-geometry.js';
 // Four-vertex convex dielectric geometry. Native Glass owns every ray.
 // This layer validates a bounded polygon and identifies ONLY actual native hits.
@@ -19,9 +20,7 @@ export function compilePolygon(component){
 export function validatePolygonGeometry(components,endpoints,fail){
   const path='$.physics.components',polygons=components.filter(c=>c.type===POLYGON_TYPE),
     sources=components.filter(c=>c.type==='point-source');
-  if(polygons.length!==1||sources.length<1||sources.length>4||
-     components.filter(c=>c.type==='ray-detector').length>2||
-     components.some(c=>!['point-source',POLYGON_TYPE,'ray-detector'].includes(c.type)))
+  if(!compositionCountsMatch(components,'polygon-dielectric-tracing',9))
     fail(path,'Polygon scope: one stationary convex quadrilateral, 1–4 exact single rays and 0–2 external detectors; no other optical or nested media.','UNSUPPORTED_SCOPE');
   const p=polygons[0].parameters,v=polygonVertices(p);
   if(v.some(q=>![q.x,q.y].every(Number.isFinite)||Math.abs(q.x)>10000||Math.abs(q.y)>10000))

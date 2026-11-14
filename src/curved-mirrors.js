@@ -1,3 +1,4 @@
+import {compositionCountsMatch} from './composition-profiles.js';
 // Geometry preparation only; native PhyDemo selects intersections and reflected rays.
 export const CURVED_TYPES=Object.freeze(['ideal-curved-mirror','circular-arc-mirror']);
 export const isCurved=type=>CURVED_TYPES.includes(type);
@@ -29,9 +30,7 @@ function pointSegmentDistance(p,a,b){
 }
 export function validateCurvedGeometry(components,endpoints,fail){
   const path='$.physics.components',sources=components.filter(c=>c.type==='point-source'),curves=components.filter(c=>isCurved(c.type));
-  if(sources.length<1||sources.length>4||curves.length<1||curves.length>2||
-    components.filter(c=>c.type==='plane-mirror').length>2||components.filter(c=>c.type==='ray-detector').length>2||
-    components.some(c=>!['point-source','plane-mirror','ray-detector',...CURVED_TYPES].includes(c.type)))
+  if(!compositionCountsMatch(components,'curved-mirror-tracing',6))
     fail(path,'Curved scope: 1–4 sources, 1–2 curved reflectors, 0–2 plane mirrors, 0–2 detectors; no lenses or refractive surfaces.','UNSUPPORTED_SCOPE');
   const disks=curves.map(c=>{
     const p=c.parameters;

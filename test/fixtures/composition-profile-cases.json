@@ -1,0 +1,398 @@
+{
+  "purpose": "Explicit synthetic apparatus data; not source-problem interpretations or templates.",
+  "cases": [
+    {
+      "id": "lens-two-mirrors",
+      "request": {
+        "lengthUnit": "mm",
+        "title": "Synthetic registry control: lens-two-mirrors",
+        "components": [
+          {
+            "id": "S",
+            "type": "point-source",
+            "parameters": {
+              "x": -80,
+              "y": 3,
+              "brightness": 1
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": 0,
+              "angleDeg": 5
+            }
+          },
+          {
+            "id": "L",
+            "type": "ideal-lens",
+            "parameters": {
+              "x": 0,
+              "focalLength": 40,
+              "apertureHeight": 40
+            }
+          },
+          {
+            "id": "A",
+            "type": "plane-mirror",
+            "parameters": {
+              "x": 60,
+              "y": 0,
+              "orientationDeg": 45,
+              "length": 16
+            }
+          },
+          {
+            "id": "B",
+            "type": "plane-mirror",
+            "parameters": {
+              "x": 60,
+              "y": 20,
+              "orientationDeg": 135,
+              "length": 16
+            }
+          },
+          {
+            "id": "D",
+            "type": "ray-detector",
+            "parameters": {
+              "x": -20,
+              "y": 20,
+              "orientationDeg": 90,
+              "length": 20
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "aperture-detector",
+      "request": {
+        "lengthUnit": "mm",
+        "title": "Synthetic registry control: aperture-detector",
+        "components": [
+          {
+            "id": "S",
+            "type": "point-source",
+            "parameters": {
+              "x": -60,
+              "y": 3,
+              "brightness": 1
+            },
+            "emission": {
+              "mode": "directional",
+              "directionDeg": 0,
+              "angleDeg": 10
+            }
+          },
+          {
+            "id": "A",
+            "type": "finite-aperture",
+            "parameters": {
+              "x": 0,
+              "y": 0,
+              "orientationDeg": 90,
+              "length": 40,
+              "openingLength": 20
+            }
+          },
+          {
+            "id": "D",
+            "type": "ray-detector",
+            "parameters": {
+              "x": 30,
+              "y": 0,
+              "orientationDeg": 90,
+              "length": 60
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "planar-mirror-detector",
+      "request": {
+        "lengthUnit": "mm",
+        "title": "Synthetic registry control: planar-mirror-detector",
+        "components": [
+          {
+            "id": "S",
+            "type": "point-source",
+            "parameters": {
+              "x": -40,
+              "y": 7,
+              "brightness": 1
+            },
+            "emission": {
+              "mode": "single-ray",
+              "directionDeg": 0
+            }
+          },
+          {
+            "id": "I",
+            "type": "planar-interface",
+            "parameters": {
+              "x": 0,
+              "y": 0,
+              "normalDeg": 0,
+              "negativeIndex": 1,
+              "positiveIndex": 1.5,
+              "partialReflection": false
+            }
+          },
+          {
+            "id": "M",
+            "type": "plane-mirror",
+            "parameters": {
+              "x": 60,
+              "y": 7,
+              "orientationDeg": 45,
+              "length": 16
+            }
+          },
+          {
+            "id": "D",
+            "type": "ray-detector",
+            "parameters": {
+              "x": 60,
+              "y": 37,
+              "orientationDeg": 0,
+              "length": 20
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "circle-detector",
+      "request": {
+        "lengthUnit": "mm",
+        "title": "Synthetic registry control: circle-detector",
+        "components": [
+          {
+            "id": "S",
+            "type": "point-source",
+            "parameters": {
+              "x": -50,
+              "y": 4,
+              "brightness": 1
+            },
+            "emission": {
+              "mode": "single-ray",
+              "directionDeg": 0
+            }
+          },
+          {
+            "id": "G",
+            "type": "circular-dielectric",
+            "parameters": {
+              "x": 0,
+              "y": 0,
+              "radius": 20,
+              "insideIndex": 1.5,
+              "outsideIndex": 1,
+              "partialReflection": false
+            }
+          },
+          {
+            "id": "D",
+            "type": "ray-detector",
+            "parameters": {
+              "x": 40,
+              "y": 0,
+              "orientationDeg": 90,
+              "length": 40
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "prism-two-mirrors",
+      "request": {
+        "lengthUnit": "mm",
+        "title": "Synthetic registry control: prism-two-mirrors",
+        "components": [
+          {
+            "id": "S",
+            "type": "point-source",
+            "parameters": {
+              "x": -40,
+              "y": 10,
+              "brightness": 1
+            },
+            "emission": {
+              "mode": "single-ray",
+              "directionDeg": 0
+            }
+          },
+          {
+            "id": "P",
+            "type": "triangular-prism",
+            "parameters": {
+              "x1": 0,
+              "y1": -50,
+              "x2": 0,
+              "y2": 50,
+              "x3": 20,
+              "y3": 0,
+              "insideIndex": 1.5,
+              "outsideIndex": 1,
+              "partialReflection": false
+            }
+          },
+          {
+            "id": "A",
+            "type": "plane-mirror",
+            "parameters": {
+              "x": 60,
+              "y": 0,
+              "orientationDeg": 90,
+              "length": 60
+            }
+          },
+          {
+            "id": "B",
+            "type": "plane-mirror",
+            "parameters": {
+              "x": -80,
+              "y": -80,
+              "orientationDeg": 0,
+              "length": 20
+            }
+          },
+          {
+            "id": "D",
+            "type": "ray-detector",
+            "parameters": {
+              "x": -20,
+              "y": -10,
+              "orientationDeg": 90,
+              "length": 20
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "quadrilateral-two-mirrors",
+      "request": {
+        "lengthUnit": "mm",
+        "title": "Synthetic registry control: quadrilateral-two-mirrors",
+        "components": [
+          {
+            "id": "S",
+            "type": "point-source",
+            "parameters": {
+              "x": -40,
+              "y": 0,
+              "brightness": 1
+            },
+            "emission": {
+              "mode": "single-ray",
+              "directionDeg": 0
+            }
+          },
+          {
+            "id": "G",
+            "type": "polygon-dielectric",
+            "parameters": {
+              "x1": 0,
+              "y1": -30,
+              "x2": 0,
+              "y2": 30,
+              "x3": 22,
+              "y3": 30,
+              "x4": 20,
+              "y4": -30,
+              "insideIndex": 1.5,
+              "outsideIndex": 1,
+              "partialReflection": false
+            }
+          },
+          {
+            "id": "A",
+            "type": "plane-mirror",
+            "parameters": {
+              "x": 60,
+              "y": 0,
+              "orientationDeg": 45,
+              "length": 16
+            }
+          },
+          {
+            "id": "B",
+            "type": "plane-mirror",
+            "parameters": {
+              "x": 60,
+              "y": 20,
+              "orientationDeg": 135,
+              "length": 16
+            }
+          },
+          {
+            "id": "D",
+            "type": "ray-detector",
+            "parameters": {
+              "x": -20,
+              "y": 20,
+              "orientationDeg": 90,
+              "length": 20
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "curved-plane-detector",
+      "request": {
+        "lengthUnit": "mm",
+        "title": "Synthetic registry control: curved-plane-detector",
+        "components": [
+          {
+            "id": "S",
+            "type": "point-source",
+            "parameters": {
+              "x": -50,
+              "y": 3,
+              "brightness": 1
+            },
+            "emission": {
+              "mode": "single-ray",
+              "directionDeg": 0
+            }
+          },
+          {
+            "id": "C",
+            "type": "ideal-curved-mirror",
+            "parameters": {
+              "x": 20,
+              "y": 0,
+              "normalDeg": 180,
+              "focalLength": 25,
+              "apertureHeight": 20
+            }
+          },
+          {
+            "id": "M",
+            "type": "plane-mirror",
+            "parameters": {
+              "x": 0,
+              "y": 60,
+              "orientationDeg": 45,
+              "length": 16
+            }
+          },
+          {
+            "id": "D",
+            "type": "ray-detector",
+            "parameters": {
+              "x": -10,
+              "y": 0,
+              "orientationDeg": 90,
+              "length": 30
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

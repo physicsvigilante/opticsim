@@ -1,0 +1,80 @@
+{
+  "baselineCommit": "3d302858ae99b6afdef233d7459940baa09e79de",
+  "purpose": "Pre-refactor source-matched software regression evidence, not independent physics certification.",
+  "sourceBlobs": {
+    "src/contract.js": "8e3df54fb3c47ad5a19421dea44c8abe4d939b91",
+    "src/authoring.js": "968498770111cd82241cbcabe10394f7bfe1696f",
+    "src/composition-validation.js": "47c76b33e1b5fa269d8197bf4a9ae90891d713fb",
+    "src/finite-dielectric-composition.js": "2b2af5feec9f7208a0ebd1683bd06108e52d03e7",
+    "src/planar-media.js": "7e0b01a689db1cd4802ac63ddc85f1747c2f9618",
+    "src/curved-mirrors.js": "637ecdb7651dcf687174770b3c57c062042b42db",
+    "src/circular-dielectric.js": "16a6fafdb0866acd8dde0157086515850e271b44",
+    "src/triangular-prism.js": "e9437e12baa664fb020858e9107bdab14dffd51b",
+    "src/polygon-dielectric.js": "2dcd1408dc7328389b93e215fba224a31414b9be"
+  },
+  "records": [
+    {
+      "id": "lens-two-mirrors",
+      "model": "general-component-tracing",
+      "version": 4,
+      "canonical": "49cb60ed9048961162b6ae91b2595855ed8d1558344b9c1d00c9db77afca3d9e",
+      "native": "f7107bee18af69487400dbc95eaf2739792680789531b3ed1419b744859c4144",
+      "report": "5066f28b53c1d216e37684a8ec4f3e06a862dbca764a541c3b1296a2010fb039",
+      "status": "completed"
+    },
+    {
+      "id": "aperture-detector",
+      "model": "general-component-tracing",
+      "version": 4,
+      "canonical": "64bb2176cc0b88f3848f092f8a9405a26a4cc66f48a8c713b6c766339e143751",
+      "native": "a86e79361d5233b582efb6c2b60526f30789b74944d36fa08b027ee9e1801794",
+      "report": "2181406b29f4c4d1efe13668057a60f595bba091e466c88afebe8b1ff40a1a05",
+      "status": "completed"
+    },
+    {
+      "id": "planar-mirror-detector",
+      "model": "planar-media-tracing",
+      "version": 5,
+      "canonical": "dbc551b448149b19486f2d627b8f946a918b5020d0a16b742d47ac4757308fb0",
+      "native": "e1daf21623f7a011ed33bcb001f4577ec2c6818980eb31679ba2112b8851ff0c",
+      "report": "f6719f79a335f51fa9c5bc3f55bcdd3e654c62a6be790526ebdc4c7613489e39",
+      "status": "completed"
+    },
+    {
+      "id": "circle-detector",
+      "model": "circular-dielectric-tracing",
+      "version": 7,
+      "canonical": "a6db4d3cbd893e4ecff0e28b5f451732c31b44b331838943e191c827e4fd57eb",
+      "native": "aa468949257076ca0c62f25328c4c289c6991bd86e519e0ee70e52f46125f6db",
+      "report": "a0df0d5abaac93ee1739fdb8cd0d1bc1e5c105d58b3b6b5512d9b60b4698ec7e",
+      "status": "completed"
+    },
+    {
+      "id": "prism-two-mirrors",
+      "model": "finite-dielectric-composition",
+      "version": 12,
+      "canonical": "df2332d93541aa6a78875f299c66c4c20b1234affd207f900d448e1f92c021f1",
+      "native": "f0dcd9ede0a54d6829c487b0a8f8c2374f007ef73bd81a602e495427e05a10d9",
+      "report": "8b2808943f71938f52ab7612dc7633718bdaf2bd9aa4a9052e1c22230d034f4e",
+      "status": "completed"
+    },
+    {
+      "id": "quadrilateral-two-mirrors",
+      "model": "finite-dielectric-composition",
+      "version": 11,
+      "canonical": "abc66086c56c5dc3331d5d0ee467b72621f6333d40c4a5a56340b92ca23d7a89",
+      "native": "896a545385096c5f8676121665b206278ce49a9fff23df254e21eb1775096973",
+      "report": "9d853579bf6b6d20124391eec543138e512aebdcad53af553a403f24fd3f6c9a",
+      "status": "completed"
+    },
+    {
+      "id": "curved-plane-detector",
+      "model": "curved-mirror-tracing",
+      "version": 6,
+      "canonical": "95236d78ca956e9d22bcb89613378ea7adfc2eced34d192f326290c953c76b14",
+      "native": "4cd984ee6cc593094f801d130f53e37a12f72ab775343ea0bf4fa1dc67986f06",
+      "report": "1f724b02aa8afdd02545fdd3dc66ab87fe3b00fb6d2752317e6c5e52fc5407bb",
+      "status": "completed"
+    }
+  ]
+}

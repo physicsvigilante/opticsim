@@ -1,4 +1,5 @@
-import {FINITE_COMPOSITION_MODEL,isFiniteCompositionVersion,isFiniteCompositionRegion,validateFiniteDielectricComposition} from './finite-dielectric-composition.js';
+import {compositionModels,compositionSourceModes,compositionProfile,compositionCapacity,compositionCountsMatch,validateCompositionRules} from './composition-profiles.js';
+import {validateFiniteDielectricComposition} from './finite-dielectric-composition.js';
 import {PRISM_TYPE,PRISM_PARAMETERS,validatePrismGeometry} from './triangular-prism.js';
 import {POLYGON_TYPE,POLYGON_PARAMETERS,validatePolygonGeometry} from './polygon-dielectric.js';
 import {CIRCULAR_TYPE,CIRCULAR_PARAMETERS,validateCircularGeometry} from './circular-dielectric.js';
@@ -35,21 +36,10 @@ const parameters = { 'point-source': ['x', 'y'], 'ideal-lens': ['x', 'focalLengt
 // apparatus types; it does not relax numerical, geometric or runtime limits.
 export const COMPONENT_TYPES = Object.freeze(Object.keys(parameters));
 export const LENGTH_PARAMETERS = Object.freeze(['x','y','x1','y1','x2','y2','x3','y3','x4','y4','focalLength','apertureHeight','length','openingLength','radius']);
-export const GENERAL_SCOPE = Object.freeze({
-  'point-source': Object.freeze({min:1,max:4}),
-  'ideal-lens': Object.freeze({min:0,max:4}),
-  'plane-mirror': Object.freeze({min:0,max:4}),
-  'line-blocker': Object.freeze({min:0,max:2}),
-  [CIRCLE_BLOCKER_TYPE]: Object.freeze({min:0,max:2}),
-  [FINITE_APERTURE_TYPE]: Object.freeze({min:0,max:2}),
-  'ray-detector': Object.freeze({min:0,max:2}),
-  [PLANAR_TYPE]: Object.freeze({min:0,max:4}),
-  [CIRCULAR_TYPE]: Object.freeze({min:0,max:1}),
-  [PRISM_TYPE]: Object.freeze({min:0,max:1}),
-  [POLYGON_TYPE]: Object.freeze({min:0,max:1}),
-  'ideal-curved-mirror': Object.freeze({min:0,max:2}),
-  'circular-arc-mirror': Object.freeze({min:0,max:2})
-});
+// Compatibility envelope for legacy clients; whole-system profiles determine
+// admission. These per-type maxima must never be summed across optical families.
+export const GENERAL_SCOPE = Object.freeze(Object.fromEntries(
+  COMPONENT_TYPES.map(type=>[type,Object.freeze(compositionCapacity(type))])));
 // Largest currently admitted arrangement: general sources/lenses/mirrors/stops/detectors.
 // Line blockers, circles and finite apertures share a two-stop limit. Do not sum
 // their individual limits or the isolated optical-family limits.
@@ -71,7 +61,11 @@ export function componentParameterNames(type, version = 4) {
   return [...parameters[type], ...(version >= 2 && type === 'point-source' ? ['brightness'] : [])];
 }
 // Legacy versions stay isolated; circular scenes use v7 and triangular prisms v8.
-export function validate(doc) { return validateVersion(doc, isFiniteCompositionVersion(doc?.schemaVersion)?doc.schemaVersion:doc?.schemaVersion===9?9:doc?.schemaVersion===8?8:doc?.schemaVersion===7?7:doc?.schemaVersion===6?6:doc?.schemaVersion===5?5:4); }
+export function validate(doc) {
+  const version=Number.isInteger(doc?.schemaVersion)&&doc.schemaVersion>4&&compositionModels(doc.schemaVersion).length
+    ?doc.schemaVersion:4;
+  return validateVersion(doc,version);
+}
 function validateVersion(doc, version) {
   object(doc, ['format', 'schemaVersion', 'adapterVersion', 'upstreamCommit', 'physics', 'presentation', 'simulation'], '$');
   choice(doc.format, ['ray-optics-2d'], '$.format');
@@ -82,7 +76,7 @@ function validateVersion(doc, version) {
   object(p, ['lengthUnit', 'coordinates', 'model', 'components'], '$.physics');
   choice(p.lengthUnit, ['mm'], '$.physics.lengthUnit');
   choice(p.coordinates, ['x-right-y-up'], '$.physics.coordinates');
-  const models = isFiniteCompositionVersion(version)?[FINITE_COMPOSITION_MODEL]:version===9?['polygon-dielectric-tracing']:version===8?['triangular-prism-tracing']:version===7?['circular-dielectric-tracing']:version===6?['curved-mirror-tracing']:version===5?['planar-media-tracing']:['ideal-thin-lens-geometric', ...(version >= 3 ? ['plane-mirror-geometric'] : []), ...(version >= 4 ? ['lens-mirror-return-geometric', 'mixed-lens-mirror-tracing', 'general-component-tracing'] : [])];
+  const models = compositionModels(version);
   choice(p.model, models, '$.physics.model');
   if (!Array.isArray(p.components) || p.components.length > 32) fail('$.physics.components', 'expected a bounded component array');
   const ids = new Set();
@@ -111,46 +105,28 @@ function validateVersion(doc, version) {
       fail(`${path}.parameters.openingLength`, 'central opening must leave two opaque arms at least 1 mm long');
     if (version >= 2 && c.type === 'point-source') {
       object(c.emission, ['mode', 'directionDeg', 'angleDeg'], `${path}.emission`);
-      choice(c.emission.mode, version===6?['single-ray','full-circle','directional']:(version===5||version===7||version===8||version===9||isFiniteCompositionVersion(version))?['single-ray']:['full-circle', 'directional'], `${path}.emission.mode`);
+      choice(c.emission.mode, compositionSourceModes(version), `${path}.emission.mode`);
       number(c.emission.directionDeg, -180, 180, `${path}.emission.directionDeg`);
       number(c.emission.angleDeg, 1, 180, `${path}.emission.angleDeg`);
     }
   });
-  // Detectors are passive measuring components, not part of a model's optical
-  // cardinality or analytical path. One reusable measurement layer serves all
-  // current-v4 arrangements; the original optical scope checks stay unchanged.
-  const opticalComponents=p.components.filter(c=>c.type!=='ray-detector');
-  if(p.model===FINITE_COMPOSITION_MODEL){
-    validateFiniteDielectricComposition(p.components,mirrorEndpoints,fail,version);
-    validateMixedTraceScope(opticalComponents.filter(c=>!isFiniteCompositionRegion(c.type)),true);
-  }
-  else if(p.model==='polygon-dielectric-tracing'){
-    validatePolygonGeometry(p.components,mirrorEndpoints,fail);
-    validateMixedTraceScope(opticalComponents.filter(c=>c.type!==POLYGON_TYPE),true);
-  }
-  else if(p.model==='triangular-prism-tracing'){
-    validatePrismGeometry(p.components,mirrorEndpoints,fail);
-    validateMixedTraceScope(opticalComponents.filter(c=>c.type!==PRISM_TYPE),true);
-  }
-  else if(p.model==='circular-dielectric-tracing'){
-    validateCircularGeometry(p.components,mirrorEndpoints,fail);
-    validateMixedTraceScope(opticalComponents.filter(c=>c.type!==CIRCULAR_TYPE),true);
-  }
-  else if(p.model==='curved-mirror-tracing'){
-    validateCurvedGeometry(p.components,mirrorEndpoints,fail);
-    validateMixedTraceScope(opticalComponents.filter(c=>!isCurved(c.type)),true);
-  }
-  else if(p.model==='planar-media-tracing'){
-    validatePlanarGeometry(p.components,mirrorEndpoints,fail);
-    validateMixedTraceScope(opticalComponents.filter(c=>c.type!==PLANAR_TYPE),true);
-  }
-  else if (p.model === 'lens-mirror-return-geometric') validateReturnScope(opticalComponents);
-  else if (p.model === 'mixed-lens-mirror-tracing') validateMixedTraceScope(opticalComponents);
-  else if (p.model === 'general-component-tracing') validateMixedTraceScope(opticalComponents,true);
-  else if (p.model === 'plane-mirror-geometric') validateMirrorScope(opticalComponents);
-  else validateBenchScope(opticalComponents, version);
-  validateDetectorScope(p.components);
-  if(p.model==='general-component-tracing')validateCircleBlockerGeometry(p.components,mirrorEndpoints,fail);
+  // The registry owns rule order and validation views. No component is ever
+  // removed from the authoritative document or the native scene compiler.
+  validateCompositionRules(p.components,p.model,version,{
+    'finite-composition':c=>validateFiniteDielectricComposition(c,mirrorEndpoints,fail,version),
+    'polygon-region':c=>validatePolygonGeometry(c,mirrorEndpoints,fail),
+    'prism-region':c=>validatePrismGeometry(c,mirrorEndpoints,fail),
+    'circular-region':c=>validateCircularGeometry(c,mirrorEndpoints,fail),
+    'curved-mirrors':c=>validateCurvedGeometry(c,mirrorEndpoints,fail),
+    'planar-media':c=>validatePlanarGeometry(c,mirrorEndpoints,fail),
+    'lens-mirror-return':validateReturnScope,
+    'mixed-optical':c=>validateMixedTraceScope(c),
+    'general-optical':c=>validateMixedTraceScope(c,true),
+    'plane-mirror':validateMirrorScope,
+    'lens-bench':c=>validateBenchScope(c,version),
+    detectors:validateDetectorScope,
+    'opaque-circles':c=>validateCircleBlockerGeometry(c,mirrorEndpoints,fail)
+  });
   const v = doc.presentation;
   object(v, ['title', 'view', 'mode', 'grid', ...(version === 1 ? ['brightness'] : [])], '$.presentation');
   if (typeof v.title !== 'string' || v.title.length > 120) fail('$.presentation.title', 'expected a title of at most 120 characters');
@@ -174,8 +150,8 @@ export function benchComponents(doc) {
 }
 function validateBenchScope(components, version) {
   const { source, lenses } = benchComponents({ physics: { components } });
-  const maxLenses = version >= 4 ? 4 : 2;
-  if (components.filter(c => c.type === 'point-source').length !== 1 || lenses.length < 1 || lenses.length > maxLenses || components.length !== lenses.length + 1) fail('$.physics.components', `lens bench supports one point source and one to ${maxLenses} coaxial ideal lenses`, 'UNSUPPORTED_SCOPE');
+  const maxLenses = compositionProfile('ideal-thin-lens-geometric',version).counts['ideal-lens'].max;
+  if (!compositionCountsMatch(components,'ideal-thin-lens-geometric',version)) fail('$.physics.components', `lens bench supports one point source and one to ${maxLenses} coaxial ideal lenses`, 'UNSUPPORTED_SCOPE');
   let previous = source.parameters.x;
   for (const lens of lenses) {
     if (lens.parameters.x - previous < 0.01) fail('$.physics.components', 'source must be left of the lenses; distinct lens planes need at least 0.01 mm separation');
@@ -191,7 +167,7 @@ export function mirrorEndpoints({ x, y, orientationDeg, length }) {
 function validateMirrorScope(components) {
   const sources = components.filter(c => c.type === 'point-source');
   const mirrors = components.filter(c => c.type === 'plane-mirror');
-  if (sources.length !== 1 || mirrors.length !== 1 || components.length !== 2) fail('$.physics.components', 'mirror arrangement supports one point source and one plane mirror only', 'UNSUPPORTED_SCOPE');
+  if (!compositionCountsMatch(components,'plane-mirror-geometric',4)) fail('$.physics.components', 'mirror arrangement supports one point source and one plane mirror only', 'UNSUPPORTED_SCOPE');
   const mirror = mirrors[0];
   const path = `$.physics.components[${components.indexOf(mirror)}].parameters`;
   if (mirrorEndpoints(mirror.parameters).some(p => Math.abs(p.x) > 10000 || Math.abs(p.y) > 10000)) fail(path, 'derived mirror endpoints must lie within +/-10000 mm');
@@ -204,7 +180,7 @@ function validateReturnScope(components) {
   const lenses = components.filter(c => c.type === 'ideal-lens');
   const mirrors = components.filter(c => c.type === 'plane-mirror');
   const path = '$.physics.components';
-  if (sources.length !== 1 || lenses.length !== 1 || mirrors.length !== 1 || components.length !== 3) fail(path, 'return layout supports one point source, one ideal lens and one plane mirror only', 'UNSUPPORTED_SCOPE');
+  if (!compositionCountsMatch(components,'lens-mirror-return-geometric',4)) fail(path, 'return layout supports one point source, one ideal lens and one plane mirror only', 'UNSUPPORTED_SCOPE');
   const [source, lens, mirror] = [sources[0].parameters, lenses[0].parameters, mirrors[0].parameters];
   if (lens.x - source.x < 0.01 || mirror.x - lens.x < 0.01) fail(path, 'return layout requires source left of lens left of mirror, with >=0.01 mm plane separation');
   if (mirror.y !== 0 || ![90, -90].includes(mirror.orientationDeg)) fail(path, 'return layout requires mirror centre y=0 and perpendicular orientation +90 or -90 degrees', 'UNSUPPORTED_SCOPE');
@@ -216,19 +192,8 @@ function validateReturnScope(components) {
 function validateMixedTraceScope(components, general = false) {
   const sources=components.filter(c=>c.type==='point-source');
   const lenses=components.filter(c=>c.type==='ideal-lens');
-  const mirrors=components.filter(c=>c.type==='plane-mirror');
-  const blockers=components.filter(c=>c.type==='line-blocker');
-  const circleBlockers=components.filter(c=>c.type===CIRCLE_BLOCKER_TYPE);
-  const apertures=components.filter(c=>c.type===FINITE_APERTURE_TYPE);
   const path='$.physics.components';
-  if(sources.length<GENERAL_SCOPE['point-source'].min||
-     sources.length>GENERAL_SCOPE['point-source'].max||
-     lenses.length>(GENERAL_SCOPE['ideal-lens'].max)||
-     mirrors.length>(GENERAL_SCOPE['plane-mirror'].max)||
-     blockers.length+circleBlockers.length+apertures.length>GENERAL_SCOPE['line-blocker'].max||
-     (!general && blockers.length+circleBlockers.length+apertures.length>0)||
-     (!general && (lenses.length<1 || mirrors.length<1))||
-     components.length!==sources.length+lenses.length+mirrors.length+blockers.length+circleBlockers.length+apertures.length)
+  if(!compositionCountsMatch(components,general?'general-component-tracing':'mixed-lens-mirror-tracing',4))
     fail(path,general
       ? 'general tracing supports 1–4 point sources, 0–4 coaxial lenses, 0–4 plane mirrors and 0–2 total opaque line/circular/aperture stops'
       : 'mixed tracing supports 1–4 point sources, 1–4 coaxial lenses and 1–4 plane mirrors',
@@ -266,7 +231,7 @@ function validateMixedTraceScope(components, general = false) {
 // Detectors are passive but may not share a native intersection with a surface.
 function validateDetectorScope(components) {
   const detectors=components.filter(c=>c.type==='ray-detector');
-  if(detectors.length>GENERAL_SCOPE['ray-detector'].max)
+  if(detectors.length>compositionProfile('general-component-tracing',4).counts['ray-detector'].max)
     fail('$.physics.components','at most two ray detectors are supported','UNSUPPORTED_SCOPE');
   if(!detectors.length)return;
   const sources=components.filter(c=>c.type==='point-source').map(c=>c.parameters);

@@ -3,14 +3,14 @@ import {POLYGON_TYPE,POLYGON_CLEARANCE_MM,polygonFaces,validatePolygonGeometry} 
 import {PRISM_TYPE,PRISM_CLEARANCE_MM,prismFaces,validatePrismGeometry} from './triangular-prism.js';
 import {segmentOutsideFiniteGlass} from './finite-glass-geometry.js';
 import {separatedSegmentDistance} from './finite-aperture.js';
-import {compositionCardinalitiesMatch} from './composition-validation.js';
+import {compositionProfile,compositionCountsMatch,compositionCountWithin} from './composition-profiles.js';
 export const FINITE_COMPOSITION_MODEL='finite-dielectric-composition';
 // v10 is a frozen historical contract. v11 permits one OR two mirrors in the
 // same family, including atomic mirror add/remove, without a route controller.
 export const FINITE_COMPOSITION_VERSION=10;
 export const FINITE_COMPOSITION_EXTENDED_VERSION=11;
 export const FINITE_COMPOSITION_SHAPES_VERSION=12;
-export const isFiniteCompositionVersion=v=>v===10||v===11||v===12;
+export const isFiniteCompositionVersion=v=>!!compositionProfile(FINITE_COMPOSITION_MODEL,v);
 // The shape owns region geometry and material boundaries; composition owns
 // external placement. The native adapter still compiles the original component.
 const regions=Object.freeze({
@@ -18,13 +18,8 @@ const regions=Object.freeze({
   [PRISM_TYPE]:Object.freeze({faces:prismFaces,validate:validatePrismGeometry,clearance:PRISM_CLEARANCE_MM})
 });
 export const isFiniteCompositionRegion=type=>Object.hasOwn(regions,type);
-const counts=Object.freeze(Object.fromEntries(Object.entries({
-  'point-source':{min:1,max:4},[POLYGON_TYPE]:{min:1,max:1},
-  'plane-mirror':{min:1,max:2},'ray-detector':{min:0,max:2}
-}).map(([type,limit])=>[type,Object.freeze(limit)])));
-const shapeCounts=Object.freeze({...counts,
-  [POLYGON_TYPE]:Object.freeze({min:0,max:1}),[PRISM_TYPE]:Object.freeze({min:0,max:1})});
-const shapeGroups=Object.freeze([Object.freeze({types:Object.freeze(Object.keys(regions)),min:1,max:1})]);
+const counts=compositionProfile(FINITE_COMPOSITION_MODEL,FINITE_COMPOSITION_EXTENDED_VERSION).counts;
+const {counts:shapeCounts,groups:shapeGroups}=compositionProfile(FINITE_COMPOSITION_MODEL,FINITE_COMPOSITION_SHAPES_VERSION);
 export function finiteShapeCompositionPolicy(){
   return {schemaVersion:FINITE_COMPOSITION_SHAPES_VERSION,model:FINITE_COMPOSITION_MODEL,
     counts:Object.fromEntries(Object.entries(shapeCounts).map(([type,limit])=>[type,{...limit}])),
@@ -46,12 +41,13 @@ export function validateFiniteDielectricComposition(components,endpoints,fail,ve
   const path='$.physics.components',mirrors=components.filter(c=>c.type==='plane-mirror');
   if(!isFiniteCompositionVersion(version))fail(path,'Unsupported finite composition version.','UNSUPPORTED_SCOPE');
   if(version===FINITE_COMPOSITION_VERSION){
-    if(mirrors.length!==1||components.some(c=>!['point-source',POLYGON_TYPE,'plane-mirror','ray-detector'].includes(c.type)))
+    if(!compositionCountWithin(FINITE_COMPOSITION_MODEL,version,'plane-mirror',mirrors.length)||
+       components.some(c=>!Object.hasOwn(compositionProfile(FINITE_COMPOSITION_MODEL,version).counts,c.type)))
       fail(path,'Finite dielectric composition requires one convex quadrilateral, one external plane mirror, 1–4 single rays and 0–2 external detectors; no other optics or media.','UNSUPPORTED_SCOPE');
   }else if(version===FINITE_COMPOSITION_EXTENDED_VERSION){
-    if(!compositionCardinalitiesMatch(components,counts))
+    if(!compositionCountsMatch(components,FINITE_COMPOSITION_MODEL,version))
       fail(path,'Finite composition v11 requires one convex quadrilateral, 1–2 external plane mirrors, 1–4 single rays and 0–2 external detectors; no other optics or media.','UNSUPPORTED_SCOPE');
-  }else if(!compositionCardinalitiesMatch(components,shapeCounts,shapeGroups))
+  }else if(!compositionCountsMatch(components,FINITE_COMPOSITION_MODEL,version))
     fail(path,'Finite composition v12 requires exactly one triangle or convex quadrilateral, 1–2 external plane mirrors, 1–4 single rays and 0–2 external detectors; no other optics or media.','UNSUPPORTED_SCOPE');
   // Reuse the unchanged region/source/detector checks. No component is removed
   // from the canonical scene, its native compilation or result qualification.

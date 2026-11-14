@@ -1,3 +1,4 @@
+import {compositionCountsMatch} from './composition-profiles.js';
 import {distanceToFiniteSegment,finiteGlassFaces,compileFiniteGlass,finiteGlassEncounter,segmentOutsideFiniteGlass} from './finite-glass-geometry.js';
 // Finite triangle geometry and read-only surface identification. Native Glass
 // chooses every hit and outgoing ray; no Snell/Fresnel or routing code here.
@@ -18,9 +19,7 @@ export function compilePrism(component){
 export function validatePrismGeometry(components,endpoints,fail){
  const path='$.physics.components',prisms=components.filter(c=>c.type===PRISM_TYPE),
   sources=components.filter(c=>c.type==='point-source');
- if(prisms.length!==1||sources.length<1||sources.length>4||
-  components.filter(c=>c.type==='ray-detector').length>2||
-  components.some(c=>!['point-source',PRISM_TYPE,'ray-detector'].includes(c.type)))
+ if(!compositionCountsMatch(components,'triangular-prism-tracing',8))
   fail(path,'Prism scope: one finite triangular region, 1–4 single rays and 0–2 external detectors; no other optics or nested regions.','UNSUPPORTED_SCOPE');
  const p=prisms[0].parameters,v=prismVertices(p),faces=prismFaces(p);
  const twiceArea=Math.abs(cross(delta(v[0],v[1]),delta(v[0],v[2])));
