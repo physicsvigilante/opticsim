@@ -1,3 +1,4 @@
+import {compositionCountWithin} from './composition-profiles.js';
 // Native planar-medium adapter and bounded read-only interaction observation.
 // No Snell/Fresnel implementation, ray routing, intensity repair or resampling.
 import {PRISM_TYPE,prismFaces,prismEncounter} from './triangular-prism.js';
@@ -20,7 +21,7 @@ export function compileInterface(component){
 }
 export function validatePlanarGeometry(components,endpoints,fail){
   const interfaces=components.filter(c=>c.type===PLANAR_TYPE),path='$.physics.components';
-  if(interfaces.length<1||interfaces.length>4)fail(path,'planar media require 1–4 interfaces','UNSUPPORTED_SCOPE');
+  if(!compositionCountWithin('planar-media-tracing',5,PLANAR_TYPE,interfaces.length))fail(path,'planar media require 1–4 interfaces','UNSUPPORTED_SCOPE');
   if(components.some(c=>c.type==='ideal-lens'))fail(path,'ideal lenses in refractive media are not supported in this milestone','UNSUPPORTED_SCOPE');
   if(components.some(c=>c.type==='point-source'&&c.emission.mode!=='single-ray'))
     fail(path,'planar media currently require explicit native single-ray emission','UNSUPPORTED_SCOPE');

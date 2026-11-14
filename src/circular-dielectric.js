@@ -1,3 +1,4 @@
+import {compositionCountsMatch} from './composition-profiles.js';
 // Finite circular-region geometry only. PhyDemo owns all ray intersections,
 // Snell/Fresnel refraction and TIR; this module never propagates a ray.
 export const CIRCULAR_TYPE='circular-dielectric';
@@ -22,9 +23,7 @@ function segmentDistance(p,a,b){
 export function validateCircularGeometry(components,endpoints,fail){
  const path='$.physics.components',circles=components.filter(c=>c.type===CIRCULAR_TYPE);
  const sources=components.filter(c=>c.type==='point-source');
- if(circles.length!==1||sources.length<1||sources.length>4||
-  components.filter(c=>c.type==='ray-detector').length>2||
-  components.some(c=>!['point-source',CIRCULAR_TYPE,'ray-detector'].includes(c.type)))
+ if(!compositionCountsMatch(components,'circular-dielectric-tracing',7))
   fail(path,'Circular dielectric scope: one stationary circular region, 1–4 single rays, 0–2 external detectors; no other optics or nested media.','UNSUPPORTED_SCOPE');
  const p=circles[0].parameters;
  if(p.radius<2||circularExtents(p).some(q=>Math.abs(q.x)>10000||Math.abs(q.y)>10000))
