@@ -9,7 +9,7 @@ import {createHash} from 'node:crypto';
 import {problemCapabilities,resolveProblemRequest} from '../src/problem-authoring.js';
 import {angularCapabilities} from '../src/planar-angle-queries.js';
 import {reviseScene,AuthoringError} from '../src/authoring.js';
-import {prepareQualifiedStructure} from '../src/qualified-structure.js';
+import {prepareQualifiedStructure,qualifiedStructureCapabilities} from '../src/qualified-structure.js';
 import {evaluateDocument} from './author-scene.mjs';
 import {reserveAuthoringOutput,writeEvidence} from './authoring-evidence.mjs';
 import {observableCapabilities,validateObservables,evaluateObservables} from '../src/observables.js';
@@ -34,7 +34,7 @@ function report(summary,context,details=null){
 async function main(context){
  const [command,...args]=process.argv.slice(2);
  if(command==='capabilities'&&!args.length){
-  console.log(JSON.stringify({authoring:problemCapabilities(),results:observableCapabilities(),conditionalAngularQueries:angularCapabilities()},null,2));return;
+  console.log(JSON.stringify({authoring:problemCapabilities(),qualifiedStructure:qualifiedStructureCapabilities(),results:observableCapabilities(),conditionalAngularQueries:angularCapabilities()},null,2));return;
  }
  if(!['create','revise','structure'].includes(command))throw Error(usage());
  const count=command==='create'?1:2;
@@ -71,7 +71,7 @@ async function main(context){
    const prepared=await prepareQualifiedStructure(prior,patch);
    doc=prepared.document;qualification=prepared.qualification;requests=prepared.observables;
    context.structuralRevision={addedIds:prepared.addedIds,removedIds:prepared.removedIds,
-    sourceGiven:false,note:'New hypothetical scenario; source interpretation refers to the original model.'};
+    ...(prepared.contractUpgrade?{contractUpgrade:prepared.contractUpgrade}:{}),sourceGiven:false,note:'New hypothetical scenario; source interpretation refers to the original model.'};
   }else{
    if(patch.expectedSha256!==prior.sceneSha256)throw Error('STALE_REVISION: expectedSha256 must match the qualified scene');
    const {expectedSha256,...changes}=patch;

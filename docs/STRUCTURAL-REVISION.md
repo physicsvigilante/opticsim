@@ -51,3 +51,11 @@ Only currently registered components within the baseline's admitted family are s
 Regression tests cover real native detector composition, removal with unavailable old requests, generic mirror/blocker authoring, explicit source emission, unit conversion, rejection of missing or invalid physics, atomic changes, retired IDs across later revisions, tampered history, stale hashes and async caller mutation. The CLI acceptance uses a previously exposed synthetic fixture. Generic authoring tests do not establish native correctness for every possible component combination.
 
 No independent model authoring or teacher/student study is claimed. Production optical laws, upstream pin, old source files and sealed first attempts remain unchanged. Further structural relationships require their own physical and mathematical qualification rather than unvalidated editing shortcuts.
+
+## Explicit qualified composition extension
+
+The same-version default above remains unchanged. The qualified boundary now
+accepts an optional, explicit v10-to-v11 upgrade while adding a second external
+mirror, with both scene and complete-package hash guards. No raw structural
+edit or saved-scene import upgrades implicitly. See
+[the qualified upgrade contract and preview](COMPOSITION-CONTRACT-UPGRADE.md).

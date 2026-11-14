@@ -38,7 +38,9 @@ No automatic migration or assumption change is introduced.
 Minimal requests containing a polygon and one mirror still prepare v10; those
 containing two mirrors prepare v11 through the existing authoring interface.
 Unsupported counts are rejected, not clamped. A v10 structural revision cannot
-silently acquire a second mirror: explicitly author the expanded system first.
+silently acquire a second mirror. Explicitly author the expanded system, or use
+[the opt-in qualified v10-to-v11 upgrade](COMPOSITION-CONTRACT-UPGRADE.md) to add
+the stated mirror while preserving the existing baseline and its history.
 
 Once in v11, existing atomic structural revisions may add/remove a mirror within
 its 1–2 range without changing schema or model. Removing the final mirror or

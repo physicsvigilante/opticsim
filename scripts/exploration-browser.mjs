@@ -92,6 +92,53 @@ try{
  await inspect(packet(multi,{action:'revise',patch:{changes:[{id:'S2',section:'parameters',key:'y',value:s2.parameters.y+25,unit:'mm'}]}}));await apply();
  assert.equal(Number(await js("document.getElementById('S2-y').value")),s2.parameters.y+25);assert.equal(Number(await js("document.getElementById('S1-y').value")),s1.parameters.y);
  await capture('S2 shifted only',2);check('Same workflow handles an explicit source identity in a multiple-source system');
+ // A v10 baseline can be explicitly extended without replacing its source or
+ // reauthoring untouched optics. Preparation and approval remain separate.
+ await selectExample('finite-dielectric-composition');
+ const setup=await context('upgrade-apparatus','Set M1 tangent to 45 degrees and length to 16 mm; set D1 to (-20,20) mm with length 20 mm.');
+ await inspect(packet(setup,{action:'revise',patch:{changes:[
+  {id:'M1',section:'parameters',key:'orientationDeg',value:45},
+  {id:'M1',section:'parameters',key:'length',value:16,unit:'mm'},
+  {id:'D1',section:'parameters',key:'x',value:-20,unit:'mm'},
+  {id:'D1',section:'parameters',key:'y',value:20,unit:'mm'},
+  {id:'D1',section:'parameters',key:'length',value:20,unit:'mm'}]}}));
+ await apply();await start();
+ const upgrade=await context('upgrade-context','Explicitly upgrade this v10 composition to v11 and add M2 at (60,20) mm, tangent 135 degrees, length 16 mm. Add its reflection count.');
+ assert.equal(upgrade.baseline.scene.schemaVersion,10);
+ const extension={format:'opticsim-component-revision-v1',upgradeToSchemaVersion:11,operations:[
+  {op:'add',lengthUnit:'mm',component:{id:'M2',type:'plane-mirror',parameters:{x:60,y:20,orientationDeg:135,length:16}}}]};
+ const upgradedProposal=packet(upgrade,{action:'structure',patch:extension,
+  additionalObservables:[{id:'second-mirror',kind:'mirror-reflections',componentId:'M2'}]});
+ const implicit=structuredClone(upgradedProposal);delete implicit.patch.upgradeToSchemaVersion;
+ const upgradeRevision=(await state()).revision;
+ await set('explore-proposal',JSON.stringify(implicit));await click('explore-preview');
+ await until(state,s=>s.workError.includes('one external plane mirror'),'implicit upgrade rejection');
+ assert.equal((await state()).revision,upgradeRevision);assert.equal((await state()).applyDisabled,true);
+ check('A second mirror cannot silently widen the historical v10 contract');
+ await inspect(upgradedProposal);const preview=await state();
+ assert.equal(preview.revision,upgradeRevision);assert.match(preview.preview,/scene\.schemaVersion: 10 → 11/);
+ assert.match(preview.preview,/scene\.adapterVersion: 10 → 11/);assert.match(preview.preview,/M2\.add component/);
+ assert.equal(await js("!!document.getElementById('M2-x')"),false);
+ check('Exact contract and component changes are shown before approval or native execution');await shot('composition-upgrade-preview');
+ await apply();let upgradedState=await state();assert.equal(upgradedState.results.find(r=>r.id==='second-mirror').value,1);
+ assert.equal(upgradedState.results.find(r=>r.kind==='interface-interactions').value,4);
+ assert.equal(await js("document.getElementById('M1-orientationDeg').value"),'45');
+ await capture('Second mirror after explicit upgrade',2);
+ const upgradeDir=join(out,'upgraded-export');await mkdir(upgradeDir);await cdp.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:upgradeDir});await click('explore-export');
+ const upgradeFile=join(upgradeDir,'exploration-scene.qualified.json');
+ const child=await until(async()=>{try{return await parseQualifiedBundle(await readFile(upgradeFile,'utf8'));}catch{return null;}},Boolean,'upgraded package');
+ assert.equal(child.scene.schemaVersion,11);assert.deepEqual(child.qualification.origin,upgrade.baseline.qualification.origin);
+ assert.deepEqual(child.scene.physics.components.slice(0,-1),upgrade.baseline.scene.physics.components);
+ assert.deepEqual(child.qualification.edits.slice(0,-1),upgrade.baseline.qualification.edits);
+ assert.ok(child.qualification.edits.at(-1).changes.some(c=>c.path==='$.schemaVersion'&&c.before===10&&c.after===11));
+ check('Explicit upgrade retraces two mirrors and exports intact original provenance and version history');
+ await restore(0);assert.equal(await js("!!document.getElementById('M2-x')"),false);
+ const upgradeDom=await cdp.send('DOM.getDocument',{depth:-1}),upgradeInput=await cdp.send('DOM.querySelector',{nodeId:upgradeDom.root.nodeId,selector:'#load'});
+ await cdp.send('DOM.setFileInputFiles',{nodeId:upgradeInput.nodeId,files:[upgradeFile]});
+ await until(state,s=>s.native==='completed'&&s.results?.find(r=>r.id==='second-mirror')?.value===1,'upgraded reopen retraces');
+ await set('explore-proposal',JSON.stringify(upgradedProposal));await click('explore-preview');
+ await until(state,s=>s.workError.includes('Stale proposal'),'upgrade replay rejected');assert.equal((await state()).applyDisabled,true);
+ check('The old v10 baseline remains restorable; upgraded reopen retraces and cannot reuse the old approval');
  await selectExample('circular-dielectric');
  const glass=await context('glass-context','Set only G1 insideIndex to 1.3 without changing its approximation.');
  await inspect(packet(glass,{action:'revise',patch:{changes:[{id:'G1',section:'parameters',key:'insideIndex',value:1.3}]}}));await apply();await capture('Index hypothesis',2);await click('explore-compare');

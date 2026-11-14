@@ -1,7 +1,7 @@
 // Browser/Node orchestration only. Native optics, schema and validators remain
 // authoritative. Model interpretation happens in the user's chosen LLM, not here.
 import {capabilities,reviseScene} from './authoring.js';
-import {prepareQualifiedStructure} from './qualified-structure.js';
+import {prepareQualifiedStructure,qualifiedStructureCapabilities} from './qualified-structure.js';
 import {initialQualification,verifyQualifiedBundle,createQualifiedBundle,recordQualifiedEdit} from './qualification.js';
 import {observableCapabilities,validateObservables,evaluateObservables} from './observables.js';
 import {canonicalJSON,sceneHash,boundedText,isRecord} from './qualified-utils.js';
@@ -36,15 +36,18 @@ export async function explorationContext(input,question){
   responseContract:{format:EXPLORATION_PROPOSAL,expectedIntegritySha256:parent.integritySha256,
    intent:'A short description of the requested hypothetical investigation',
    action:'revise | structure | observe',
-   patch:'revise: {changes:[{id,section,key,value,unit?}]} using reviseScene; structure: {format:"opticsim-component-revision-v1",operations:[...]} using reviseComponents; observe: OMIT patch',
+   patch:'revise: {changes:[{id,section,key,value,unit?}]} using reviseScene; structure: {format:"opticsim-component-revision-v1",operations:[...]} using reviseComponents; optional upgradeToSchemaVersion:11 explicitly extends a v10 finite composition while adding a second mirror; observe: OMIT patch',
    additionalObservables:'Optional array of existing {id,kind,componentId} requests, only when explicitly requested; preserve existing requests'},
-  authoring:capabilities(),observables:observableCapabilities(),baseline:parent,
+  qualifiedStructure:qualifiedStructureCapabilities(),authoring:capabilities(),observables:observableCapabilities(),baseline:parent,
   privacy:'Nothing is sent by Opticsim. Inspect this file before sharing it with your chosen LLM; it contains the physical model and source notes.',
   qualification:'A valid package hash is not proof of source truth or LLM interpretation fidelity.'};
 }
 function delta(before,after){
  const a=new Map(before.physics.components.map(c=>[c.id,c])),b=new Map(after.physics.components.map(c=>[c.id,c]));
  const changes=[];
+ // Contract changes must be visible in the same explicit approval preview.
+ for(const field of ['schemaVersion','adapterVersion'])if(before[field]!==after[field])
+  changes.push({componentId:'scene',field,before:before[field],after:after[field]});
  for(const id of new Set([...a.keys(),...b.keys()])){
   if(!a.has(id)||!b.has(id)){changes.push({componentId:id,field:!a.has(id)?'add component':'remove component',before:a.get(id)||null,after:b.get(id)||null});continue;}
   for(const section of ['parameters','emission']){
@@ -73,8 +76,9 @@ export async function prepareExplorationProposal(input,raw){
   doc=reviseScene(parent.scene,raw.patch).document;
   q=recordQualifiedEdit(parent.scene,doc,parent.qualification);
  }else if(raw.action==='structure'){
-  fields(raw.patch,['format','operations'],['format','operations'],'Structural patch');
-  const revised=await prepareQualifiedStructure(parent,{expectedSha256:parent.sceneSha256,...raw.patch});
+  fields(raw.patch,['format','operations','upgradeToSchemaVersion'],['format','operations'],'Structural patch');
+  const revised=await prepareQualifiedStructure(parent,{...raw.patch,expectedSha256:parent.sceneSha256,
+   expectedIntegritySha256:parent.integritySha256});
   doc=revised.document;q=revised.qualification;
  }else{
   if(Object.hasOwn(raw,'patch')||!additional.length)throw Error('Observe requires explicit additional readouts and no physical patch');
