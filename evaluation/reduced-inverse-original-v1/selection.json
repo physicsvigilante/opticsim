@@ -1,0 +1,44 @@
+{
+  "format": "opticsim-reduced-inverse-original-selection-v1",
+  "baselineCommit": "22de7bd9fb7fdcfb5e8baa17fa711d9f55ca7735",
+  "sourceCommit": "d33b45226348d9b0c701f2a3e8b86dd1285de2d0",
+  "archiveFile": "08_Ray_Optics_Explanations.zip",
+  "archiveSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+  "inventoryGitBlob": "3224c05dfc43a7de7f6e6f15b9759374a3dfed11",
+  "excludedEarlierSelection": "evaluation/real-ten-v1/selection.json",
+  "selectionRule": "For each of chapters 01, 02, and 07, exclude 40 atlas-reviewed images and all prior real-ten selections; lexicographically choose index 0 and floor((remaining-1)/2). No replacement after reading.",
+  "claims": "Same assistant, deterministic six previously unreviewed-in-project original images; no unseen-to-model or independent inference claim.",
+  "solutionsReadBeforeFirstAttempt": false,
+  "cases": [
+    {
+      "id": "V01",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/005.png"
+    },
+    {
+      "id": "V02",
+      "chapter": "01_Reflection_at_Plane_Surfaces",
+      "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/009.png"
+    },
+    {
+      "id": "V03",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "problemPath": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/003.png"
+    },
+    {
+      "id": "V04",
+      "chapter": "02_Reflection_at_Curved_Surfaces",
+      "problemPath": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/008.png"
+    },
+    {
+      "id": "V05",
+      "chapter": "07_Lens_Formula",
+      "problemPath": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/004.png"
+    },
+    {
+      "id": "V06",
+      "chapter": "07_Lens_Formula",
+      "problemPath": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/015.png"
+    }
+  ]
+}
