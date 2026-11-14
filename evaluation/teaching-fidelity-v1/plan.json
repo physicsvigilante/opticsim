@@ -1,0 +1,61 @@
+{
+  "format": "opticsim-teaching-fidelity-plan-v1",
+  "baselineCommit": "740b847d977e557c31e43139987a589341424d18",
+  "source": {
+    "path": "scenes/single-lens-detector.json",
+    "gitBlob": "3dcdb0e8c01d1c950ee9bdbe2583b1892f6fc651",
+    "classification": "Previously exposed, fully specified repository development fixture; not a textbook, unseen problem, or independent interpretation benchmark"
+  },
+  "purpose": "A teaching accompaniment: faithful authoring, verified supported optics, meaningful inspection and exploration. Answer-key reproduction is optional and separately assessed.",
+  "author": "Same ChatGPT assistant conducting and reviewing this developmental pilot",
+  "independentReviewers": 0,
+  "externalModelCalls": 0,
+  "sourceInterpretationTask": "Represent the specified source, ideal thin lens and passive detector in mm and x-right/y-up. Preserve every active physical value. First run without requested answers, then inspect qualified predictions and sampled measurements. Do not infer a material refractive index from an ideal lens. Do not invent a focal length when it is removed.",
+  "initialRequest": {
+    "lengthUnit": "mm",
+    "title": "Teaching pilot: specified ideal lens and passive detector",
+    "runPolicy": "dense-v1",
+    "components": [
+      {"id":"source-1","type":"point-source","parameters":{"x":-300,"y":10,"brightness":0.5},"emission":{"mode":"full-circle"}},
+      {"id":"lens-1","type":"ideal-lens","parameters":{"x":0,"focalLength":100,"apertureHeight":180}},
+      {"id":"detector-1","type":"ray-detector","parameters":{"x":170,"y":0,"orientationDeg":90,"length":160}}
+    ]
+  },
+  "sourceMapping": {
+    "physicalValues": "Each component ID, type, active emission field and numeric parameter is copied explicitly from the pinned source fixture. Inactive full-circle angles are filled only by the existing authoring implementation.",
+    "numericalPolicy": "dense-v1 must match the source fixture's rayDensity=1, maxRayDepth=8 and processedRayLimit=10000; this is checked before execution.",
+    "presentation": "The new title and engine-prepared camera are presentation choices, not new apparatus geometry.",
+    "modelSelection": "The existing minimal authoring interface selects its admitted native model family. Component geometry and interactions must match the source; the source model label is not imposed as a private authoring field."
+  },
+  "observables": [
+    {"id":"predicted-image","kind":"ideal-image","componentId":"source-1"},
+    {"id":"emissions","kind":"source-emissions","componentId":"source-1"},
+    {"id":"crossings","kind":"detector-crossings","componentId":"detector-1"},
+    {"id":"relative-power","kind":"detector-signed-power","componentId":"detector-1"}
+  ],
+  "experiments": [
+    {"id":"scene-only","classification":"source-backed baseline","observables":[]},
+    {"id":"baseline","classification":"same physical baseline with passive readouts"},
+    {"id":"focal-150","classification":"explicit classroom physical intervention, NOT an original given","changes":[{"id":"lens-1","section":"parameters","key":"focalLength","value":150,"unit":"mm"}]},
+    {"id":"coarse-sampling","classification":"explicit numerical intervention, NOT a physical change","rayDensity":0.25},
+    {"id":"optional-unavailable","classification":"unchanged apparatus with an additional unsupported material request","additionalObservable":{"id":"material-index","kind":"refractive-index","componentId":"lens-1"}},
+    {"id":"missing-focal-length","classification":"deliberately underspecified control","removeField":"lens-1.parameters.focalLength","illustration":false}
+  ],
+  "expectedQualitativeChecks": [
+    "The no-request scene runs without dummy observables or a textbook-answer target.",
+    "Adding passive readouts leaves the physical system and canonical native results unchanged.",
+    "Changing only focal length modifies lens ray geometry and conditional image position; a crossing count may legitimately stay unchanged.",
+    "Sampling changes emitted/crossing counts, not the optical model or the ideal-image relation. Finite-ray counts are not a continuous brightness theorem.",
+    "A missing optional material result does not become fabricated and does not erase valid simulation evidence.",
+    "The missing focal length stays missing, with no native scene, automatic repair or illustration default."
+  ],
+  "qualificationChecks": [
+    "Separate scalar Gaussian-conjugate residual and per-native-ray thin-lens slope residuals; no expected answer is supplied to the simulator.",
+    "A test-only read-only incident logger observes actual lens and detector events, delegates exactly once and preserves native return values; it is not a new production observable or ray tracer.",
+    "Actual browser import, parameter edit, numerical-density edit, Fit, qualified export/reopen, and invalid-edit suppression; screenshots must be actual native renders.",
+    "Inspect screenshots and task output separately from numerical tests; teacher/student learning effectiveness remains not assessed without human participation."
+  ],
+  "evaluationDimensions": ["interpretation fidelity","physical and numerical correctness","simulation coverage","educational usefulness","textbook-answer completeness"],
+  "stopConditions": ["No production physics, schema, engine pin or viewer changes.","No historical first-attempt rewrite, new answer-key lookup, external model, public deployment or automatic PR merge.","Record an unmet criterion or infrastructure failure instead of altering source facts to obtain success."],
+  "humanEducationalReview": "Not performed. Supply a task worksheet and actual portable packages; do not convert automated checks or same-assistant visual inspection into a teacher-effectiveness score."
+}
