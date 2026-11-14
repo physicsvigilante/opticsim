@@ -12,7 +12,7 @@ For each private case, record in a separately protected adjudication record:
 | Physical regime | Opticsim admitted family and unsupported interactions; model assumptions and limitations |
 | Base model | Canonical physical facts and stable component IDs, origin hash, independent validation, all genuinely missing facts |
 | Proposed experiment | Exactly what the teacher changes; classify **physical**, **structural**, **initial geometry**, **observation-only**, **numerical**, or **presentation** |
-| Correct revised state | Complete expected physical state for supported unambiguous changes; retain unchanged fields and original source provenance |
+| Correct revised state | Complete expected physical state for supported unambiguous changes; retain unchanged fields and original source provenance. For structural additions, independently verify that **every new ID is explicitly named in the task** and record it in `sourceNamedNewComponentIds` (use `[]` for removal-only). Unnamed fresh IDs are outside this exact-label v1 rubric, not physically invalid |
 | Observables | Kind, physical component target, expected status/method if applicable; no fabricated per-source detector attribution |
 | Invalid or ambiguous case | Explicitly say what essential value, identity or supported operation is absent; do not fill it in for the model |
 | Independent disagreement | Both experts' initial independent judgments and reconciled ruling, preserved before any first response is opened |
@@ -20,6 +20,8 @@ For each private case, record in a separately protected adjudication record:
 The trial's current typed revision actions are **`revise`**, **`structure`**, and **`observe`**. Physical motion/time evolution, numerical solver initial guesses, or presentation animation should not be silently represented by static optical edits. If a task needs a model change outside these admitted actions, adjudicate it as unsupported rather than selecting a convenient substitute.
 
 ## After capture — physical and numerical scoring
+
+**Fairness gate:** This v1 exact-identity scoring admits new structural components only when their new IDs are explicitly supplied in the original task. A differently named but physically identical added component is not a valid basis for grading without a separate ID-isomorphism-aware rubric. Do not silently assign a reviewer-chosen new ID to an unnamed task or count it as a physical-fidelity failure.
 
 Every model response receives its own raw immutable record. Report the following **separately**, at case level and with appropriate denominators.
 
