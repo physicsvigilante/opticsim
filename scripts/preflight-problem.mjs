@@ -24,7 +24,7 @@ function main(args){
   }
   const results=plan.results.map(({id,kind,status,value,reasonCode,reason,...rest})=>({
     id,kind,status,value,reasonCode,reason,...rest}));
-  const blocker=results.some(x=>['needs-information','invalid-input','unavailable'].includes(x.status));
+  const blocker=results.some(x=>['needs-information','invalid-input','unavailable','multiple-solutions','numerically-indeterminate'].includes(x.status));
   const status=plan.preparation?.status==='invalid-input'||results.some(x=>x.status==='invalid-input')?'invalid-input':
     blocker||plan.preparation?.status==='unsupported'?'blocked':
     plan.native.canRun?'native-ready':'no-native-required';
