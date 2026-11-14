@@ -23,6 +23,8 @@ jobs:
         run: node scripts/general-composition-acceptance.mjs
       - name: Replay three GPT-6 same-chat authored first attempts (not independent)
         run: node evaluation/self-reviewed-pilot-v1/replay.mjs
+      - name: Replay ten frozen original problems without answer substitution
+        run: node evaluation/real-ten-v1/replay.mjs
       - name: Replay six sealed original-image first attempts without repairs
         run: node scripts/unified-original-trial.mjs
       - name: Preserve source fingerprints and separate review
@@ -47,5 +49,6 @@ jobs:
             test-artifacts/llm-authoring/unified-original-trial/
             test-artifacts/llm-authoring/general-composition-v1/
             test-artifacts/llm-authoring/self-reviewed-pilot-v1/
+            test-artifacts/llm-authoring/real-ten-v1/
           if-no-files-found: error
           retention-days: 14
