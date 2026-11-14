@@ -1,0 +1,21 @@
+{
+  "format": "opticsim-revision-transfer-first-decisions-v1",
+  "promptsFreezeCommit": "0c111037b5a8d9b4a7604312432c393b256520f1",
+  "author": "Same assistant in the current project conversation; not a separately invoked provider",
+  "createdBeforeExecution": true,
+  "independentModel": false,
+  "independentReviewers": 0,
+  "externalModelCalls": 0,
+  "repairs": 0,
+  "baselineHashBinding": "The evaluator resolves each fixed model handle to its verified frozen scene SHA; no physical values or target IDs are inferred by that mechanical step.",
+  "cases": [
+    {"id":"T01","model":"two-source-lens","action":"revise","patch":{"changes":[{"id":"S2","section":"parameters","key":"y","value":-1.5,"unit":"cm"}]},"explanation":"The supplied S2 y is -40 mm. Adding 25 mm gives -15 mm, represented as -1.5 cm. No time trajectory or other source change is authored."},
+    {"id":"T02","model":"two-source-lens","action":"structure","patch":{"format":"opticsim-component-revision-v1","operations":[{"op":"add","lengthUnit":"mm","component":{"id":"Probe","type":"ray-detector","parameters":{"x":180,"y":0,"orientationDeg":90,"length":180}}}]},"additionalObservables":[{"id":"probe-crossings","kind":"detector-crossings","componentId":"Probe"}],"explanation":"The additional observation is total sampled detector crossings, without per-source attribution."},
+    {"id":"T03","model":"two-source-lens","action":"needs-information","missing":["target component ID: S1 or S2"],"explanation":"Two sources are present and the intended one is unspecified. I will not rotate both or choose one."},
+    {"id":"T04","model":"two-source-lens","action":"structure","patch":{"format":"opticsim-component-revision-v1","operations":[{"op":"remove","id":"S1"}]},"explanation":"Delete exactly S1 and preserve requests still referring to S1; do not rebind them to S2."},
+    {"id":"T05","model":"circular-glass","action":"revise","patch":{"changes":[{"id":"G1","section":"parameters","key":"insideIndex","value":1.3}]},"explanation":"Only the stated inside material index is changed; exterior index and reflection approximation remain source-backed."},
+    {"id":"T06","model":"circular-glass","action":"structure","patch":{"format":"opticsim-component-revision-v1","operations":[{"op":"add","lengthUnit":"mm","component":{"id":"D2","type":"ray-detector","parameters":{"x":300,"y":0,"orientationDeg":90,"length":200}}}]},"additionalObservables":[{"id":"D2-crossings","kind":"detector-crossings","componentId":"D2"}],"explanation":"Add only the explicitly specified external sampling segment and its own readout. Do not reinterpret it as a detected image."},
+    {"id":"T07","model":"circular-glass","action":"structure","patch":{"format":"opticsim-component-revision-v1","operations":[{"op":"remove","id":"G1"}]},"explanation":"This is a literal proposed deletion for the engine to validate. The circular-dielectric contract requires its dielectric; no fallback model migration is authorized."},
+    {"id":"T08","model":"circular-glass","action":"needs-information","missing":["G1.parameters.insideIndex replacement numerical value"],"explanation":"Greater than 1.5 is an inequality, not a specified new refractive index. No new material value or scenario is supplied."}
+  ]
+}
