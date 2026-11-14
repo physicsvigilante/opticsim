@@ -23,6 +23,8 @@ jobs:
         run: node scripts/general-composition-acceptance.mjs
       - name: Audit exact task-method suitability on frozen software and original development inputs
         run: node scripts/method-suitability-acceptance.mjs
+      - name: Execute answer-known registered-method follow-ups without changing first attempts
+        run: node evaluation/registered-method-followup-v1/replay.mjs
       - name: Run reduced inverse fact controls without native execution
         run: node scripts/reduced-inverse-acceptance.mjs
       - name: Replay six frozen original inverse-scope requests, without image substitution
@@ -55,6 +57,7 @@ jobs:
             test-artifacts/llm-authoring/unified-original-trial/
             test-artifacts/llm-authoring/general-composition-v1/
             test-artifacts/llm-authoring/method-suitability-v1/
+            test-artifacts/llm-authoring/registered-method-followup-v1/
             test-artifacts/llm-authoring/reduced-inverse/
             test-artifacts/llm-authoring/reduced-inverse-original-v1/
             test-artifacts/llm-authoring/self-reviewed-pilot-v1/

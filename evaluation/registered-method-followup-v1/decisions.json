@@ -1,0 +1,99 @@
+{
+  "format": "opticsim-registered-method-followup-v1",
+  "baselineCommit": "740b847d977e557c31e43139987a589341424d18",
+  "authoring": "Same-assistant corrective reauthoring using already exposed facts, solutions and existing method documentation",
+  "independentEvaluation": false,
+  "blindEvaluation": false,
+  "newFirstAttemptEvaluation": false,
+  "selectionRule": "Deliberately revisit the three exposed original questions addressed by the existing reduced-inverse family; add two explicitly synthetic information-loss variants and two contrasting original tasks without a direct registered method. Not a representative or success-blind sample.",
+  "sourceGitBlobs": {
+    "evaluation/real-ten-v1/first-attempts.json": "f149779dfc638a99b723dfb8a224d595f6f3afe7",
+    "evaluation/reduced-inverse-original-v1/first-attempts.json": "b57d10d9688380d92dffc047aea0a47c4d2c493f"
+  },
+  "cases": [
+    {
+      "id": "F01",
+      "origin": "exposed-original",
+      "sourceCase": "R01",
+      "task": "Find the reflection point on the horizontal plane mirror. A and B are 5 cm and 20 cm above the mirror; their perpendicular feet are 20 cm apart.",
+      "decision": "registered-method",
+      "reason": "The requested point, not a ray count or visibility interval, is directly returned by plane-mirror-reflection-point. Choose a coordinate gauge with A's foot at the origin, +x toward B's foot, and y upward.",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": {"format":"opticsim-reduced-inverse-facts-v1","model":"plane-mirror","lengthUnit":"cm","mirror":{"x":0,"y":0,"tangentDeg":0},"points":{"A":{"x":0,"y":5},"B":{"x":20,"y":20}}},
+        "requests": [{"id":"strike","kind":"plane-mirror-reflection-point"}],
+        "interpretation": {"requestedResult":"Reflection point and distances from the two perpendicular feet","assumptions":["Ideal specular plane mirror includes the resulting point; no numerical finite length is invented.","The origin and axes are a coordinate gauge, not additional apparatus."]},
+        "illustration": false,
+        "verifyNative": false
+      }
+    },
+    {
+      "id": "F02",
+      "origin": "exposed-original",
+      "sourceCase": "R03",
+      "task": "A real object 2.5 m from a mirror has an erect image magnified four times. Determine the mirror type and radius of curvature.",
+      "decision": "registered-method",
+      "reason": "Use paraxial-focal-length-inverse with spherical-mirror-paraxial facts. Erect means signed magnification +4. The method returns classification and signed curvature radius as derived outputs; focal length is not inserted into the input.",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": {"format":"opticsim-reduced-inverse-facts-v1","model":"spherical-mirror-paraxial","lengthUnit":"m","signConvention":"real-object-positive","observations":[{"id":"object","objectDistance":2.5,"signedMagnification":4}]},
+        "requests": [{"id":"mirror","kind":"paraxial-focal-length-inverse"}],
+        "interpretation": {"requestedResult":"Mirror classification and curvature radius","assumptions":["Gaussian/paraxial spherical mirror with a real object; the real-object-positive convention is explicit."]},
+        "illustration": false,
+        "verifyNative": false
+      }
+    },
+    {
+      "id": "F03",
+      "origin": "exposed-original",
+      "sourceCase": "R08",
+      "task": "The same thin convex lens gives magnification magnitude 3 at object distances 16 cm and 8 cm. Find its focal length.",
+      "decision": "registered-method",
+      "reason": "Use one paraxial-focal-length-inverse request with both observations. Keep unsigned magnification unsigned; the existing solver intersects the possible focal lengths instead of the author guessing either image orientation.",
+      "request": {
+        "format": "opticsim-problem-v1",
+        "physical": {"format":"opticsim-reduced-inverse-facts-v1","model":"ideal-thin-lens","lengthUnit":"cm","signConvention":"real-object-positive","observations":[{"id":"far","objectDistance":16,"absoluteMagnification":3},{"id":"near","objectDistance":8,"absoluteMagnification":3}]},
+        "requests": [{"id":"focal","kind":"paraxial-focal-length-inverse"}],
+        "interpretation": {"requestedResult":"The common focal length of the same thin lens","assumptions":["Both real-object observations concern one static ideal thin lens."]},
+        "illustration": false,
+        "verifyNative": false
+      }
+    },
+    {
+      "id": "F04",
+      "origin": "synthetic-information-loss-variant",
+      "sourceCase": "R08",
+      "task": "Variant: retain only the 16 cm real-object observation with magnification magnitude 3; remove the second observation and do not specify orientation.",
+      "decision": "registered-method",
+      "reason": "A method applies but the facts may not select a unique focal length. Preserve unsigned magnification; do not carry over the known answer to R08.",
+      "request": {"format":"opticsim-problem-v1","physical":{"format":"opticsim-reduced-inverse-facts-v1","model":"ideal-thin-lens","lengthUnit":"cm","signConvention":"real-object-positive","observations":[{"id":"only","objectDistance":16,"absoluteMagnification":3}]},"requests":[{"id":"focal","kind":"paraxial-focal-length-inverse"}],"illustration":false,"verifyNative":false}
+    },
+    {
+      "id": "F05",
+      "origin": "synthetic-information-loss-variant",
+      "sourceCase": "R03",
+      "task": "Variant: the real object has an erect image magnified four times but its object distance is omitted. Determine the mirror curvature radius.",
+      "decision": "registered-method",
+      "reason": "The registered inverse family is relevant but the scale-setting object distance is missing. Do not copy the 2.5 m value from the original problem.",
+      "request": {"format":"opticsim-problem-v1","physical":{"format":"opticsim-reduced-inverse-facts-v1","model":"spherical-mirror-paraxial","lengthUnit":"m","signConvention":"real-object-positive","observations":[{"id":"object","signedMagnification":4}]},"requests":[{"id":"mirror","kind":"paraxial-focal-length-inverse"}],"illustration":false,"verifyNative":false}
+    },
+    {
+      "id": "F06",
+      "origin": "exposed-original-scope-decision",
+      "sourceCase": "V02",
+      "task": "Find the full interval over which a moving observer sees a point source through a finite plane mirror, expressed in terms of the mirror width and perpendicular distances.",
+      "decision": "no-direct-registered-method",
+      "reason": "plane-mirror-reflection-point checks one specified pair of points, not the continuous observer interval requested here. Sampled detector crossings do not certify continuous visibility. This is a same-assistant method-scope judgment, not an engine refusal or proof that no mathematical reduction exists.",
+      "request": null
+    },
+    {
+      "id": "F07",
+      "origin": "exposed-original-scope-decision",
+      "sourceCase": "V05",
+      "task": "Find the effective mirror type and focal length of an equiconvex thin lens with one silvered curved face, given its refractive index and unsilvered focal length.",
+      "decision": "no-direct-registered-method",
+      "reason": "The apparatus combines refraction and curved reflection. The registered magnification inverse does not accept these material and double-pass power facts. Replacing the complete apparatus with a precomputed ideal mirror would insert the answer. This is a self-reviewed direct-method scope judgment, not an impossibility claim.",
+      "request": null
+    }
+  ]
+}
