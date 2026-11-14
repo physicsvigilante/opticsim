@@ -115,6 +115,10 @@ export class ExplorationUI {
   this.guard(preview.token);if(preview.rawText!==this.proposal.value)throw Error('Proposal text changed. Preview it again.');
   const {bundle,token}=await this.current();
   const checked=await prepareExplorationProposal(bundle,preview.prepared.proposal);this.guard(token);
+  // The editor remains interactive while hashes are checked. An input event
+  // invalidates approval even if the user restores the same text afterward.
+  if(this.preview!==preview||preview.rawText!==this.proposal.value)
+   throw Error('Proposal text changed during validation. Preview it again before applying.');
   this.intent={intent:checked.proposal.intent,parentIntegritySha256:bundle.integritySha256,childIntegritySha256:checked.child.integritySha256};
   if(!this.applyBundle(checked.child))throw Error('Native setup did not accept the validated revision; current results are withheld.');
   this.invalidatePreview();this.status.textContent='Hypothetical applied. Native tracing is '+this.session.state+'. Save only after completion.';
