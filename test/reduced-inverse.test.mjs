@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,mkdirSync,writeFileSync,rmSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {resolve} from 'node:path';
 import {spawnSync} from 'node:child_process';
@@ -141,13 +141,17 @@ test('exact and near unit erect magnification do not yield invented huge f',()=>
 test('object distance and magnification signs cannot be inferred from absent facts',()=>{
  const edits=[p=>delete p.signConvention,p=>delete p.observations[0].objectDistance,
   p=>delete p.observations[0].signedMagnification,p=>p.observations[0].signedMagnification=0,
-  p=>p.observations[0].objectDistance=-3,p=>p.observations[0].objectDistance=Infinity,
+  p=>p.observations[0].objectDistance=-3,
   p=>p.observations[0].imageOrientation='erect',
   p=>p.observations.push({...p.observations[0]})];
  for(const edit of edits){const p=inverse();edit(p);
   const r=plan(p,limit).results[0];
   assert.ok(['needs-information','invalid-input'].includes(r.status),JSON.stringify(r));
   assert.equal(r.value,null);
+ }
+ for(const value of [Infinity,NaN]){
+  const p=inverse();p.observations[0].objectDistance=value;
+  assert.throws(()=>plan(p,limit),/Only finite JSON data is supported/);
  }
 });
 test('unit conversion changes focal distances, not magnification or physical result',()=>{
@@ -204,7 +208,16 @@ test('multiple candidates never become available quantities or a successful pref
  const p={format:'opticsim-problem-v1',
   physical:inverse('ideal-thin-lens',[{id:'O1',objectDistance:16,absoluteMagnification:3}]),
   requests:[{id:'ambiguous',kind:limit}]};
- const out=spawnSync(process.execPath,['scripts/preflight-problem.mjs','capabilities'],{encoding:'utf8'});
- assert.equal(out.status,0);
+ const outfile=resolve('test-artifacts/llm-authoring/inverse-preflight-'+randomUUID()+'.json');
+ mkdirSync(resolve('test-artifacts/llm-authoring'),{recursive:true});
+ writeFileSync(outfile,bytes(p),{flag:'wx'});
+ let out;
+ try{out=spawnSync(process.execPath,['scripts/preflight-problem.mjs',outfile],{encoding:'utf8'});}
+ finally{rmSync(outfile);}
+ assert.equal(out.status,2,'ambiguous preflight does not claim successful authoring');
+ const preflight=JSON.parse(out.stdout);
+ assert.equal(preflight.status,'blocked');
+ assert.equal(preflight.results[0].status,'multiple-solutions');
+ assert.equal(preflight.native.calls,0);
  assert.equal(planProblem(p).results[0].status,'multiple-solutions');
 });
