@@ -96,6 +96,30 @@ test('offline reviewer reference must be complete, physically supported and reje
  const negative=structuredClone(f.reference);negative.cases[2].expectedPhysics=f.doc.physics;
  assert.throws(()=>validateExplorationReference(negative,f.questions),/negative reference/);
 });
+test('adjudicated reference actions cannot quietly require a different class of physics operation',async()=>{
+ const f=await scenario(),wrongAction=structuredClone(f.reference);
+ wrongAction.cases[1].expectedAction='revise';
+ assert.throws(()=>validateExplorationReference(wrongAction,f.questions),/targeted parameter reference/);
+ const wrongStructure=structuredClone(f.reference);
+ wrongStructure.cases[0].expectedAction='structure';
+ assert.throws(()=>validateExplorationReference(wrongStructure,f.questions),/structural reference|surviving component/);
+});
+test('redundant untouched-field edits are not credited as a minimal physical investigation',async()=>{
+ const f=await scenario();
+ const redundant={action:'revise',patch:{changes:[
+  ...pRevise.patch.changes,
+  {id:'source-1',section:'parameters',key:'x',value:-300,unit:'mm'}]}};
+ const edited=await applyExplorationProposal(f.baseline,redundant);
+ const run=evaluateDocument(edited.document,core);
+ const results=await evaluateObservables(edited.document,edited.child.observables,run.summary);
+ const grade=scoreExplorationRevision({baseline:f.baseline,reference:f.reference.cases[0],
+  proposal:redundant,child:edited.child,addedObservables:[],execution:run,requestedResults:results});
+ assert.equal(grade.physicalFidelity,true);
+ assert.equal(grade.nativeCompleted,true);
+ assert.equal(grade.patchMinimality,false);
+ assert.equal(grade.exactRequestedChange,false);
+ assert.equal(grade.supportedQualified,false);
+});
 test('precommitment freezes exact question and reference bytes before any model capture',async()=>{
  const f=await privateFiles(),q=readFileSync(f.q),ref=readFileSync(f.r);
  const commit=await makeExplorationCommitment(f.questions,f.reference,q,ref);
