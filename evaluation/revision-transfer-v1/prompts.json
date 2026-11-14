@@ -1,0 +1,26 @@
+{
+  "format": "opticsim-revision-transfer-prompts-v1",
+  "baselineCommit": "c99221d0d88b8f6d8ae0390ffd0a058c54b6262a",
+  "purpose": "Test faithful minimal revision authoring across optical families, without requiring textbook answers or reauthoring the source model.",
+  "exposure": "New revision requests for existing exposed synthetic repository models. The same assistant authors the prompts and responses. This is prospective developmental transfer evidence, not unfamiliar-source accuracy or independent model inference.",
+  "sourceModels": [
+    {"id":"two-source-lens","path":"scenes/general-two-source-lens.json","gitBlob":"1aaa1ea9df0c7571e1ce9de2e8ee350d581d0979"},
+    {"id":"circular-glass","path":"scenes/circular-dielectric.json","gitBlob":"43f79d8df4c984fef615034158f1a422e0785f80"}
+  ],
+  "instructions": "Use the supplied versioned model, its stable IDs and live public revision contracts. Propose only the requested delta. Unmentioned geometry, component properties, source emission, numerical controls, view and original interpretation remain unchanged. Changes are hypothetical investigations, not source-given facts. A model handle is resolved mechanically to the exact frozen baseline scene hash; do not supply solved ray results. No retries or changes to authored first responses after execution.",
+  "cases": [
+    {"id":"T01","model":"two-source-lens","prompt":"Starting from the original model, move only source S2 upward by 2.5 cm. Preserve S1, L1, S2's x coordinate, brightness and emission, and all numerical settings. This is a new static arrangement, not simulated motion."},
+    {"id":"T02","model":"two-source-lens","prompt":"Starting from the original model, add a passive detector named Probe at (180,0) mm with tangent orientation 90 degrees and length 180 mm. Inspect its total sampled crossings; do not claim that crossings are attributed separately to S1 and S2. Leave both sources and the lens unchanged."},
+    {"id":"T03","model":"two-source-lens","prompt":"Rotate the source direction by +5 degrees, leaving everything else unchanged. The instruction does not specify which of the two sources. Do not choose an identity on my behalf."},
+    {"id":"T04","model":"two-source-lens","prompt":"Starting from the original model, remove only S1. Keep S2, L1, their values and the numerical policy unchanged. Existing requests for S1 must remain unavailable rather than being retargeted to S2."},
+    {"id":"T05","model":"circular-glass","prompt":"Starting from the original model, set G1's inside refractive index to 1.3. Do not change the outside index, radius, position, source ray, detector or the stated no-partial-reflection approximation."},
+    {"id":"T06","model":"circular-glass","prompt":"Starting from the original model, add an external passive detector D2 at (300,0) mm, tangent 90 degrees, length 200 mm. Preserve G1 and the existing detector D1. Request D2 sampled crossings as a separate readout, not a physical image or a continuous transmission fraction."},
+    {"id":"T07","model":"circular-glass","prompt":"Try removing G1 while retaining the original circular-dielectric model-family contract and every other field. Do not silently migrate to a general-scene model. If that modified system is inadmissible, retain the original and report the rejection."},
+    {"id":"T08","model":"circular-glass","prompt":"Make G1's inside refractive index greater than its baseline value, but no replacement numerical value is supplied. Do not invent one; identify the missing physical input."}
+  ],
+  "denominators": "Record all eight first authoring decisions. Baseline executions, accepted revisions, engine rejections and unexecuted missing-information responses are separate categories; no pooled accuracy score.",
+  "evaluationDimensions": ["requested-change fidelity","physical and numerical correctness within the admitted model","simulation coverage","educational usefulness","optional textbook-answer completeness"],
+  "humanReview": {"independentReviewers":0,"teachers":0,"students":0,"learningEffectiveness":"not-assessed"},
+  "externalModelCalls": 0,
+  "productionChangesAllowed": false
+}
