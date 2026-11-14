@@ -1,0 +1,99 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "Synthetic prism with external mirror",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -40,
+          "y": 10,
+          "brightness": 1
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 0
+        }
+      },
+      {
+        "id": "P1",
+        "type": "triangular-prism",
+        "parameters": {
+          "x1": 0,
+          "y1": -50,
+          "x2": 0,
+          "y2": 50,
+          "x3": 20,
+          "y3": 0,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "M1",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": 60,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 60
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": -20,
+          "y": -10,
+          "orientationDeg": 90,
+          "length": 20
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "prism",
+      "kind": "interface-interactions",
+      "componentId": "P1"
+    },
+    {
+      "id": "faces",
+      "kind": "interface-face-events",
+      "componentId": "P1"
+    },
+    {
+      "id": "mirror",
+      "kind": "mirror-reflections",
+      "componentId": "M1"
+    },
+    {
+      "id": "detector",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "power",
+      "kind": "detector-signed-power",
+      "componentId": "D1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Investigate native finite-prism refraction, reflection and return encounters without a prescribed ray route.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "Fully specified synthetic 2D apparatus, not an interpretation of an original textbook problem.",
+      "One stationary homogeneous triangular region, an explicitly indexed exterior and one ideal finite external mirror.",
+      "partialReflection=false explicitly omits Fresnel partial reflections while retaining native total internal reflection."
+    ],
+    "unknowns": [
+      "No detected image, source-labelled multi-ray route, continuous illumination or 3D claim is established."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}

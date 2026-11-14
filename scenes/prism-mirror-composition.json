@@ -1,0 +1,77 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 12,
+  "adapterVersion": 12,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "finite-dielectric-composition",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -40,
+          "y": 10,
+          "brightness": 1
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 0,
+          "angleDeg": 30
+        }
+      },
+      {
+        "id": "P1",
+        "type": "triangular-prism",
+        "parameters": {
+          "x1": 0,
+          "y1": -50,
+          "x2": 0,
+          "y2": 50,
+          "x3": 20,
+          "y3": 0,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "M1",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": 60,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 60
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": -20,
+          "y": -10,
+          "orientationDeg": 90,
+          "length": 20
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "Synthetic prism with external mirror",
+    "view": {
+      "x": 10,
+      "y": 0,
+      "zoom": 2
+    },
+    "mode": "rays",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000
+  }
+}

@@ -5,10 +5,12 @@ import {FINITE_APERTURE_TYPE,apertureGeometry,separatedSegmentDistance} from './
 
 // Whole-system cardinality is necessary but never sufficient for admission.
 // Policies are owned by versioned families; geometry/material checks follow.
-export function compositionCardinalitiesMatch(components,counts){
+export function compositionCardinalitiesMatch(components,counts,groups=[]){
   if(components.some(c=>!Object.hasOwn(counts,c.type)))return false;
   return Object.entries(counts).every(([type,{min,max}])=>{
     const n=components.filter(c=>c.type===type).length;return n>=min&&n<=max;
+  })&&groups.every(({types,min,max})=>{
+    const n=components.filter(c=>types.includes(c.type)).length;return n>=min&&n<=max;
   });
 }
 
