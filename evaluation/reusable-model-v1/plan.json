@@ -1,0 +1,173 @@
+{
+  "format": "opticsim-reusable-model-plan-v1",
+  "baselineMainCommit": "3320d12723d50ae51155d1a0c2dac4090b489930",
+  "source": {
+    "path": "scenes/single-lens-detector.json",
+    "gitBlob": "3dcdb0e8c01d1c950ee9bdbe2583b1892f6fc651",
+    "originalAuthoringPlan": "evaluation/teaching-fidelity-v1/plan.json",
+    "originalAuthoringPlanBlob": "17814c4b17134fa73f35ed153481b383a2576376",
+    "classification": "Previously exposed fully specified synthetic repository fixture; not an independently authored or unfamiliar textbook question"
+  },
+  "purpose": "Teacher-directed physical and numerical exploration of one immutable source-backed optical scene; no requirement to reproduce a textbook answer.",
+  "interpretation": "Use the previous fully source-matched minimal authoring request. Do not reauthor the baseline or populate missing physical facts. Each intervention below is a teacher-proposed hypothesis, not an original given.",
+  "approvedScope": [
+    "Reuse existing qualified-scene snapshots, reviseScene for stable-ID field edits, canonical validate for structural scene tests, passive observations, and runParameterSweep.",
+    "All accepted scenarios trace actual pinned native PhyDemo and carry their own scene hash and source-linked qualification.",
+    "Comparison does not change the physical model or certify identical units, sampling or assumptions without explicit checks.",
+    "No provider inference, new production physics, generic scenario patch schema, LLM first-attempt benchmark, human learning claim or public site."
+  ],
+  "investigations": [
+    {
+      "id": "baseline",
+      "kind": "original-source",
+      "description": "Run source-backed baseline with already registered optional readouts; no teaching hypothetical."
+    },
+    {
+      "id": "readouts-only",
+      "kind": "passive-observation",
+      "description": "Run the unchanged baseline with one additional existing explicit observable; never replace the apparatus.",
+      "requested": {
+        "id": "second-emission-readout",
+        "kind": "source-emissions",
+        "componentId": "source-1"
+      }
+    },
+    {
+      "id": "focal-150",
+      "kind": "physical-parameter",
+      "sourceGiven": false,
+      "changes": [
+        {
+          "id": "lens-1",
+          "section": "parameters",
+          "key": "focalLength",
+          "value": 150,
+          "unit": "mm"
+        }
+      ],
+      "expected": "Physical lens behavior and ideal-image prediction should respond; aggregate sampled counts need not."
+    },
+    {
+      "id": "source-shift",
+      "kind": "physical-geometry",
+      "sourceGiven": false,
+      "changes": [
+        {
+          "id": "source-1",
+          "section": "parameters",
+          "key": "x",
+          "value": -400,
+          "unit": "mm"
+        }
+      ],
+      "expected": "Object distance changes and native rays must be retraced. No dynamic travel or new initial condition equation is implied."
+    },
+    {
+      "id": "density-025",
+      "kind": "numerical-sampling",
+      "sourceGiven": false,
+      "rayDensity": 0.25,
+      "expected": "Apparatus and ideal-image prediction must remain the same. Sample counts and relative brightness readings may change; explicitly check source clipping before physical comparisons."
+    },
+    {
+      "id": "extra-detector",
+      "kind": "structural-reassembly",
+      "sourceGiven": false,
+      "operation": "append-explicit-component",
+      "component": {
+        "id": "detector-2",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 80,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 160
+        }
+      },
+      "requested": {
+        "id": "second-detector-crossings",
+        "kind": "detector-crossings",
+        "componentId": "detector-2"
+      },
+      "expected": "Only the new passive detector and its new observation are added. The existing public reviseScene API does not support structural edits; canonical cloned-scene validation is an evaluation-only route, not a claimed public minimal patch interface."
+    },
+    {
+      "id": "camera-only",
+      "kind": "presentation",
+      "sourceGiven": false,
+      "zoom": 0.5,
+      "expected": "Viewport changes; no optical or sampling changes, but current-report hashes must still bind to this scene revision."
+    }
+  ],
+  "negativeControls": [
+    {
+      "id": "invalid-focal-zero",
+      "kind": "physical-parameter",
+      "changes": [
+        {
+          "id": "lens-1",
+          "section": "parameters",
+          "key": "focalLength",
+          "value": 0,
+          "unit": "mm"
+        }
+      ],
+      "expected": "Reject, no native calls and no partial baseline mutation."
+    },
+    {
+      "id": "invalid-detector-overlap",
+      "kind": "structural-reassembly",
+      "component": {
+        "id": "detector-2",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 160
+        }
+      },
+      "expected": "Reject detector/lens contact without moving an existing component or inventing a new location."
+    }
+  ],
+  "sweep": {
+    "format": "opticsim-parameter-sweep-v1",
+    "parameter": {
+      "id": "lens-1",
+      "section": "parameters",
+      "key": "focalLength",
+      "unit": "mm"
+    },
+    "values": [
+      100,
+      125,
+      150,
+      0
+    ],
+    "plot": {
+      "observableId": "predicted-image",
+      "field": "x"
+    },
+    "expected": "Each value branches from same baseline; invalid f=0 is a retained failed sample, not a repaired plot point."
+  },
+  "comparisonRules": [
+    "Same physical readout only when target identity, method, units, accepted status, model and compatible numerical settings are established.",
+    "A physical parameter change should be distinguishable from numerical sampling and from presentation edits.",
+    "Do not interpret sampled counts as continuous flux or signed relative power as watts.",
+    "Sampling differences including brightness clipping are not automatically physical illumination differences.",
+    "An additional detector has no baseline counterpart and must not be compared as though it did.",
+    "Any conditional image location is a model equation prediction and not a native image detection."
+  ],
+  "independentReview": {
+    "externalModelCalls": 0,
+    "teachers": 0,
+    "students": 0,
+    "status": "unassessed"
+  },
+  "stopConditions": [
+    "Do not modify pinned upstream, production optical laws, public scene schema, source fixture or historical frozen attempts.",
+    "Do not silently replace missing physical facts or assume a structural proposal is supported by the targeted public revision API.",
+    "Treat the experiment as deterministic software qualification, not independent LLM authoring or educational effectiveness.",
+    "Keep new PR draft and unmerged for separate approval."
+  ]
+}
