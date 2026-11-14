@@ -1,5 +1,4 @@
-// Existing browser only: native rendering and real UI actions. No overlays,
-// private app-state writes, teaching-effectiveness claims or new viewer code.
+// Evaluation-only real Chrome tasks. No new renderer, overlays or private state writes.
 import assert from 'node:assert/strict';
 import {spawn,spawnSync} from 'node:child_process';
 import {createServer} from 'node:net';
@@ -51,12 +50,17 @@ try{
  for(const method of ['Page.enable','Runtime.enable','Network.enable'])await cdp.send(method);
  await cdp.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1100,deviceScaleFactor:1,mobile:false});
  const evaluate=async expression=>{const r=await cdp.send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result?.value;};
- const state=()=>evaluate(`(()=>{const e=id=>document.getElementById(id);return {title:e('title')?.textContent,status:e('status')?.dataset.state,error:e('error')?.textContent,results:JSON.parse(e('observable-results')?.dataset.results||'null'),resultsText:e('observable-results')?.textContent,qualification:e('qualification-status')?.dataset.state,details:e('qualification-details')?.textContent,fitNote:e('fit-note')?.textContent,fitSequence:e('fit-note')?.dataset.fitSequence,fitDisabled:e('fit-results')?.disabled,saveDisabled:e('save-qualified')?.disabled,sampling:e('sampling')?.value,samplingNote:e('sampling-note')?.textContent};})()`);
+ const state=()=>evaluate(`(()=>{const e=id=>document.getElementById(id);return {title:e('title')?.textContent,revision:e('revision')?.textContent,status:e('status')?.dataset.state,error:e('error')?.textContent,results:JSON.parse(e('observable-results')?.dataset.results||'null'),resultsText:e('observable-results')?.textContent,qualification:e('qualification-status')?.dataset.state,details:e('qualification-details')?.textContent,fitNote:e('fit-note')?.textContent,fitSequence:e('fit-note')?.dataset.fitSequence,fitDisabled:e('fit-results')?.disabled,saveDisabled:e('save-qualified')?.disabled,sampling:e('sampling')?.value,samplingNote:e('sampling-note')?.textContent};})()`);
  const current=async id=>until(state,s=>{
   if(s.status!=='completed'||s.error||s.saveDisabled)return false;
   try{assert.deepEqual(s.results??[],row(id).results);return s.title==='Teaching pilot: specified ideal lens and passive detector';}catch{return false;}
  },id+' current native/results');
- const upload=async path=>{const d=await cdp.send('DOM.getDocument',{depth:-1}),e=await cdp.send('DOM.querySelector',{nodeId:d.root.nodeId,selector:'#load'});await cdp.send('DOM.setFileInputFiles',{nodeId:e.nodeId,files:[path]});};
+ const upload=async path=>{
+  const before=await state();
+  const d=await cdp.send('DOM.getDocument',{depth:-1}),e=await cdp.send('DOM.querySelector',{nodeId:d.root.nodeId,selector:'#load'});
+  await cdp.send('DOM.setFileInputFiles',{nodeId:e.nodeId,files:[path]});
+  await until(state,s=>s.revision!==before.revision&&s.status==='completed','new completed import revision');
+ };
  const shot=async name=>{
   const dimensions=await cdp.send('Page.getLayoutMetrics');const size=dimensions.cssContentSize||dimensions.contentSize;
   const img=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width:size.width,height:size.height,scale:1}});
