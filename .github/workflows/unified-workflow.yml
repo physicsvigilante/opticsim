@@ -17,6 +17,19 @@ jobs:
           node-version: '24.19.0'
       - run: npm run setup
       - run: npm test
+      - name: Teaching-fidelity source preservation and native physical checks
+        run: node evaluation/teaching-fidelity-v1/run.mjs
+      - name: Build unchanged existing browser for teaching tasks
+        run: npm run build
+      - name: Exercise existing teaching controls in actual Chrome
+        run: node evaluation/teaching-fidelity-v1/browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: teaching-fidelity-evidence
+          path: test-artifacts/llm-authoring/teaching-fidelity-v1/
+          if-no-files-found: error
+          retention-days: 14
       - name: Run five synthetic and existing integration controls
         run: node scripts/unified-problem-acceptance.mjs
       - name: Stress generality across 21 fixed synthetic authored scenes
