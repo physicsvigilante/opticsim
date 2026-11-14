@@ -1,5 +1,20 @@
 # ray-optics-2d
 
+## Foundational objective — LLM-directed physical exploration
+
+Opticsim is a **teaching and physical-exploration accompaniment**. The goal is a reusable, source-backed, versioned physical model, not a one-time textbook-answer calculation. A correct native ray trace, faithful interpretation of a source, and effective classroom communication are distinct claims. A final textbook answer or derivation is optional; an explicitly requested supported output cannot be called answered until verified.
+
+- Preserve the original **source-backed physical baseline** and its declared model, identities, units, geometry and assumptions. Subsequent teacher-authored hypotheticals and numerical/presentation edits are separate qualified states with their own hashes and execution evidence. A source label or matching hash is not independent interpretation certification.
+- Let the LLM propose meaningful physical property, initial geometry, boundary, external-input and supported structural changes using stable component IDs. The LLM need not reauthor unchanged components, solve an unknown first or prescribe native ray routing. Do not invent essential values or silently turn a hypothetical into an original given.
+- The engine owns per-scenario validation, physical admissibility, numerical policies, execution, conditional analytics and explicit error reporting. An accepted baseline does not license an invalid variant; no scenario inherits its predecessor's execution verification.
+- Distinguish **targeted physical-parameter revisions**, **structural reassembly**, **observation/analysis selection**, **numerical sampling** and **presentation changes**. Current `reviseScene` supports targeted existing fields only; a public add/remove structural patch is *not* implied by canonical clone+validate tests.
+- Compare only quantities with compatible identities, methods, units, assumptions, numerical policy and qualified evidence. Native counts are sampled and native signed relative power is not watts or continuous optical flux. Changed density/brightness clipping is not proof of changed physical illumination. Conditional image equations are not native image detections.
+- Reuse existing qualified packages, SHA-guarded revisions and bounded parameter sweeps. A sweep sample must be revalidated from the unchanged baseline and retained as a failure when inadmissible. Static configuration branches and quasi-static retracing are not finite-speed time evolution or simulated dynamics.
+- Evaluate **interpretation fidelity**, **physical/numerical correctness**, **simulation coverage**, **educational usefulness**, and optional **textbook-answer completeness** separately. Software CI, same-assistant visual inspection and independent teacher/student evidence are not interchangeable.
+- Prefer the smallest generally reusable change justified by a demonstrated physical/teaching need. Do not replace the pinned PhyDemo engine, add exam-specific semantics or introduce an abstract graph solver solely to shorten a question-specific prompt.
+
+See `evaluation/reusable-model-v1/README.md` for a bounded developmental scenario-branching exercise; it is not a general structural-edit API or an independent LLM benchmark.
+
 - This workspace is an independent local 2D optics project. No mechanics or 3D integration.
 - Baseline: PRs #7 (general authoring), #10 (evaluation runner) and #13 (minimal problem preparation) were merged on 2026-11-12. Preparation is not an image interpreter or proof of independent model accuracy. Read `README.md`, `docs/MINIMAL-PROBLEM-AUTHORING.md`, `docs/QUALIFIED-AUTHORING.md`, `PROPOSAL.md`, `PLANE-MIRROR-PROPOSAL.md`, `LENS-MIRROR-PROPOSAL.md`, and `upstream-pin.json` for boundaries and evidence.
 - Reuse pinned PhyDemo optics and rendering. Do not rewrite ray tracing or modify upstream core without separate approval.
