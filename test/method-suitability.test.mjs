@@ -50,7 +50,7 @@ test('registered inverse returns exact contract and conditional result without n
  assert.equal(e.planResultStatus,'conditional');
  assert.equal(e.nativeTargetReady,false);
  assert.equal(p.methodSuitability.noAutomaticKindSubstitution,true);
- assert.equal(p.methodSuitability.noNativeCalls,true);
+ assert.deepEqual(p.methodSuitability.auditActions,{nativeSimulatorCalls:0,externalModelCalls:0,repairs:0});
  assert.equal(p.methodSuitability.conditionalResultRequests,1);
 });
 test('one unsigned observation is ambiguous, not an inferred unique method answer',()=>{
