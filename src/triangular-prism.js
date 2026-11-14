@@ -1,4 +1,4 @@
-import {distanceToFiniteSegment,finiteGlassFaces,compileFiniteGlass,finiteGlassEncounter} from './finite-glass-geometry.js';
+import {distanceToFiniteSegment,finiteGlassFaces,compileFiniteGlass,finiteGlassEncounter,segmentOutsideFiniteGlass} from './finite-glass-geometry.js';
 // Finite triangle geometry and read-only surface identification. Native Glass
 // chooses every hit and outgoing ray; no Snell/Fresnel or routing code here.
 export const PRISM_TYPE='triangular-prism';
@@ -41,7 +41,7 @@ export function validatePrismGeometry(components,endpoints,fail){
   const line=endpoints(c.parameters);
   // A separating face certifies the whole detector lies outside the convex
   // region. Deliberately conservative: reject unproved separation, never clip.
-  if(!faces.some(f=>line.every(q=>dot(delta(f.a,q),f.normal)>=PRISM_CLEARANCE_MM)))
+  if(!segmentOutsideFiniteGlass(faces,line,PRISM_CLEARANCE_MM))
    fail(path,'Detector must be wholly outside the prism with a common separating face and 0.01 mm clearance.','UNSUPPORTED_SCOPE');
  }
 }

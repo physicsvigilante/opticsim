@@ -5,7 +5,8 @@ import {CIRCULAR_TYPE,CIRCULAR_PARAMETERS,validateCircularGeometry} from './circ
 import {CURVED_PARAMETERS,isCurved,validateCurvedGeometry} from './curved-mirrors.js';
 import {PLANAR_TYPE,PLANAR_PARAMETERS,validatePlanarGeometry} from './planar-media.js';
 import {CIRCLE_BLOCKER_TYPE,validateCircleBlockerGeometry} from './opaque-circle-blocker.js';
-import {FINITE_APERTURE_TYPE,APERTURE_CLEARANCE_MM,apertureGeometry,separatedSegmentDistance} from './finite-aperture.js';
+import {FINITE_APERTURE_TYPE,APERTURE_CLEARANCE_MM} from './finite-aperture.js';
+import {finiteSurfaceGeometry,pointWithinSupportingLineClearance,finiteSurfacesConflict} from './composition-validation.js';
 export const UPSTREAM = '811f508d2b070898c241a568b0c167dcb8645251';
 export const SAMPLING_PRESETS = Object.freeze({ sparse: 0.048, medium: 0.2, dense: 1 });
 export function samplingPreset(density) { return Object.keys(SAMPLING_PRESETS).find(key => SAMPLING_PRESETS[key] === density) || 'custom'; }
@@ -212,21 +213,6 @@ function validateReturnScope(components) {
 
 // Current-v4 bounded composition: finite optical and measuring segments.
 // Reject intersections to avoid ambiguous simultaneous native encounters.
-function segmentsIntersect([a,b], [c,d]) {
-  const delta = (p,q) => ({x:q.x-p.x,y:q.y-p.y});
-  const cross = (p,q) => p.x*q.y-p.y*q.x;
-  const ab=delta(a,b), cd=delta(c,d), ac=delta(a,c);
-  const den=cross(ab,cd);
-  const scale=Math.hypot(ab.x,ab.y)*Math.hypot(cd.x,cd.y);
-  if(Math.abs(den)<1e-12*scale) {
-    if(Math.abs(cross(ab,ac))>1e-9*Math.hypot(ab.x,ab.y)) return false;
-    const dim=Math.abs(ab.x)>=Math.abs(ab.y)?'x':'y';
-    return Math.max(Math.min(a[dim],b[dim]),Math.min(c[dim],d[dim])) <=
-      Math.min(Math.max(a[dim],b[dim]),Math.max(c[dim],d[dim]))+1e-9;
-  }
-  const t=cross(ac,cd)/den, u=cross(ac,ab)/den;
-  return t>=-1e-9&&t<=1+1e-9&&u>=-1e-9&&u<=1+1e-9;
-}
 function validateMixedTraceScope(components, general = false) {
   const sources=components.filter(c=>c.type==='point-source');
   const lenses=components.filter(c=>c.type==='ideal-lens');
@@ -259,25 +245,17 @@ function validateMixedTraceScope(components, general = false) {
   for(const [index,c] of components.entries()) {
     if(c.type==='point-source'||c.type===CIRCLE_BLOCKER_TYPE)continue;
     const p=c.parameters;
-    const line=c.type==='ideal-lens'
-      ? [{x:p.x,y:-p.apertureHeight/2},{x:p.x,y:p.apertureHeight/2}]
-      : mirrorEndpoints(p);
-    const isAperture=c.type===FINITE_APERTURE_TYPE;
-    const lines=isAperture?apertureGeometry(p,mirrorEndpoints).arms:[line];
+    const {line,segments:lines,aperture:isAperture}=finiteSurfaceGeometry(c,mirrorEndpoints);
     if(['plane-mirror','line-blocker',FINITE_APERTURE_TYPE].includes(c.type)){
       if(line.some(v=>Math.abs(v.x)>10000||Math.abs(v.y)>10000))
         fail(path+'['+index+'].parameters','segment endpoints exceed coordinate bounds','UNSUPPORTED_SCOPE');
-      const theta=p.orientationDeg*Math.PI/180;
-      if(points.some(source=>Math.abs(
-        -(source.x-p.x)*Math.sin(theta)+(source.y-p.y)*Math.cos(theta))<0.01))
+      if(points.some(source=>pointWithinSupportingLineClearance(source,p,0.01)))
         fail(path+'['+index+'].parameters','each source must be at least 0.01 mm from finite surface supporting line','UNSUPPORTED_SCOPE');
     }
     // The transparent opening is free space, not a solid obstacle.
     for(const arm of lines){
       for(const other of surfaces)
-        if(segmentsIntersect(other.line,arm)||
-          (isAperture||other.aperture) &&
-          separatedSegmentDistance(other.line,arm)<APERTURE_CLEARANCE_MM)
+        if(finiteSurfacesConflict(other,{line:arm,aperture:isAperture},APERTURE_CLEARANCE_MM))
           fail(path+'['+index+']','optical segments intersect or nearly touch ('+other.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
       surfaces.push({id:c.id,line:arm,aperture:isAperture});
     }
@@ -294,12 +272,7 @@ function validateDetectorScope(components) {
   const sources=components.filter(c=>c.type==='point-source').map(c=>c.parameters);
   const surfaces=components.filter(c=>['ideal-lens','plane-mirror','line-blocker',FINITE_APERTURE_TYPE].includes(c.type))
     .flatMap(c=>{
-      const aperture=c.type===FINITE_APERTURE_TYPE;
-      const lines=aperture?apertureGeometry(c.parameters,mirrorEndpoints).arms:
-        [c.type==='ideal-lens'
-          ? [{x:c.parameters.x,y:-c.parameters.apertureHeight/2},
-             {x:c.parameters.x,y:c.parameters.apertureHeight/2}]
-          : mirrorEndpoints(c.parameters)];
+      const {segments:lines,aperture}=finiteSurfaceGeometry(c,mirrorEndpoints);
       return lines.map(line=>({id:c.id,line,aperture}));
     });
   for(const [i,c] of components.entries()) {
@@ -307,13 +280,10 @@ function validateDetectorScope(components) {
     const p=c.parameters,line=mirrorEndpoints(p),path='$.physics.components['+i+']';
     if(line.some(v=>Math.abs(v.x)>10000||Math.abs(v.y)>10000))
       fail(path+'.parameters','detector endpoints exceed coordinate bounds','UNSUPPORTED_SCOPE');
-    const theta=p.orientationDeg*Math.PI/180;
-    if(sources.some(source=>Math.abs(
-      -(source.x-p.x)*Math.sin(theta)+(source.y-p.y)*Math.cos(theta))<0.01))
+    if(sources.some(source=>pointWithinSupportingLineClearance(source,p,0.01)))
       fail(path+'.parameters','each source must be at least 0.01 mm from detector supporting line','UNSUPPORTED_SCOPE');
     for(const other of surfaces)
-      if(segmentsIntersect(other.line,line)||
-        other.aperture&&separatedSegmentDistance(other.line,line)<APERTURE_CLEARANCE_MM)
+      if(finiteSurfacesConflict(other,{line,aperture:false},APERTURE_CLEARANCE_MM))
         fail(path,'detector segment intersects or nearly touches '+other.id,'UNSUPPORTED_SCOPE');
     surfaces.push({id:c.id,line,aperture:false});
   }
