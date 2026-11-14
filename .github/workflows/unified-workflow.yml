@@ -21,6 +21,15 @@ jobs:
         run: node evaluation/teaching-fidelity-v1/run.mjs
       - name: Exercise one immutable model across physically validated teacher scenarios
         run: node evaluation/reusable-model-v1/run.mjs
+      - name: Verify hash-guarded structural revisions through the qualified native CLI
+        run: node scripts/structural-revision-acceptance.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: structural-revision-evidence
+          path: test-artifacts/llm-authoring/structural-revision-v1/
+          if-no-files-found: error
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
         with:
