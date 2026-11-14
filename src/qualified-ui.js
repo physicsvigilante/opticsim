@@ -6,6 +6,7 @@ import {evaluateObservables} from './observables.js';
 import {sceneHash,canonicalJSON} from './qualified-utils.js';
 import {snapshotNativeObservations} from './native-observations.js';
 import {fitRequestedView,formatRequestedResult} from './result-preview.js';
+import {evidencePanelView,renderEvidencePanel} from './evidence-panel.js';
 const $=id=>document.getElementById(id);
 const scalar=n=>Number.isFinite(n)?Number(n.toPrecision(8)).toString():'not finite';
 export class QualifiedUI {
@@ -70,10 +71,15 @@ export class QualifiedUI {
     $('fit-note').dataset.fitSequence=String(sequence);
     $('fit-note').textContent=fitted.note;
   }
+  refreshEvidence(phase='checking',results=null){
+    renderEvidencePanel(document,evidencePanelView({doc:this.session.document,
+      qualification:this.qualification,requests:this.requests,state:this.session.state,phase,results}));
+  }
   refresh(){
     const s=this.session,sequence=++this.sequence;
     this.currentResults=null;this.resultRevision=null;
     delete $('observable-results').dataset.results;
+    this.refreshEvidence();
     $('fit-results').disabled=true;
     if(this.fitState){
       const same=s.document&&this.fitState.document===canonicalJSON(s.document)&&
@@ -154,6 +160,7 @@ export class QualifiedUI {
       if(sequence!==this.sequence||revision!==s.revision)return;
       this.currentResults=results;this.resultRevision=revision;
       $('observable-results').dataset.results=JSON.stringify(results.results);
+      this.refreshEvidence('ready',results.results);
       $('fit-results').disabled=false;
       $('observable-results').textContent=results.results.map(formatRequestedResult).join('\n\n');
       if(s.analysisStatus==='unavailable'&&results.results.some(r=>r.status==='conditional'&&r.kind==='ideal-image')){
@@ -161,7 +168,10 @@ export class QualifiedUI {
         $('prediction-note').textContent='The general scene does not assert a unique optical route. The requested analytical result uses a validated restricted model and its stated illumination/route conditions; it is not a native image detection.';
       }
     })().catch(error=>{
-      if(sequence===this.sequence&&revision===s.revision)$('observable-results').textContent='Requested results unavailable: '+error.message;
+      if(sequence===this.sequence&&revision===s.revision){
+        $('observable-results').textContent='Requested results unavailable: '+error.message;
+        this.refreshEvidence('error');
+      }
     });
   }
 }

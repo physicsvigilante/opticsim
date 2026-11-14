@@ -28,3 +28,11 @@
 /* Results changing height must not move the optical viewport via scrollbars. */
 html{scrollbar-gutter:stable}
 #fit-note{min-height:1.7em;overflow-wrap:anywhere}
+
+/* Read-only overview is deliberately NOT a capped/scrollable pre element. */
+.evidence-overview{padding:.8rem;border:1px solid var(--line);border-radius:.4rem;background:#fff;min-width:0}
+.evidence-overview h3{margin:0 0 .65rem}
+.evidence-overview p{margin:.45rem 0;white-space:normal;overflow-wrap:anywhere;max-height:none;overflow:visible}
+#evidence-summary{font-weight:650;font-variant-numeric:tabular-nums;line-height:1.65}
+#evidence-summary[data-state=suppressed],#evidence-summary[data-state=error]{color:#783718}
+#evidence-physical-change,#evidence-numerical-change{font-variant-numeric:tabular-nums}
