@@ -42,6 +42,10 @@ jobs:
         run: node scripts/polygon-dielectric-acceptance.mjs
       - name: Polygon viewer physical edits, real TIR and qualified exports
         run: node scripts/polygon-dielectric-browser.mjs
+      - name: Native finite glass and external mirror composition, rejection and sweep
+        run: node scripts/finite-composition-acceptance.mjs
+      - name: Composition browser edits, misses, incomplete results and qualified exports
+        run: node scripts/finite-composition-browser.mjs
       - name: Package existing allowlisted static viewer (not a deployment)
         run: node scripts/pack-demo.mjs
       - uses: actions/upload-artifact@v4
@@ -58,6 +62,8 @@ jobs:
             test-artifacts/browser-triangular-prism/
             test-artifacts/llm-authoring/polygon-dielectric/
             test-artifacts/browser-polygon-dielectric/
+            test-artifacts/llm-authoring/finite-composition/
+            test-artifacts/browser-finite-composition/
           if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v4

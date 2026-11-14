@@ -1,4 +1,4 @@
-import {distanceToFiniteSegment,finiteGlassFaces,compileFiniteGlass,finiteGlassEncounter} from './finite-glass-geometry.js';
+import {distanceToFiniteSegment,finiteGlassFaces,compileFiniteGlass,finiteGlassEncounter,segmentOutsideFiniteGlass} from './finite-glass-geometry.js';
 // Four-vertex convex dielectric geometry. Native Glass owns every ray.
 // This layer validates a bounded polygon and identifies ONLY actual native hits.
 export const POLYGON_TYPE='polygon-dielectric';
@@ -48,7 +48,7 @@ export function validatePolygonGeometry(components,endpoints,fail){
   }
   for(const c of components.filter(c=>c.type==='ray-detector')){
     const line=endpoints(c.parameters);
-    if(!faces.some(f=>line.every(q=>dot(delta(f.a,q),f.normal)>=POLYGON_CLEARANCE_MM)))
+    if(!segmentOutsideFiniteGlass(faces,line,POLYGON_CLEARANCE_MM))
       fail(path,'Detector must lie entirely outside the polygon and 0.01 mm from a common separating face.','UNSUPPORTED_SCOPE');
   }
 }

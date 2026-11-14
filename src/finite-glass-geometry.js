@@ -16,6 +16,11 @@ export function finiteGlassFaces(vertices){
   return {id:'face-'+(i+1)+(next+1),a,b,length,normal:{x:w*d.y/length,y:-w*d.x/length}};
  });
 }
+// A conservative separating-face proof for a complete external finite segment.
+// This checks authored geometry only; it never computes a ray intersection.
+export function segmentOutsideFiniteGlass(faces,line,clearanceMm){
+ return faces.some(f=>line.every(q=>dot(delta(f.a,q),f.normal)>=clearanceMm));
+}
 export function compileFiniteGlass(parameters,vertices){
  return {type:'Glass',path:vertices.map(p=>({x:p.x,y:-p.y,arc:false})),
   notDone:false,refIndex:parameters.insideIndex/parameters.outsideIndex,
