@@ -1,0 +1,17 @@
+{
+  "format":"opticsim-revision-transfer-review-v1",
+  "firstDecisionsFreezeCommit":"e83cb9135fa8655c27e1e718c519a0604b5cbcf0",
+  "reviewer":"Same assistant after first-decision freeze, before execution; no independent adjudication",
+  "independentReview":false,
+  "notes":"These constraints restate the textual requested changes. They contain no expected native ray counts or solved optical answers. Every proposal remains in the evaluation, including an inadmissible deletion and unexecuted requests for missing information.",
+  "cases":[
+    {"id":"T01","expectedDisposition":"candidate-scene","expectedChange":{"kind":"field-delta","id":"S2","section":"parameters","key":"y","deltaMm":25},"reviewNote":"The initial y=-40 mm plus an upward 25 mm displacement gives -15 mm. Only that existing field may change."},
+    {"id":"T02","expectedDisposition":"candidate-scene","expectedChange":{"kind":"add","component":{"id":"Probe","type":"ray-detector","parameters":{"x":180,"y":0,"orientationDeg":90,"length":180}}},"expectedAdditionalObservables":[{"id":"probe-crossings","kind":"detector-crossings","componentId":"Probe"}],"reviewNote":"Detector geometry and target are explicit. Total crossings cannot be reported as per-source attribution."},
+    {"id":"T03","expectedDisposition":"unexecuted-needs-information","missingConcept":"source target identity","reviewNote":"Both S1 and S2 exist; the prompt expressly withholds a choice. This is a provisional self-reviewed response, not an engine refusal or verified classroom result."},
+    {"id":"T04","expectedDisposition":"candidate-scene","expectedChange":{"kind":"remove","id":"S1"},"mustRemainUnavailable":"S1-emissions","reviewNote":"Retain original S1 requested readout; the remaining S2 observation cannot be substituted for it."},
+    {"id":"T05","expectedDisposition":"candidate-scene","expectedChange":{"kind":"field-value","id":"G1","section":"parameters","key":"insideIndex","value":1.3},"reviewNote":"No new length units apply to a dimensionless refractive index. All other parameters including partialReflection=false remain unchanged."},
+    {"id":"T06","expectedDisposition":"candidate-scene","expectedChange":{"kind":"add","component":{"id":"D2","type":"ray-detector","parameters":{"x":300,"y":0,"orientationDeg":90,"length":200}}},"expectedAdditionalObservables":[{"id":"D2-crossings","kind":"detector-crossings","componentId":"D2"}],"reviewNote":"A separate admitted external passive detector with its own sampled readout, not an image or continuous throughput result."},
+    {"id":"T07","expectedDisposition":"engine-rejection","expectedAttempt":{"format":"opticsim-component-revision-v1","operations":[{"op":"remove","id":"G1"}]},"reviewNote":"The requested deletion is retained literally for validation. The existing circular-dielectric family requires its dielectric; do not migrate, repair or execute an inadmissible child."},
+    {"id":"T08","expectedDisposition":"unexecuted-needs-information","missingConcept":"replacement inside refractive index","reviewNote":"No numerical replacement is provided. The model's physical bounds cannot be used to choose one silently. The response assessment is same-assistant only."}
+  ]
+}
