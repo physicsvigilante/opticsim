@@ -1,3 +1,4 @@
+import {ExplorationUI} from './exploration-ui.js';
 import {isCurved} from './curved-mirrors.js';
 import {QualifiedUI} from './qualified-ui.js';
 import { loadDocument, Simulator, diagnostics, nativeExport, observeSourceSet, observeMirrorSet, observeDetectorSet, observeInterfaceSet, observeBlockerSet } from './adapter.js';
@@ -13,6 +14,7 @@ $('view-extended-icon').src = extendedIcon;
 const canvases = ['light', 'below', 'above', 'grid'].map($);
 let size = { width: 1200, height: 700 };
 let scheduled;
+let explorationUI;
 let bindings = [];
 let activeSourceId = null; // UI selection only; not part of authoritative scene JSON.
 function cancelScheduled() { clearTimeout(scheduled); scheduled = undefined; }
@@ -34,8 +36,18 @@ const session = new Session(doc => {
   } };
 }, update);
 const qualificationUI = new QualifiedUI(session, download);
+explorationUI = new ExplorationUI({session,qualified:qualificationUI,download,
+  hasPending:()=>!!scheduled,
+  applyBundle:bundle=>{
+    // A saved/proposed scenario is a local model, never the unchanged example URL.
+    ++exampleRequest;
+    const ok=apply(bundle.scene,true,{qualification:bundle.qualification,requests:bundle.observables});
+    if(ok){$('examples').value='';setExampleLink(null);}
+    return ok;
+  }});
 function update() {
   qualificationUI.refresh();
+  explorationUI?.refresh();
   const state = session.state;
   $('status').textContent = state.replaceAll('-', ' ');
   $('status').dataset.state = state;

@@ -36,3 +36,13 @@ html{scrollbar-gutter:stable}
 #evidence-summary{font-weight:650;font-variant-numeric:tabular-nums;line-height:1.65}
 #evidence-summary[data-state=suppressed],#evidence-summary[data-state=error]{color:#783718}
 #evidence-physical-change,#evidence-numerical-change{font-variant-numeric:tabular-nums}
+
+/* Optional local LLM handoff; never a model-provider UI. */
+.exploration-panel{margin:1rem 0;padding:1rem;border:1px solid var(--line);border-radius:.5rem;min-width:0}
+.exploration-panel summary{cursor:pointer;font-size:1.05rem;font-weight:650}
+.exploration-panel label{display:grid;gap:.45rem;margin:1rem 0 .65rem;font-size:.9rem}
+.exploration-panel textarea,.exploration-panel select,.exploration-panel input{box-sizing:border-box;width:100%;max-width:100%;padding:.65rem;font:inherit}
+.exploration-panel textarea{resize:vertical;font-family:ui-monospace,monospace;font-size:.85rem}
+.exploration-panel p{font-size:.85rem;line-height:1.5;overflow-wrap:anywhere}
+.exploration-panel pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.8rem;max-height:28rem;overflow:auto}
+#explore-error{color:#a82525}#explore-status{font-weight:600}

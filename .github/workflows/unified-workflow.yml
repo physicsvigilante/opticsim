@@ -50,6 +50,19 @@ jobs:
         run: npm run build
       - name: Exercise existing teaching controls in actual Chrome
         run: node evaluation/teaching-fidelity-v1/browser.mjs
+      - name: Exercise practical model exploration in actual Chrome
+        run: node scripts/exploration-browser.mjs
+      - name: Package the local viewer (no public deployment)
+        run: node scripts/pack-demo.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-exploration-workbench
+          path: |
+            test-artifacts/browser-exploration/
+            test-artifacts/demo-site/
+          if-no-files-found: error
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
         with:
