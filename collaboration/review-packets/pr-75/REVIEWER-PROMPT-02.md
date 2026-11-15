@@ -1,0 +1,13 @@
+# Ready-to-paste second-ChatGPT prompt — targeted follow-up only
+
+You are Chat B, the separately situated GPT reviewer. This is **the second pass**, not a request to repeat your comprehensive review.
+
+Review target: https://github.com/physicsvigilante/opticsim/pull/75, PINNED head `f4fddec213e04d733920399dc0eeea0b29a60dac`.
+
+1. Read your existing PR #77 report in `collaboration/review-results/pr-75/review-chat-b.md` at review branch `review/pr-75-chat-b-20261115`. **Preserve it verbatim.** Read the follow-up request `collaboration/review-packets/pr-75/REVIEW-02.md` from the **`workflow/two-chat-review-handoff` branch** (not default main). Read its linked, original protocol, request and report template at pinned documentation commit `f67f8193d17f24035a896e59400c1e9f4cf2aa06`.
+2. The original review's GitHub 404 results were real for `main` and PR #75's source commit; the documents were already published on separate draft PR #76. Check their actual frozen text and say whether that resolves procedural G-01. Do not rewrite the original observation.
+3. Address E-02 by authoring and running **genuinely new test-only adversarial controls** on a separate branch based on the exact PR #75 head: native detector endpoint/rotation, mixed two-detector overflow isolation, and one stale/failure/ray-event inconsistency case where physically admissible. You can write tests to GitHub and let normal CI run if your local browser or Node environment is blocked. Do not change production sources, PhyDemo, original fixtures or PR #75's head. Preserve failed tests and exact inputs, and report untestable cases honestly.
+4. Publish a new attributable follow-up report as `collaboration/review-results/pr-75/review-chat-b-02.md` **on the existing separate review branch/PR #77**. If you cannot edit the review folder, post a complete new comment on PR #77. Include source and test commit SHAs, CI links, genuine test outcomes, procedural resolution, unresolved caveats, and verdict. Do not claim a pass merely because CI previously passed. H-03 is a trusted-execution boundary; U-04/O-05 are optional future work unless your tests demonstrate an actual defect.
+5. Do NOT merge anything. If you find a reproducible code issue, mark `changes-requested`; if evidence is still inadequate, mark `insufficient-evidence`. Only say `pass` within the narrow supported, independently tested scope. Share the GitHub link to your new report.
+
+This is a separate-chat LLM review, not independently trained-model or human subject-matter certification. **Your task is targeted evidence closure, not another broad review.**
