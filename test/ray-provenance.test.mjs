@@ -345,3 +345,29 @@ test('injected per-detector overflow is isolated while global identity remains c
  assert.equal(data.Lower.value.nodes.length,1);
  assert.equal(data.Lower.value.nodes[0].sourceId,'S2');
 });
+
+
+test('A -> B -> A scene-hash equality cannot publish delayed first-A native graph',async()=>{
+ const a=dual(),b=dual();
+ b.physics.components.find(c=>c.id==='S1').parameters.x=-110;
+ const requests=[request('Upper')],first=run(a,requests),latest=run(a,requests);
+ assert.equal(first.summary.canonicalSha256,latest.summary.canonicalSha256);
+ const old=structuredClone(first.report.native.diagnostics),callbacks=[];
+ old.detectorRayProvenanceById.Upper.value.crossings[0].rayToken='STALE_OLD_RUN';
+ const session=new core.Session(()=>({cancel(){},run(fn){callbacks.push(fn);}}),()=>{},()=>({kind:'unavailable'}));
+ assert.equal(session.apply(a),true);
+ assert.equal(session.apply(b),true);
+ assert.equal(session.apply(a),true);
+ assert.equal(session.state,'running');
+ callbacks[0]('simulationComplete',old);
+ assert.equal(session.state,'running');
+ assert.equal(session.data,null,'The old A callback must not populate the fresh A run');
+ callbacks[2]('simulationComplete',latest.report.native.diagnostics);
+ assert.equal(session.state,'completed');
+ const projected={summary:{canonicalSha256:latest.summary.canonicalSha256,executionPassed:true,
+  native:latest.summary.native,observations:snapshotNativeObservations(session.data,requests)}};
+ const evaluated=(await evaluateObservables(a,requests,projected.summary)).results[0];
+ assert.equal(evaluated.status,'available');
+ assert.equal(evaluated.value.crossings.length,2);
+ assert.equal(JSON.stringify(evaluated.value).includes('STALE_OLD_RUN'),false);
+});
