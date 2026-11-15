@@ -124,6 +124,12 @@ export function createRayProvenanceTracker(doc,scene,idMap,requestedDetectorIds=
       const count=detectorCounts.get(detector.id);
       if(!Number.isInteger(count)||detectorsById?.[detector.id]?.crossings!==count)
         bad('PROVENANCE_UNKNOWN_OR_INCONSISTENT');
+      // An independent native Detector.power state can expose a missing
+      // callback recorder even when *both* software counters silently say 0.
+      // Zero signed power alone cannot prove zero crossings (cancellation).
+      const nativePower=expected.get(detector.id)?.instance?.power;
+      if(count===0&&Number.isFinite(nativePower)&&nativePower!==0)
+        bad('PROVENANCE_UNKNOWN_OR_INCONSISTENT');
     }
     if(Object.keys(detectorsById??{}).length!==detectors.length)
       bad('PROVENANCE_UNKNOWN_OR_INCONSISTENT');
