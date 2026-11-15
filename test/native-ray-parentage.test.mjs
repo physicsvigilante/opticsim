@@ -106,7 +106,8 @@ test('unsupported physical scene returns explicit unavailable, never removes ano
   const doc=fresnel();
   const second={...structuredClone(doc.physics.components.find(c=>c.id==='AirWater')),
     id:'Second',parameters:{...doc.physics.components.find(c=>c.id==='AirWater').parameters,
-      y:-200,negativeIndex:1,positiveIndex:1.5}};
+      y:-200,negativeIndex:1.5,positiveIndex:4/3,partialReflection:false}};
+  doc.physics.components.find(c=>c.id==='AirWater').parameters.partialReflection=false;
   doc.physics.components.push(second);
   // This is a legitimate two-interface ordered medium but OUTSIDE the new parentage scope.
   const report=run(doc,['LakeBottomDetector']);
