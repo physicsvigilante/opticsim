@@ -17,6 +17,16 @@ jobs:
           node-version: '24.19.0'
       - run: npm run setup
       - run: npm test
+      - name: Research only — native finite-Glass forward-hit shadow qualification, no production effects
+        run: node evaluation/finite-hit-forward-qualification-v1/shadow.mjs
+      - name: Retain source and native forward-hit qualification evidence on success or failure
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: finite-hit-forward-shadow-v1
+          path: test-artifacts/llm-authoring/finite-hit-forward-qualification-v1/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Verify requested native detector ray parentage using public problem workflow
         run: node scripts/native-ray-parentage-acceptance.mjs
       - name: Retain bounded source-parentage native evidence even on failures
