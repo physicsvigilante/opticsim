@@ -117,12 +117,12 @@ export async function evaluateObservables(doc,requests,execution){
     if(!Object.hasOwn(kinds,r.kind))return {...base,reason:'Requested quantity is not exposed by the current result contract.'};
     const spec=kinds[r.kind],component=doc.physics.components.find(c=>c.id===r.componentId);
     if(!component||!(Array.isArray(spec.type)?spec.type.includes(component.type):component.type===spec.type))return {...base,reason:'Requested component is missing or has the wrong physical type.'};
-    if(r.kind==='detector-ray-provenance'&&!provenanceScope(doc,r.componentId))
-      return {...base,reasonCode:'UNSUPPORTED_PROVENANCE_SCOPE',
-        reason:'Only v5 with exactly one planar interface, one or two explicit single-ray sources, one or two passive detectors, and no other optics supports this observation.'};
     if(!complete)return {...base,status:'suppressed',
       ...(r.kind==='detector-ray-provenance'?{reasonCode:!fresh?'STALE_PROVENANCE_EXECUTION':'NATIVE_PROVENANCE_INCOMPLETE'}:{}),
       reason:!fresh?'Execution evidence does not match the current scene hash.':'Current native run is incomplete, failed, or not yet available.'};
+    if(r.kind==='detector-ray-provenance'&&!provenanceScope(doc,r.componentId))
+      return {...base,reasonCode:'UNSUPPORTED_PROVENANCE_SCOPE',
+        reason:'Only v5 with exactly one planar interface, one or two explicit single-ray sources, one or two passive detectors, and no other optics supports this observation.'};
     if(r.kind==='ideal-image'){
       try{
         const result=conditionalImage(doc);
