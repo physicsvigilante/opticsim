@@ -19,6 +19,8 @@ jobs:
       - run: npm test
       - name: Research only — compare native critical-angle behavior across four existing refractive families
         run: node evaluation/cross-family-critical-native-v1/run.mjs
+      - name: Research only — compare captured finite-glass false short hits to exact rational binary64 geometry
+        run: node evaluation/cross-family-critical-native-v1/exact-check.mjs
       - name: Retain cross-family critical-angle raw evidence on success OR failure
         uses: actions/upload-artifact@v4
         if: always()
