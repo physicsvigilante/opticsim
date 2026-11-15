@@ -371,3 +371,36 @@ test('A -> B -> A scene-hash equality cannot publish delayed first-A native grap
  assert.equal(evaluated.value.crossings.length,2);
  assert.equal(JSON.stringify(evaluated.value).includes('STALE_OLD_RUN'),false);
 });
+
+
+test('A-01 missing both software hit counters cannot certify a zero-hit graph when native power changed',()=>{
+ const doc=dual(),baseline=run(doc),{scene,idMap}=core.loadDocument(doc);
+ const t=core.createRayProvenanceTracker(doc,scene,idMap,['Upper']);
+ const sources=core.observeSourceSet(doc,scene,idMap,{provenance:t});
+ core.observeInterfaceSet(doc,scene,idMap,{provenance:t});
+ // Fault injection: the selected and other detector *have installed handlers*
+ // that delegate their REAL native callbacks, but accidentally do not observe
+ // or count them. A matching pair of software zeros is not independent proof.
+ for(const c of doc.physics.components.filter(c=>c.type==='ray-detector')){
+  const native=scene.objs[idMap.get(c.id)],original=native.onRayIncident;
+  const handler=function(...args){return original.apply(this,args);};
+  native.onRayIncident=handler;t.register(c.id,native,'onRayIncident',handler);
+ }
+ assert.equal(t.assertInstalled(),true);
+ const sim=new core.Simulator(scene,null,null,null,null,null,false,doc.simulation.processedRayLimit);
+ let event=null;for(const type of ['simulationComplete','simulationStop'])sim.on(type,()=>event=type);
+ sim.updateSimulation();
+ assert.equal(event,'simulationComplete');
+ assert.equal(sim.processedRayCount,baseline.summary.native.processed);
+ assert.equal(sources.emitted,2);
+ const nativeUpper=scene.objs[idMap.get('Upper')];
+ assert.ok(Number.isFinite(nativeUpper.power)&&nativeUpper.power!==0,
+  'Actual pinned Detector updated independent native signed power');
+ const graph=t.project({event,errors:[],warnings:[],truncation:sim.totalTruncation,
+  undefinedBehavior:sim.totalUndefinedBehavior,emissionsById:sources.byId,
+  detectorsById:{Upper:{crossings:0,signedPower:nativeUpper.power},
+   Lower:{crossings:0,signedPower:scene.objs[idMap.get('Lower')].power}}});
+ assert.equal(graph.Upper.status,'unavailable');
+ assert.equal(graph.Upper.reasonCode,'PROVENANCE_UNKNOWN_OR_INCONSISTENT');
+ assert.equal(graph.Upper.value,null);
+});
