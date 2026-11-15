@@ -245,3 +245,51 @@ test('capabilities and no-request snapshots preserve all prior keys',()=>{
   assert.deepEqual(Object.keys(snap),NATIVE_OBSERVATION_KEYS);
   assert.equal(snap.detectorRayProvenanceById,undefined);
 });
+
+test('A-01 nonselected detector losing actual callback identity makes selected graph unavailable',()=>{
+  const doc=document([
+    source('S',-100,100,-45),face(false),detector('D',0,-100,400),
+    detector('Other',0,-200,400)
+  ]);
+  const {scene,idMap}=core.loadDocument(doc);
+  const ledger=createNativeRayParentage(doc,scene,idMap,['D']);
+  const real=ledger.detector.bind(ledger);
+  ledger.detector=(id,ray)=>{if(id!=='Other')real(id,ray);};
+  const src=core.observeSourceSet(doc,scene,idMap,{parentage:ledger});
+  const det=core.observeDetectorSet(doc,scene,idMap,{parentage:ledger});
+  const glass=core.observeInterfaceSet(doc,scene,idMap,{parentage:ledger});
+  const sim=new core.Simulator(scene,null,null,null,null,null,false,doc.simulation.processedRayLimit);
+  let diagnostics;
+  sim.on('simulationComplete',()=>{diagnostics=core.diagnostics(scene,sim,src,null,det,glass,null,
+    {nativeEvent:'simulationComplete',parentage:ledger});});
+  sim.updateSimulation();
+  assert.ok(diagnostics,'Actual pinned PhyDemo must complete');
+  assert.ok(diagnostics.detectorsById.D.crossings>0);
+  assert.ok(diagnostics.detectorsById.Other.crossings>0);
+  assert.deepEqual(diagnostics.detectorRayProvenanceById.D,
+    {status:'unavailable',reasonCode:'PROVENANCE_UNKNOWN_OR_INCONSISTENT',value:null});
+  assert.equal(sim.totalTruncation,0);
+});
+
+test('run revision A→B→A never adopts delayed earlier A provenance despite equal scene hashes',()=>{
+  const docA=fresnel(),docB=fresnel();
+  docB.physics.components.find(c=>c.id==='SunRay').parameters.x-=10;
+  const callbacks=[];
+  const session=new core.Session(()=>({cancel(){},run(notify){callbacks.push(notify);}}),
+    ()=>{},()=>({kind:'unavailable'}));
+  assert.equal(session.apply(docA),true);
+  assert.equal(session.apply(docB),true);
+  assert.equal(session.apply(docA),true);
+  const fake=(token)=>({errors:[],warnings:[],truncation:0,undefinedBehavior:0,
+    detectorRayProvenanceById:{ReflectedDetector:{status:'complete',
+      value:{nodes:[{token,sourceId:'SunRay',origin:'native-emission',parentToken:null,
+        spawnComponentId:null}],crossings:[{rayToken:token}]}}}});
+  callbacks[0]('simulationComplete',fake('old-A'));
+  assert.equal(session.state,'running');assert.equal(session.data,null);
+  callbacks[1]('simulationComplete',fake('B'));
+  assert.equal(session.state,'running');assert.equal(session.data,null);
+  callbacks[2]('simulationComplete',fake('fresh-A'));
+  assert.equal(session.state,'completed');
+  assert.equal(session.data.detectorRayProvenanceById.ReflectedDetector.value.crossings[0].rayToken,'fresh-A');
+  assert.equal(session.revision,3);
+});
