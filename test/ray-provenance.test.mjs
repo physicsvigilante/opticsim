@@ -271,3 +271,77 @@ test('native high-to-low Snell and TIR keep distinct spawned-child versus same-o
   }
  }
 });
+
+
+test('native hit positions and observed source parentage remain two separate opt-in measurements',async()=>{
+ const doc=dual(),requests=[request('Upper'),
+  {id:'positions',kind:'detector-hit-events',componentId:'Upper'},
+  {id:'crossings',kind:'detector-crossings',componentId:'Upper'}];
+ const combined=run(doc,requests),legacy=run(doc,requests.slice(1));
+ const [ancestry,positions,crossings]=await read(doc,combined,requests);
+ assert.equal(ancestry.status,'available');
+ assert.equal(ancestry.value.crossings.length,2);
+ assert.equal(positions.status,'available');
+ assert.equal(positions.value.length,2);
+ assert.equal(crossings.value,2);
+ assert.deepEqual(combined.summary.observations.detectorHitEventsById,
+  legacy.summary.observations.detectorHitEventsById);
+ assert.deepEqual(combined.summary.observations.detectorsById,legacy.summary.observations.detectorsById);
+ assert.ok(positions.value.every(p=>!('rayToken'in p)&&!('sourceId'in p)),
+  'No synthetic pairing from array position or rayIndex');
+});
+
+test('A-01 actual native detector keeps tracing after an installed provenance handler is removed',()=>{
+ const doc=dual(),baseline=run(doc);
+ const {scene,idMap}=core.loadDocument(doc);
+ const upper=scene.objs[idMap.get('Upper')],originalNativeIncident=upper.onRayIncident;
+ const t=core.createRayProvenanceTracker(doc,scene,idMap,['Lower']);
+ const source=core.observeSourceSet(doc,scene,idMap,{provenance:t});
+ const detectors=core.observeDetectorSet(doc,scene,idMap,{provenance:t});
+ core.observeInterfaceSet(doc,scene,idMap,{provenance:t});
+ assert.equal(t.assertInstalled(),true);
+ // Fault injection: native PhyDemo receives the reflected crossings, but the
+ // installed upper detector observation handler is silently bypassed.
+ upper.onRayIncident=originalNativeIncident;
+ const sim=new core.Simulator(scene,null,null,null,null,null,false,doc.simulation.processedRayLimit);
+ let event=null;for(const e of ['simulationComplete','simulationStop'])sim.on(e,()=>event=e);
+ sim.updateSimulation();
+ assert.equal(event,'simulationComplete');
+ assert.equal(sim.processedRayCount,baseline.summary.native.processed);
+ assert.equal(baseline.summary.observations.detectorsById.Upper.crossings,2);
+ assert.equal(detectors.byId.Upper.crossings,0,
+  'The meter itself cannot know native callbacks happened after its handler was removed');
+ assert.equal(Number.isFinite(upper.power),true);
+ const projected=t.project({event,errors:[],warnings:[],
+  truncation:sim.totalTruncation,undefinedBehavior:sim.totalUndefinedBehavior,
+  emissionsById:source.byId,detectorsById:detectors.byId});
+ assert.equal(projected.Lower.status,'unavailable',
+  'Even a separately selected detector must withhold on an uninstalled native observer');
+ assert.equal(projected.Lower.reasonCode,'PROVENANCE_UNKNOWN_OR_INCONSISTENT');
+ assert.equal(projected.Lower.value,null);
+});
+
+test('injected per-detector overflow is isolated while global identity remains complete',()=>{
+ const doc=dual(),{scene,idMap}=core.loadDocument(doc);
+ const t=createRayProvenanceTracker(doc,scene,idMap,['Upper','Lower']);
+ for(const c of doc.physics.components){
+  const obj=scene.objs[idMap.get(c.id)],method=c.type==='point-source'?'onSimulationStart':'onRayIncident';
+  t.register(c.id,obj,method,obj[method]);
+ }
+ assert.equal(t.assertInstalled(),true);
+ const ray=i=>({p1:{x:i,y:0},p2:{x:i+1,y:1}});
+ const a=ray(0),b=ray(2);
+ t.sourceStart('S1',{newRays:[a]});t.sourceStart('S2',{newRays:[b]});
+ for(let i=0;i<33;i++)t.detectorIncident('Upper',a,true);
+ t.detectorIncident('Lower',b,true);
+ const data=t.project({event:'simulationComplete',errors:[],warnings:[],truncation:0,undefinedBehavior:0,
+  emissionsById:{S1:{emitted:1},S2:{emitted:1}},
+  detectorsById:{Upper:{crossings:33},Lower:{crossings:1}}});
+ assert.equal(data.Upper.status,'unavailable');
+ assert.equal(data.Upper.reasonCode,'PROVENANCE_LIMIT_EXCEEDED');
+ assert.equal(data.Upper.value,null);
+ assert.equal(data.Lower.status,'complete');
+ assert.equal(data.Lower.value.crossings.length,1);
+ assert.equal(data.Lower.value.nodes.length,1);
+ assert.equal(data.Lower.value.nodes[0].sourceId,'S2');
+});
