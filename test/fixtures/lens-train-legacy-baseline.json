@@ -1,0 +1,3921 @@
+{
+  "baselineCommit": "69f5b96ce954d4d37e286a3c8fdc60b1f23969b9",
+  "baselineAnalysisGitBlob": "f0fe74f899b5b151c088a12e023f600446249749",
+  "purpose": "Frozen pre-extraction predictions; regression preservation, not independent physics evidence",
+  "records": [
+    {
+      "id": "n1-0",
+      "objectX": -40,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": -35
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -18.666666666666668,
+        "y": -3.7333333333333334,
+        "distance": -18.666666666666668,
+        "magnification": 0.4666666666666667
+      }
+    },
+    {
+      "id": "n1-1",
+      "objectX": -50,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 44
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 158.89473684210523,
+        "y": 13.89473684210526,
+        "distance": 145.89473684210523,
+        "magnification": -2.31578947368421
+      }
+    },
+    {
+      "id": "n1-2",
+      "objectX": -60,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 63
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 261.5652173913043,
+        "y": 10.956521739130434,
+        "distance": 235.56521739130432,
+        "magnification": -2.7391304347826084
+      }
+    },
+    {
+      "id": "n1-3",
+      "objectX": -70,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": -56
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 2.0060606060606005,
+        "y": -0.6787878787878788,
+        "distance": -36.9939393939394,
+        "magnification": 0.3393939393939394
+      }
+    },
+    {
+      "id": "n1-4",
+      "objectX": -80,
+      "objectHeight": 0,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 101
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 482.0645161290322,
+        "y": 0,
+        "distance": 430.0645161290322,
+        "magnification": -3.2580645161290316
+      }
+    },
+    {
+      "id": "n1-5",
+      "objectX": -155,
+      "objectHeight": 2,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 120
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 531.4285714285713,
+        "y": -6.857142857142855,
+        "distance": 531.4285714285713,
+        "magnification": -3.4285714285714275
+      }
+    },
+    {
+      "id": "n1-6",
+      "objectX": -165,
+      "objectHeight": 4,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": -77
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -40.74901960784314,
+        "y": 1.2078431372549019,
+        "distance": -53.74901960784314,
+        "magnification": 0.30196078431372547
+      }
+    },
+    {
+      "id": "n1-7",
+      "objectX": -175,
+      "objectHeight": 6,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 158
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 764.558139534884,
+        "y": -22.046511627906984,
+        "distance": 738.558139534884,
+        "magnification": -3.674418604651164
+      }
+    },
+    {
+      "id": "n1-8",
+      "objectX": -185,
+      "objectHeight": 8,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 177
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 882.574468085106,
+        "y": -30.127659574468073,
+        "distance": 843.574468085106,
+        "magnification": -3.765957446808509
+      }
+    },
+    {
+      "id": "n1-9",
+      "objectX": -195,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": -98
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -18.162318840579715,
+        "y": -2.272463768115942,
+        "distance": -70.16231884057972,
+        "magnification": 0.28405797101449276
+      }
+    },
+    {
+      "id": "n1-10",
+      "objectX": -270,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 215
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 1055.4545454545455,
+        "y": 23.454545454545453,
+        "distance": 1055.4545454545455,
+        "magnification": -3.9090909090909087
+      }
+    },
+    {
+      "id": "n1-11",
+      "objectX": -30,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 234
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -39.68062827225131,
+        "y": -4.900523560209424,
+        "distance": -52.68062827225131,
+        "magnification": 1.225130890052356
+      }
+    },
+    {
+      "id": "n1-12",
+      "objectX": -40,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": -119
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -16.454054054054055,
+        "y": -1.2864864864864864,
+        "distance": -42.454054054054055,
+        "magnification": 0.6432432432432432
+      }
+    },
+    {
+      "id": "n1-13",
+      "objectX": -50,
+      "objectHeight": 0,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 272
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -93.28415300546447,
+        "y": 0,
+        "distance": -132.28415300546447,
+        "magnification": 1.4863387978142075
+      }
+    },
+    {
+      "id": "n1-14",
+      "objectX": -60,
+      "objectHeight": 2,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 41
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 116.67605633802816,
+        "y": -1.1549295774647885,
+        "distance": 64.67605633802816,
+        "magnification": -0.5774647887323943
+      }
+    },
+    {
+      "id": "n1-15",
+      "objectX": -135,
+      "objectHeight": 4,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": -140
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -68.72727272727272,
+        "y": 2.036363636363636,
+        "distance": -68.72727272727272,
+        "magnification": 0.509090909090909
+      }
+    },
+    {
+      "id": "n1-16",
+      "objectX": -145,
+      "objectHeight": 6,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 79
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 171,
+        "y": -6,
+        "distance": 158,
+        "magnification": -1
+      }
+    },
+    {
+      "id": "n1-17",
+      "objectX": -155,
+      "objectHeight": 8,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 98
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 239.710843373494,
+        "y": -9.44578313253012,
+        "distance": 213.710843373494,
+        "magnification": -1.180722891566265
+      }
+    },
+    {
+      "id": "n1-18",
+      "objectX": -165,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": -161
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -50.983561643835614,
+        "y": -3.528767123287671,
+        "distance": -89.98356164383561,
+        "magnification": 0.44109589041095887
+      }
+    },
+    {
+      "id": "n1-19",
+      "objectX": -175,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 136
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 391.2527472527472,
+        "y": 8.967032967032965,
+        "distance": 339.2527472527472,
+        "magnification": -1.4945054945054943
+      }
+    },
+    {
+      "id": "n1-20",
+      "objectX": -250,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 155
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 407.8947368421053,
+        "y": 6.526315789473685,
+        "distance": 407.8947368421053,
+        "magnification": -1.6315789473684212
+      }
+    },
+    {
+      "id": "n1-21",
+      "objectX": -260,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": -182
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -96.2,
+        "y": -0.8,
+        "distance": -109.2,
+        "magnification": 0.4
+      }
+    },
+    {
+      "id": "n1-22",
+      "objectX": -20,
+      "objectHeight": 0,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 193
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -34.39455782312925,
+        "y": 0,
+        "distance": -60.39455782312925,
+        "magnification": 1.3129251700680271
+      }
+    },
+    {
+      "id": "n1-23",
+      "objectX": -30,
+      "objectHeight": 2,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 212
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -63.29370629370629,
+        "y": 2.965034965034965,
+        "distance": -102.2937062937063,
+        "magnification": 1.4825174825174825
+      }
+    },
+    {
+      "id": "n1-24",
+      "objectX": -40,
+      "objectHeight": 4,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": -203
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -11.308474576271195,
+        "y": 2.752542372881356,
+        "distance": -63.308474576271195,
+        "magnification": 0.688135593220339
+      }
+    },
+    {
+      "id": "n1-25",
+      "objectX": -115,
+      "objectHeight": 6,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 250
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -212.96296296296296,
+        "y": 11.11111111111111,
+        "distance": -212.96296296296296,
+        "magnification": 1.8518518518518516
+      }
+    },
+    {
+      "id": "n1-26",
+      "objectX": -125,
+      "objectHeight": 8,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 269
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -270.37404580152673,
+        "y": 16.427480916030532,
+        "distance": -283.37404580152673,
+        "magnification": 2.0534351145038165
+      }
+    },
+    {
+      "id": "n1-27",
+      "objectX": -135,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": -44
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -8.556097560975608,
+        "y": -1.7170731707317073,
+        "distance": -34.55609756097561,
+        "magnification": 0.2146341463414634
+      }
+    },
+    {
+      "id": "n1-28",
+      "objectX": -145,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 57
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 121.58267716535434,
+        "y": 2.6929133858267718,
+        "distance": 82.58267716535434,
+        "magnification": -0.4488188976377953
+      }
+    },
+    {
+      "id": "n1-29",
+      "objectX": -155,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 76
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 172.0916030534351,
+        "y": 2.3206106870229006,
+        "distance": 120.09160305343511,
+        "magnification": -0.5801526717557252
+      }
+    },
+    {
+      "id": "n1-30",
+      "objectX": -230,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": -65
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -50.67796610169491,
+        "y": -0.4406779661016949,
+        "distance": -50.67796610169491,
+        "magnification": 0.22033898305084745
+      }
+    },
+    {
+      "id": "n1-31",
+      "objectX": -240,
+      "objectHeight": 0,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 114
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 220.49640287769785,
+        "y": 0,
+        "distance": 207.49640287769785,
+        "magnification": -0.8201438848920863
+      }
+    },
+    {
+      "id": "n1-32",
+      "objectX": -250,
+      "objectHeight": 2,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 133
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 282.6993006993007,
+        "y": -1.86013986013986,
+        "distance": 256.6993006993007,
+        "magnification": -0.93006993006993
+      }
+    },
+    {
+      "id": "n1-33",
+      "objectX": -10,
+      "objectHeight": 4,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": -86
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 7.785185185185188,
+        "y": 2.548148148148148,
+        "distance": -31.21481481481481,
+        "magnification": 0.637037037037037
+      }
+    },
+    {
+      "id": "n1-34",
+      "objectX": -20,
+      "objectHeight": 6,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 171
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -72.36363636363636,
+        "y": 10.363636363636363,
+        "distance": -124.36363636363636,
+        "magnification": 1.7272727272727273
+      }
+    },
+    {
+      "id": "n1-35",
+      "objectX": -95,
+      "objectHeight": 8,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 190
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -190,
+        "y": 16,
+        "distance": -190,
+        "magnification": 2
+      }
+    },
+    {
+      "id": "n1-36",
+      "objectX": -105,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": -107
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -43.11555555555556,
+        "y": -3.8044444444444445,
+        "distance": -56.11555555555556,
+        "magnification": 0.47555555555555556
+      }
+    },
+    {
+      "id": "n1-37",
+      "objectX": -115,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 228
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -343.5172413793104,
+        "y": -15.724137931034484,
+        "distance": -369.5172413793104,
+        "magnification": 2.620689655172414
+      }
+    },
+    {
+      "id": "n1-38",
+      "objectX": -125,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 247
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -449.0481927710844,
+        "y": -11.903614457831328,
+        "distance": -488.0481927710844,
+        "magnification": 2.975903614457832
+      }
+    },
+    {
+      "id": "n1-39",
+      "objectX": -135,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": -128
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -23.987301587301587,
+        "y": -0.8126984126984127,
+        "distance": -75.98730158730159,
+        "magnification": 0.40634920634920635
+      }
+    },
+    {
+      "id": "n2-0",
+      "objectX": -40,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": -35
+        },
+        {
+          "x": 66,
+          "focalLength": 54
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 215.08695652173915,
+        "y": 6.573913043478262,
+        "distance": 149.08695652173915,
+        "magnification": -0.8217391304347827
+      }
+    },
+    {
+      "id": "n2-1",
+      "objectX": -50,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 44
+        },
+        {
+          "x": 96,
+          "focalLength": 73
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 129.7858249419055,
+        "y": 7.463981409759875,
+        "distance": 33.78582494190549,
+        "magnification": -1.243996901626646
+      }
+    },
+    {
+      "id": "n2-2",
+      "objectX": -60,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 63
+        },
+        {
+          "x": 126,
+          "focalLength": -60
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 18.35903337169158,
+        "y": -8.699654775604145,
+        "distance": -107.64096662830842,
+        "magnification": 2.1749136939010363
+      }
+    },
+    {
+      "id": "n2-3",
+      "objectX": -70,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": -56
+        },
+        {
+          "x": 156,
+          "focalLength": 111
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 553.5752748801805,
+        "y": 1.752466873414153,
+        "distance": 397.5752748801805,
+        "magnification": -0.8762334367070765
+      }
+    },
+    {
+      "id": "n2-4",
+      "objectX": -80,
+      "objectHeight": 0,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 101
+        },
+        {
+          "x": 186,
+          "focalLength": 130
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 276.3346456692913,
+        "y": 0,
+        "distance": 90.33464566929133,
+        "magnification": -0.9940944881889764
+      }
+    },
+    {
+      "id": "n2-5",
+      "objectX": -155,
+      "objectHeight": 2,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 120
+        },
+        {
+          "x": 151,
+          "focalLength": -81
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 48.08826335877862,
+        "y": 1.854961832061069,
+        "distance": -102.91173664122138,
+        "magnification": 0.9274809160305345
+      }
+    },
+    {
+      "id": "n2-6",
+      "objectX": -165,
+      "objectHeight": 4,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": -77
+        },
+        {
+          "x": 61,
+          "focalLength": 168
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -197.0163371611223,
+        "y": 3.062862554753167,
+        "distance": -258.0163371611223,
+        "magnification": 0.7657156386882917
+      }
+    },
+    {
+      "id": "n2-7",
+      "objectX": -175,
+      "objectHeight": 6,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 158
+        },
+        {
+          "x": 91,
+          "focalLength": 187
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 237.36474435196197,
+        "y": -4.790725326991677,
+        "distance": 146.36474435196197,
+        "magnification": -0.7984542211652795
+      }
+    },
+    {
+      "id": "n2-8",
+      "objectX": -185,
+      "objectHeight": 8,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 177
+        },
+        {
+          "x": 121,
+          "focalLength": -102
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 3.226193548387087,
+        "y": 4.659096774193549,
+        "distance": -117.77380645161291,
+        "magnification": 0.5823870967741936
+      }
+    },
+    {
+      "id": "n2-9",
+      "objectX": -195,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": -98
+        },
+        {
+          "x": 151,
+          "focalLength": 225
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -530.6458160299004,
+        "y": -9.156976744186048,
+        "distance": -681.6458160299004,
+        "magnification": 1.144622093023256
+      }
+    },
+    {
+      "id": "n2-10",
+      "objectX": -270,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 215
+        },
+        {
+          "x": 116,
+          "focalLength": 244
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 309.6930404055922,
+        "y": 4.835765862651714,
+        "distance": 193.69304040559226,
+        "magnification": -0.8059609771086189
+      }
+    },
+    {
+      "id": "n2-11",
+      "objectX": -30,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 234
+        },
+        {
+          "x": 146,
+          "focalLength": -123
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 72.01182197496522,
+        "y": -1.9527121001390826,
+        "distance": -73.98817802503478,
+        "magnification": 0.48817802503477065
+      }
+    },
+    {
+      "id": "n2-12",
+      "objectX": -40,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": -119
+        },
+        {
+          "x": 176,
+          "focalLength": 32
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 214.38188923325697,
+        "y": 0.2565691955262094,
+        "distance": 38.38188923325697,
+        "magnification": -0.1282845977631047
+      }
+    },
+    {
+      "id": "n2-13",
+      "objectX": -50,
+      "objectHeight": 0,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 272
+        },
+        {
+          "x": 86,
+          "focalLength": 51
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 157.27530243653092,
+        "y": 0,
+        "distance": 71.27530243653092,
+        "magnification": -0.590901346055546
+      }
+    },
+    {
+      "id": "n2-14",
+      "objectX": -60,
+      "objectHeight": 2,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 41
+        },
+        {
+          "x": 116,
+          "focalLength": -144
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 116.67924528301886,
+        "y": -1.160377358490566,
+        "distance": 0.6792452830188602,
+        "magnification": -0.580188679245283
+      }
+    },
+    {
+      "id": "n2-15",
+      "objectX": -135,
+      "objectHeight": 4,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": -140
+        },
+        {
+          "x": 81,
+          "focalLength": 89
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 300.43562874251495,
+        "y": -2.9844311377245507,
+        "distance": 219.43562874251498,
+        "magnification": -0.7461077844311377
+      }
+    },
+    {
+      "id": "n2-16",
+      "objectX": -145,
+      "objectHeight": 6,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 79
+        },
+        {
+          "x": 111,
+          "focalLength": 108
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 149.57142857142856,
+        "y": -3.8571428571428568,
+        "distance": 38.57142857142857,
+        "magnification": -0.6428571428571428
+      }
+    },
+    {
+      "id": "n2-17",
+      "objectX": -155,
+      "objectHeight": 8,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 98
+        },
+        {
+          "x": 141,
+          "focalLength": -165
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 386.70065430752464,
+        "y": -23.511450381679396,
+        "distance": 245.70065430752464,
+        "magnification": -2.9389312977099245
+      }
+    },
+    {
+      "id": "n2-18",
+      "objectX": -165,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": -161
+        },
+        {
+          "x": 171,
+          "focalLength": 146
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 597.5343621547559,
+        "y": 6.780413932357394,
+        "distance": 426.53436215475585,
+        "magnification": -0.8475517415446743
+      }
+    },
+    {
+      "id": "n2-19",
+      "objectX": -175,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 136
+        },
+        {
+          "x": 201,
+          "focalLength": 165
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 289.364420935412,
+        "y": 4.164810690423162,
+        "distance": 88.36442093541203,
+        "magnification": -0.694135115070527
+      }
+    },
+    {
+      "id": "n2-20",
+      "objectX": -250,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 155
+        },
+        {
+          "x": 46,
+          "focalLength": -186
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -336.685816876122,
+        "y": -6.901256732495509,
+        "distance": -382.685816876122,
+        "magnification": 1.7253141831238772
+      }
+    },
+    {
+      "id": "n2-21",
+      "objectX": -260,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": -182
+        },
+        {
+          "x": 76,
+          "focalLength": 203
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -1058.9545454545453,
+        "y": -5.272727272727272,
+        "distance": -1134.9545454545453,
+        "magnification": 2.636363636363636
+      }
+    },
+    {
+      "id": "n2-22",
+      "objectX": -20,
+      "objectHeight": 0,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 193
+        },
+        {
+          "x": 106,
+          "focalLength": 222
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -275.9303101033678,
+        "y": 0,
+        "distance": -381.9303101033678,
+        "magnification": 3.5716905635211735
+      }
+    },
+    {
+      "id": "n2-23",
+      "objectX": -30,
+      "objectHeight": 2,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 212
+        },
+        {
+          "x": 136,
+          "focalLength": -207
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 34.46311531841653,
+        "y": 1.5106368330464715,
+        "distance": -101.53688468158347,
+        "magnification": 0.7553184165232357
+      }
+    },
+    {
+      "id": "n2-24",
+      "objectX": -40,
+      "objectHeight": 4,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": -203
+        },
+        {
+          "x": 166,
+          "focalLength": 260
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -391.4961055997379,
+        "y": 8.654587193572192,
+        "distance": -557.4961055997379,
+        "magnification": 2.163646798393048
+      }
+    },
+    {
+      "id": "n2-25",
+      "objectX": -115,
+      "objectHeight": 6,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 250
+        },
+        {
+          "x": 131,
+          "focalLength": 29
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 162.67015522107243,
+        "y": -1.0230479774223893,
+        "distance": 31.670155221072434,
+        "magnification": -0.1705079962370649
+      }
+    },
+    {
+      "id": "n2-26",
+      "objectX": -125,
+      "objectHeight": 8,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 269
+        },
+        {
+          "x": 161,
+          "focalLength": -48
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 117.80626771553236,
+        "y": 1.6448931494633585,
+        "distance": -43.19373228446765,
+        "magnification": 0.20561164368291981
+      }
+    },
+    {
+      "id": "n2-27",
+      "objectX": -135,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": -44
+        },
+        {
+          "x": 71,
+          "focalLength": 67
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 495.51554001554024,
+        "y": 9.162393162393167,
+        "distance": 424.51554001554024,
+        "magnification": -1.145299145299146
+      }
+    },
+    {
+      "id": "n2-28",
+      "objectX": -145,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 57
+        },
+        {
+          "x": 101,
+          "focalLength": 86
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 117.60786052009458,
+        "y": 2.172872340425532,
+        "distance": 16.607860520094572,
+        "magnification": -0.362145390070922
+      }
+    },
+    {
+      "id": "n2-29",
+      "objectX": -155,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 76
+        },
+        {
+          "x": 131,
+          "focalLength": -69
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 232.5938183807439,
+        "y": 5.737417943107218,
+        "distance": 101.5938183807439,
+        "magnification": -1.4343544857768045
+      }
+    },
+    {
+      "id": "n2-30",
+      "objectX": -230,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": -65
+        },
+        {
+          "x": 96,
+          "focalLength": 124
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 898.0149476831098,
+        "y": 2.409566517189838,
+        "distance": 802.0149476831098,
+        "magnification": -1.204783258594919
+      }
+    },
+    {
+      "id": "n2-31",
+      "objectX": -240,
+      "objectHeight": 0,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 114
+        },
+        {
+          "x": 126,
+          "focalLength": 143
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 182.89764328123107,
+        "y": 0,
+        "distance": 56.89764328123106,
+        "magnification": -0.4938204289349328
+      }
+    },
+    {
+      "id": "n2-32",
+      "objectX": -250,
+      "objectHeight": 2,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 133
+        },
+        {
+          "x": 156,
+          "focalLength": -90
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -154.7126524390245,
+        "y": 4.561737804878051,
+        "distance": -310.7126524390245,
+        "magnification": 2.2808689024390256
+      }
+    },
+    {
+      "id": "n2-33",
+      "objectX": -10,
+      "objectHeight": 4,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": -86
+        },
+        {
+          "x": 186,
+          "focalLength": 181
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -11395.593085106506,
+        "y": 165.5957446808528,
+        "distance": -11581.593085106506,
+        "magnification": 41.3989361702132
+      }
+    },
+    {
+      "id": "n2-34",
+      "objectX": -20,
+      "objectHeight": 6,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 171
+        },
+        {
+          "x": 96,
+          "focalLength": 200
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -968.3678160919535,
+        "y": 65.51724137931032,
+        "distance": -1064.3678160919535,
+        "magnification": 10.919540229885053
+      }
+    },
+    {
+      "id": "n2-35",
+      "objectX": -95,
+      "objectHeight": 8,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 190
+        },
+        {
+          "x": 61,
+          "focalLength": -111
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -15.96408839779005,
+        "y": 4.906077348066298,
+        "distance": -76.96408839779005,
+        "magnification": 0.6132596685082873
+      }
+    },
+    {
+      "id": "n2-36",
+      "objectX": -105,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": -107
+        },
+        {
+          "x": 91,
+          "focalLength": 238
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -216.25969025412854,
+        "y": -8.716009241037051,
+        "distance": -307.25969025412854,
+        "magnification": 1.0895011551296314
+      }
+    },
+    {
+      "id": "n2-37",
+      "objectX": -115,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 228
+        },
+        {
+          "x": 121,
+          "focalLength": 257
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 696.2819873712197,
+        "y": 19.473579262213356,
+        "distance": 575.2819873712197,
+        "magnification": -3.2455965437022263
+      }
+    },
+    {
+      "id": "n2-38",
+      "objectX": -125,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 247
+        },
+        {
+          "x": 151,
+          "focalLength": -132
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 42.8017116524029,
+        "y": -2.14641211323239,
+        "distance": -108.1982883475971,
+        "magnification": 0.5366030283080975
+      }
+    },
+    {
+      "id": "n2-39",
+      "objectX": -135,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": -128
+        },
+        {
+          "x": 181,
+          "focalLength": 45
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 238.65725454401144,
+        "y": 0.22858957060084134,
+        "distance": 57.65725454401143,
+        "magnification": -0.11429478530042067
+      }
+    },
+    {
+      "id": "n3-0",
+      "objectX": -40,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": -35
+        },
+        {
+          "x": 66,
+          "focalLength": 54
+        },
+        {
+          "x": 163,
+          "focalLength": 83
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 195.00321853878341,
+        "y": 4.0391374316060515,
+        "distance": 32.0032185387834,
+        "magnification": -0.5048921789507564
+      }
+    },
+    {
+      "id": "n3-1",
+      "objectX": -50,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 44
+        },
+        {
+          "x": 96,
+          "focalLength": 73
+        },
+        {
+          "x": 210,
+          "focalLength": -64
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 174.40220108980265,
+        "y": 3.3123984520398206,
+        "distance": -35.59779891019736,
+        "magnification": -0.5520664086733035
+      }
+    },
+    {
+      "id": "n3-2",
+      "objectX": -60,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 63
+        },
+        {
+          "x": 126,
+          "focalLength": -60
+        },
+        {
+          "x": 257,
+          "focalLength": 121
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 502.45494473246595,
+        "y": 8.948058299911965,
+        "distance": 245.45494473246598,
+        "magnification": -2.2370145749779913
+      }
+    },
+    {
+      "id": "n3-3",
+      "objectX": -70,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": -56
+        },
+        {
+          "x": 156,
+          "focalLength": 111
+        },
+        {
+          "x": 304,
+          "focalLength": 140
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 393.6887988950832,
+        "y": 0.6297765235574586,
+        "distance": 89.6887988950832,
+        "magnification": -0.3148882617787293
+      }
+    },
+    {
+      "id": "n3-4",
+      "objectX": -80,
+      "objectHeight": 0,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 101
+        },
+        {
+          "x": 186,
+          "focalLength": 130
+        },
+        {
+          "x": 231,
+          "focalLength": -85
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 328.1488833746898,
+        "y": 0,
+        "distance": 97.14888337468979,
+        "magnification": -2.1302729528535975
+      }
+    },
+    {
+      "id": "n3-5",
+      "objectX": -155,
+      "objectHeight": 2,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 120
+        },
+        {
+          "x": 151,
+          "focalLength": -81
+        },
+        {
+          "x": 213,
+          "focalLength": 178
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -2029.7948091714366,
+        "y": 25.22742682171109,
+        "distance": -2242.7948091714366,
+        "magnification": 12.613713410855546
+      }
+    },
+    {
+      "id": "n3-6",
+      "objectX": -165,
+      "objectHeight": 4,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": -77
+        },
+        {
+          "x": 61,
+          "focalLength": 168
+        },
+        {
+          "x": 140,
+          "focalLength": 197
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 614.1747982190175,
+        "y": -4.309382287240068,
+        "distance": 474.17479821901753,
+        "magnification": -1.077345571810017
+      }
+    },
+    {
+      "id": "n3-7",
+      "objectX": -175,
+      "objectHeight": 6,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 158
+        },
+        {
+          "x": 91,
+          "focalLength": 187
+        },
+        {
+          "x": 187,
+          "focalLength": -106
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 282.95827032918896,
+        "y": -9.127609440202617,
+        "distance": 95.95827032918898,
+        "magnification": -1.5212682400337696
+      }
+    },
+    {
+      "id": "n3-8",
+      "objectX": -185,
+      "objectHeight": 8,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 177
+        },
+        {
+          "x": 121,
+          "focalLength": -102
+        },
+        {
+          "x": 234,
+          "focalLength": 235
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -12598.314444478381,
+        "y": 259.07184074741275,
+        "distance": -12832.314444478381,
+        "magnification": 32.383980093426594
+      }
+    },
+    {
+      "id": "n3-9",
+      "objectX": -195,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": -98
+        },
+        {
+          "x": 151,
+          "focalLength": 225
+        },
+        {
+          "x": 281,
+          "focalLength": 254
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 650.6935067841355,
+        "y": 4.170876972738813,
+        "distance": 369.6935067841354,
+        "magnification": -0.5213596215923516
+      }
+    },
+    {
+      "id": "n3-10",
+      "objectX": -270,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 215
+        },
+        {
+          "x": 116,
+          "focalLength": 244
+        },
+        {
+          "x": 263,
+          "focalLength": -127
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 336.8418707601422,
+        "y": 7.64743513711026,
+        "distance": 73.8418707601422,
+        "magnification": -1.27457252285171
+      }
+    },
+    {
+      "id": "n3-11",
+      "objectX": -30,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 234
+        },
+        {
+          "x": 146,
+          "focalLength": -123
+        },
+        {
+          "x": 190,
+          "focalLength": 42
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 255.21413732829387,
+        "y": 1.0792982584583286,
+        "distance": 65.21413732829389,
+        "magnification": -0.26982456461458215
+      }
+    },
+    {
+      "id": "n3-12",
+      "objectX": -40,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": -119
+        },
+        {
+          "x": 176,
+          "focalLength": 32
+        },
+        {
+          "x": 237,
+          "focalLength": 61
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 201.05323488933828,
+        "y": 0.4077631726772273,
+        "distance": -35.94676511066173,
+        "magnification": -0.20388158633861364
+      }
+    },
+    {
+      "id": "n3-13",
+      "objectX": -50,
+      "objectHeight": 0,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 272
+        },
+        {
+          "x": 86,
+          "focalLength": 51
+        },
+        {
+          "x": 164,
+          "focalLength": -148
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 157.5675735350191,
+        "y": 0,
+        "distance": -6.432426464980895,
+        "magnification": -0.5652193902679749
+      }
+    },
+    {
+      "id": "n3-14",
+      "objectX": -60,
+      "objectHeight": 2,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 41
+        },
+        {
+          "x": 116,
+          "focalLength": -144
+        },
+        {
+          "x": 211,
+          "focalLength": 99
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -1784.5685483871016,
+        "y": -24.550403225806505,
+        "distance": -1995.5685483871016,
+        "magnification": -12.275201612903253
+      }
+    },
+    {
+      "id": "n3-15",
+      "objectX": -135,
+      "objectHeight": 4,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": -140
+        },
+        {
+          "x": 81,
+          "focalLength": 89
+        },
+        {
+          "x": 193,
+          "focalLength": 118
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 249.23514021422264,
+        "y": -1.5621438200158042,
+        "distance": 56.23514021422263,
+        "magnification": -0.39053595500395105
+      }
+    },
+    {
+      "id": "n3-16",
+      "objectX": -145,
+      "objectHeight": 6,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 79
+        },
+        {
+          "x": 111,
+          "focalLength": 108
+        },
+        {
+          "x": 240,
+          "focalLength": -169
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 181.09196035242292,
+        "y": -2.5126651982378854,
+        "distance": -58.908039647577084,
+        "magnification": -0.41877753303964754
+      }
+    },
+    {
+      "id": "n3-17",
+      "objectX": -155,
+      "objectHeight": 8,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 98
+        },
+        {
+          "x": 141,
+          "focalLength": -165
+        },
+        {
+          "x": 287,
+          "focalLength": 156
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 347.82621147018375,
+        "y": -14.344062863174505,
+        "distance": 60.82621147018374,
+        "magnification": -1.7930078578968132
+      }
+    },
+    {
+      "id": "n3-18",
+      "objectX": -165,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": -161
+        },
+        {
+          "x": 171,
+          "focalLength": 146
+        },
+        {
+          "x": 214,
+          "focalLength": 175
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 334.16899572328447,
+        "y": 2.1244394589885136,
+        "distance": 120.16899572328447,
+        "magnification": -0.2655549323735642
+      }
+    },
+    {
+      "id": "n3-19",
+      "objectX": -175,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 136
+        },
+        {
+          "x": 201,
+          "focalLength": 165
+        },
+        {
+          "x": 261,
+          "focalLength": -190
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 294.3419164822294,
+        "y": 4.895667375709401,
+        "distance": 33.341916482229436,
+        "magnification": -0.8159445626182336
+      }
+    },
+    {
+      "id": "n3-20",
+      "objectX": -250,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 155
+        },
+        {
+          "x": 46,
+          "focalLength": -186
+        },
+        {
+          "x": 123,
+          "focalLength": 213
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 519.9141000262002,
+        "y": 5.95886582632238,
+        "distance": 396.91410002620023,
+        "magnification": -1.489716456580595
+      }
+    },
+    {
+      "id": "n3-21",
+      "objectX": -260,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": -182
+        },
+        {
+          "x": 76,
+          "focalLength": 203
+        },
+        {
+          "x": 170,
+          "focalLength": 232
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 455.9884192768887,
+        "y": 1.2270095290201977,
+        "distance": 285.9884192768887,
+        "magnification": -0.6135047645100988
+      }
+    },
+    {
+      "id": "n3-22",
+      "objectX": -20,
+      "objectHeight": 0,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 193
+        },
+        {
+          "x": 106,
+          "focalLength": 222
+        },
+        {
+          "x": 217,
+          "focalLength": -211
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 69.24631765531217,
+        "y": 0,
+        "distance": -147.75368234468783,
+        "magnification": 1.0705984642035122
+      }
+    },
+    {
+      "id": "n3-23",
+      "objectX": -30,
+      "objectHeight": 2,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 212
+        },
+        {
+          "x": 136,
+          "focalLength": -207
+        },
+        {
+          "x": 264,
+          "focalLength": 270
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -1267.6408135243112,
+        "y": 10.080092491961606,
+        "distance": -1531.6408135243112,
+        "magnification": 5.040046245980803
+      }
+    },
+    {
+      "id": "n3-24",
+      "objectX": -40,
+      "objectHeight": 4,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": -203
+        },
+        {
+          "x": 166,
+          "focalLength": 260
+        },
+        {
+          "x": 311,
+          "focalLength": 39
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 352.29240230223377,
+        "y": -0.5087127078827708,
+        "distance": 41.292402302233796,
+        "magnification": -0.1271781769706927
+      }
+    },
+    {
+      "id": "n3-25",
+      "objectX": -115,
+      "objectHeight": 6,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 250
+        },
+        {
+          "x": 131,
+          "focalLength": 29
+        },
+        {
+          "x": 173,
+          "focalLength": -52
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 164.38210707231164,
+        "y": -0.8534995557048068,
+        "distance": -8.617892927688365,
+        "magnification": -0.14224992595080113
+      }
+    },
+    {
+      "id": "n3-26",
+      "objectX": -125,
+      "objectHeight": 8,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 269
+        },
+        {
+          "x": 161,
+          "focalLength": -48
+        },
+        {
+          "x": 220,
+          "focalLength": 77
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 532.3363103590382,
+        "y": -5.027312788695646,
+        "distance": 312.3363103590382,
+        "magnification": -0.6284140985869557
+      }
+    },
+    {
+      "id": "n3-27",
+      "objectX": -135,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": -44
+        },
+        {
+          "x": 71,
+          "focalLength": 67
+        },
+        {
+          "x": 147,
+          "focalLength": 96
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 222.26731650444032,
+        "y": 1.9787603906018536,
+        "distance": 75.2673165044403,
+        "magnification": -0.2473450488252317
+      }
+    },
+    {
+      "id": "n3-28",
+      "objectX": -145,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 57
+        },
+        {
+          "x": 101,
+          "focalLength": 86
+        },
+        {
+          "x": 194,
+          "focalLength": -73
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 156.6712208457045,
+        "y": 1.061767248285507,
+        "distance": -37.32877915429548,
+        "magnification": -0.1769612080475845
+      }
+    },
+    {
+      "id": "n3-29",
+      "objectX": -155,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 76
+        },
+        {
+          "x": 131,
+          "focalLength": -69
+        },
+        {
+          "x": 241,
+          "focalLength": 134
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 232.03118010501527,
+        "y": 6.121431884853355,
+        "distance": -8.968819894984742,
+        "magnification": -1.5303579712133388
+      }
+    },
+    {
+      "id": "n3-30",
+      "objectX": -230,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": -65
+        },
+        {
+          "x": 96,
+          "focalLength": 124
+        },
+        {
+          "x": 223,
+          "focalLength": 153
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 347.72877124319876,
+        "y": 0.44523794909936426,
+        "distance": 124.72877124319876,
+        "magnification": -0.22261897454968213
+      }
+    },
+    {
+      "id": "n3-31",
+      "objectX": -240,
+      "objectHeight": 0,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 114
+        },
+        {
+          "x": 126,
+          "focalLength": 143
+        },
+        {
+          "x": 270,
+          "focalLength": -94
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 224.79008843447184,
+        "y": 0,
+        "distance": -45.209911565528174,
+        "magnification": -0.25631428083493807
+      }
+    },
+    {
+      "id": "n3-32",
+      "objectX": -250,
+      "objectHeight": 2,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 133
+        },
+        {
+          "x": 156,
+          "focalLength": -90
+        },
+        {
+          "x": 197,
+          "focalLength": 191
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 614.9951957506343,
+        "y": -5.421427047022836,
+        "distance": 417.99519575063425,
+        "magnification": -2.710713523511418
+      }
+    },
+    {
+      "id": "n3-33",
+      "objectX": -10,
+      "objectHeight": 4,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": -86
+        },
+        {
+          "x": 186,
+          "focalLength": 181
+        },
+        {
+          "x": 244,
+          "focalLength": 210
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 457.85840507808325,
+        "y": -3.042549819931322,
+        "distance": 213.85840507808325,
+        "magnification": -0.7606374549828305
+      }
+    },
+    {
+      "id": "n3-34",
+      "objectX": -20,
+      "objectHeight": 6,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 171
+        },
+        {
+          "x": 96,
+          "focalLength": 200
+        },
+        {
+          "x": 171,
+          "focalLength": -115
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 66.54315953450013,
+        "y": 6.006597635847156,
+        "distance": -104.45684046549987,
+        "magnification": 1.0010996059745259
+      }
+    },
+    {
+      "id": "n3-35",
+      "objectX": -95,
+      "objectHeight": 8,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 190
+        },
+        {
+          "x": 61,
+          "focalLength": -111
+        },
+        {
+          "x": 153,
+          "focalLength": 248
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -377.17790360350887,
+        "y": 15.39435881304393,
+        "distance": -530.1779036035089,
+        "magnification": 1.9242948516304912
+      }
+    },
+    {
+      "id": "n3-36",
+      "objectX": -105,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": -107
+        },
+        {
+          "x": 91,
+          "focalLength": 238
+        },
+        {
+          "x": 200,
+          "focalLength": 267
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 944.6172312740557,
+        "y": 15.591446447427712,
+        "distance": 744.6172312740557,
+        "magnification": -1.948930805928464
+      }
+    },
+    {
+      "id": "n3-37",
+      "objectX": -115,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 228
+        },
+        {
+          "x": 121,
+          "focalLength": 257
+        },
+        {
+          "x": 247,
+          "focalLength": -136
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 51.96053796389069,
+        "y": -8.453747379107435,
+        "distance": -195.0394620361093,
+        "magnification": 1.408957896517906
+      }
+    },
+    {
+      "id": "n3-38",
+      "objectX": -125,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 247
+        },
+        {
+          "x": 151,
+          "focalLength": -132
+        },
+        {
+          "x": 294,
+          "focalLength": 55
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 364.41807538422927,
+        "y": 0.6017007957716327,
+        "distance": 70.41807538422925,
+        "magnification": -0.15042519894290818
+      }
+    },
+    {
+      "id": "n3-39",
+      "objectX": -135,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": -128
+        },
+        {
+          "x": 181,
+          "focalLength": 45
+        },
+        {
+          "x": 221,
+          "focalLength": 74
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 235.25568377273873,
+        "y": 0.18455307557068287,
+        "distance": 14.25568377273872,
+        "magnification": -0.09227653778534144
+      }
+    },
+    {
+      "id": "n4-0",
+      "objectX": -40,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": -35
+        },
+        {
+          "x": 66,
+          "focalLength": 54
+        },
+        {
+          "x": 163,
+          "focalLength": 83
+        },
+        {
+          "x": 291,
+          "focalLength": -68
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 251.19567529801506,
+        "y": 1.6747971692003345,
+        "distance": -39.80432470198493,
+        "magnification": -0.2093496461500418
+      }
+    },
+    {
+      "id": "n4-1",
+      "objectX": -50,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 44
+        },
+        {
+          "x": 96,
+          "focalLength": 73
+        },
+        {
+          "x": 210,
+          "focalLength": -64
+        },
+        {
+          "x": 355,
+          "focalLength": 131
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 832.0032577468207,
+        "y": -8.748859964590107,
+        "distance": 477.0032577468207,
+        "magnification": 1.4581433274316846
+      }
+    },
+    {
+      "id": "n4-2",
+      "objectX": -60,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 63
+        },
+        {
+          "x": 126,
+          "focalLength": -60
+        },
+        {
+          "x": 257,
+          "focalLength": 121
+        },
+        {
+          "x": 299,
+          "focalLength": 150
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 385.3426645027402,
+        "y": 3.7973969949769053,
+        "distance": 86.34266450274022,
+        "magnification": -0.9493492487442263
+      }
+    },
+    {
+      "id": "n4-3",
+      "objectX": -70,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": -56
+        },
+        {
+          "x": 156,
+          "focalLength": 111
+        },
+        {
+          "x": 304,
+          "focalLength": 140
+        },
+        {
+          "x": 363,
+          "focalLength": -89
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 409.8401104746255,
+        "y": 0.9612237363412444,
+        "distance": 46.84011047462546,
+        "magnification": -0.4806118681706222
+      }
+    },
+    {
+      "id": "n4-4",
+      "objectX": -80,
+      "objectHeight": 0,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 101
+        },
+        {
+          "x": 186,
+          "focalLength": 130
+        },
+        {
+          "x": 231,
+          "focalLength": -85
+        },
+        {
+          "x": 307,
+          "focalLength": 188
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 326.01033374067174,
+        "y": 0,
+        "distance": 19.01033374067172,
+        "magnification": -1.9148623156595916
+      }
+    },
+    {
+      "id": "n4-5",
+      "objectX": -155,
+      "objectHeight": 2,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 120
+        },
+        {
+          "x": 151,
+          "focalLength": -81
+        },
+        {
+          "x": 213,
+          "focalLength": 178
+        },
+        {
+          "x": 306,
+          "focalLength": 207
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 533.1282903431531,
+        "y": -2.4530674960292287,
+        "distance": 227.12829034315317,
+        "magnification": -1.2265337480146143
+      }
+    },
+    {
+      "id": "n4-6",
+      "objectX": -165,
+      "objectHeight": 4,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": -77
+        },
+        {
+          "x": 61,
+          "focalLength": 168
+        },
+        {
+          "x": 140,
+          "focalLength": 197
+        },
+        {
+          "x": 250,
+          "focalLength": -110
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 92.39496565047466,
+        "y": 1.8649844709936318,
+        "distance": -157.60503434952534,
+        "magnification": 0.46624611774840796
+      }
+    },
+    {
+      "id": "n4-7",
+      "objectX": -175,
+      "objectHeight": 6,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 158
+        },
+        {
+          "x": 91,
+          "focalLength": 187
+        },
+        {
+          "x": 187,
+          "focalLength": -106
+        },
+        {
+          "x": 314,
+          "focalLength": 245
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 278.4546398807227,
+        "y": -10.451871336447994,
+        "distance": -35.54536011927728,
+        "magnification": -1.7419785560746655
+      }
+    },
+    {
+      "id": "n4-8",
+      "objectX": -185,
+      "objectHeight": 8,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 177
+        },
+        {
+          "x": 121,
+          "focalLength": -102
+        },
+        {
+          "x": 234,
+          "focalLength": 235
+        },
+        {
+          "x": 378,
+          "focalLength": 264
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 647.4825579011911,
+        "y": -5.380213513128166,
+        "distance": 269.48255790119106,
+        "magnification": -0.6725266891410208
+      }
+    },
+    {
+      "id": "n4-9",
+      "objectX": -195,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": -98
+        },
+        {
+          "x": 151,
+          "focalLength": 225
+        },
+        {
+          "x": 281,
+          "focalLength": 254
+        },
+        {
+          "x": 322,
+          "focalLength": -131
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 104.19391173156555,
+        "y": -2.763797821773634,
+        "distance": -217.80608826843445,
+        "magnification": 0.34547472772170423
+      }
+    },
+    {
+      "id": "n4-10",
+      "objectX": -270,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 215
+        },
+        {
+          "x": 116,
+          "focalLength": 244
+        },
+        {
+          "x": 263,
+          "focalLength": -127
+        },
+        {
+          "x": 321,
+          "focalLength": 52
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 333.1426085439167,
+        "y": 5.861669536438651,
+        "distance": 12.14260854391669,
+        "magnification": -0.9769449227397751
+      }
+    },
+    {
+      "id": "n4-11",
+      "objectX": -30,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 234
+        },
+        {
+          "x": 146,
+          "focalLength": -123
+        },
+        {
+          "x": 190,
+          "focalLength": 42
+        },
+        {
+          "x": 265,
+          "focalLength": 71
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 253.6497420364692,
+        "y": 1.251837887375111,
+        "distance": -11.350257963530783,
+        "magnification": -0.31295947184377776
+      }
+    },
+    {
+      "id": "n4-12",
+      "objectX": -40,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": -119
+        },
+        {
+          "x": 176,
+          "focalLength": 32
+        },
+        {
+          "x": 237,
+          "focalLength": 61
+        },
+        {
+          "x": 329,
+          "focalLength": -152
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 259.529976693487,
+        "y": 0.22139924432574934,
+        "distance": -69.47002330651297,
+        "magnification": -0.11069962216287467
+      }
+    },
+    {
+      "id": "n4-13",
+      "objectX": -50,
+      "objectHeight": 0,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 272
+        },
+        {
+          "x": 86,
+          "focalLength": 51
+        },
+        {
+          "x": 164,
+          "focalLength": -148
+        },
+        {
+          "x": 273,
+          "focalLength": 109
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 2229.0479320178756,
+        "y": 0,
+        "distance": 1956.0479320178758,
+        "magnification": 9.577865192026309
+      }
+    },
+    {
+      "id": "n4-14",
+      "objectX": -60,
+      "objectHeight": 2,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 41
+        },
+        {
+          "x": 116,
+          "focalLength": -144
+        },
+        {
+          "x": 211,
+          "focalLength": 99
+        },
+        {
+          "x": 337,
+          "focalLength": 128
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 473.2184282116888,
+        "y": 1.5762947381195573,
+        "distance": 136.21842821168877,
+        "magnification": 0.7881473690597787
+      }
+    },
+    {
+      "id": "n4-15",
+      "objectX": -135,
+      "objectHeight": 4,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": -140
+        },
+        {
+          "x": 81,
+          "focalLength": 89
+        },
+        {
+          "x": 193,
+          "focalLength": 118
+        },
+        {
+          "x": 336,
+          "focalLength": -173
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 278.215737897273,
+        "y": -1.0403673579467383,
+        "distance": -57.784262102726984,
+        "magnification": -0.2600918394866846
+      }
+    },
+    {
+      "id": "n4-16",
+      "objectX": -145,
+      "objectHeight": 6,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 79
+        },
+        {
+          "x": 111,
+          "focalLength": 108
+        },
+        {
+          "x": 240,
+          "focalLength": -169
+        },
+        {
+          "x": 280,
+          "focalLength": 166
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 35.28014839255087,
+        "y": -6.216876369635337,
+        "distance": -244.71985160744913,
+        "magnification": -1.0361460616058895
+      }
+    },
+    {
+      "id": "n4-17",
+      "objectX": -155,
+      "objectHeight": 8,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 98
+        },
+        {
+          "x": 141,
+          "focalLength": -165
+        },
+        {
+          "x": 287,
+          "focalLength": 156
+        },
+        {
+          "x": 344,
+          "focalLength": 185
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 347.74868042139246,
+        "y": -14.05340714631826,
+        "distance": 3.7486804213924745,
+        "magnification": -1.7566758932897826
+      }
+    },
+    {
+      "id": "n4-18",
+      "objectX": -165,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": -161
+        },
+        {
+          "x": 171,
+          "focalLength": 146
+        },
+        {
+          "x": 214,
+          "focalLength": 175
+        },
+        {
+          "x": 288,
+          "focalLength": -194
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 348.58800191569793,
+        "y": 2.7879216343028452,
+        "distance": 60.58800191569792,
+        "magnification": -0.34849020428785565
+      }
+    },
+    {
+      "id": "n4-19",
+      "objectX": -175,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 136
+        },
+        {
+          "x": 201,
+          "focalLength": 165
+        },
+        {
+          "x": 261,
+          "focalLength": -190
+        },
+        {
+          "x": 352,
+          "focalLength": 223
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 274.2353720216812,
+        "y": 6.6028859953400465,
+        "distance": -77.76462797831883,
+        "magnification": -1.100480999223341
+      }
+    },
+    {
+      "id": "n4-20",
+      "objectX": -250,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 155
+        },
+        {
+          "x": 46,
+          "focalLength": -186
+        },
+        {
+          "x": 123,
+          "focalLength": 213
+        },
+        {
+          "x": 231,
+          "focalLength": 242
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 362.6921366429901,
+        "y": 2.7161560220360546,
+        "distance": 131.69213664299008,
+        "magnification": -0.6790390055090136
+      }
+    },
+    {
+      "id": "n4-21",
+      "objectX": -260,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": -182
+        },
+        {
+          "x": 76,
+          "focalLength": 203
+        },
+        {
+          "x": 170,
+          "focalLength": 232
+        },
+        {
+          "x": 295,
+          "focalLength": -35
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 250.2768841213272,
+        "y": -0.34086730956854544,
+        "distance": -44.72311587867278,
+        "magnification": 0.17043365478427272
+      }
+    },
+    {
+      "id": "n4-22",
+      "objectX": -20,
+      "objectHeight": 0,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 193
+        },
+        {
+          "x": 106,
+          "focalLength": 222
+        },
+        {
+          "x": 217,
+          "focalLength": -211
+        },
+        {
+          "x": 359,
+          "focalLength": 30
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 392.46482094835415,
+        "y": 0,
+        "distance": 33.46482094835413,
+        "magnification": -0.12364773286826977
+      }
+    },
+    {
+      "id": "n4-23",
+      "objectX": -30,
+      "objectHeight": 2,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 212
+        },
+        {
+          "x": 136,
+          "focalLength": -207
+        },
+        {
+          "x": 264,
+          "focalLength": 270
+        },
+        {
+          "x": 303,
+          "focalLength": 49
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 353.577901945492,
+        "y": -0.32459995007765824,
+        "distance": 50.577901945491966,
+        "magnification": -0.16229997503882912
+      }
+    },
+    {
+      "id": "n4-24",
+      "objectX": -40,
+      "objectHeight": 4,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": -203
+        },
+        {
+          "x": 166,
+          "focalLength": 260
+        },
+        {
+          "x": 311,
+          "focalLength": 39
+        },
+        {
+          "x": 367,
+          "focalLength": -56
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 355.3516694401721,
+        "y": -0.4028974617862764,
+        "distance": -11.648330559827906,
+        "magnification": -0.1007243654465691
+      }
+    },
+    {
+      "id": "n4-25",
+      "objectX": -115,
+      "objectHeight": 6,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 250
+        },
+        {
+          "x": 131,
+          "focalLength": 29
+        },
+        {
+          "x": 173,
+          "focalLength": -52
+        },
+        {
+          "x": 246,
+          "focalLength": 87
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -1073.3265368574484,
+        "y": -13.796541084870249,
+        "distance": -1319.3265368574484,
+        "magnification": -2.2994235141450416
+      }
+    },
+    {
+      "id": "n4-26",
+      "objectX": -125,
+      "objectHeight": 8,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 269
+        },
+        {
+          "x": 161,
+          "focalLength": -48
+        },
+        {
+          "x": 220,
+          "focalLength": 77
+        },
+        {
+          "x": 310,
+          "focalLength": 106
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 381.77899048779176,
+        "y": -1.6230162147433942,
+        "distance": 71.77899048779177,
+        "magnification": -0.20287702684292427
+      }
+    },
+    {
+      "id": "n4-27",
+      "objectX": -135,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": -44
+        },
+        {
+          "x": 71,
+          "focalLength": 67
+        },
+        {
+          "x": 147,
+          "focalLength": 96
+        },
+        {
+          "x": 254,
+          "focalLength": -77
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 231.5282228801253,
+        "y": 1.4012764624039176,
+        "distance": -22.47177711987471,
+        "magnification": -0.1751595578004897
+      }
+    },
+    {
+      "id": "n4-28",
+      "objectX": -145,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 57
+        },
+        {
+          "x": 101,
+          "focalLength": 86
+        },
+        {
+          "x": 194,
+          "focalLength": -73
+        },
+        {
+          "x": 318,
+          "focalLength": 144
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 1658.6220941109939,
+        "y": -8.823153806262992,
+        "distance": 1340.6220941109939,
+        "magnification": 1.4705256343771653
+      }
+    },
+    {
+      "id": "n4-29",
+      "objectX": -155,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 76
+        },
+        {
+          "x": 131,
+          "focalLength": -69
+        },
+        {
+          "x": 241,
+          "focalLength": 134
+        },
+        {
+          "x": 382,
+          "focalLength": 163
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -1493.8790413367472,
+        "y": 76.56968817790188,
+        "distance": -1875.8790413367472,
+        "magnification": -19.14242204447547
+      }
+    },
+    {
+      "id": "n4-30",
+      "objectX": -230,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": -65
+        },
+        {
+          "x": 96,
+          "focalLength": 124
+        },
+        {
+          "x": 223,
+          "focalLength": 153
+        },
+        {
+          "x": 261,
+          "focalLength": -98
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 1015.0810115050497,
+        "y": 3.8712122656022463,
+        "distance": 754.0810115050497,
+        "magnification": -1.9356061328011231
+      }
+    },
+    {
+      "id": "n4-31",
+      "objectX": -240,
+      "objectHeight": 0,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": 114
+        },
+        {
+          "x": 126,
+          "focalLength": 143
+        },
+        {
+          "x": 270,
+          "focalLength": -94
+        },
+        {
+          "x": 325,
+          "focalLength": 201
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 125.157014072207,
+        "y": 0,
+        "distance": -199.842985927793,
+        "magnification": -0.5111531426159774
+      }
+    },
+    {
+      "id": "n4-32",
+      "objectX": -250,
+      "objectHeight": 2,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 133
+        },
+        {
+          "x": 156,
+          "focalLength": -90
+        },
+        {
+          "x": 197,
+          "focalLength": 191
+        },
+        {
+          "x": 269,
+          "focalLength": 220
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 403.486906667448,
+        "y": -2.1072863503076604,
+        "distance": 134.48690666744804,
+        "magnification": -1.0536431751538302
+      }
+    },
+    {
+      "id": "n4-33",
+      "objectX": -10,
+      "objectHeight": 4,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": -86
+        },
+        {
+          "x": 186,
+          "focalLength": 181
+        },
+        {
+          "x": 244,
+          "focalLength": 210
+        },
+        {
+          "x": 333,
+          "focalLength": -119
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -2203.2107956442624,
+        "y": 61.80238883213025,
+        "distance": -2536.2107956442624,
+        "magnification": 15.450597208032562
+      }
+    },
+    {
+      "id": "n4-34",
+      "objectX": -20,
+      "objectHeight": 6,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": 171
+        },
+        {
+          "x": 96,
+          "focalLength": 200
+        },
+        {
+          "x": 171,
+          "focalLength": -115
+        },
+        {
+          "x": 277,
+          "focalLength": 258
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": -865.0752295752916,
+        "y": 32.595692108430654,
+        "distance": -1142.0752295752916,
+        "magnification": 5.43261535140511
+      }
+    },
+    {
+      "id": "n4-35",
+      "objectX": -95,
+      "objectHeight": 8,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 190
+        },
+        {
+          "x": 61,
+          "focalLength": -111
+        },
+        {
+          "x": 153,
+          "focalLength": 248
+        },
+        {
+          "x": 276,
+          "focalLength": 27
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 304.1642058843098,
+        "y": -0.6637853005675063,
+        "distance": 28.164205884309833,
+        "magnification": -0.08297316257093829
+      }
+    },
+    {
+      "id": "n4-36",
+      "objectX": -105,
+      "objectHeight": -8,
+      "lenses": [
+        {
+          "x": 13,
+          "focalLength": -107
+        },
+        {
+          "x": 91,
+          "focalLength": 238
+        },
+        {
+          "x": 200,
+          "focalLength": 267
+        },
+        {
+          "x": 340,
+          "focalLength": -140
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 157.81473720582073,
+        "y": -4.698066183757933,
+        "distance": -182.18526279417927,
+        "magnification": 0.5872582729697416
+      }
+    },
+    {
+      "id": "n4-37",
+      "objectX": -115,
+      "objectHeight": -6,
+      "lenses": [
+        {
+          "x": 26,
+          "focalLength": 228
+        },
+        {
+          "x": 121,
+          "focalLength": 257
+        },
+        {
+          "x": 247,
+          "focalLength": -136
+        },
+        {
+          "x": 284,
+          "focalLength": 65
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 374.2934243711026,
+        "y": 3.2896033843978616,
+        "distance": 90.29342437110263,
+        "magnification": -0.5482672307329769
+      }
+    },
+    {
+      "id": "n4-38",
+      "objectX": -125,
+      "objectHeight": -4,
+      "lenses": [
+        {
+          "x": 39,
+          "focalLength": 247
+        },
+        {
+          "x": 151,
+          "focalLength": -132
+        },
+        {
+          "x": 294,
+          "focalLength": 55
+        },
+        {
+          "x": 348,
+          "focalLength": 84
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 361.73376582849596,
+        "y": 0.5033243930579748,
+        "distance": 13.733765828495944,
+        "magnification": -0.1258310982644937
+      }
+    },
+    {
+      "id": "n4-39",
+      "objectX": -135,
+      "objectHeight": -2,
+      "lenses": [
+        {
+          "x": 52,
+          "focalLength": -128
+        },
+        {
+          "x": 181,
+          "focalLength": 45
+        },
+        {
+          "x": 221,
+          "focalLength": 74
+        },
+        {
+          "x": 292,
+          "focalLength": -161
+        }
+      ],
+      "prediction": {
+        "kind": "finite-virtual",
+        "x": 250.04329099890748,
+        "y": 0.13645841912983955,
+        "distance": -41.956709001092506,
+        "magnification": -0.06822920956491978
+      }
+    },
+    {
+      "id": "focus",
+      "objectX": -100,
+      "objectHeight": 7,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 100
+        }
+      ],
+      "prediction": {
+        "kind": "at-infinity",
+        "tolerance": 1e-10
+      }
+    },
+    {
+      "id": "near-focus",
+      "objectX": -100.000000001,
+      "objectHeight": 7,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 100
+        }
+      ],
+      "prediction": {
+        "kind": "at-infinity",
+        "tolerance": 1e-10
+      }
+    },
+    {
+      "id": "source-two-lens",
+      "objectX": -300,
+      "objectHeight": 3,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 200
+        },
+        {
+          "x": 300,
+          "focalLength": 100
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 375,
+        "y": -1.5,
+        "distance": 75,
+        "magnification": -0.5
+      }
+    },
+    {
+      "id": "parallel-intermediate",
+      "objectX": -100,
+      "objectHeight": 4,
+      "lenses": [
+        {
+          "x": 0,
+          "focalLength": 100
+        },
+        {
+          "x": 150,
+          "focalLength": 60
+        }
+      ],
+      "prediction": {
+        "kind": "finite-real",
+        "x": 210,
+        "y": -2.4,
+        "distance": 60,
+        "magnification": -0.6
+      }
+    }
+  ]
+}
