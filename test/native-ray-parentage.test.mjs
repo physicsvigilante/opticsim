@@ -185,8 +185,8 @@ test('F-02 missing interface incident accounting is refused even if detector see
   const doc=document([source('S',-100,100,-45),face(false),detector('D',0,-100,400)]);
   const missing=observedRun(doc,{skipInterface:true});
   assert.equal(missing.event,'simulationComplete');
-  assert.equal(missing.data.detectorRayProvenanceById.D.status,'complete',
-    'In-place native transmission retains a known original source object; the missing event must be caught by a separately installed-handler coverage fault instead');
+  assert.equal(missing.data.detectorRayProvenanceById.D.status,'unavailable');
+  assert.equal(missing.data.detectorRayProvenanceById.D.reasonCode,'PROVENANCE_UNKNOWN_OR_INCONSISTENT');
 });
 
 function fakeLedger(components){
@@ -210,7 +210,8 @@ test('direct-child duplicates, self-links and missing native source starts fail 
     if(kind==='self')ledger.incident('AirWater',ray,{newRays:[ray]});
     const result=ledger.finish({event:'simulationComplete',simulator:{totalTruncation:0,totalUndefinedBehavior:0},
       errors:[],warnings:[],sources:{byId:{S:{emitted:1}}},
-      detectors:{byId:{D:{crossings:0,signedPower:0}}}});
+      detectors:{byId:{D:{crossings:0,signedPower:0}}},
+      interfaces:{byId:{AirWater:{interactions:kind==='missing-start'?0:1}}}});
     assert.equal(result.D.status,'unavailable',kind);
     assert.equal(result.D.value,null);
   }
@@ -230,7 +231,8 @@ test('64/65 identities and 32/33 crossings are defensive injected callback guard
     if(hitOverflow)for(let i=0;i<33;i++)ledger.detector('D',ray);
     const result=ledger.finish({event:'simulationComplete',simulator:sim,errors:[],warnings:[],
       sources:{byId:{S:{emitted:1}}},
-      detectors:{byId:{D:{crossings:hitOverflow?33:0,signedPower:0}}}});
+      detectors:{byId:{D:{crossings:hitOverflow?33:0,signedPower:0}}},
+      interfaces:{byId:{AirWater:{interactions:identityOverflow?64:0}}}});
     assert.equal(result.D.status,'unavailable');
     assert.equal(result.D.value,null);
   }
