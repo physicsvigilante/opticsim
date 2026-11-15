@@ -18,7 +18,7 @@
     "src/adapter.js": "3e743decc9a293eaea053de3d90e2a82793f1986f21235177893fffb4efa5858",
     "src/app.js": "d6b3f77ce2ffee702d3850bd8a03f11955425d5c541a84538d3ab1e9314a3375",
     "src/native-observations.js": "de0df4f45d3413ca40422054f4abffca2e8d476341f57fe0d66983399a2a7335",
-    "src/observables.js": "dad2a5640461934d54f4f6804c5aefc6a9db70ecd655aff7841f8c9347b7c634",
+    "src/observables.js": "e0dd1c8bf967f78be5f7eaf91addf9f6f91f33ba8dfcd73b6f6bfc2cb8d57fce",
     "src/result-preview.js": "100c5b60f56c13881e0977093229df6034b7b94e4ea91106e89dbc4be671c868",
     "scripts/author-scene.mjs": "f7b3658c3a033c72a77a20f252061502d37e40691a2edbd49eeda61a5ab43725",
     "skills/sim-ro-image-to-scene/scripts/check-scene.mjs": "026d24ce2454aef7ba61e4a661a6c94afcedf750c2f7d21ea47e433736950ff1"
