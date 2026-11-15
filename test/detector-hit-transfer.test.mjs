@@ -13,6 +13,7 @@ const read=p=>readFileSync(new URL(p,root));
 const hash=p=>createHash('sha256').update(read(p)).digest('hex');
 const freeze=JSON.parse(read('test/fixtures/detector-hit-transfer-freeze.json'));
 const integration=JSON.parse(read('test/fixtures/detector-hit-integration-rebase.json'));
+const later=JSON.parse(read('test/fixtures/detector-hit-provenance-integration.json'));
 const request=[{id:'hits',kind:'detector-hit-events',componentId:'D1'},
  {id:'crossings',kind:'detector-crossings',componentId:'D1'},
  {id:'glass',kind:'interface-interactions',componentId:'P1'},
@@ -28,8 +29,18 @@ test('reserved transfer file and frozen production/checker fingerprints are unch
  // integration restored two PRE-EXISTING v10-to-v11 qualified upgrade behaviors.
  // Neither its new hashes nor R1 replays are retrospectively first-run evidence.
  assert.equal(integration.historicalFreezeFile,'test/fixtures/detector-hit-transfer-freeze.json');
+ assert.equal(later.historicalFreezeFile,'test/fixtures/detector-hit-transfer-freeze.json');
+ assert.equal(later.priorIntegrationRecord,'test/fixtures/detector-hit-integration-rebase.json');
+ assert.equal(later.baselineCommit,freeze.baseline);
+ assert.equal(later.qualification.includes('NOT rerun'),true);
+ assert.deepEqual(Object.keys(later.replacementHashes).sort(),[...later.changedAfterReservedExecution].sort());
+ assert.ok(later.changedAfterReservedExecution.every(path=>Object.hasOwn(freeze.frozenFiles,path)));
+ assert.ok(later.changedAfterReservedExecution.every(path=>!integration.changedAfterReservedExecution.includes(path)));
  for(const [path,expected] of Object.entries(freeze.frozenFiles)){
-  if(integration.changedAfterReservedExecution.includes(path)){
+  if(later.changedAfterReservedExecution.includes(path)){
+   assert.equal(hash(path),later.replacementHashes[path],'Later R2 feature source fingerprint changed: '+path);
+   assert.notEqual(hash(path),expected,'Original reserved first-run snapshot must remain historical: '+path);
+  }else if(integration.changedAfterReservedExecution.includes(path)){
    assert.equal(integration.baselineCommit,freeze.baseline);
    assert.equal(hash(path),integration.replacementHashes[path],'Integration correction must remain frozen: '+path);
    assert.notEqual(hash(path),expected,'Do not rewrite original freeze evidence: '+path);
