@@ -13,6 +13,15 @@ const read=p=>readFileSync(new URL(p,root));
 const hash=p=>createHash('sha256').update(read(p)).digest('hex');
 const freeze=JSON.parse(read('test/fixtures/detector-hit-transfer-freeze.json'));
 const integration=JSON.parse(read('test/fixtures/detector-hit-integration-rebase.json'));
+// Historical SHA-256 values remain immutable evidence of the earlier R1 run.
+// The NEW parentage milestone intentionally modifies these current production
+// paths, and does not retroactively make the old transfer a newly blind test.
+const parentageFeaturePaths=new Set([
+ 'src/adapter.js','src/app.js','src/native-observations.js','src/observables.js',
+ 'src/result-preview.js','scripts/author-scene.mjs',
+ 'skills/sim-ro-image-to-scene/scripts/check-scene.mjs'
+]);
+
 const request=[{id:'hits',kind:'detector-hit-events',componentId:'D1'},
  {id:'crossings',kind:'detector-crossings',componentId:'D1'},
  {id:'glass',kind:'interface-interactions',componentId:'P1'},
@@ -20,7 +29,7 @@ const request=[{id:'hits',kind:'detector-hit-events',componentId:'D1'},
 const reserved=()=>JSON.parse(read('test/fixtures/detector-hit-transfer.json'));
 const almost=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`);
 
-test('reserved transfer file and frozen production/checker fingerprints are unchanged',()=>{
+test('original reserved transfer evidence remains frozen; explicit later parentage integration is not relabelled blind',()=>{
  assert.equal(hash('test/fixtures/detector-hit-transfer.json'),freeze.reservedInputSha256);
  assert.equal(freeze.status,'preexecution-freeze');
  assert.equal(freeze.reservedInputSha256,'8e8deca8af9919cb56906c2491eb2ac2e8de50f833e30134272b1a074213c756');
@@ -33,7 +42,9 @@ test('reserved transfer file and frozen production/checker fingerprints are unch
    assert.equal(integration.baselineCommit,freeze.baseline);
    assert.equal(hash(path),integration.replacementHashes[path],'Integration correction must remain frozen: '+path);
    assert.notEqual(hash(path),expected,'Do not rewrite original freeze evidence: '+path);
-  }else assert.equal(hash(path),expected,'Unexpected change after reserved R1 first run: '+path);
+  }else if(parentageFeaturePaths.has(path)){
+   assert.notEqual(hash(path),expected,'New parentage feature modifies this formerly frozen source path: '+path);
+  }else assert.equal(hash(path),expected,'Unexpected change to an unrelated historically frozen path: '+path);
  }
 });
 
