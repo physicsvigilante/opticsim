@@ -59,6 +59,7 @@ assert.equal(secondary.value.nodes.filter(x=>x.parentToken!==null).length,2);
 assert.deepEqual(secondary.value.nodes.filter(x=>x.parentToken!==null).map(x=>x.sourceId),['SunRay','SunRay2']);
 const bundle=await parseQualifiedBundle(readFileSync(join(positive.dir,'qualified-scene.json'),'utf8'));
 assert.deepEqual(bundle.observables,request(scene()).requests);
+writeFileSync(join(root,'raw-scene.json'),JSON.stringify(bundle.scene,null,2)+'\n',{flag:'wx'});
 assert.ok(!('execution'in bundle)&&!('results'in bundle),'Export must not embed an old ray identity registry');
 const edited=scene();edited[0].parameters.x=-110;
 await record('physical-source-revision',request(edited),{exit:0,native:'completed',count:[2,2],status:'available'});
