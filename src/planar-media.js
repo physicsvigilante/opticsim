@@ -50,7 +50,7 @@ const direction=ray=>{
 };
 const power=ray=>ray.brightness_s+ray.brightness_p;
 const angle=(d,n)=>d?Math.atan2(Math.abs(d.x*n.y-d.y*n.x),Math.abs(d.x*n.x+d.y*n.y))*180/Math.PI:null;
-export function observeInterfaceSet(doc,scene,idMap){
+export function observeInterfaceSet(doc,scene,idMap,{parentage=null}={}){
   const entries=doc.physics.components.filter(c=>c.type===PLANAR_TYPE||c.type===CIRCULAR_TYPE||c.type===PRISM_TYPE||c.type===POLYGON_TYPE).map(component=>{
     const native=scene.objs[idMap.get(component.id)],original=native.onRayIncident;
     const circular=component.type===CIRCULAR_TYPE,prism=component.type===PRISM_TYPE,
@@ -66,6 +66,7 @@ export function observeInterfaceSet(doc,scene,idMap){
         Math.abs(incoming.x*n.x+incoming.y*n.y)<1e-10))meter.invalidObservations++;
       // Delegate exactly once, with identical arguments and return object.
       const returned=original.apply(this,args);
+      parentage?.incident(component.id,args[0],returned);
       const outputs=[...(!returned?.isAbsorbed?[args[0]]:[]),...(returned?.newRays||[])];
       const branches=outputs.map(ray=>{
         const d=direction(ray),brightness=power(ray),projection=d&&(d.x*n.x+d.y*n.y);
@@ -95,6 +96,7 @@ export function observeInterfaceSet(doc,scene,idMap){
       if(finite&&encounter.faceId){const face=meter.faces[encounter.faceId];face.interactions++;if(!face.first)face.first=event;}
       return returned;
     };
+    if(parentage)parentage.register(component.id,component.type,native,native.onRayIncident,'onRayIncident');
     return [component.id,meter];
   });
   if(!entries.length)return null;
