@@ -1,0 +1,47 @@
+{
+  "format": "opticsim-prism-transfer-fixture-v1",
+  "baselineCommit": "8f8edc905348d7cac8babe55f823740556fa8027",
+  "task": {
+    "format": "prism-reserved-task-v1",
+    "physical": {
+      "apexAngleDeg": 100,
+      "incidenceAngleDeg": 39.710470313703944,
+      "insideIndex": 1.2,
+      "outsideIndex": 1.5
+    },
+    "signedDeviationDeg": -24.480678623707732,
+    "reference": {
+      "entryRefractionAngleDeg": 53,
+      "exitIncidenceAngleDeg": 47
+    },
+    "meaning": "Synthetic lower-index obtuse prism; no source-question interpretation. Exposed same-assistant setup, not independent holdout."
+  },
+  "firstFreeze": {
+    "baselineCommit": "8f8edc905348d7cac8babe55f823740556fa8027",
+    "timestampUTC": "2026-11-15T06:48:32.422Z",
+    "sourceSha256": {
+      "src/angular-math.js": "897f3a1e947471dd8e66dff647f2af60db1f23b4dc63a13d34cfcdab127b0bd7",
+      "src/planar-angle-queries.js": "7ce33797505e8c972bcf662f32e5e2656a590ccbba91931781787147979105f2",
+      "src/prism-angle-queries.js": "1e01a0e83d804107d88f684dfeffc91cf884d88392ade14e51e25925105a79d1",
+      "src/problem-workflow.js": "2d44bb3dd45317b3e24252784f4f8bbe79bb8ff3fba6b81d8c607795215ce988",
+      "test/helpers/prism-vector-reference.mjs": "e9edc913bb310a078fc267e0c0b5e2098a5b1efb2e99659f024ab3d54305fb99",
+      "test/helpers/prism-native-inspection.mjs": "21dba186da1a29d64878cd9e36f3fae6028f8e66378d3daaf607b4652245b521"
+    },
+    "reservedTaskSha256": "ee78584b3a5d58cb4f42e4e7098796385f2e6d1b542b9bde962c59a4ac52e998",
+    "provenance": "Same-assistant exposed development reserve, not independently hidden; implementation/helpers frozen before first execution."
+  },
+  "provenance": {
+    "independence": "Same-assistant exposed reserve; no independent hidden-model or classroom claim.",
+    "firstRun": "Forward and signed inverse succeeded. Harness incorrectly expected unique magnitude solution and failed. Requests, production and physical checker were not altered.",
+    "correction": "Vector and native checks establish two actual materials for the magnitude; corrected only expected status/exit. Final regression is exposed.",
+    "productionChangesAfterFreeze": 0,
+    "checkerChangesAfterFreeze": 0
+  },
+  "expected": {
+    "signedIndex": 1.2,
+    "magnitudeIndices": [
+      1.6538022175950176,
+      1.2
+    ]
+  }
+}

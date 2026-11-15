@@ -1,0 +1,1519 @@
+{
+  "baselineCommit": "8f8edc905348d7cac8babe55f823740556fa8027",
+  "sourceBlob": "5831b0358da3952efd15d32b0c04e7260eac1f55",
+  "purpose": "Frozen before shared-helper use; exact historical planar response preservation, not independent physics.",
+  "cases": [
+    {
+      "n1": 1,
+      "n2": 1,
+      "incidenceAngleDeg": 0,
+      "sha256": "d6ca571d0c4fdcff07641f6565bc822713e87a3876329e86d4d8cc484a3ce24d"
+    },
+    {
+      "n1": 1,
+      "n2": 1,
+      "incidenceAngleDeg": 15,
+      "sha256": "3c82b2a83baa957ee305b01fa3b5e1aa26f770e8622f03b5f2e9dc0963a45b08"
+    },
+    {
+      "n1": 1,
+      "n2": 1,
+      "incidenceAngleDeg": 30,
+      "sha256": "e0a0aa14e14a3944d4023f437efd07b04f4ec01105ef2174c44c5a1b8ed3d392"
+    },
+    {
+      "n1": 1,
+      "n2": 1,
+      "incidenceAngleDeg": 45,
+      "sha256": "dc1c03106caf49bbd82b8c39a73e6a8238c2984782eae175b93c0482db6ac057"
+    },
+    {
+      "n1": 1,
+      "n2": 1,
+      "incidenceAngleDeg": 60,
+      "sha256": "b2c6e9135fa6498dd768f3d33fe5de2c665a7c1fb8b985b662be91ebd163279c"
+    },
+    {
+      "n1": 1,
+      "n2": 1,
+      "incidenceAngleDeg": 80,
+      "sha256": "290cb8e8df25c23a3f7e82ed1cf4705328f9239e99a1ad38a2c801b656ff9ec3"
+    },
+    {
+      "n1": 1,
+      "n2": 1,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "6d8822affbabdb3afbe189610b83343272cf28fd1078f3eff431ccbf1c4c4c5e"
+    },
+    {
+      "n1": 1,
+      "n2": 1.25,
+      "incidenceAngleDeg": 0,
+      "sha256": "4712a75c3ed53bf1365de21d0d50f39a9e5eea4a13c7931ab70f645bf9193c63"
+    },
+    {
+      "n1": 1,
+      "n2": 1.25,
+      "incidenceAngleDeg": 15,
+      "sha256": "afa36327c6493e0521eb0987ec3430907eaf2ff865a882b7fc75060f2fc74834"
+    },
+    {
+      "n1": 1,
+      "n2": 1.25,
+      "incidenceAngleDeg": 30,
+      "sha256": "b863ed4cb09776e5c1a32cb6c34ecc61d37728d946c4cdb741b0e4200234ebe5"
+    },
+    {
+      "n1": 1,
+      "n2": 1.25,
+      "incidenceAngleDeg": 45,
+      "sha256": "419d3e575271c733758baabf48ba3e997fa90656bf61fbf44727449a87de28bb"
+    },
+    {
+      "n1": 1,
+      "n2": 1.25,
+      "incidenceAngleDeg": 60,
+      "sha256": "9839840609b3f98040618eecec65d5acc11550b3a5c8635e2827be36933c95c2"
+    },
+    {
+      "n1": 1,
+      "n2": 1.25,
+      "incidenceAngleDeg": 80,
+      "sha256": "c9094fa4a37c78276038d25b07077349482a987a818c0153bc812fb7ee93fa53"
+    },
+    {
+      "n1": 1,
+      "n2": 1.25,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "86781463030052f1b444eeae87bb947486df1803c7c53c7d9f4834a9644ac4ce"
+    },
+    {
+      "n1": 1,
+      "n2": 1.5,
+      "incidenceAngleDeg": 0,
+      "sha256": "700fd490d79219cc7c97d3bf20ed88ae66b2f7a867fe4395f100c923cb9e811f"
+    },
+    {
+      "n1": 1,
+      "n2": 1.5,
+      "incidenceAngleDeg": 15,
+      "sha256": "8e939eada90fabd608edbb5ad051b52bd09f07a9c3387bd24449464a8e0de589"
+    },
+    {
+      "n1": 1,
+      "n2": 1.5,
+      "incidenceAngleDeg": 30,
+      "sha256": "0954d7cd85f47e80328a5b5ed6621773e17d41fab5f929d0892b62fb83add56b"
+    },
+    {
+      "n1": 1,
+      "n2": 1.5,
+      "incidenceAngleDeg": 45,
+      "sha256": "7bb4fe1cdd38a9b7f9003a1cbcf0336c438d3cf2d1776e0727457c97c9d67d5f"
+    },
+    {
+      "n1": 1,
+      "n2": 1.5,
+      "incidenceAngleDeg": 60,
+      "sha256": "0858748aa4fcde938466a85798d0c139774b8c6455dd7a275e2126756e4af58d"
+    },
+    {
+      "n1": 1,
+      "n2": 1.5,
+      "incidenceAngleDeg": 80,
+      "sha256": "96e7d000723647f358d1be9d72998dd4abb2980c20eeb9f0c994a3980b1b695e"
+    },
+    {
+      "n1": 1,
+      "n2": 1.5,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "9128699cd94a884a275c4dd98677ae08fb74bea26d32d280fe8a7d602dbb9b2b"
+    },
+    {
+      "n1": 1,
+      "n2": 2,
+      "incidenceAngleDeg": 0,
+      "sha256": "1ae7e510115e98eabf0b792166363a5ebeeb8ca44c27015427673b0125a199ef"
+    },
+    {
+      "n1": 1,
+      "n2": 2,
+      "incidenceAngleDeg": 15,
+      "sha256": "d1f45c3477a8899a3ecb9de208c85ab74f81d83ebdaa06f6480f06a53a4bae59"
+    },
+    {
+      "n1": 1,
+      "n2": 2,
+      "incidenceAngleDeg": 30,
+      "sha256": "10cf4dfdbea3c19d5fe49a0b4deeecb35daaef6dbeaa69ef36245e0a5e35b9c9"
+    },
+    {
+      "n1": 1,
+      "n2": 2,
+      "incidenceAngleDeg": 45,
+      "sha256": "d8bad1e1dc858a2dd1305b649d0e9cc212d6f6b93d9f7f11481c7dda7731e79a"
+    },
+    {
+      "n1": 1,
+      "n2": 2,
+      "incidenceAngleDeg": 60,
+      "sha256": "1c1b737582472caaa3dc69774b1bed32eb061510f35c19ee43431f5df0fef812"
+    },
+    {
+      "n1": 1,
+      "n2": 2,
+      "incidenceAngleDeg": 80,
+      "sha256": "330b1bfe35cfc04633f60cfaade9a78a41c363d8b2cb0e8a88b05ecdb66b635d"
+    },
+    {
+      "n1": 1,
+      "n2": 2,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "37f587cab6e1c54ec1573fdee0eefa45fe2088c285385fc3b914bb4e9bb13b06"
+    },
+    {
+      "n1": 1,
+      "n2": 3,
+      "incidenceAngleDeg": 0,
+      "sha256": "f50ab94c89a9707914a2270ae4de6c0864f0f2e9c15c74fb0d69559f33077aa0"
+    },
+    {
+      "n1": 1,
+      "n2": 3,
+      "incidenceAngleDeg": 15,
+      "sha256": "c7a524be6e1b85d5c1af63bf76772f378239f1d20782022e63dea38e4bd06314"
+    },
+    {
+      "n1": 1,
+      "n2": 3,
+      "incidenceAngleDeg": 30,
+      "sha256": "73e6dcd98870fe55fe1752609d2c9fd17a4449ffca877f4a8e30a1258e183955"
+    },
+    {
+      "n1": 1,
+      "n2": 3,
+      "incidenceAngleDeg": 45,
+      "sha256": "d07ae7054755594871e1d62788ee2046bf1fe6b1bef2e76c7d743d92b47e8e12"
+    },
+    {
+      "n1": 1,
+      "n2": 3,
+      "incidenceAngleDeg": 60,
+      "sha256": "6e3117ba16803676bcdf1d7ba3a45c50211ff598e06f30d628b6a708cf4ce6ae"
+    },
+    {
+      "n1": 1,
+      "n2": 3,
+      "incidenceAngleDeg": 80,
+      "sha256": "33b220f8ae1678a94ad0af810b20413d7f3551b7103d3acf8945be71210818cb"
+    },
+    {
+      "n1": 1,
+      "n2": 3,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "db6f3e7a70f76a6f49a5c69236297d1ebd36ef8e97bb46fc1991cb5cdb9a35b4"
+    },
+    {
+      "n1": 1,
+      "n2": 4,
+      "incidenceAngleDeg": 0,
+      "sha256": "ebd1283fccc172bcd2c44c4108bd6edaf67f16daa6790a5c486b0e0809ba6244"
+    },
+    {
+      "n1": 1,
+      "n2": 4,
+      "incidenceAngleDeg": 15,
+      "sha256": "12271967b4b39bad6eae99f1e33bb5d3a6da4f2770acaefa32b8e4badcd85c2d"
+    },
+    {
+      "n1": 1,
+      "n2": 4,
+      "incidenceAngleDeg": 30,
+      "sha256": "0608c51e0cb918fa9101c24fd314154ef5a559bc5b43ce3e054c6ceec0820944"
+    },
+    {
+      "n1": 1,
+      "n2": 4,
+      "incidenceAngleDeg": 45,
+      "sha256": "3c985bd7ffade0a731f32a381e841b0d618f28c51869f5e6c129ef2daa330cda"
+    },
+    {
+      "n1": 1,
+      "n2": 4,
+      "incidenceAngleDeg": 60,
+      "sha256": "572e1282c2d25279626ede619a7a3b62188e34529502913fcda7a45f037d267d"
+    },
+    {
+      "n1": 1,
+      "n2": 4,
+      "incidenceAngleDeg": 80,
+      "sha256": "488450292a3a729b913f239631a18065991bae9e10afb75935c05d2a84560a6b"
+    },
+    {
+      "n1": 1,
+      "n2": 4,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "3c9080a8ba00be211f03deaf0d16fbc763d2d64a9e79596623823316d242bdb0"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1,
+      "incidenceAngleDeg": 0,
+      "sha256": "85f65e29a671e236b44b5477be8104858206c7a09bb9f6e4bdb2c2669c07b6c2"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1,
+      "incidenceAngleDeg": 15,
+      "sha256": "38f4b91ec5b53d92abf3094c78d757f0f86c2b7695c7e2137418d54673a8beb0"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1,
+      "incidenceAngleDeg": 30,
+      "sha256": "979e8af2efc09ac837d48dd0d79b842efa71661f8675fee982b3a1b7d64cacbd"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1,
+      "incidenceAngleDeg": 45,
+      "sha256": "d99c0acc69de64303d0fb2152db2c9d9349e4a5db77b7d619d46c6faa4e80a94"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1,
+      "incidenceAngleDeg": 60,
+      "sha256": "34a70b460486fd9c30b73c8255f17fe7ea20fdf2a12a161f2890504fb115cf38"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1,
+      "incidenceAngleDeg": 80,
+      "sha256": "01ba34d9dc20ea520d235c58245da06955d137e3400487c0e844483c2d3c6109"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "5ea7b591aa996e1e94637b3c9c8108105a4e6e60ce7879cddb06fd469d02c399"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1.25,
+      "incidenceAngleDeg": 0,
+      "sha256": "c5efcf6b8cff90d964676d86e1df8adb077d710cae7672134710ab2095728ac0"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1.25,
+      "incidenceAngleDeg": 15,
+      "sha256": "fecd5566730b80b593ff1222cff47a87bd9b9c0512906117466f73568848d810"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1.25,
+      "incidenceAngleDeg": 30,
+      "sha256": "a8c100012e228040d1fba48b5fb4d4801cb6be6a49b9928b7258a15ef7fa623e"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1.25,
+      "incidenceAngleDeg": 45,
+      "sha256": "967462134cb12f3b867acb66d3d73a52c187b61d159b61ed3cbdb1d13c21c003"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1.25,
+      "incidenceAngleDeg": 60,
+      "sha256": "7542c08c708cea34ebbea3823acacdc6626cf7831ae0167647d5796f05558d3f"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1.25,
+      "incidenceAngleDeg": 80,
+      "sha256": "77726529ad8a6944614e83c69a275680ea51658f362e49844cbe63790fa2a6c7"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1.25,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "d4146e3a203ad72a0d0fa5ac9f3711e8cc9358f5fb85e9b82c3f25e60d01a6e7"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1.5,
+      "incidenceAngleDeg": 0,
+      "sha256": "f2b2eb3a1a9cf94bd168b8970c03e857b216c18573324891faa5807469620911"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1.5,
+      "incidenceAngleDeg": 15,
+      "sha256": "9ba63ba227b1f5af81c9476dea7d74107a1a7c913610b207e7ec7a8852758936"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1.5,
+      "incidenceAngleDeg": 30,
+      "sha256": "3d02896a87bb268c81893b539c00451f181ea9ce9a7e139f51cc35b6c9aa5ad2"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1.5,
+      "incidenceAngleDeg": 45,
+      "sha256": "b6e65a083466346f74326b6d7d43ccfb6eaf407aff87ee43f26d970dca7a9c87"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1.5,
+      "incidenceAngleDeg": 60,
+      "sha256": "2a503fffca2de36c547456a2ec8ee4a734db73cf3b2c25fd210deeb577e6b0e1"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1.5,
+      "incidenceAngleDeg": 80,
+      "sha256": "5c7407f2578d4398f051c7f4124c8d6200d55838019a43036d05cec8a7f92d94"
+    },
+    {
+      "n1": 1.25,
+      "n2": 1.5,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "3663c4dc3227a0d0974cf66a31e3f9ac2442142e2ccbe697f71abf024a244442"
+    },
+    {
+      "n1": 1.25,
+      "n2": 2,
+      "incidenceAngleDeg": 0,
+      "sha256": "74b68b31139b14a2e306715fe3b92bbb58739697fb42aa6a48251d383b0ef22d"
+    },
+    {
+      "n1": 1.25,
+      "n2": 2,
+      "incidenceAngleDeg": 15,
+      "sha256": "e7c0077678c2b4fffe74a3f30741a6e2cbabd73e725767551208d83e1ae7a89c"
+    },
+    {
+      "n1": 1.25,
+      "n2": 2,
+      "incidenceAngleDeg": 30,
+      "sha256": "4791fde7819c52b109906c7c1650c1fe1b3d1f68acf4271ede81c7f6cc2562d5"
+    },
+    {
+      "n1": 1.25,
+      "n2": 2,
+      "incidenceAngleDeg": 45,
+      "sha256": "393b110549a49ceb4b7252ce8db66f66a72eabf9f0b4638940add349cd636645"
+    },
+    {
+      "n1": 1.25,
+      "n2": 2,
+      "incidenceAngleDeg": 60,
+      "sha256": "cf3820c27bdfb3f091cc3ccc11c4658aa7ca864d1bc314586a59a29b32f52197"
+    },
+    {
+      "n1": 1.25,
+      "n2": 2,
+      "incidenceAngleDeg": 80,
+      "sha256": "3791ec414cbc967254d7c18f1a95feac4696468bcb8e02476b73275f8418554c"
+    },
+    {
+      "n1": 1.25,
+      "n2": 2,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "59ea8c18bda6fa34903dda8db0f495065de3f79f6b1c747f396f3ad7c4f0396d"
+    },
+    {
+      "n1": 1.25,
+      "n2": 3,
+      "incidenceAngleDeg": 0,
+      "sha256": "1a185d7740ad9fa0f78ad2f801d497ac62a8d30701421bcd4558403175507f28"
+    },
+    {
+      "n1": 1.25,
+      "n2": 3,
+      "incidenceAngleDeg": 15,
+      "sha256": "9138ae5b61f7007d01b9ec2be18a983a36b0dfb0a3ff7ac196989d1a8cfc2193"
+    },
+    {
+      "n1": 1.25,
+      "n2": 3,
+      "incidenceAngleDeg": 30,
+      "sha256": "34529b27db0eb4be0a6926f5938ee1dc5b999764bb72d76e35954ccbd85c14b1"
+    },
+    {
+      "n1": 1.25,
+      "n2": 3,
+      "incidenceAngleDeg": 45,
+      "sha256": "2813db6d1a1ac92885f278a9605fcaa14f52d7f6fb81f0348324f79850f8e363"
+    },
+    {
+      "n1": 1.25,
+      "n2": 3,
+      "incidenceAngleDeg": 60,
+      "sha256": "e8b858e911b46e08ab6d4af2786851f15bd178a1ab7fcdd2f753d34ee01e83d3"
+    },
+    {
+      "n1": 1.25,
+      "n2": 3,
+      "incidenceAngleDeg": 80,
+      "sha256": "61ad084a5beeac9ce62d095f8b82e8a14a9f053d25ac2160e686f215c8c17282"
+    },
+    {
+      "n1": 1.25,
+      "n2": 3,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "e7a5470641d13d4c9fe90148982d0e33b48343e25a4999f4dca3f3cd5cdd80ff"
+    },
+    {
+      "n1": 1.25,
+      "n2": 4,
+      "incidenceAngleDeg": 0,
+      "sha256": "c4925b7b88fa71bc5812394973f11f7cfba06ff0962169b652c1ca6eba2039a9"
+    },
+    {
+      "n1": 1.25,
+      "n2": 4,
+      "incidenceAngleDeg": 15,
+      "sha256": "a427952057daf6b64860f43b0f680c318cfd1da9bb88cc66105e05a34924d66d"
+    },
+    {
+      "n1": 1.25,
+      "n2": 4,
+      "incidenceAngleDeg": 30,
+      "sha256": "8e26aa541d906b693f0ee351c051cc173a66246bb459006821441ce9dc396996"
+    },
+    {
+      "n1": 1.25,
+      "n2": 4,
+      "incidenceAngleDeg": 45,
+      "sha256": "60f4c8e66d87351025dfe8b5e2cfadc1337dd7f1ac3da588078a0bddf8229146"
+    },
+    {
+      "n1": 1.25,
+      "n2": 4,
+      "incidenceAngleDeg": 60,
+      "sha256": "a7749d53bf9c80ad1c4c2c4083fa7cd1ea6d737426efa394cbaa9746adc180ad"
+    },
+    {
+      "n1": 1.25,
+      "n2": 4,
+      "incidenceAngleDeg": 80,
+      "sha256": "4842f36f32aa7adcf283f22787f13bb1d45465e4598eb042438bcfb3d7073808"
+    },
+    {
+      "n1": 1.25,
+      "n2": 4,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "33300e7452ef9e810cf67369aaa5359a5cfd0b8efdc1935ee20132dbbccea008"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1,
+      "incidenceAngleDeg": 0,
+      "sha256": "671c96e9dde1f00f72c0e145e5326cecfda343676b7a5d435f148139eba5908b"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1,
+      "incidenceAngleDeg": 15,
+      "sha256": "b79fd8287696d381cf4039a8e3f2fc5ae153e239273b509f98d8089e6c94b771"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1,
+      "incidenceAngleDeg": 30,
+      "sha256": "7bc3b46814bd86676a58b1197c381ce45ac09b71835519c2698a40b711e7ecb7"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1,
+      "incidenceAngleDeg": 45,
+      "sha256": "20e324d2440892d0edd0338563d4fb1c7b4d7a2e7a7657e4a032e08dc7d96fb4"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1,
+      "incidenceAngleDeg": 60,
+      "sha256": "548f6da9ca7932af6781bd4e254a21dc3ac936c288d970eb426f89bc1d4c400f"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1,
+      "incidenceAngleDeg": 80,
+      "sha256": "cb3a9987e117861b634ec0fe06e4565bbf21d32dac96ace4945c5753f5a09233"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "2bbcfc026a44fd60fb3bd3d2fb9d73ce48be5587204dff1e0aa839b7f4bfb1ce"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1.25,
+      "incidenceAngleDeg": 0,
+      "sha256": "c6af33776b3207baae3968a41de139b3b58e42641ad4ca634997f511ea90e958"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1.25,
+      "incidenceAngleDeg": 15,
+      "sha256": "4e0c83e91a109790e9feff20810c3feb5f916416002dd47dd029c9932c08b469"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1.25,
+      "incidenceAngleDeg": 30,
+      "sha256": "421e9e2d423749bd0e73e84129d236adf0aeeebc551b1b5d1945201b8c3bc159"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1.25,
+      "incidenceAngleDeg": 45,
+      "sha256": "c3134f62a945de3cd429d49eeb90b8798d6a97e262936908808405f0bf364919"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1.25,
+      "incidenceAngleDeg": 60,
+      "sha256": "1728d538e2b52b2d75dd002a58a47ce6596c2ae21903967c5b952a157c20037e"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1.25,
+      "incidenceAngleDeg": 80,
+      "sha256": "046a286f581b4056e8bd7e79a4a08e899daf782fda89bd757c6c3520c30f31f1"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1.25,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "7f5cdfbafc92edc077ce1d5c414de2ecae0632c3dd37d2bcf9ce1541c07ac195"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1.5,
+      "incidenceAngleDeg": 0,
+      "sha256": "9f5faaa2c9b3da426a0155ae0f178a16561d6ad9857b1d15ce5ce15ad2ddb825"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1.5,
+      "incidenceAngleDeg": 15,
+      "sha256": "5da89ffd60237df1b4b61029253f1eeb94cd95c2000bdcb0fab0bf855a902070"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1.5,
+      "incidenceAngleDeg": 30,
+      "sha256": "c63ba82df5f43a431211cbfdaa4b27cfbb8fa323b5d2cec053a89904e1923528"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1.5,
+      "incidenceAngleDeg": 45,
+      "sha256": "629b55d33de7774ad6d5aafa54eeae46dac94ebd8b66dc92c6aa2a6e00ec2d8f"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1.5,
+      "incidenceAngleDeg": 60,
+      "sha256": "7cafbe28aa2ba72f64feb6d15b947cb7e1a44c9990a29adc860ecde2cc2b79af"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1.5,
+      "incidenceAngleDeg": 80,
+      "sha256": "70c51ffccf935ce4e3d343ee457e69e95410358c8112f02a82fda732555ac94a"
+    },
+    {
+      "n1": 1.5,
+      "n2": 1.5,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "6abc5acd8a9436eef0fa81b45b194e0ed7e739f1c16e8b8638c7cb08ac5587b4"
+    },
+    {
+      "n1": 1.5,
+      "n2": 2,
+      "incidenceAngleDeg": 0,
+      "sha256": "42f7d9c28df0e7ae19022b724fb76224ba45ae597e59b33a9ed1bd3c75693d7f"
+    },
+    {
+      "n1": 1.5,
+      "n2": 2,
+      "incidenceAngleDeg": 15,
+      "sha256": "79207d57b501399b7280cd3d3d0c672df0555212931ca3a148e5b09d32934606"
+    },
+    {
+      "n1": 1.5,
+      "n2": 2,
+      "incidenceAngleDeg": 30,
+      "sha256": "6ee5e57af7bc26706d90e0cd6d3b724eff28924c883266eb4288c381fd3a66e8"
+    },
+    {
+      "n1": 1.5,
+      "n2": 2,
+      "incidenceAngleDeg": 45,
+      "sha256": "4289d8812f3cb4fd77bedfc8ea6c3aff98cfc928411b565ae67ee28f2fd4e2c3"
+    },
+    {
+      "n1": 1.5,
+      "n2": 2,
+      "incidenceAngleDeg": 60,
+      "sha256": "dfc33f52b0f9ea26dc6b43ac704c959c1444fad00b468a95fe7f6be4a416ffad"
+    },
+    {
+      "n1": 1.5,
+      "n2": 2,
+      "incidenceAngleDeg": 80,
+      "sha256": "b0c9816406032e357a166fbe10705334d34f22dd3cca4c3da5aa0419dcf011b7"
+    },
+    {
+      "n1": 1.5,
+      "n2": 2,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "3766b8e697777460c7f109d4b64af7ce5b879fbf42444c3c766110425b80b082"
+    },
+    {
+      "n1": 1.5,
+      "n2": 3,
+      "incidenceAngleDeg": 0,
+      "sha256": "9ef19cdf0581d98faf959c2018e2f2bc2b97cc27c2eb5683f4205ce55de7b0cb"
+    },
+    {
+      "n1": 1.5,
+      "n2": 3,
+      "incidenceAngleDeg": 15,
+      "sha256": "3cd6e3c39b88fbd060e97b0aa9d5c3e7c133b494a0b53a6b687eca9fc7edbf5f"
+    },
+    {
+      "n1": 1.5,
+      "n2": 3,
+      "incidenceAngleDeg": 30,
+      "sha256": "dc6b4b816f21101c380cf37ee16ea0afcdab8422965b62d7279c387dff7a4f0f"
+    },
+    {
+      "n1": 1.5,
+      "n2": 3,
+      "incidenceAngleDeg": 45,
+      "sha256": "e99689fc4d0d7e257b68d00eef6d97c3122ab8df7699742a64c278cf329b703f"
+    },
+    {
+      "n1": 1.5,
+      "n2": 3,
+      "incidenceAngleDeg": 60,
+      "sha256": "b12ceef1299ddf344f31fffe942ebd984dc027baa7af3f6c35d2433e1418b8d9"
+    },
+    {
+      "n1": 1.5,
+      "n2": 3,
+      "incidenceAngleDeg": 80,
+      "sha256": "c5b10f6adcf8bcd75ea5153c545248a6a3b8b326fac09aa93e0a8f6d57380c80"
+    },
+    {
+      "n1": 1.5,
+      "n2": 3,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "0e245e2ae4ccad9adb905728e0815225564a5ae1869bf0690503fab1ac9100a1"
+    },
+    {
+      "n1": 1.5,
+      "n2": 4,
+      "incidenceAngleDeg": 0,
+      "sha256": "e5340e1ec123704de7aea703da664da1b8d3396e4c13979c818e4668bc69c38e"
+    },
+    {
+      "n1": 1.5,
+      "n2": 4,
+      "incidenceAngleDeg": 15,
+      "sha256": "e0a57d032e9ff5716aaf468e3835c7ee844d90372e83f02582e039b75a016860"
+    },
+    {
+      "n1": 1.5,
+      "n2": 4,
+      "incidenceAngleDeg": 30,
+      "sha256": "eaa49a5c2742e9ab6b1843ebd9f57fc3f3a2f744280801acdc0f23677f8e331a"
+    },
+    {
+      "n1": 1.5,
+      "n2": 4,
+      "incidenceAngleDeg": 45,
+      "sha256": "26d0378575b5c58d819210eac85554c2978699514d9536e1e40d905560c1ae56"
+    },
+    {
+      "n1": 1.5,
+      "n2": 4,
+      "incidenceAngleDeg": 60,
+      "sha256": "d933a9f8437b28a6baccf2599f75ff1ec09a77f75fad8d0c1f7ab0d0fe0ff34c"
+    },
+    {
+      "n1": 1.5,
+      "n2": 4,
+      "incidenceAngleDeg": 80,
+      "sha256": "e2044780b93538fbb55cb71eb00878999c9e4b6bb286be21b86ccfd81a9f8a05"
+    },
+    {
+      "n1": 1.5,
+      "n2": 4,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "7fd0931eceb6964aad0be71830b72d09d0e0a9b04a8185fcc0d38aa1e0568f9d"
+    },
+    {
+      "n1": 2,
+      "n2": 1,
+      "incidenceAngleDeg": 0,
+      "sha256": "0972274b855a8279a4583e11637ac310a3c3936eb662fb8a3cb69a57ae008132"
+    },
+    {
+      "n1": 2,
+      "n2": 1,
+      "incidenceAngleDeg": 15,
+      "sha256": "8751124827ced3696f15a913c140ecd4567dd072940a6f7198bec83fcfef1d22"
+    },
+    {
+      "n1": 2,
+      "n2": 1,
+      "incidenceAngleDeg": 30,
+      "sha256": "3ef93aa8ab586dbe67bb33dc52d7967322ca13f558923b12d866ef5df8766b1f"
+    },
+    {
+      "n1": 2,
+      "n2": 1,
+      "incidenceAngleDeg": 45,
+      "sha256": "eade08635148bc16cdfe9cee98322572d42782a5f695c9906a9541705b3866b5"
+    },
+    {
+      "n1": 2,
+      "n2": 1,
+      "incidenceAngleDeg": 60,
+      "sha256": "a96d49ff1202bd9ac5377027ff77928e2c4f30da996e53fddb4f197caf85566a"
+    },
+    {
+      "n1": 2,
+      "n2": 1,
+      "incidenceAngleDeg": 80,
+      "sha256": "2a6b7683e68d33c2365063ca5cc6b4842764aa2f0229be22a8a6273e06ba0370"
+    },
+    {
+      "n1": 2,
+      "n2": 1,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "e6300821ef16759bad33aee188b4cda9a2527043fc8f238cda76b9f958f2a0a4"
+    },
+    {
+      "n1": 2,
+      "n2": 1.25,
+      "incidenceAngleDeg": 0,
+      "sha256": "108f0164ef91261b4bd0877b1abd215fab6186c04623f91d3b0b791a68276594"
+    },
+    {
+      "n1": 2,
+      "n2": 1.25,
+      "incidenceAngleDeg": 15,
+      "sha256": "14beb8183a63d21d44a32bc3b51e43b9250f30781859ed41b0bc4a748c21621c"
+    },
+    {
+      "n1": 2,
+      "n2": 1.25,
+      "incidenceAngleDeg": 30,
+      "sha256": "f95ca200e9201bf71fe0e9a9c1e86cdedf04dd09e88c0f2fc828e0eaf8b1328d"
+    },
+    {
+      "n1": 2,
+      "n2": 1.25,
+      "incidenceAngleDeg": 45,
+      "sha256": "36b27e71c638a73c3a920353051e1033031bd8a2a971095691edf21c52e32030"
+    },
+    {
+      "n1": 2,
+      "n2": 1.25,
+      "incidenceAngleDeg": 60,
+      "sha256": "7253bf87b85c39eaa0412a6a2fd46cbd0022717d62af6c3e68dc8dbba95e3040"
+    },
+    {
+      "n1": 2,
+      "n2": 1.25,
+      "incidenceAngleDeg": 80,
+      "sha256": "8191fee57ccbe337aee7341bd2277847fbcb4eeb96efa08e29c1e47a664710d3"
+    },
+    {
+      "n1": 2,
+      "n2": 1.25,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "64d92cc4ee0f1d3e014577aac1818be5ca8a1c7677cdd028bb53d5dde0c7b77d"
+    },
+    {
+      "n1": 2,
+      "n2": 1.5,
+      "incidenceAngleDeg": 0,
+      "sha256": "92f74f49ff084e06ba3eb774ab8fb6e2c917182a3b4e7da9308dffd463ac74df"
+    },
+    {
+      "n1": 2,
+      "n2": 1.5,
+      "incidenceAngleDeg": 15,
+      "sha256": "441b4632597b91686b83afedc9734ed104f914785d085687cc9b05716bf0cfad"
+    },
+    {
+      "n1": 2,
+      "n2": 1.5,
+      "incidenceAngleDeg": 30,
+      "sha256": "4aa49d8e2dfaa672507c0c78abe8c12032d9580c106dfa6f8a571a339817dfcf"
+    },
+    {
+      "n1": 2,
+      "n2": 1.5,
+      "incidenceAngleDeg": 45,
+      "sha256": "c7c71a794c8d5c758213db0cc179a2d468234a0af82dfa75159a3324f8391d46"
+    },
+    {
+      "n1": 2,
+      "n2": 1.5,
+      "incidenceAngleDeg": 60,
+      "sha256": "467ca64cdd301280f3c2f5970fa33cc59a95896f271e958628565080acb022a6"
+    },
+    {
+      "n1": 2,
+      "n2": 1.5,
+      "incidenceAngleDeg": 80,
+      "sha256": "8c41a6e90bae8d779fa84e9eb286594fbfcf02398fcf78fd2cea1e225c3dcad3"
+    },
+    {
+      "n1": 2,
+      "n2": 1.5,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "87f472f9b812cab5b3b653ed0ae6f77b2422038c47f5d39d4ec1b6b638bc3b95"
+    },
+    {
+      "n1": 2,
+      "n2": 2,
+      "incidenceAngleDeg": 0,
+      "sha256": "6b4f68a3699eec35dbbe4c163e5f12d24d177edd67f83383c4a087b22f99a69d"
+    },
+    {
+      "n1": 2,
+      "n2": 2,
+      "incidenceAngleDeg": 15,
+      "sha256": "bab6b4361e56a0af8371d4d17dec783885239b02794094e6379f94d92bb753a8"
+    },
+    {
+      "n1": 2,
+      "n2": 2,
+      "incidenceAngleDeg": 30,
+      "sha256": "064d12fa0282f3626b62b519dd35f4a92aff086a11c2bd020b1192539674b595"
+    },
+    {
+      "n1": 2,
+      "n2": 2,
+      "incidenceAngleDeg": 45,
+      "sha256": "dd00ac8c975077924268a7c5d060aea77f2f4a4646aba6124ac6e90327ea2a08"
+    },
+    {
+      "n1": 2,
+      "n2": 2,
+      "incidenceAngleDeg": 60,
+      "sha256": "2abd9862c08f5a9a834cec0e8d03af8485472fbc36657fc94b10f0414c9c620f"
+    },
+    {
+      "n1": 2,
+      "n2": 2,
+      "incidenceAngleDeg": 80,
+      "sha256": "62965c1e380c67a90b791f97da2f9d63aa5573ec67db243b172217524c2f7cd2"
+    },
+    {
+      "n1": 2,
+      "n2": 2,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "dd6657bd930378f61f8d7495c2df4df77ce9f10fd97c856f0591fe9a48152d1c"
+    },
+    {
+      "n1": 2,
+      "n2": 3,
+      "incidenceAngleDeg": 0,
+      "sha256": "4c0416d89fd801a7fb0f5459cc2b92f818bae158612f9d4094c19ac7fcde01bb"
+    },
+    {
+      "n1": 2,
+      "n2": 3,
+      "incidenceAngleDeg": 15,
+      "sha256": "145e4bbe0c1de42cf50eff73db4a6ab3efad9773ff719a2d39f444f5138a7f54"
+    },
+    {
+      "n1": 2,
+      "n2": 3,
+      "incidenceAngleDeg": 30,
+      "sha256": "ce62ffe30c1ecdc2253c74e33d6ee0f9d144d4a1f373bd4110e0401f6f93a7f5"
+    },
+    {
+      "n1": 2,
+      "n2": 3,
+      "incidenceAngleDeg": 45,
+      "sha256": "5680dc6d556534adc0bebce7f820632a0e430213e3256012e3454305c9922602"
+    },
+    {
+      "n1": 2,
+      "n2": 3,
+      "incidenceAngleDeg": 60,
+      "sha256": "1192b0d43a9c108b7feef2ad1d4e23b2f619b7920d73d4b391584e590e5fac42"
+    },
+    {
+      "n1": 2,
+      "n2": 3,
+      "incidenceAngleDeg": 80,
+      "sha256": "28cdffc5d3bb167895684528516e420e3add36f68cc46f8ba2ca280d0ebf78bd"
+    },
+    {
+      "n1": 2,
+      "n2": 3,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "f7217793a23ac4fb2add491cd08146333a94bf463183b3ba4f7a9ce67169c243"
+    },
+    {
+      "n1": 2,
+      "n2": 4,
+      "incidenceAngleDeg": 0,
+      "sha256": "0f3e74a903cdfcb73371729e6e9bade39228ee29d18eb4de1f957b15512ea59c"
+    },
+    {
+      "n1": 2,
+      "n2": 4,
+      "incidenceAngleDeg": 15,
+      "sha256": "7177a7d50d0e2d3e7b275186ed9c6dba76b17b87ed3814fd6fc34c01770d16c6"
+    },
+    {
+      "n1": 2,
+      "n2": 4,
+      "incidenceAngleDeg": 30,
+      "sha256": "af4986f7d7ceb4c22d0ac95a72e3c858fa033d99a25fc0bbfbc1ce1c61286ff8"
+    },
+    {
+      "n1": 2,
+      "n2": 4,
+      "incidenceAngleDeg": 45,
+      "sha256": "6925bf21b84aeda782c62d7a5380f3abebc449fa0104f756bc0a21f3cc8bdfd9"
+    },
+    {
+      "n1": 2,
+      "n2": 4,
+      "incidenceAngleDeg": 60,
+      "sha256": "429e4316e79384a09bd3f9b6affa3de7adaabcac07974dfa0ba0174c8c612bb4"
+    },
+    {
+      "n1": 2,
+      "n2": 4,
+      "incidenceAngleDeg": 80,
+      "sha256": "1e9d385dbc180a40f838d30af39fa45218c82e22c8308a0fd0884afa5a50e46f"
+    },
+    {
+      "n1": 2,
+      "n2": 4,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "6706a6e6ea1b7c7206703d1c2dce18788b645af2355cbdbf32fc622b6e89ecc0"
+    },
+    {
+      "n1": 3,
+      "n2": 1,
+      "incidenceAngleDeg": 0,
+      "sha256": "cc50366dfc013d6ad4f4fdd4844bb799209ee72f943ed60ece7424633f718a1a"
+    },
+    {
+      "n1": 3,
+      "n2": 1,
+      "incidenceAngleDeg": 15,
+      "sha256": "4a6b068ca393f94c202891f2f649054d82d9c573803e9fef9e73edb6b7ca0b28"
+    },
+    {
+      "n1": 3,
+      "n2": 1,
+      "incidenceAngleDeg": 30,
+      "sha256": "83f2e34e344f3135b383e50a404558599ed777a185666c40232edc92612df38b"
+    },
+    {
+      "n1": 3,
+      "n2": 1,
+      "incidenceAngleDeg": 45,
+      "sha256": "4ce7e4b99e76f3a6b4f246284676746e96d3e5f2a06f2a9e6b1e7e5e1c91cf57"
+    },
+    {
+      "n1": 3,
+      "n2": 1,
+      "incidenceAngleDeg": 60,
+      "sha256": "e7bbc111a6a81a5391435e1d5d7eb084dce24e1973d61544113d8c7639b43ac3"
+    },
+    {
+      "n1": 3,
+      "n2": 1,
+      "incidenceAngleDeg": 80,
+      "sha256": "3ab17483a68d3d613d63c9e7bc0201decade5f5a0d1fbb2d3e4d7159c8133bf2"
+    },
+    {
+      "n1": 3,
+      "n2": 1,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "bd44415874d83becb9ad626f8d4d7ee5c7c4b34f0a1fa4495796ba4482aed737"
+    },
+    {
+      "n1": 3,
+      "n2": 1.25,
+      "incidenceAngleDeg": 0,
+      "sha256": "fb864d6aecf5313dc42e6d395e5d606c2f0271b2d7924f950b2753e2229693f7"
+    },
+    {
+      "n1": 3,
+      "n2": 1.25,
+      "incidenceAngleDeg": 15,
+      "sha256": "9bcf3c3af27663316520cf37a6562586a253eccf686fe32c32d9ad2fb6cd166e"
+    },
+    {
+      "n1": 3,
+      "n2": 1.25,
+      "incidenceAngleDeg": 30,
+      "sha256": "74fed8b413dab433994940d525e31d0b28ced98670e9cee376121441dd3f6a82"
+    },
+    {
+      "n1": 3,
+      "n2": 1.25,
+      "incidenceAngleDeg": 45,
+      "sha256": "cecc163c8bbe37fef7d86228d5d32236a64a095467cab3a3e1f0f7c3cb6bc623"
+    },
+    {
+      "n1": 3,
+      "n2": 1.25,
+      "incidenceAngleDeg": 60,
+      "sha256": "a62f07237782ccddb5d9add7b63130cd96f6ca0ff2c06fed6b7db5381a2a47e4"
+    },
+    {
+      "n1": 3,
+      "n2": 1.25,
+      "incidenceAngleDeg": 80,
+      "sha256": "fed89d308aa52c2e9188d2bf818fa1beceb1692ff3cdf400634f3ea47c836fa8"
+    },
+    {
+      "n1": 3,
+      "n2": 1.25,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "960ef4723f4ea58b5e6441780fe25b6a5914633c99767cd35f312ef9562fe987"
+    },
+    {
+      "n1": 3,
+      "n2": 1.5,
+      "incidenceAngleDeg": 0,
+      "sha256": "f4dd5cac0e19aebc62058c22a6416dfd09849df6a1a1613b982d3286c75494b7"
+    },
+    {
+      "n1": 3,
+      "n2": 1.5,
+      "incidenceAngleDeg": 15,
+      "sha256": "26802bf822a54090c9a96721a52496deed232f7a24e0c742911a4bdfa60244da"
+    },
+    {
+      "n1": 3,
+      "n2": 1.5,
+      "incidenceAngleDeg": 30,
+      "sha256": "c2321c13939b8d0bcbad33671a609eea168effb73abb2997cb8c00b631554a7f"
+    },
+    {
+      "n1": 3,
+      "n2": 1.5,
+      "incidenceAngleDeg": 45,
+      "sha256": "f6c4dc398a6c89410e9c171e048c9739cb6266011e8967704e0d9a3a681eca22"
+    },
+    {
+      "n1": 3,
+      "n2": 1.5,
+      "incidenceAngleDeg": 60,
+      "sha256": "1b719543bb45cc74a5c30356abf4e6eb0ef29852b6849898d4e43fbb07a4ab05"
+    },
+    {
+      "n1": 3,
+      "n2": 1.5,
+      "incidenceAngleDeg": 80,
+      "sha256": "e27d69ebf836cdd17d120da7bcff0a10ee0f7cb2182c13b03c89af6af6300247"
+    },
+    {
+      "n1": 3,
+      "n2": 1.5,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "fdbc8dec53bf3f06367fd9ecefd6daaebe05e8a99aa44702f92b80d280556f89"
+    },
+    {
+      "n1": 3,
+      "n2": 2,
+      "incidenceAngleDeg": 0,
+      "sha256": "ef034a5853916fd187bd3d646d3124694f7c55d8b5542891c34fe97ed2b75ab1"
+    },
+    {
+      "n1": 3,
+      "n2": 2,
+      "incidenceAngleDeg": 15,
+      "sha256": "a137fcecc4a0019db2e814d76c13fcffaf8f67072077d8a7bc6268f3a02de019"
+    },
+    {
+      "n1": 3,
+      "n2": 2,
+      "incidenceAngleDeg": 30,
+      "sha256": "d6469345348be2d2654da73bf8ca6e900f39c3dea5b15e7189fbc28e0cbd6a66"
+    },
+    {
+      "n1": 3,
+      "n2": 2,
+      "incidenceAngleDeg": 45,
+      "sha256": "5697f21d56514cb6a2fa7fd95e73e3c177c8c921c0c54c0a21a4f51ff18bf837"
+    },
+    {
+      "n1": 3,
+      "n2": 2,
+      "incidenceAngleDeg": 60,
+      "sha256": "95752c65ef08737180d12268f292dfe697ebf5d97531f05d4ebee5dbee37eb5d"
+    },
+    {
+      "n1": 3,
+      "n2": 2,
+      "incidenceAngleDeg": 80,
+      "sha256": "1fb56992ee711a48368acda432afb55503967d84fe387ca3e5b4d063528d7f55"
+    },
+    {
+      "n1": 3,
+      "n2": 2,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "2cae0478647b7145b3b64fa7c40aa38a7addae6a3aba55ffbbae21e969854d5b"
+    },
+    {
+      "n1": 3,
+      "n2": 3,
+      "incidenceAngleDeg": 0,
+      "sha256": "c53986d01a0f5d1a2853e85c8c3aca2fbc3bbc800fd8023c023181271cf4bf4c"
+    },
+    {
+      "n1": 3,
+      "n2": 3,
+      "incidenceAngleDeg": 15,
+      "sha256": "7873da7111803d1c7afcf8840b230a9723441638de74ba4dd6a314cd8054e640"
+    },
+    {
+      "n1": 3,
+      "n2": 3,
+      "incidenceAngleDeg": 30,
+      "sha256": "ec735cd34e4709db5d4ba89b7416a8d270a3d8ee98919dfee40512ccb286f97e"
+    },
+    {
+      "n1": 3,
+      "n2": 3,
+      "incidenceAngleDeg": 45,
+      "sha256": "bf52bdee279288ed73453ef14cef132460e5ccae1d89082c1a747736607fd192"
+    },
+    {
+      "n1": 3,
+      "n2": 3,
+      "incidenceAngleDeg": 60,
+      "sha256": "972a2fde9f0e978edf4baad4ed3e82ad359d30c0a07d8268bde186ba32007837"
+    },
+    {
+      "n1": 3,
+      "n2": 3,
+      "incidenceAngleDeg": 80,
+      "sha256": "346cf73af331be1c5b8446647438c415abce24271dc9e995738d52373d24facb"
+    },
+    {
+      "n1": 3,
+      "n2": 3,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "6431d26a4b32867dfa3d2a68e6e70fe938d31dc9ba744f604e73b037bd9e034b"
+    },
+    {
+      "n1": 3,
+      "n2": 4,
+      "incidenceAngleDeg": 0,
+      "sha256": "9e5f82dc28b6aa09e7867627d758404858aae5dca691ed5c517cfd1ffa6a80dd"
+    },
+    {
+      "n1": 3,
+      "n2": 4,
+      "incidenceAngleDeg": 15,
+      "sha256": "17cf3ea83e1736605ff583e0897fdc177dab9c3c92db182af5605c01550b030e"
+    },
+    {
+      "n1": 3,
+      "n2": 4,
+      "incidenceAngleDeg": 30,
+      "sha256": "a10cbcc1521700e178c3d696febbae38597b87ade223489bafb231f12d1b5140"
+    },
+    {
+      "n1": 3,
+      "n2": 4,
+      "incidenceAngleDeg": 45,
+      "sha256": "24a095341cba9e8342f729c5d108dad8d37ed1ded2546283dd3e963d17725c3a"
+    },
+    {
+      "n1": 3,
+      "n2": 4,
+      "incidenceAngleDeg": 60,
+      "sha256": "7266cf30d09d6b7d7d1d6c301ecdd99f637d9d9f582c8dd699392258affaa754"
+    },
+    {
+      "n1": 3,
+      "n2": 4,
+      "incidenceAngleDeg": 80,
+      "sha256": "2869f6a931c9e2190f3857e813a478a146014412792559e57327fb050231750e"
+    },
+    {
+      "n1": 3,
+      "n2": 4,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "f52e6652464883be4cbf535ab1339aca6368b523508f399a6efa9513c3a83c34"
+    },
+    {
+      "n1": 4,
+      "n2": 1,
+      "incidenceAngleDeg": 0,
+      "sha256": "145989864947e046138bad22b1fd2cd9c9b8452a85b5deacf463700259280f61"
+    },
+    {
+      "n1": 4,
+      "n2": 1,
+      "incidenceAngleDeg": 15,
+      "sha256": "7350808164d5813fefe670b3ee0aa88ca45167d15991ba31a6e289d21c3dc8c9"
+    },
+    {
+      "n1": 4,
+      "n2": 1,
+      "incidenceAngleDeg": 30,
+      "sha256": "efdc397ac16fdc9fda5ddf9214623672f6115a28ab42c12270d2916fc4646d0e"
+    },
+    {
+      "n1": 4,
+      "n2": 1,
+      "incidenceAngleDeg": 45,
+      "sha256": "280548900e0fa84d038407cbdd1e96c33dd2f1968bc07cf1901df45d9fc443b2"
+    },
+    {
+      "n1": 4,
+      "n2": 1,
+      "incidenceAngleDeg": 60,
+      "sha256": "fa87fc94a851d55c91c586cfb5efb20848d2276ef36539119fe78cc7d610fa83"
+    },
+    {
+      "n1": 4,
+      "n2": 1,
+      "incidenceAngleDeg": 80,
+      "sha256": "89adcc3fca7b38dc26dae6e71e6bd500a8100fe70108c608e84adc5b5ca1002e"
+    },
+    {
+      "n1": 4,
+      "n2": 1,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "ba2fb7eb91558103ca2fc8118b12a7a748d3118e3e2aaed9e95a96156c9c5070"
+    },
+    {
+      "n1": 4,
+      "n2": 1.25,
+      "incidenceAngleDeg": 0,
+      "sha256": "a661197bba972aa17850c32385c91f3693d01dff8ddbeb90e967283018b9083f"
+    },
+    {
+      "n1": 4,
+      "n2": 1.25,
+      "incidenceAngleDeg": 15,
+      "sha256": "3d304a8e3937fd7ab1826b4fa5fe8fa5e4a04a38fb251db9196e06a85098ba16"
+    },
+    {
+      "n1": 4,
+      "n2": 1.25,
+      "incidenceAngleDeg": 30,
+      "sha256": "1a54eeb8628d76a44c19d23eb0843b018741e620991aecdbdd93539377aed4f1"
+    },
+    {
+      "n1": 4,
+      "n2": 1.25,
+      "incidenceAngleDeg": 45,
+      "sha256": "3ce7580d21b1bfe10961e58b6b0542704d1ef266799cccf3fe59495c5a570630"
+    },
+    {
+      "n1": 4,
+      "n2": 1.25,
+      "incidenceAngleDeg": 60,
+      "sha256": "35d28660c24b868faad6a6f175cbc65c1bf31d9e059e45c60d92a4315dec3bd8"
+    },
+    {
+      "n1": 4,
+      "n2": 1.25,
+      "incidenceAngleDeg": 80,
+      "sha256": "60811a2e0b34fd448dcffc146ad9ad2de8c5fba99333b59df8be9e1be90c8435"
+    },
+    {
+      "n1": 4,
+      "n2": 1.25,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "a363a860c3b87d3648c6087501779fbc6735c4e97ae479007084242373b51548"
+    },
+    {
+      "n1": 4,
+      "n2": 1.5,
+      "incidenceAngleDeg": 0,
+      "sha256": "492f9a993a968ca889bd3c7c0a22608dc321be04cc88ae6b6674a4a1a6483bb8"
+    },
+    {
+      "n1": 4,
+      "n2": 1.5,
+      "incidenceAngleDeg": 15,
+      "sha256": "174c79c345fc521eb7dccce0ac855e3670817648f384604310b1aa11805c1011"
+    },
+    {
+      "n1": 4,
+      "n2": 1.5,
+      "incidenceAngleDeg": 30,
+      "sha256": "aa643053bb1b4a31294c5f80181a469e460dfde8a2031e645f87be94c30448df"
+    },
+    {
+      "n1": 4,
+      "n2": 1.5,
+      "incidenceAngleDeg": 45,
+      "sha256": "b762d2f40d8fbeb26c39e7f1988b64d72ad28262e81caec3eb08865072e30d6f"
+    },
+    {
+      "n1": 4,
+      "n2": 1.5,
+      "incidenceAngleDeg": 60,
+      "sha256": "b7cd57bcdf0e5135e993747f2ff912a68ab90ccc8386bb58c7898043625ce6fe"
+    },
+    {
+      "n1": 4,
+      "n2": 1.5,
+      "incidenceAngleDeg": 80,
+      "sha256": "e449a16f7123c6e8e822160e8533ed24dfdcbe0358cff1418cc98e512a81bffd"
+    },
+    {
+      "n1": 4,
+      "n2": 1.5,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "13debd3e5b84e39952e77de2056b3ac84f32c3f63ddb52b1eaf8f6593bd61d03"
+    },
+    {
+      "n1": 4,
+      "n2": 2,
+      "incidenceAngleDeg": 0,
+      "sha256": "f86c3e0515d5e079eb62c11060558ff43e31354e0cec363d7a445ee4b2bce224"
+    },
+    {
+      "n1": 4,
+      "n2": 2,
+      "incidenceAngleDeg": 15,
+      "sha256": "06192b62f4997067fef7fcc3840533b1975611b3a90d40fbbec8e53736bd1f7e"
+    },
+    {
+      "n1": 4,
+      "n2": 2,
+      "incidenceAngleDeg": 30,
+      "sha256": "4f316a99c895470240d13568409a707a05b8acbf5122d53bdcd4a99b05797be8"
+    },
+    {
+      "n1": 4,
+      "n2": 2,
+      "incidenceAngleDeg": 45,
+      "sha256": "64dfb62c27e391018686ccd724a39ed7e86d1683d581e9cb0799443d887cc480"
+    },
+    {
+      "n1": 4,
+      "n2": 2,
+      "incidenceAngleDeg": 60,
+      "sha256": "7fea7874aa146b4ece2694a04e872c210102b943021ecb6fd7b77db62b93da57"
+    },
+    {
+      "n1": 4,
+      "n2": 2,
+      "incidenceAngleDeg": 80,
+      "sha256": "7d9881dcc397cb99f4caab7334ffe497eb3811a842eef2e03a68897eb8b8a160"
+    },
+    {
+      "n1": 4,
+      "n2": 2,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "7cd5b551d44173c2b5ca4f79eea48d05728cb720ad2282b50d3d138810fb5fd9"
+    },
+    {
+      "n1": 4,
+      "n2": 3,
+      "incidenceAngleDeg": 0,
+      "sha256": "81cbe438e657788e6146c97b15ebc6b25d8c081468450f2e7d9dfadfa322acf8"
+    },
+    {
+      "n1": 4,
+      "n2": 3,
+      "incidenceAngleDeg": 15,
+      "sha256": "24dc752da095dab04148ec76ca66397981559f6bfca23c0fd4492d545d94c901"
+    },
+    {
+      "n1": 4,
+      "n2": 3,
+      "incidenceAngleDeg": 30,
+      "sha256": "bde425e9770f0969f2ab708504e37691bb516bbc95997998ba5500942ecb8346"
+    },
+    {
+      "n1": 4,
+      "n2": 3,
+      "incidenceAngleDeg": 45,
+      "sha256": "b006a3f512c33b27d8f13c055906da42b7b6ffaf582de4b31845534869e7d0e5"
+    },
+    {
+      "n1": 4,
+      "n2": 3,
+      "incidenceAngleDeg": 60,
+      "sha256": "d073bafbd1b9b5cef12f3e5c08e276928d1b45ee717c36efe3c8ad0b8801c23f"
+    },
+    {
+      "n1": 4,
+      "n2": 3,
+      "incidenceAngleDeg": 80,
+      "sha256": "ed0b02d2ff5d60bc3faaf7953d96176ffc2544ff7bdafe528c09ec994a4c57c0"
+    },
+    {
+      "n1": 4,
+      "n2": 3,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "2ec2f47e2b9ec08a0fe9ab400d12ae04d27494729f3e3d26055e9420b1979174"
+    },
+    {
+      "n1": 4,
+      "n2": 4,
+      "incidenceAngleDeg": 0,
+      "sha256": "305310c7f6506ac1bb2a85de2699dcf9d32deeef5e240b82ebce309cd138dc09"
+    },
+    {
+      "n1": 4,
+      "n2": 4,
+      "incidenceAngleDeg": 15,
+      "sha256": "51e807de5df2d569644681577067d208839489ff44f471f9d8116221934562e8"
+    },
+    {
+      "n1": 4,
+      "n2": 4,
+      "incidenceAngleDeg": 30,
+      "sha256": "cbc94e943b5aa8cdabe2f5bb6e9c6932d19a4e82be1d36e06d9c4295911529aa"
+    },
+    {
+      "n1": 4,
+      "n2": 4,
+      "incidenceAngleDeg": 45,
+      "sha256": "a416d0ee5ebc217e9aebda61b1dd0a71e0ec66b5fc869d0c1e9a26e459074e82"
+    },
+    {
+      "n1": 4,
+      "n2": 4,
+      "incidenceAngleDeg": 60,
+      "sha256": "fa24629c8c975e6b4059ee9d5fec8456c59cadeb9afd9f11b0eecf9f331b177b"
+    },
+    {
+      "n1": 4,
+      "n2": 4,
+      "incidenceAngleDeg": 80,
+      "sha256": "3acf7168f5cfdb05b9cc182a7e52c131d38718e31eef02ef17a13d5d3e938cdc"
+    },
+    {
+      "n1": 4,
+      "n2": 4,
+      "incidenceAngleDeg": 89.999999999,
+      "sha256": "2b5c1b4b8b87623c2c67ac1d7031e4f13b35494c9f4a7195bbe3883aa2a29b7d"
+    }
+  ]
+}

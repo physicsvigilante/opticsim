@@ -78,6 +78,10 @@ jobs:
         run: node scripts/method-suitability-acceptance.mjs
       - name: Verify reduced forward lens facts without native scene assumptions
         run: node scripts/lens-train-acceptance.mjs
+      - name: Verify reduced prism angles and qualified index ambiguity without native execution
+        run: node scripts/prism-angle-acceptance.mjs
+      - name: Cross-check prism angular facts against separately declared native apparatuses
+        run: node scripts/prism-native-acceptance.mjs
       - name: Run reduced inverse fact controls without native execution
         run: node scripts/reduced-inverse-acceptance.mjs
       - name: Replay six frozen original inverse-scope requests, without image substitution
@@ -111,6 +115,8 @@ jobs:
             test-artifacts/llm-authoring/general-composition-v1/
             test-artifacts/llm-authoring/method-suitability-v1/
             test-artifacts/llm-authoring/lens-train-facts-v1/
+            test-artifacts/llm-authoring/prism-angle-facts-v1/
+            test-artifacts/llm-authoring/prism-native-facts-v1/
             test-artifacts/llm-authoring/reduced-inverse/
             test-artifacts/llm-authoring/reduced-inverse-original-v1/
             test-artifacts/llm-authoring/self-reviewed-pilot-v1/
