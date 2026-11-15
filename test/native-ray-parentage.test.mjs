@@ -297,3 +297,31 @@ test('run revision A→B→A never adopts delayed earlier A provenance despite e
   assert.equal(session.data.detectorRayProvenanceById.ReflectedDetector.value.crossings[0].rayToken,'fresh-A');
   assert.equal(session.revision,3);
 });
+
+test('native total-internal reflection keeps one root object and creates no fictitious Fresnel child',async()=>{
+  const high=4/3,low=1,critical=Math.asin(low/high)*180/Math.PI;
+  const incidence=critical+5;
+  const doc=document([
+    source('FromWater',-100,-100,90-incidence),
+    face(true),
+    detector('WaterDetector',0,-200,800),
+    detector('AirDetector',0,200,800)
+  ]);
+  const out=run(doc,['WaterDetector','AirDetector']);
+  assert.equal(out.summary.native.status,'completed');
+  assert.equal(out.summary.native.truncation,0);
+  assert.ok(out.summary.observations.interfacesById.AirWater.totalInternalReflections>=1);
+  assert.equal(out.summary.observations.interfacesById.AirWater.first.outcome,'total-internal-reflection');
+  const lower=value(out,'WaterDetector'),upper=value(out,'AirDetector');
+  assert.equal(lower.status,'complete');assert.equal(upper.status,'complete');
+  assert.equal(lower.value.crossings.length,1);
+  assert.equal(upper.value.crossings.length,0);
+  assert.equal(lower.value.nodes.length,1);
+  assert.equal(lower.value.nodes[0].origin,'native-emission');
+  assert.equal(lower.value.nodes[0].parentToken,null);
+  assert.equal(lower.value.nodes[0].sourceId,'FromWater');
+  assert.deepEqual(upper.value,{nodes:[],crossings:[]});
+  // This is an independent scalar reference to TIR, not a claim about the
+  // numerical accuracy of every native exact-critical ray trajectory.
+  assert.ok(incidence>critical&&critical>45&&critical<50);
+});
