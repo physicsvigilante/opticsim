@@ -86,6 +86,35 @@ function nativeObservation(doc,core){
     actual,delegates,overflow,events,cutoffSquared:
       core.Simulator.MIN_RAY_SEGMENT_LENGTH_SQUARED*loaded.scene.lengthScale**2};
 }
+// The prior exact-line helper proves an intersection of infinite supporting
+// lines. A finite native Glass edge additionally requires exact binary64
+// segment parameter 0 <= u <= 1, not a floating nearest-edge guess.
+function rational64(x){
+  if(!Number.isFinite(x))throw Error('Nonfinite finite-face coordinate');
+  const view=new DataView(new ArrayBuffer(8));view.setFloat64(0,x);
+  const bits=view.getBigUint64(0),exponent=Number((bits>>52n)&2047n);
+  let mantissa=bits&((1n<<52n)-1n);
+  if(exponent)mantissa+=1n<<52n;
+  if(bits>>63n)mantissa=-mantissa;
+  const shift=exponent?exponent-1023-52:-1074;
+  return shift<0?{n:mantissa,d:1n<<BigInt(-shift)}:
+    {n:mantissa<<BigInt(shift),d:1n};
+}
+function rationalSub(a,b){return {n:a.n*b.d-b.n*a.d,d:a.d*b.d};}
+function rationalDiv(a,b){
+  if(!b.n)throw Error('Zero finite-edge direction');
+  let n=a.n*b.d,d=a.d*b.n;
+  if(d<0n){n=-n;d=-d;}
+  return {n,d};
+}
+function exactFiniteEdgeParameter(point,line){
+  const axis=line.p1.x===line.p2.x?'y':'x';
+  const p={n:BigInt(point[axis].numerator),d:BigInt(point[axis].denominator)},
+    a=rational64(line.p1[axis]),b=rational64(line.p2[axis]);
+  const u=rationalDiv(rationalSub(p,a),rationalSub(b,a));
+  return {within:u.n>=0n&&u.n<=u.d,
+    approx:(point[axis].approx-line.p1[axis])/(line.p2[axis]-line.p1[axis])};
+}
 function faceEvidence(e,parameters,cutoffSquared){
   if(!e.before||!e.hitPoint||
      ![e.before.p1.x,e.before.p1.y,e.before.p2.x,e.before.p2.y,
@@ -103,6 +132,10 @@ function faceEvidence(e,parameters,cutoffSquared){
   try{exact=exactLineReference(e.before,line,cutoffSquared);}
   catch(err){return {state:'unknown',reason:'EXACT_REFERENCE_UNAVAILABLE',
     error:String(err.message)};}
+  let finite=null;
+  try{if(exact.kind==='unique')finite=exactFiniteEdgeParameter(exact.point,line);}
+  catch(error){return {state:'unknown',reason:'FINITE_SEGMENT_PROOF_UNAVAILABLE',
+    error:String(error.message)};}
   const nativeDistance=Math.hypot(e.hitPoint.x-e.before.p1.x,
     e.hitPoint.y-e.before.p1.y);
   const nativePassesCutoff=nativeDistance**2>cutoffSquared;
@@ -110,13 +143,16 @@ function faceEvidence(e,parameters,cutoffSquared){
     'EXACT_PARALLEL_OR_COINCIDENT_WITH_NATIVE_HIT':
     !exact.forward?'EXACT_NONFORWARD_NATIVE_HIT':
     !exact.beyondCutoff?'EXACT_SUBCUTOFF_NATIVE_HIT':
+    !finite?.within?'EXACT_INFINITE_LINE_HIT_OUTSIDE_FINITE_FACE':
     !nativePassesCutoff?'NATIVE_SUBCUTOFF_HIT':'CHECKED_FORWARD_BEYOND_CUTOFF';
   return {state:incidentClass==='CHECKED_FORWARD_BEYOND_CUTOFF'?'checked':'contradiction',
     reason:incidentClass,face:f.id,actualHitPointMm:p,
     nativeDistanceMm:nativeDistance,nativePassesCutoff,
     exactKind:exact.kind,exactForward:exact.forward,exactBeyondCutoff:exact.beyondCutoff,
     exactStepMm:exact.distanceSquared?Math.sqrt(exact.distanceSquared.approx):null,
-    exactRayParameter:exact.t?.approx??null};
+    exactRayParameter:exact.t?.approx??null,
+    exactFiniteSegmentParameter:finite?.approx??null,
+    exactWithinFiniteSegment:finite?.within??null};
 }
 function analyze(row,core){
   const doc=prepareScene(row.request).document,bytes=serializeSave(doc),
