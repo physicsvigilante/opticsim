@@ -1,0 +1,99 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "Synthetic prism and external opaque blocker",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -40,
+          "y": 10,
+          "brightness": 1
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 5
+        }
+      },
+      {
+        "id": "P1",
+        "type": "triangular-prism",
+        "parameters": {
+          "x1": 0,
+          "y1": -50,
+          "x2": 0,
+          "y2": 50,
+          "x3": 20,
+          "y3": 0,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 85,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 160
+        }
+      },
+      {
+        "id": "B1",
+        "type": "line-blocker",
+        "parameters": {
+          "x": 45,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 80
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "glass",
+      "kind": "interface-interactions",
+      "componentId": "P1"
+    },
+    {
+      "id": "faces",
+      "kind": "interface-face-events",
+      "componentId": "P1"
+    },
+    {
+      "id": "absorbed",
+      "kind": "blocker-absorptions",
+      "componentId": "B1"
+    },
+    {
+      "id": "crossings",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "power",
+      "kind": "detector-signed-power",
+      "componentId": "D1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Inspect native interactions and absorption in an explicitly chosen synthetic apparatus; compare valid blocker moves and removals.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "Synthetic fully specified 2D apparatus, not an interpretation of an unseen source.",
+      "A fully opaque finite line segment is strictly outside one homogeneous finite dielectric.",
+      "partialReflection=false explicitly omits partial Fresnel reflections; native total internal reflection remains active."
+    ],
+    "unknowns": [
+      "No continuous shadow, irradiance, image detection or source-attributed detector power is established."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}

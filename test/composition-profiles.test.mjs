@@ -26,7 +26,8 @@ const types=(...values)=>values.map(type=>({type}));
 const componentPatch=operations=>({format:'opticsim-component-revision-v1',operations});
 
 test('one composition catalog preserves all 17 reviewed saved model/version contracts',()=>{
- const c=compositionCapabilities();assert.equal(c.profiles.length,17);
+ const c=compositionCapabilities();assert.equal(c.profiles.length,18);
+ c.profiles=c.profiles.filter(p=>p.schemaVersion<=12);assert.equal(c.profiles.length,17);
  assert.equal(new Set(c.profiles.map(p=>p.id)).size,17);
  assert.deepEqual(compositionModels(1),['ideal-thin-lens-geometric']);
  assert.deepEqual(compositionModels(3),['ideal-thin-lens-geometric','plane-mirror-geometric']);
@@ -35,7 +36,7 @@ test('one composition catalog preserves all 17 reviewed saved model/version cont
  assert.equal(compositionProfile(finite,10).counts['plane-mirror'].max,1);
  assert.equal(compositionProfile(finite,11).counts['plane-mirror'].max,2);
  assert.deepEqual(compositionProfile(finite,12).groups,[{types:['polygon-dielectric','triangular-prism'],min:1,max:1}]);
- for(const v of [0,13,'12',null,NaN])assert.equal(compositionProfile(finite,v),null);
+ for(const v of [0,14,'12',null,NaN])assert.equal(compositionProfile(finite,v),null);
  assert.equal(compositionProfile('unregistered',12),null);
  assert.deepEqual(compositionSourceModes(1),[]);
  assert.deepEqual(compositionSourceModes(4),['full-circle','directional']);

@@ -63,6 +63,14 @@ for(const version of [10,11,12])define(version,finite,{
   [mirror]:range(1,version===10?1:2),[detector]:range(0,2)
 },version===12?[group([polygon,prism],1,1)]:[],
   [rule('finite-composition'),optical('general-optical',polygon,prism)],single);
+// Prospective external-surface policy. Historical profiles above stay frozen.
+// Zero blocker/mirror permits ordinary removal within this contract, not an
+// implicit migration of older scenes. Exactly one finite region is mandatory.
+define(13,finite,{
+  [source]:range(1,4),[polygon]:range(0,1),[prism]:range(0,1),
+  [mirror]:range(0,1),'line-blocker':range(0,1),[detector]:range(0,2)
+},[group([polygon,prism],1,1)],
+  [rule('finite-composition'),optical('general-optical',polygon,prism)],single);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 
@@ -70,6 +78,7 @@ const byKey=new Map(definitions.map(p=>[p.id,p]));
 // mixtures. It identifies a candidate contract, never certifies it or retries
 // a more permissive profile after geometry/material validation fails.
 const selection=freeze([
+  {model:finite,version:13,when:[group([polygon,prism],1,32),group(['line-blocker'],1,32)]},
   {model:finite,version:12,when:[group([prism],1,32),group([mirror],1,32)]},
   {model:finite,version:11,when:[group([polygon],1,32),group([mirror],2,32)]},
   {model:finite,version:10,when:[group([polygon],1,32),group([mirror],1,32)]},

@@ -1,0 +1,118 @@
+{
+  "format": "opticsim-transfer-regression-v1",
+  "reservationSha256": "593a4fc2eed845e7cc912822afa097347970fb80e31ecb28daa3c0631a7045e5",
+  "evidence": "Previously reserved numeric case first executed after candidate freeze. Same-assistant exposed, not an independent holdout. First input was rejected for policy; corrected to runPolicy without changing physical values or production code.",
+  "expectations": "Count assertions retain the observed outcome as regression evidence. The independent-of-tracer Snell/reflection/absorption checks remain separate.",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "Reserved R1: two opposed sources, nonrectangular finite glass and external absorber",
+    "runPolicy": "preview-v1",
+    "components": [
+      {
+        "id": "S_west",
+        "type": "point-source",
+        "parameters": {
+          "x": -80,
+          "y": -8,
+          "brightness": 0.4
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 0
+        }
+      },
+      {
+        "id": "S_east",
+        "type": "point-source",
+        "parameters": {
+          "x": 95,
+          "y": 5,
+          "brightness": 0.4
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 180
+        }
+      },
+      {
+        "id": "G",
+        "type": "polygon-dielectric",
+        "parameters": {
+          "x1": -20,
+          "y1": -20,
+          "x2": -30,
+          "y2": 15,
+          "x3": 25,
+          "y3": 30,
+          "x4": 40,
+          "y4": -5,
+          "insideIndex": 1.45,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "B",
+        "type": "line-blocker",
+        "parameters": {
+          "x": 60,
+          "y": 5,
+          "orientationDeg": 90,
+          "length": 50
+        }
+      },
+      {
+        "id": "D_east",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 80,
+          "y": 5,
+          "orientationDeg": 90,
+          "length": 80
+        }
+      },
+      {
+        "id": "D_west",
+        "type": "ray-detector",
+        "parameters": {
+          "x": -60,
+          "y": 10,
+          "orientationDeg": 90,
+          "length": 80
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "west-emissions",
+      "kind": "source-emissions",
+      "componentId": "S_west"
+    },
+    {
+      "id": "east-emissions",
+      "kind": "source-emissions",
+      "componentId": "S_east"
+    },
+    {
+      "id": "glass",
+      "kind": "interface-interactions",
+      "componentId": "G"
+    },
+    {
+      "id": "absorbed",
+      "kind": "blocker-absorptions",
+      "componentId": "B"
+    },
+    {
+      "id": "east-crossings",
+      "kind": "detector-crossings",
+      "componentId": "D_east"
+    },
+    {
+      "id": "west-crossings",
+      "kind": "detector-crossings",
+      "componentId": "D_west"
+    }
+  ]
+}

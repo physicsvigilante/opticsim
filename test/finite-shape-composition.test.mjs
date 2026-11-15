@@ -124,7 +124,7 @@ test('shape rules and exclusive region counts reject unsupported geometry before
 });
 
 test('old v8-v11 contracts and the existing qualified upgrade remain explicit and unchanged',async()=>{
- const d=make();for(const version of [4,5,6,7,8,9,10,11,13,'12']){
+ const d=make();for(const version of [4,5,6,7,8,9,10,11,14,'12']){
   const bad=structuredClone(d);bad.schemaVersion=bad.adapterVersion=version;assert.throws(()=>validate(bad));
  }
  const old=read('scenes/triangular-prism.json');assert.throws(()=>reviseComponents(old,patch([{op:'add',lengthUnit:'mm',component:c(request(),'M1')}] )));
