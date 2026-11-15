@@ -22,6 +22,7 @@ export function createNativeRayParentage(doc,scene,idMap,requestedIds){
   const epoch=Symbol('native-ray-parentage-run');
   const tracked=new WeakMap(),nodes=new Map(),registered=new Map(),starts=new Map();
   const detectorHits=new Map(components.filter(c=>c.type===detectorType).map(c=>[c.id,{count:0,tokens:[],overflow:false}]));
+  const interfaceHits=new Map(components.filter(c=>c.type===faceType).map(c=>[c.id,0]));
   const expected=components.map(c=>[c.id,c.type,scene.objs[idMap.get(c.id)]]);
   const expectedById=new Map(expected.map(([id,type,native])=>[id,{type,native}]));
   let next=0,invalid=false,globalOverflow=false,finished=false;
@@ -49,6 +50,8 @@ export function createNativeRayParentage(doc,scene,idMap,requestedIds){
       record(rays[0],{origin:'native-emission',sourceId:id,parentToken:null,spawnComponentId:null});
     },
     incident(id,ray,result){
+      if(!interfaceHits.has(id)){fail();return;}
+      interfaceHits.set(id,interfaceHits.get(id)+1);
       const parent=lookup(ray);
       if(!parent)fail();
       if(result?.newRays!==undefined&&!Array.isArray(result.newRays)){fail();return;}
@@ -67,7 +70,7 @@ export function createNativeRayParentage(doc,scene,idMap,requestedIds){
       if(entry.tokens.length<NATIVE_PARENTAGE_DETECTOR_LIMIT)entry.tokens.push(parent?.token??null);
       else entry.overflow=true;
     },
-    finish({event,simulator,errors,warnings,sources,detectors}){
+    finish({event,simulator,errors,warnings,sources,detectors,interfaces}){
       if(finished)return null;finished=true;
       // Never publish raw identifiers on stopped/incomplete/failed runs.
       if(event!=='simulationComplete'||errors.length||simulator.totalTruncation!==0||
@@ -83,6 +86,10 @@ export function createNativeRayParentage(doc,scene,idMap,requestedIds){
       const emitted=sources?.byId;
       if(!emitted||Object.keys(emitted).length!==starts.size||
         expected.some(([id,type])=>type===sourceType&&emitted[id]?.emitted!==1))
+        reason??='PROVENANCE_UNKNOWN_OR_INCONSISTENT';
+      const actualInterfaces=interfaces?.byId;
+      if(!actualInterfaces||expected.some(([id,type])=>type===faceType&&
+        actualInterfaces[id]?.interactions!==interfaceHits.get(id)))
         reason??='PROVENANCE_UNKNOWN_OR_INCONSISTENT';
       const readings=detectors?.byId;
       if(!readings||expected.some(([id,type])=>type===detectorType&&
