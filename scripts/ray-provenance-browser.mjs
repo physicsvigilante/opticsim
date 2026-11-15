@@ -72,13 +72,17 @@ try{
  const js=async expression=>{const r=await cdp.send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});
   if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result?.value;};
  const state=()=>js(["(()=>{const e=id=>document.getElementById(id);return {",
-  "native:e('status').dataset.state,error:e('error').textContent,",
+  "native:e('status').dataset.state,error:e('error').textContent,revision:e('revision').textContent,",
   "text:e('observable-results').textContent,",
   "results:JSON.parse(e('observable-results').dataset.results||'null'),",
   "qualification:e('qualification-status').dataset.state};})()"].join(''));
  const upload=async file=>{const dom=await cdp.send('DOM.getDocument',{depth:-1});
   const q=await cdp.send('DOM.querySelector',{nodeId:dom.root.nodeId,selector:'#load'});
   await cdp.send('DOM.setFileInputFiles',{nodeId:q.nodeId,files:[file]});};
+ const edit=async(id,value)=>js("(()=>{const e=document.getElementById("+JSON.stringify(id)+
+  ");if(!e||e.disabled)throw Error('Field not editable');e.value="+JSON.stringify(String(value))+
+  ";e.dispatchEvent(new Event('input',{bubbles:true}));"+
+  "e.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));})()");
  const check=name=>report.checks.push({name,passed:true});
  const shot=async name=>{const s=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
   await writeFile(join(out,name+'.png'),Buffer.from(s.data,'base64'));report.screenshots.push(name+'.png');};
@@ -93,6 +97,19 @@ try{
  assert.match(s.text,/actual spawned child/);assert.match(s.text,/Same-object optical interactions are not graph edges/);
  check('Real Chrome displays transmitted primaries and actual native spawned children, no paths');
  await shot('complete-ancestry');
+ const initialRevision=s.revision;
+ await edit('S1-x',-110);
+ s=await until(state,x=>x.native==='completed'&&x.revision!==initialRevision&&
+  x.results?.[0]?.value?.crossings?.length===2,'physical source displacement');
+ assert.equal(s.results[0].status,'available');
+ const changedRevision=s.revision;
+ check('Physical source edit invalidates the old graph and requires actual native retracing');
+ await edit('S1-x',-100);
+ s=await until(state,x=>x.native==='completed'&&x.revision!==changedRevision&&
+  x.results?.[0]?.value?.crossings?.length===2,'A to B to A physical revert');
+ assert.equal(s.results[0].status,'available');
+ assert.doesNotMatch(s.text,/stale|STALE_OLD_RUN/);
+ check('Reverting to original scene creates fresh current-run provenance, not a cached old graph');
  await js("document.getElementById('save-qualified').click()");
  const name=await until(async()=>(await readdir(downloads)).find(n=>n.endsWith('.qualified.json')),
   Boolean,'qualified download');
