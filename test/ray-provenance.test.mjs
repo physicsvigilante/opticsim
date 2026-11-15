@@ -152,7 +152,7 @@ test('single native approximation is qualified, while unsupported scopes are una
  assert.match(out[0].warnings.join(' '),/transmitted-only approximation/);
  const other=structuredClone(doc);
  other.physics.components.push({id:'Extra',type:'planar-interface',
-   parameters:{x:0,y:-50,normalDeg:90,negativeIndex:1,positiveIndex:1.25,partialReflection:false}});
+   parameters:{x:0,y:50,normalDeg:90,negativeIndex:1,positiveIndex:1.25,partialReflection:false}});
  const invalid=run(other,req);
  assert.equal(invalid.summary.accepted,true); // Still a valid v5 medium stack.
  const unknown=(await read(other,invalid,req))[0];
