@@ -7,6 +7,9 @@ export function snapshotNativeObservations(diagnostics,requests=[]){
   const ordinary=Object.fromEntries(NATIVE_OBSERVATION_KEYS.map(key=>
     [key,structuredClone(diagnostics?.[key]??null)]));
   // Opt-in snapshot: old source/canonical/native report fingerprints are unchanged.
-  return requests.some(r=>r?.kind==='detector-hit-events')?
-    {...ordinary,detectorHitEventsById:structuredClone(diagnostics?.detectorHitEventsById??null)}:ordinary;
+  const hits=requests.some(r=>r?.kind==='detector-hit-events');
+  const lineage=requests.some(r=>r?.kind==='detector-ray-provenance');
+  return {...ordinary,
+    ...(hits?{detectorHitEventsById:structuredClone(diagnostics?.detectorHitEventsById??null)}:{}),
+    ...(lineage?{detectorRayProvenanceById:structuredClone(diagnostics?.detectorRayProvenanceById??null)}:{})};
 }

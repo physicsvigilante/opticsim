@@ -50,14 +50,14 @@ const direction=ray=>{
 };
 const power=ray=>ray.brightness_s+ray.brightness_p;
 const angle=(d,n)=>d?Math.atan2(Math.abs(d.x*n.y-d.y*n.x),Math.abs(d.x*n.x+d.y*n.y))*180/Math.PI:null;
-export function observeInterfaceSet(doc,scene,idMap){
+export function observeInterfaceSet(doc,scene,idMap,{provenance=null}={}){
   const entries=doc.physics.components.filter(c=>c.type===PLANAR_TYPE||c.type===CIRCULAR_TYPE||c.type===PRISM_TYPE||c.type===POLYGON_TYPE).map(component=>{
     const native=scene.objs[idMap.get(component.id)],original=native.onRayIncident;
     const circular=component.type===CIRCULAR_TYPE,prism=component.type===PRISM_TYPE,
       polygon=component.type===POLYGON_TYPE,finite=prism||polygon;
     const meter={interactions:0,transmitted:0,reflected:0,totalInternalReflections:0,first:null,invalidObservations:0,
       ...(finite?{faces:Object.fromEntries((prism?prismFaces:polygonFaces)(component.parameters).map(f=>[f.id,{interactions:0,first:null}]))}:{})};
-    native.onRayIncident=function(...args){
+    const wrapped=function(...args){
       const incoming=direction(args[0]),beforePower=power(args[0]);
       const encounter=prism?prismEncounter(component,args[2],incoming):polygon?polygonEncounter(component,args[2],incoming):circular?circularEncounter(component,args[2],incoming):null;
       const n=encounter?.normal||interfaceNormal(component.parameters);
@@ -65,7 +65,9 @@ export function observeInterfaceSet(doc,scene,idMap){
       if((circular||finite)&&(!incoming||![n.x,n.y,encounter.point.x,encounter.point.y].every(Number.isFinite)||
         Math.abs(incoming.x*n.x+incoming.y*n.y)<1e-10))meter.invalidObservations++;
       // Delegate exactly once, with identical arguments and return object.
+      const ray=args[0];
       const returned=original.apply(this,args);
+      provenance?.interfaceIncident(component.id,ray,returned);
       const outputs=[...(!returned?.isAbsorbed?[args[0]]:[]),...(returned?.newRays||[])];
       const branches=outputs.map(ray=>{
         const d=direction(ray),brightness=power(ray),projection=d&&(d.x*n.x+d.y*n.y);
@@ -95,6 +97,8 @@ export function observeInterfaceSet(doc,scene,idMap){
       if(finite&&encounter.faceId){const face=meter.faces[encounter.faceId];face.interactions++;if(!face.first)face.first=event;}
       return returned;
     };
+    native.onRayIncident=wrapped;
+    if(provenance)provenance.register(component.id,native,'onRayIncident',wrapped);
     return [component.id,meter];
   });
   if(!entries.length)return null;

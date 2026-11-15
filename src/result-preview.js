@@ -12,7 +12,7 @@ const CAMERA_BOUNDS={centerMm:[-10000,10000],zoom:[0.03,10]};
 const finite=Number.isFinite;
 const number=n=>finite(n)?Number(n.toPrecision(8)).toString():'unavailable';
 export function formatRequestedResult(r){
-  const label=['native-observation','native-hit-event-observation'].includes(r.method)?'Native sampled observation':
+  const label=['native-observation','native-hit-event-observation','native-observed-object-parentage'].includes(r.method)?'Native sampled observation':
     r.status==='conditional'?'Conditional analytical prediction':'No current value';
   let value=r.reason||'';
   if(r.value!==null&&r.value!==undefined){
@@ -26,6 +26,15 @@ export function formatRequestedResult(r){
       value=Object.entries(r.value).map(([id,f])=>id+': '+f.interactions+' native hits; '+(f.first?
         f.first.from+' → '+f.first.outcome+'; incidence '+number(f.first.incidentAngleDeg)+'°; transmission '+number(f.first.transmittedAngleDeg)+'°; '+
         f.first.branches.map(b=>b.kind+' heading '+number(Math.atan2(b.direction.y,b.direction.x)*180/Math.PI)+'°').join(', '):'no encounter')).join('\n');
+    }else if(r.kind==='detector-ray-provenance'){
+      const byToken=new Map(r.value.nodes.map(node=>[node.token,node]));
+      value=!r.value.crossings.length?'No sampled native detector crossings in this completed run.':
+        r.value.crossings.map((e,i)=>{
+          const node=byToken.get(e.rayToken);
+          return 'Native crossing '+(i+1)+': observed ray '+e.rayToken+' from authored source '+node.sourceId+
+            (node.parentToken===null?' (direct emission).':
+              ' (actual spawned child at '+node.spawnComponentId+' of observed parent '+node.parentToken+').');
+        }).join('\n');
     }else if(r.kind==='detector-hit-events'){
       value=!r.value.length?'No sampled detector hits.':r.value.map((e,i)=>
         `Hit ${i+1} (native callback order): x=${number(e.pointMm.x)}, y=${number(e.pointMm.y)} mm; `+
@@ -37,7 +46,7 @@ export function formatRequestedResult(r){
         `Recorded outgoing branches: ${p.branches.map(b=>b.kind+' ('+number(b.relativePower)+' relative power)').join(', ')||'none'}.`;
     }else value=`${number(r.value)} ${r.unit||''}`;
   }
-  return `${r.id} — ${r.status}; ${r.method||'no method'}\n${label}\n${value}`+
+  return `${r.id} — ${r.status}; ${r.method||'no method'}${r.reasonCode?' ('+r.reasonCode+')':''}\n${label}\n${value}`+
     (r.assumptions?.length?'\nConditions: '+r.assumptions.join(' '):'')+
     (r.limitation?'\nLimit: '+r.limitation:'')+
     (r.warnings?.length?'\nWarnings: '+r.warnings.join(' '):'');
