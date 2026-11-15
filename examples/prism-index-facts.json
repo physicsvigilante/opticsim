@@ -1,0 +1,18 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-prism-angular-facts-v1",
+    "model": "homogeneous-prism",
+    "branch": "direct-two-face-transmission",
+    "angleConvention": "normal-angles-signed-deviation",
+    "prismAngleDeg": 60,
+    "incidenceAngleDeg": 30,
+    "deviationDeg": 30,
+    "outsideIndex": 1
+  },
+  "requests": [{"id":"material","kind":"prism-direct-index"}],
+  "interpretation": {
+    "assumptions": ["Synthetic nominal angular measurement; no experimental uncertainty has been supplied.", "Known incidence and signed deviation on the direct branch; no minimum-deviation assumption."],
+    "unknowns": ["The refractive index is an engine-computed consequence, not an authored solved input."]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-prism-angular-facts-v1",
+    "model": "homogeneous-prism",
+    "branch": "direct-two-face-transmission",
+    "angleConvention": "normal-angles-signed-deviation",
+    "prismAngleDeg": 60,
+    "incidenceAngleDeg": 45,
+    "insideIndex": 1.5,
+    "outsideIndex": 1
+  },
+  "requests": [{"id":"angles","kind":"prism-direct-angles"}],
+  "interpretation": {
+    "assumptions": ["Explicit synthetic angular investigation, not a source-question interpretation.", "Direct two-face transmitted branch in a homogeneous prism with the same stated exterior on both sides."],
+    "unknowns": ["No finite geometry, illumination, transmitted power or actual native branch is established."]
+  }
+}

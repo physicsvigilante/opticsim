@@ -1,0 +1,35 @@
+{
+  "id": "R1",
+  "exposure": "Same assistant preselection, not independent or secret.",
+  "case": "Immersed scalene prism inverse followed by reciprocity with swapped native entry/exit faces",
+  "facts": {
+    "format": "opticsim-prism-angular-facts-v1",
+    "model": "homogeneous-prism",
+    "branch": "direct-two-face-transmission",
+    "angleConvention": "normal-angles-signed-deviation",
+    "prismAngleDeg": 45,
+    "incidenceAngleDeg": 30,
+    "deviationDeg": 10,
+    "outsideIndex": 1.33
+  },
+  "nativeGeometry": {
+    "vertices": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        -160
+      ],
+      [
+        90,
+        -90
+      ]
+    ],
+    "entryY": -55,
+    "sourceX": -40,
+    "partialReflection": false
+  },
+  "expected": "Compare index against separately evaluated bisection of Snell/conventional branch constraints, then check reciprocal native exit direction. Never read until initial implementation/helper freeze."
+}
