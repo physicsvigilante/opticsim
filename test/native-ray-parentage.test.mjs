@@ -126,6 +126,7 @@ test('actual weak Fresnel truncation suppresses parentage and never leaks raw no
   assert.equal(report.report.native.diagnostics.detectorRayProvenanceById,null);
   const r=(await results(doc,report,['ReflectedDetector'])).results[0];
   assert.equal(r.status,'suppressed');assert.equal(r.value,null);
+  assert.equal(r.reasonCode,'NATIVE_PROVENANCE_INCOMPLETE');
   assert.ok(!JSON.stringify(report.report.native.diagnostics).includes('"nodes"'));
 });
 test('actual native processed-ray stop suppresses both requested parentage and raw map',async()=>{
@@ -133,13 +134,16 @@ test('actual native processed-ray stop suppresses both requested parentage and r
   const report=run(doc,['ReflectedDetector']);
   assert.equal(report.summary.native.status,'stopped');
   assert.equal(report.report.native.diagnostics.detectorRayProvenanceById,null);
-  assert.equal((await results(doc,report,['ReflectedDetector'])).results[0].status,'suppressed');
+  const suppressed=(await results(doc,report,['ReflectedDetector'])).results[0];
+  assert.equal(suppressed.status,'suppressed');
+  assert.equal(suppressed.reasonCode,'NATIVE_PROVENANCE_INCOMPLETE');
 });
 test('qualified hash revision prevents stale detector parentage promotion',async()=>{
   const doc=fresnel(),report=run(doc,['ReflectedDetector']);
   const revised=structuredClone(doc);revised.physics.components.find(c=>c.id==='SunRay').parameters.x=-101;
   const old=(await results(revised,report,['ReflectedDetector'])).results[0];
   assert.equal(old.status,'suppressed');assert.equal(old.value,null);
+  assert.equal(old.reasonCode,'STALE_PROVENANCE_EXECUTION');
   const fresh=run(revised,['ReflectedDetector']);
   assert.equal((await results(revised,fresh,['ReflectedDetector'])).results[0].status,'available');
 });
