@@ -2,6 +2,7 @@ import {ExplorationUI} from './exploration-ui.js';
 import {isCurved} from './curved-mirrors.js';
 import {QualifiedUI} from './qualified-ui.js';
 import { loadDocument, Simulator, diagnostics, nativeExport, observeSourceSet, observeMirrorSet, observeDetectorSet, observeInterfaceSet, observeBlockerSet } from './adapter.js';
+import {createNativeRayParentage} from './native-ray-parentage.js';
 import { parseSave, serializeSave, SAMPLING_PRESETS, samplingPreset, setSourceMode } from './contract.js';
 import { Session } from './session.js';
 import pointSourceIcon from '../vendor/ray-optics/src/img/PointSource.svg';
@@ -18,14 +19,16 @@ let explorationUI;
 let bindings = [];
 let activeSourceId = null; // UI selection only; not part of authoritative scene JSON.
 let captureRequestedDetectorHits = false; // Set from the current approved observation requests before a native run.
+let captureRequestedParentageIds = []; // Ephemeral per-session native observer scope.
 function cancelScheduled() { clearTimeout(scheduled); scheduled = undefined; }
 const session = new Session(doc => {
   const { scene, idMap } = loadDocument(doc, size.width, size.height);
-  const meter = observeSourceSet(doc, scene, idMap);
+  const parentage=createNativeRayParentage(doc,scene,idMap,captureRequestedParentageIds);
+  const meter = observeSourceSet(doc, scene, idMap,{parentage});
   const mirrorMeter = observeMirrorSet(doc, scene, idMap);
   const captureHitEvents = captureRequestedDetectorHits;
-  const detectorMeter = observeDetectorSet(doc, scene, idMap,{captureHitEvents});
-  const interfaceMeter = observeInterfaceSet(doc, scene, idMap);
+  const detectorMeter = observeDetectorSet(doc, scene, idMap,{captureHitEvents,parentage});
+  const interfaceMeter = observeInterfaceSet(doc, scene, idMap,{parentage});
   const blockerMeter = observeBlockerSet(doc, scene, idMap);
   const sim = new Simulator(scene, ...canvases.map(c => c.getContext('2d')), null, true, doc.simulation.processedRayLimit);
   const cancel = () => {
@@ -33,7 +36,7 @@ const session = new Session(doc => {
     sim.simulationTimerId = -1; sim.shouldSimulatorStop = true;
   };
   return { scene, cancel, run: notify => {
-    for (const event of ['simulationComplete', 'simulationStop']) sim.on(event, () => notify(event, diagnostics(scene, sim, meter, mirrorMeter, detectorMeter, interfaceMeter, blockerMeter,{detectorHitEvents:captureHitEvents,nativeEvent:event})));
+    for (const event of ['simulationComplete', 'simulationStop']) sim.on(event, () => notify(event, diagnostics(scene, sim, meter, mirrorMeter, detectorMeter, interfaceMeter, blockerMeter,{detectorHitEvents:captureHitEvents,nativeEvent:event,parentage})));
     sim.updateSimulation(false, false);
   } };
 }, update);
@@ -371,10 +374,11 @@ function apply(doc, rebuild = false, imported = undefined) {
   let tracked;
   try { tracked = qualificationUI.prepare(doc, imported); }
   catch (error) { session.invalidate(error); return false; }
-  const priorCapture = captureRequestedDetectorHits;
+  const priorCapture = captureRequestedDetectorHits,priorParentageIds=captureRequestedParentageIds;
   captureRequestedDetectorHits = tracked.requests.some(request => request.kind === 'detector-hit-events');
+  captureRequestedParentageIds=tracked.requests.filter(request=>request.kind==='detector-ray-provenance').map(request=>request.componentId);
   const accepted = session.apply(doc);
-  if (!accepted) captureRequestedDetectorHits = priorCapture;
+  if (!accepted){captureRequestedDetectorHits = priorCapture;captureRequestedParentageIds=priorParentageIds;}
   if (accepted) qualificationUI.commit(tracked);
   if (accepted && rebuild) controls();
   return accepted;
