@@ -63,9 +63,10 @@ assert.ok(incomplete.report.results.every(r=>r.status==='suppressed'));
 assert.equal(incomplete.upper.value,null);assert.equal(incomplete.lower.value,null);
 // Public physical scope may contain two interfaces, but the new *observable*
 // is not allowed to attribute rays in that unsupported arrangement.
-const stack=physical();stack.components.push({id:'Extra',type:'planar-interface',
+const stack=physical();stack.components.find(c=>c.id==='AirWater').parameters.partialReflection=false;
+stack.components.push({id:'Extra',type:'planar-interface',
  parameters:{x:0,y:50,normalDeg:90,negativeIndex:1,positiveIndex:1.25,partialReflection:false}});
-const unsupported=check('two-interface-unavailable',stack,2,'incomplete');
+const unsupported=check('two-interface-unavailable',stack,2,'completed');
 assert.equal(unsupported.upper.status,'unavailable');
 assert.equal(unsupported.upper.reasonCode,'UNSUPPORTED_PROVENANCE_SCOPE');
 writeFileSync(join(out,'acceptance.json'),JSON.stringify({
