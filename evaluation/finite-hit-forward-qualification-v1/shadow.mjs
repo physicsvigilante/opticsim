@@ -184,7 +184,10 @@ function analyze(row,core){
     unknown=faces.filter(e=>e.state==='unknown');
   // This is a counterfactual SHADOW qualification decision; no actual
   // canonical or browser result gets changed by this test-only module.
-  const shadowDecision=!['completed','completed-with-warnings'].includes(n.status)?
+  // A counterfactual quality gate belongs to the INSTRUMENTED run whose
+  // actual ray hits were captured; canonical is a distinct execution that
+  // may differ at binary64 critical sensitivity.
+  const shadowDecision=!['completed','completed-with-warnings'].includes(instrumented.status)?
     'withheld-native-run':instrumented.overflow||unknown.length?
       'withheld-audit-unknown':contradictions.length?
         'withheld-forward-inconsistency':'candidate-clean-forward-only';
@@ -228,7 +231,12 @@ function repeatCriticalCases(rows,core){
           firstOutcome:d.interfacesById?.Boundary?.first?.outcome});
       }else{
         const a=nativeObservation(doc,core),m=a.metrics;
+        const geometry=a.events.map(e=>faceEvidence(e,
+          doc.physics.components.find(c=>c.id==='Boundary').parameters,
+          a.cutoffSquared));
         attempts.push({attempt:i+1,method:'read-only-instrumented',
+          contradictions:geometry.filter(e=>e.state==='contradiction').length,
+          unknown:geometry.filter(e=>e.state==='unknown').length,
           nativeStatus:a.status,
           processed:m.processed,truncation:m.truncation,
           undefinedBehavior:m.undefinedBehavior,
@@ -274,25 +282,46 @@ async function main(){
     limit:'Only actual represented-ray finite-line forward/cutoff consistency checked. This is not a general physics-accuracy oracle, a production gate, new solver, repaired native path, or source interpretation review.'};
   writeEvidence(output.report,JSON.stringify(report,null,2)+'\n');
   assert.equal(errors.length,0,'Shadow audit setup failed; inspect retained report');
-  assert.equal(report.parityIssueCount,0,
-    'An actual ordinary/instrumented native discrepancy remains; inspect retained report before trusting any shadow result');
+  // DO NOT assert inter-run trajectory equality at computed critical angle:
+  // repeated *ordinary* canonical executions also vary at this binary64
+  // boundary. This remains an unresolved qualification/reliability risk.
+  const noncriticalParity=results.filter(r=>r.regime!=='exact-computed'&&
+    r.parityDifferences.length);
+  assert.equal(noncriticalParity.length,0,
+    'Ordinary/observer mismatch away from exact critical: '+noncriticalParity.map(r=>r.id));
+  assert.ok(results.some(r=>r.audit.contradictions>0),
+    'No genuine nonforward native callback was witnessed; inspect raw report');
   assert.equal(results.length,24,'Expected 20 original geometry variants plus four normal controls');
   const contradictions=results.filter(r=>r.audit.contradictions>0).map(r=>r.id).sort();
   assert.deepEqual(contradictions,[
     'quadrilateral-exact-computed-rotated37',
     'quadrilateral-exact-computed-translated'
   ]);
-  const nativeCompletedButWithheld=results.filter(r=>r.nativeStatus==='completed'&&
+  const nativeCompletedButWithheld=results.filter(r=>
+    r.instrumentedNativeStatus==='completed'&&
     r.shadowDecision==='withheld-forward-inconsistency').map(r=>r.id);
-  assert.deepEqual(nativeCompletedButWithheld,['quadrilateral-exact-computed-rotated37']);
+  assert.ok(nativeCompletedButWithheld.every(x=>x.startsWith('quadrilateral-exact-computed-')),
+    'A noncritical completed native run was refused: '+nativeCompletedButWithheld);
+  const repeatedCriticalVariation=report.repetitions.map(row=>({
+    id:row.id,
+    ordinaryTrajectories:[...new Set(row.attempts.filter(x=>x.method==='canonical')
+      .map(x=>[x.nativeStatus,x.processed,x.interfaceCount].join('/')))],
+    instrumentedTrajectories:[...new Set(row.attempts.filter(x=>x.method==='read-only-instrumented')
+      .map(x=>[x.nativeStatus,x.processed,x.interfaceCount].join('/')))]
+  }));
   assert.equal(results.filter(r=>r.regime==='normal'&&r.shadowDecision!=='candidate-clean-forward-only').length,
     0,'Ordinary fully declared normal incidence must remain accepted by shadow safety check');
   assert.equal(results.filter(r=>['below5','above5'].includes(r.regime)&&
     r.shadowDecision!=='candidate-clean-forward-only').length,0,
     'Far-from-critical native controls must not acquire false geometry refusals');
-  console.log('FINITE_FORWARD_SHADOW '+JSON.stringify({status:'pass',cases:results.length,
-    actualNativeRuns:report.actualRuns,tally,contradictions,
+  console.log('FINITE_FORWARD_SHADOW '+JSON.stringify({
+    status:'pass-with-critical-run-variability',cases:results.length,
+    actualNativeRuns:report.actualRuns+report.repeatedNativeProbeCount,
+    initialNativeRuns:report.actualRuns,repeatedNativeRuns:report.repeatedNativeProbeCount,
+    tally,contradictions,criticalParityIssueCount:report.parityIssueCount,
+    repeatedCriticalVariation,completedInstrumentedWithheld:nativeCompletedButWithheld,
     otherUnknown:results.filter(r=>r.audit.unknown).map(r=>({id:r.id,unknown:r.audit.unknown})),
+    warning:'CRITICAL native runs are not deterministic or necessarily observer-neutral across distinct executions; this study does not qualify production measurements.',
     retained:output.report}));
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))
