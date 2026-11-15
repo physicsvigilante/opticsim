@@ -1,0 +1,71 @@
+{
+  "input": {
+    "format": "opticsim-problem-v1",
+    "physical": {
+      "format": "opticsim-lens-train-facts-v1",
+      "model": "coaxial-ideal-thin-lenses",
+      "signConvention": "x-increasing",
+      "lengthUnit": "mm",
+      "objectX": -160,
+      "objectHeight": 8,
+      "lenses": [
+        {
+          "id": "Alpha",
+          "x": -20,
+          "focalLength": 65
+        },
+        {
+          "id": "Beta",
+          "x": 70,
+          "focalLength": -90
+        },
+        {
+          "id": "Gamma",
+          "x": 180,
+          "focalLength": 120
+        },
+        {
+          "id": "Delta",
+          "x": 260,
+          "focalLength": -75
+        }
+      ]
+    },
+    "requests": [
+      {
+        "id": "R0",
+        "kind": "lens-train-image"
+      },
+      {
+        "id": "R1",
+        "kind": "lens-train-image-height"
+      }
+    ],
+    "interpretation": {
+      "requestedResult": "Reserved four-lens forward image and image height.",
+      "assumptions": [
+        "Explicit synthetic coaxial thin-lens model; no native illumination or apertures were authored."
+      ]
+    }
+  },
+  "reference": {
+    "kind": "finite-virtual",
+    "distance": -55.12257529131081,
+    "x": 204.87742470868918,
+    "magnification": -0.7281905881539366,
+    "y": -5.8255247052314925
+  },
+  "evidence": {
+    "taskSha256": "7416b4b44a6a7555ce04869afc2374a97daf222c95c00ffa6b28bea3be3268c3",
+    "firstAttemptSha256": "1fc229f57311c61ff816aa310e19462700c39f0c780052fc167bed2bd3c771fb",
+    "productionFiles": {
+      "src/analysis.js": "fa7622a78338c308886ab45e52650c8441482492986615bc627d3753cd5869a9",
+      "src/lens-train-matrix.js": "2d0e9a0612017d3ff48907a1769e08bff02fff2914403d049bead05e3e477c7d",
+      "src/lens-train-queries.js": "bde0152ddb52c276c62da0a474587fe95b8fd33028d901320c5d4c332510ee05",
+      "src/problem-workflow.js": "dfec763c29a33ae4445850eebcb53396dbae66c87b3cbed8eb694961cfc096f7",
+      "test/helpers/lens-sequential-reference.mjs": "0054e2d3f353ff554bca49920162e62f01228b68b3e8b91cf2353de836c4f375"
+    },
+    "corrections": 0,
+    "exposure": "same-assistant preselected case; not independent or hidden"
+  }
+}

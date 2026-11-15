@@ -1,0 +1,22 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-lens-train-facts-v1",
+    "model": "coaxial-ideal-thin-lenses",
+    "signConvention": "x-increasing",
+    "lengthUnit": "cm",
+    "objectX": -30,
+    "lenses": [
+      {"id": "L1", "x": 0, "focalLength": 20},
+      {"id": "L2", "x": 30, "focalLength": 10}
+    ]
+  },
+  "requests": [{"id": "image", "kind": "lens-train-image"}],
+  "interpretation": {
+    "requestedResult": "Conditional axial image location for the explicitly specified ideal lens train.",
+    "assumptions": [
+      "Stationary coaxial ideal thin lenses in a uniform medium, with propagation toward increasing x.",
+      "The first lens defines x=0; no transverse object coordinate, illumination or finite aperture is supplied."
+    ]
+  }
+}

@@ -1,5 +1,6 @@
 // Deterministic dispatch only. Physics, angular algebra, qualification and
 // native result gating stay in their existing implementations.
+import {analyzeLensTrainQuery,lensTrainCapabilities,LENS_FACTS_FORMAT,LENS_QUERY_FORMAT} from './lens-train-queries.js';
 import {analyzeCurvedMirrorQuery,curvedQueryCapabilities,CURVED_FACTS_FORMAT,CURVED_QUERY_FORMAT} from './curved-mirror-queries.js';
 import {assessMethodSuitability,METHOD_SUITABILITY_FORMAT} from './method-suitability.js';
 import {analyzeReducedInverseQuery,reducedInverseCapabilities,INVERSE_FACTS_FORMAT,INVERSE_QUERY_FORMAT} from './reduced-inverse-queries.js';
@@ -11,6 +12,7 @@ import {validateInterpretation} from './qualification.js';
 import {canonicalJSON,isRecord,boundedText} from './qualified-utils.js';
 export const PROBLEM_FORMAT='opticsim-problem-v1';
 const own=(x,k)=>Object.hasOwn(x,k);
+const lensKinds=new Set(lensTrainCapabilities().kinds);
 const curvedKinds=new Set(curvedQueryCapabilities().kinds);
 const inverseKinds=new Set(reducedInverseCapabilities().kinds);
 const angularKinds=new Set(angularCapabilities().kinds);
@@ -18,12 +20,14 @@ const mirrorKinds=new Set(mirrorAngularCapabilities().kinds);
 const observableKinds=observableCapabilities().kinds;
 // References the live fact/query formats, not a second physics validator.
 const factContracts=Object.freeze({
+ [LENS_QUERY_FORMAT]:[LENS_FACTS_FORMAT],
  [CURVED_QUERY_FORMAT]:[CURVED_FACTS_FORMAT,'authoring-scene'],
  [INVERSE_QUERY_FORMAT]:[INVERSE_FACTS_FORMAT],
  [ANGLE_QUERY_FORMAT]:[ANGLE_FACTS_FORMAT,'authoring-scene'],
  [MIRROR_QUERY_FORMAT]:[MIRROR_FACTS_FORMAT]
 });
 const requestKindRegistry=()=>({
+ ...Object.fromEntries(lensTrainCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:LENS_QUERY_FORMAT}])),
  ...Object.fromEntries(reducedInverseCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:INVERSE_QUERY_FORMAT}])),
  ...Object.fromEntries(curvedQueryCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:CURVED_QUERY_FORMAT}])),
  ...Object.fromEntries(angularCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:ANGLE_QUERY_FORMAT}])),
@@ -36,14 +40,14 @@ export function problemWorkflowCapabilities(){
   // nested fact contracts, or a solver's shared list of registered kinds.
   return structuredClone({format:PROBLEM_FORMAT,version:1,maxRequests:16,maxCalculations:4,
     required:['format','physical','requests'],optional:['interpretation','illustration','verifyNative'],
-    physical:'Existing minimal authoring request, reduced angular/mirror/inverse facts, or null. No invented apparatus fields.',
+    physical:'Existing minimal authoring request, reduced lens-train/angular/mirror/inverse facts, or null. No invented apparatus fields.',
     requestKinds:requestKindRegistry(),
     methodSuitability:{format:METHOD_SUITABILITY_FORMAT,mode:'exact-typed-request-diagnostic',
       contractFamilies:structuredClone(factContracts),
       limits:['No natural-language interpretation, image parsing or automatic method aliasing.',
         'Known method does not prove original question fidelity; wrong or unregistered kinds stay unrepresented.',
         'An authoring-scene fact family match is not sufficient for physical validity or native run completion.']},
-    authoring:problemCapabilities(),curvedMirrors:curvedQueryCapabilities(),reducedInverse:reducedInverseCapabilities(),angular:angularCapabilities(),mirrorAngular:mirrorAngularCapabilities(),observables:observableCapabilities(),
+    authoring:problemCapabilities(),lensTrain:lensTrainCapabilities(),curvedMirrors:curvedQueryCapabilities(),reducedInverse:reducedInverseCapabilities(),angular:angularCapabilities(),mirrorAngular:mirrorAngularCapabilities(),observables:observableCapabilities(),
     policy:'One request file; route by kind, never by answers or expected values. Native componentId may be omitted only when exactly one compatible authored component exists; its binding is recorded, not guessed from geometry or ray paths. Ambiguous or absent targets remain unresolved. No physical repairs or method fallback. Angular-only requests do not trigger native work unless verifyNative is true. Interpretation remains author-provided and unverified.'});
 }
 function validateEnvelope(input){
@@ -58,8 +62,10 @@ function validateEnvelope(input){
     if(!isRecord(r))throw Error('Invalid requested quantity');
     boundedText(r.id,'Request ID',64);boundedText(r.kind,'Request kind',80);
     if(ids.has(r.id))throw Error('Duplicate request ID');ids.add(r.id);
-    if(curvedKinds.has(r.kind)||inverseKinds.has(r.kind)||mirrorKinds.has(r.kind)||angularKinds.has(r.kind)){if(++angularCount>4)throw Error('At most four analytical calculations per problem');}
-    if(inverseKinds.has(r.kind)){
+    if(lensKinds.has(r.kind)||curvedKinds.has(r.kind)||inverseKinds.has(r.kind)||mirrorKinds.has(r.kind)||angularKinds.has(r.kind)){if(++angularCount>4)throw Error('At most four analytical calculations per problem');}
+    if(lensKinds.has(r.kind)){
+      if(Object.keys(r).some(k=>!['id','kind'].includes(k)))throw Error('Unsupported lens-train request field');
+    }else if(inverseKinds.has(r.kind)){
       if(Object.keys(r).some(k=>!['id','kind'].includes(k)))throw Error('Unsupported inverse request field');
     }else if(curvedKinds.has(r.kind)){
       if(Object.keys(r).some(k=>!['id','kind','componentId'].includes(k)))throw Error('Unsupported curved-mirror request field');
@@ -80,13 +86,24 @@ export function planProblem(input){
   const authoredNativeRequests=request.requests.filter(r=>own(observableKinds,r.kind));
   const needsNative=authoredNativeRequests.length>0||request.verifyNative===true;
   let preparation=null,scene=null,sceneConflict=false;
-  if(physical&&physical.format!==ANGLE_FACTS_FORMAT&&physical.format!==MIRROR_FACTS_FORMAT&&physical.format!==CURVED_FACTS_FORMAT&&physical.format!==INVERSE_FACTS_FORMAT){
+  if(physical&&physical.format!==LENS_FACTS_FORMAT&&physical.format!==ANGLE_FACTS_FORMAT&&physical.format!==MIRROR_FACTS_FORMAT&&physical.format!==CURVED_FACTS_FORMAT&&physical.format!==INVERSE_FACTS_FORMAT){
     preparation=resolveProblemRequest(physical,{illustration:request.illustration===true});
     scene=preparation.prepared?.document??null;
   }
   const calculations=[],results=[];
   for(const r of request.requests){
-    if(inverseKinds.has(r.kind)){
+    if(lensKinds.has(r.kind)){
+      if(!physical){results.push(empty(r,'needs-information','NO_PHYSICAL_FACTS','Explicit object position, focal lengths and lens locations are required.'));continue;}
+      const {id,...fields}=r,query={format:LENS_QUERY_FORMAT,...fields};
+      try{
+        const result=analyzeLensTrainQuery(physical,query);
+        calculations.push({id,query,result});
+        results.push({id,kind:r.kind,status:result.status,value:result.value??null,method:result.method,
+          reasonCode:result.reasonCode??null,reason:result.reason??null,assumptions:result.assumptions,
+          limitations:result.limitations,nativeObservation:false,nativeImageDetected:false});
+      }catch(e){results.push(empty(r,e.code==='MISSING_FACTS'?'needs-information':
+        ['UNSUPPORTED_FACTS','UNSUPPORTED_MODEL','UNSUPPORTED_SCOPE'].includes(e.code)?'unavailable':'invalid-input',e.code||'INVALID_LENS_FACTS',e.message));}
+    }else if(inverseKinds.has(r.kind)){
       if(!physical){results.push(empty(r,'needs-information','NO_PHYSICAL_FACTS','Reduced inverse calculation requires explicitly stated physical facts.'));continue;}
       const {id,...fields}=r,query={format:INVERSE_QUERY_FORMAT,...fields};
       try{

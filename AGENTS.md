@@ -155,3 +155,15 @@ See `evaluation/reusable-model-v1/README.md` for a bounded developmental scenari
 - Finite composition v11 extends the SAME `finite-dielectric-composition` model to one or two external plane mirrors through shared whole-system cardinality and geometry checks. Keep v10 exactly one mirror and older source/native fingerprints unchanged. New two-mirror minimal requests prepare v11; no automatic qualified migration. In v11, mirror add/remove remains within 1–2, retired IDs cannot be reused, and missing target observations are not reassigned. No third mirror, other optical type, extra medium, route controller, native modification or budget change. See docs/TWO-MIRROR-COMPOSITION.md.
 
 - Prospective finite-composition v13 adds one external opaque line blocker with one triangle OR convex quadrilateral, 0–1 external plane mirror, 1–4 exact single rays and 0–2 external detectors. It reuses the shared shape registry, separating-face and pair-clearance tests, native Blocker/Glass and existing observers. Zero blockers/mirrors permit explicit removal within v13; no old save upgrades implicitly. Reject intersecting/contained/nearby segments and unsupported mixtures; retain old profile rules and numerical incompleteness. No apparatus-specific route, solver, image or continuous-shadow claim. See docs/EXTERNAL-OPAQUE-SURFACES.md for scope, retained first-attempt correction and pending release checks.
+
+
+- Reduced-facts forward lens analysis uses `opticsim-lens-train-facts-v1` with
+  explicit coaxial ideal-model and +x conventions, objectX, units and 1–4
+  separated lenses. `lens-train-image` needs no objectHeight; the distinct height
+  request must not invent one. Reuse `lens-train-matrix.js` for both old and new
+  callers, preserve frozen historical outputs, and keep near-singular/cancelled
+  new results numerically-indeterminate. No automatic scene construction,
+  inverse/material-lens solver, component deletion, native image claim or change
+  to existing `ideal-image` completion/hash gates is permitted. Preserve the
+  reserved-case exposure and later numerical-hardening history. See
+  `docs/LENS-TRAIN-FACTS.md`.

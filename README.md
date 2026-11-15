@@ -496,3 +496,14 @@ quadrilateral region with an optional external line blocker and plane mirror.
 The same native components determine absorption, reflection, transmission and
 finite misses; no ray route is authored. Existing scenes retain their original
 contracts. See [scope, qualification evidence and pending release gates](docs/EXTERNAL-OPAQUE-SURFACES.md).
+
+
+### Reduced-facts forward ideal-lens analysis
+
+The existing problem workflow accepts explicit axial object/lens facts for one
+to four separated coaxial ideal thin lenses. It reuses the scene predictor's
+matrix calculation without inventing brightness, emission, finite apertures or
+object height. Results are conditional ideal-model calculations, not native
+image detections; the old `ideal-image` native gate is unchanged. See
+[the fact contract and limits](docs/LENS-TRAIN-FACTS.md) and
+[the minimal analytical request](examples/lens-train-facts.json).
