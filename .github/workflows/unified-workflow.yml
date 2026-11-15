@@ -17,6 +17,16 @@ jobs:
           node-version: '24.19.0'
       - run: npm run setup
       - run: npm test
+      - name: Research only — compare native critical-angle behavior across four existing refractive families
+        run: node evaluation/cross-family-critical-native-v1/run.mjs
+      - name: Retain cross-family critical-angle raw evidence on success OR failure
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cross-family-critical-native-v1
+          path: test-artifacts/llm-authoring/cross-family-critical-native-v1/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Verify requested native detector ray parentage using public problem workflow
         run: node scripts/native-ray-parentage-acceptance.mjs
       - name: Retain bounded source-parentage native evidence even on failures
