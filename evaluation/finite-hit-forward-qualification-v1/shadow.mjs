@@ -208,6 +208,40 @@ function analyze(row,core){
       events:faces},
     method:'retrospective read-only exact-binary64 forward-intersection audit; no production changes'};
 }
+// This is a controlled reproducibility probe, NOT an assumption of native
+// determinism. Alternate canonical and extra-read-only-wrapper executions on
+// the SAME immutable validated physical scene for both exposed critical cases.
+function repeatCriticalCases(rows,core){
+  return rows.filter(row=>row.regime==='exact-computed'&&
+      ['translated','rotated37'].includes(row.transform.id)).map(row=>{
+    const doc=prepareScene(row.request).document,sourceSha=hash(serializeSave(doc));
+    const attempts=[];
+    for(let i=0;i<8;i++){
+      if(i%2===0){
+        const a=evaluateDocument(doc,core),d=a.report.native.diagnostics;
+        attempts.push({attempt:i+1,method:'canonical',
+          nativeStatus:a.report.native.status,
+          processed:d.processed,truncation:d.truncation,
+          undefinedBehavior:d.undefinedBehavior,
+          interfaceCount:d.interfacesById?.Boundary?.interactions,
+          invalidObservations:d.interfacesById?.Boundary?.invalidObservations,
+          firstOutcome:d.interfacesById?.Boundary?.first?.outcome});
+      }else{
+        const a=nativeObservation(doc,core),m=a.metrics;
+        attempts.push({attempt:i+1,method:'read-only-instrumented',
+          nativeStatus:a.status,
+          processed:m.processed,truncation:m.truncation,
+          undefinedBehavior:m.undefinedBehavior,
+          interfaceCount:m.interface?.interactions,
+          invalidObservations:m.interface?.invalidObservations,
+          callbackCount:a.actual,firstOutcome:m.interface?.first?.outcome});
+      }
+    }
+    assert.equal(hash(serializeSave(doc)),sourceSha);
+    return {id:row.id,canonicalSha256:sourceSha,attempts,
+      disclaimer:'Alternating sequential native executions are separate run instances; outputs are not averaged into an invented unique trajectory.'};
+  });
+}
 async function main(){
   if(process.argv.length>3)throw Error('Usage: node shadow.mjs [fresh-output-dir]');
   const output=reserveAuthoringOutput(process.argv[2]||
@@ -226,9 +260,11 @@ async function main(){
   }
   const tally={};
   for(const r of results)tally[r.shadowDecision]=(tally[r.shadowDecision]||0)+1;
+  const repetitions=repeatCriticalCases(list,core);
   const report={format:'opticsim-finite-forward-shadow-v1',
     origin:'Synthetic seeded PR #87 v9 native critical probes plus four new normal controls; exposed developmental input, not blind transfer',
     baseMain:'fa158fc78da7a35b6a02eaed58c0cdbd4b699220',upstream:UPSTREAM,
+    repeatedNativeProbeCount:repetitions.reduce((n,r)=>n+r.attempts.length,0),repetitions,
     inputSha256:hash(input),cases:list.length,actualRuns:results.length*2,
     exactCheckCount:results.reduce((n,r)=>n+r.audit.checked+r.audit.contradictions,0),
     parityIssueCount:results.filter(r=>r.parityDifferences.length).length,
