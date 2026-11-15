@@ -70,7 +70,7 @@ function recordNative(doc,label){
   return info;
 }
 const close=(a,b,t=1e-9)=>assert.ok(Number.isFinite(a)&&Math.abs(a-b)<t,JSON.stringify({a,b,t}));
-const findById=(doc,id)=>doc.physics.components.find(c=>c.id===id);
+const findById=(doc,id)=>(doc.physics?.components??doc.components).find(c=>c.id===id);
 async function main(){
   if(process.version!=='v24.19.0')throw Error('Native feasibility requires supported Node 24.19.0: '+process.version);
   mkdirSync(out,{recursive:true});
