@@ -3,6 +3,8 @@
 import {validate} from './contract.js';
 import {predict} from './analysis.js';
 import {sceneHash,isRecord,boundedText} from './qualified-utils.js';
+import {provenanceScope,PROVENANCE_OBJECT_LIMIT,PROVENANCE_HIT_LIMIT,
+  PROVENANCE_METHOD,PROVENANCE_LIMITATION} from './ray-provenance.js';
 const kinds=Object.freeze({
   'interface-interactions':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric'],unit:'sampled interactions'},
   'interface-incidence-angle':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric'],unit:'degrees from normal; first native encounter'},
@@ -16,6 +18,7 @@ const kinds=Object.freeze({
   'mirror-reflections':{type:['plane-mirror','ideal-curved-mirror','circular-arc-mirror'],unit:'sampled interactions'},
   'detector-crossings':{type:'ray-detector',unit:'sampled crossings'},
   'detector-hit-events':{type:'ray-detector',unit:'mm positions and unitless incoming directions; native sampled events'},
+  'detector-ray-provenance':{type:'ray-detector',unit:'observed per-run native ray object ancestry'},
   'detector-signed-power':{type:'ray-detector',unit:'relative native units; not watts'},
   'ideal-image':{type:'point-source',unit:'mm; magnification dimensionless'}
 });
@@ -26,7 +29,8 @@ export function observableCapabilities(){
       'A requested result does not certify interpretation of its source question.',
       'Blocker absorption is a sampled native incident count; a zero detector count is not proof of continuous shadow or invisibility.',
       'Circular dielectric angles are relative to the local normal at the first actual native hit, not a whole path or detected image.',
-      'Detector hit-event order is native callback order, not source attribution, a ray history, a continuous footprint or image detection. More than 32 hits or uncertain endpoints withhold the entire position list.']};
+      'Detector hit-event order is native callback order, not source attribution, a ray history, a continuous footprint or image detection. More than 32 hits or uncertain endpoints withhold the entire position list.',
+      'Opt-in detector ray provenance reports direct native object parentage only in a bounded v5 one-interface single-ray scene; tokens are per-run, never full paths or detected images.']};
 }
 export function validateObservables(requests){
   if(!Array.isArray(requests)||requests.length>16)throw Error('Expected at most 16 observable requests');
@@ -38,6 +42,41 @@ export function validateObservables(requests){
     if(r.componentId!==undefined)boundedText(r.componentId,'Observable componentId',64);
   }
   return requests;
+}
+// Defend the public result boundary even when handed a malformed execution
+// snapshot. Internal report hashes provide integrity, not external signatures.
+function validProvenanceValue(value,count,doc){
+ if(!isRecord(value)||Object.keys(value).sort().join(',')!=='crossings,nodes'||
+    !Array.isArray(value.nodes)||!Array.isArray(value.crossings)||
+    value.nodes.length>PROVENANCE_OBJECT_LIMIT||value.crossings.length>PROVENANCE_HIT_LIMIT||
+    value.crossings.length!==count)return false;
+ const byToken=new Map(),sources=new Set(doc.physics.components.filter(c=>c.type==='point-source').map(c=>c.id));
+ const interfaceId=doc.physics.components.find(c=>c.type==='planar-interface')?.id;
+ for(const node of value.nodes){
+   if(!isRecord(node)||Object.keys(node).sort().join(',')!=='origin,parentToken,sourceId,spawnComponentId,token'||
+      typeof node.token!=='string'||!/^r[1-9][0-9]{0,3}$/.test(node.token)||byToken.has(node.token)||
+      !sources.has(node.sourceId))return false;
+   if(node.origin==='native-emission'){
+     if(node.parentToken!==null||node.spawnComponentId!==null)return false;
+   }else if(node.origin==='native-spawn'){
+     if(typeof node.parentToken!=='string'||node.spawnComponentId!==interfaceId)return false;
+   }else return false;
+   byToken.set(node.token,node);
+ }
+ const used=new Set();
+ for(const event of value.crossings){
+   if(!isRecord(event)||Object.keys(event).join(',')!=='rayToken'||!byToken.has(event.rayToken))return false;
+   let ray=byToken.get(event.rayToken),chain=new Set();
+   while(ray){
+     if(chain.has(ray.token))return false;
+     chain.add(ray.token);used.add(ray.token);
+     if(ray.parentToken===null)break;
+     const parent=byToken.get(ray.parentToken);
+     if(!parent||parent.sourceId!==ray.sourceId)return false;
+     ray=parent;
+   }
+ }
+ return used.size===byToken.size;
 }
 function conditionalImage(doc){
   const components=doc.physics.components;
@@ -78,8 +117,12 @@ export async function evaluateObservables(doc,requests,execution){
     if(!Object.hasOwn(kinds,r.kind))return {...base,reason:'Requested quantity is not exposed by the current result contract.'};
     const spec=kinds[r.kind],component=doc.physics.components.find(c=>c.id===r.componentId);
     if(!component||!(Array.isArray(spec.type)?spec.type.includes(component.type):component.type===spec.type))return {...base,reason:'Requested component is missing or has the wrong physical type.'};
-    if(!complete)return {...base,status:'suppressed',reason:!fresh?
-      'Execution evidence does not match the current scene hash.':'Current native run is incomplete, failed, or not yet available.'};
+    if(r.kind==='detector-ray-provenance'&&!provenanceScope(doc,r.componentId))
+      return {...base,reasonCode:'UNSUPPORTED_PROVENANCE_SCOPE',
+        reason:'Only v5 with exactly one planar interface, one or two explicit single-ray sources, one or two passive detectors, and no other optics supports this observation.'};
+    if(!complete)return {...base,status:'suppressed',
+      ...(r.kind==='detector-ray-provenance'?{reasonCode:!fresh?'STALE_PROVENANCE_EXECUTION':'NATIVE_PROVENANCE_INCOMPLETE'}:{}),
+      reason:!fresh?'Execution evidence does not match the current scene hash.':'Current native run is incomplete, failed, or not yet available.'};
     if(r.kind==='ideal-image'){
       try{
         const result=conditionalImage(doc);
@@ -90,6 +133,25 @@ export async function evaluateObservables(doc,requests,execution){
       }catch(error){return {...base,reason:'Analytical calculation unavailable: '+error.message};}
     }
     const o=execution.observations;
+    if(r.kind==='detector-ray-provenance'){
+      const stored=o?.detectorRayProvenanceById?.[r.componentId];
+      const nativeWarnings=execution.native?.warnings??[];
+      if(nativeWarnings.length)return {...base,reasonCode:'NATIVE_PROVENANCE_UNQUALIFIED',
+        reason:'The native run reports warnings; observed parentage is withheld, not promoted to a qualified graph.'};
+      if(!stored||stored.status!=='complete'||stored.reasonCode!==null){
+        const code=stored?.reasonCode??'PROVENANCE_UNKNOWN_OR_INCONSISTENT';
+        return {...base,reasonCode:code,reason:'No complete native source, parent and detector callback evidence exists ('+code+').'};
+      }
+      const count=o?.detectorsById?.[r.componentId]?.crossings;
+      if(!validProvenanceValue(stored.value,count,doc))
+        return {...base,reasonCode:'PROVENANCE_UNKNOWN_OR_INCONSISTENT',
+          reason:'Native ancestry graph or detector counts are incomplete or inconsistent.'};
+      const approximated=doc.physics.components.some(c=>c.type==='planar-interface'&&!c.parameters.partialReflection);
+      return {...base,status:approximated?'qualified':'available',
+        value:stored.value,method:PROVENANCE_METHOD,unit:spec.unit,
+        ...(approximated?{warnings:warnings.filter(s=>s.includes('transmitted-only approximation'))}:{}),
+        limitation:PROVENANCE_LIMITATION};
+    }
     if(r.kind==='detector-hit-events'){
       const sample=o?.detectorHitEventsById?.[r.componentId],count=o?.detectorsById?.[r.componentId]?.crossings;
       if(!sample||sample.status!=='complete'||!Array.isArray(sample.events)||
