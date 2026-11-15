@@ -17,6 +17,16 @@ jobs:
           node-version: '24.19.0'
       - run: npm run setup
       - run: npm test
+      - name: Verify requested native detector ray parentage using public problem workflow
+        run: node scripts/native-ray-parentage-acceptance.mjs
+      - name: Retain bounded source-parentage native evidence even on failures
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-ray-parentage-v1-evidence
+          path: test-artifacts/llm-authoring/native-ray-parentage-v1/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Teaching-fidelity source preservation and native physical checks
         run: node evaluation/teaching-fidelity-v1/run.mjs
       - name: Exercise one immutable model across physically validated teacher scenarios
@@ -56,6 +66,17 @@ jobs:
         run: node scripts/exploration-browser.mjs
       - name: Exercise qualified native detector-hit events in actual Chrome
         run: node scripts/detector-hit-browser.mjs
+      - name: Verify native ray parentage provenance in actual Chrome
+        run: node scripts/native-ray-parentage-browser.mjs
+      - name: Retain real-Chrome ray parentage review evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-ray-parentage-v1-browser
+          path: test-artifacts/browser-ray-parentage/
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Package the local viewer (no public deployment)
         run: node scripts/pack-demo.mjs
       - uses: actions/upload-artifact@v4

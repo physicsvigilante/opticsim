@@ -3,6 +3,7 @@
 import {validate} from './contract.js';
 import {predict} from './analysis.js';
 import {sceneHash,isRecord,boundedText} from './qualified-utils.js';
+import {supportsNativeRayParentage} from './native-ray-parentage.js';
 const kinds=Object.freeze({
   'interface-interactions':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric'],unit:'sampled interactions'},
   'interface-incidence-angle':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric'],unit:'degrees from normal; first native encounter'},
@@ -16,6 +17,7 @@ const kinds=Object.freeze({
   'mirror-reflections':{type:['plane-mirror','ideal-curved-mirror','circular-arc-mirror'],unit:'sampled interactions'},
   'detector-crossings':{type:'ray-detector',unit:'sampled crossings'},
   'detector-hit-events':{type:'ray-detector',unit:'mm positions and unitless incoming directions; native sampled events'},
+  'detector-ray-provenance':{type:'ray-detector',unit:'native observed object ancestry; tokens are run-local'},
   'detector-signed-power':{type:'ray-detector',unit:'relative native units; not watts'},
   'ideal-image':{type:'point-source',unit:'mm; magnification dimensionless'}
 });
@@ -26,7 +28,8 @@ export function observableCapabilities(){
       'A requested result does not certify interpretation of its source question.',
       'Blocker absorption is a sampled native incident count; a zero detector count is not proof of continuous shadow or invisibility.',
       'Circular dielectric angles are relative to the local normal at the first actual native hit, not a whole path or detected image.',
-      'Detector hit-event order is native callback order, not source attribution, a ray history, a continuous footprint or image detection. More than 32 hits or uncertain endpoints withhold the entire position list.']};
+      'Detector hit-event order is native callback order, not source attribution, a ray history, a continuous footprint or image detection. More than 32 hits or uncertain endpoints withhold the entire position list.',
+      'Opt-in detector ray provenance is observed direct native parentage in one complete v5 single-interface run, not a physical path, image, or continuous irradiance. Tokens are not stable across runs.']};
 }
 export function validateObservables(requests){
   if(!Array.isArray(requests)||requests.length>16)throw Error('Expected at most 16 observable requests');
@@ -78,8 +81,11 @@ export async function evaluateObservables(doc,requests,execution){
     if(!Object.hasOwn(kinds,r.kind))return {...base,reason:'Requested quantity is not exposed by the current result contract.'};
     const spec=kinds[r.kind],component=doc.physics.components.find(c=>c.id===r.componentId);
     if(!component||!(Array.isArray(spec.type)?spec.type.includes(component.type):component.type===spec.type))return {...base,reason:'Requested component is missing or has the wrong physical type.'};
-    if(!complete)return {...base,status:'suppressed',reason:!fresh?
-      'Execution evidence does not match the current scene hash.':'Current native run is incomplete, failed, or not yet available.'};
+    if(!complete)return {...base,status:'suppressed',
+      ...(r.kind==='detector-ray-provenance'?{reasonCode:!fresh?
+        'STALE_PROVENANCE_EXECUTION':'NATIVE_PROVENANCE_INCOMPLETE'}:{}),
+      reason:!fresh?'Execution evidence does not match the current scene hash.':
+        'Current native run is incomplete, failed, or not yet available.'};
     if(r.kind==='ideal-image'){
       try{
         const result=conditionalImage(doc);
@@ -90,6 +96,24 @@ export async function evaluateObservables(doc,requests,execution){
       }catch(error){return {...base,reason:'Analytical calculation unavailable: '+error.message};}
     }
     const o=execution.observations;
+    if(r.kind==='detector-ray-provenance'){
+      if(!supportsNativeRayParentage(doc))return {...base,reasonCode:'UNSUPPORTED_PROVENANCE_SCOPE',
+        reason:'Parentage requires one planar interface, one or two exact single-ray sources, one or two passive detectors, and no other objects.'};
+      const observed=o?.detectorRayProvenanceById?.[r.componentId];
+      if(!observed||observed.status!=='complete'||!observed.value){
+        return {...base,reasonCode:observed?.reasonCode??'PROVENANCE_UNKNOWN_OR_INCONSISTENT',
+          reason:'No fully qualified native source and direct-child identity ledger exists for this detector.'};
+      }
+      // Native warnings always withhold provenance; a deliberate transmitted-only
+      // model caveat is not a native warning.
+      if(execution.native?.warnings?.length)return {...base,reasonCode:'NATIVE_PROVENANCE_UNQUALIFIED',
+        reason:'Native runtime warnings prevent reliable complete provenance.'};
+      const approximation=doc.physics.components.find(c=>c.type==='planar-interface')?.parameters.partialReflection===false;
+      return {...base,status:approximation?'qualified':'available',
+        value:structuredClone(observed.value),unit:spec.unit,method:'native-observed-object-parentage',
+        warnings:approximation?warnings:[],
+        limitation:'Only directly observed native source/parent object identity at actual sampled detector crossings; same-object optical interactions have no edges. Tokens are local to this run; no complete path, material inference, physical image, continuous illumination or source-image authenticity.'};
+    }
     if(r.kind==='detector-hit-events'){
       const sample=o?.detectorHitEventsById?.[r.componentId],count=o?.detectorsById?.[r.componentId]?.crossings;
       if(!sample||sample.status!=='complete'||!Array.isArray(sample.events)||

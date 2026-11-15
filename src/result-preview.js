@@ -12,7 +12,7 @@ const CAMERA_BOUNDS={centerMm:[-10000,10000],zoom:[0.03,10]};
 const finite=Number.isFinite;
 const number=n=>finite(n)?Number(n.toPrecision(8)).toString():'unavailable';
 export function formatRequestedResult(r){
-  const label=['native-observation','native-hit-event-observation'].includes(r.method)?'Native sampled observation':
+  const label=['native-observation','native-hit-event-observation','native-observed-object-parentage'].includes(r.method)?'Native sampled observation':
     r.status==='conditional'?'Conditional analytical prediction':'No current value';
   let value=r.reason||'';
   if(r.value!==null&&r.value!==undefined){
@@ -31,6 +31,14 @@ export function formatRequestedResult(r){
         `Hit ${i+1} (native callback order): x=${number(e.pointMm.x)}, y=${number(e.pointMm.y)} mm; `+
         `distance from detector p1=${number(e.distanceFromP1Mm)} mm; `+
         `incoming direction=(${number(e.incomingUnit.x)}, ${number(e.incomingUnit.y)}).`).join('\n');
+    }else if(r.kind==='detector-ray-provenance'){
+      value=!r.value.crossings.length?'No sampled detector crossings with a complete observed source ledger.':
+        'Native crossing identities: '+r.value.crossings.map((crossing,i)=>{
+          const node=r.value.nodes.find(n=>n.token===crossing.rayToken);
+          return 'Hit '+(i+1)+': '+crossing.rayToken+' from authored source '+(node?.sourceId??'unknown');
+        }).join('; ')+'.\n'+
+        'Direct observed spawn relationships: '+(r.value.nodes.filter(n=>n.parentToken!==null)
+          .map(n=>n.parentToken+' → '+n.token+' at '+n.spawnComponentId).join('; ')||'none observed');
     }else if(r.kind==='interface-first-event'){
       const p=r.value;value=`First native encounter: ${p.outcome}. ${p.from} side, index ${number(p.incidentIndex)} → ${number(p.destinationIndex)}.\n`+
         `Incidence: ${number(p.incidentAngleDeg)}°; transmission: ${number(p.transmittedAngleDeg)}°; reflection: ${number(p.reflectedAngleDeg)}°.\n`+
