@@ -66,7 +66,7 @@ test('review-only: explicit 1.5 to 1 native 30-degree transmission and 50-degree
     const scene=doc([
       source('HighIndexRay',-100,-100,90-angle),
       face(1.5,1,false),
-      detector('ReflectedBelow',-220),
+      detector('ReflectedBelow',-220,1000),
       detector('TransmittedAbove',120)
     ]);
     const out=execute(scene,['ReflectedBelow','TransmittedAbove']);
