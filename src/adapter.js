@@ -203,7 +203,7 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
   const warnings = [scene.warning, simulator.warning, ...scene.objs.map(o => o.getWarning())].filter(Boolean);
   const emissionsById=meter?.byId ?? null;
   const sourceCount=emissionsById ? Object.keys(emissionsById).length : 0;
-  const parentageById=parentage?.finish({event:nativeEvent,simulator,errors,warnings,sources:meter,detectors:detectorMeter});
+  const parentageById=parentage?.finish({event:nativeEvent,simulator,errors,warnings,sources:meter,detectors:detectorMeter,interfaces:interfaceMeter});
   return { errors, warnings, processed: simulator.processedRayCount, truncation: simulator.totalTruncation,
     undefinedBehavior: simulator.totalUndefinedBehavior, emitted: meter?.emitted ?? null,
     // There is no meaningful single scale for multiple independently emitting
