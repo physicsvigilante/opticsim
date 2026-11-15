@@ -1,6 +1,7 @@
 // Deterministic ideal-model angular constraints for validated, parallel v5
 // media. These are CONDITIONAL analytical relationships, NOT native ray paths,
 // detector observations, an inverse ray tracer or hidden authoring defaults.
+import {RAD,asinAngle,classifySnellTransmission} from './angular-math.js';
 import {prepareScene,inspectAuthoringRequest,AuthoringError} from './authoring.js';
 import {interfaceNormal,signedSide} from './planar-media.js';
 import {isRecord} from './qualified-utils.js';
@@ -8,7 +9,6 @@ import {COMPONENT_BOUNDS} from './contract.js';
 export const ANGLE_QUERY_FORMAT='opticsim-planar-angle-query-v1';
 export const ANGLE_FACTS_FORMAT='opticsim-planar-angular-facts-v1';
 export const ANGLE_RESULT_FORMAT='opticsim-planar-angle-result-v1';
-const RAD=Math.PI/180;
 const own=(x,k)=>Object.prototype.hasOwnProperty.call(x,k);
 function record(x,keys,required,label){
   if(!isRecord(x)||Object.keys(x).some(k=>!keys.includes(k))||
@@ -18,17 +18,8 @@ function token(x,label){
   if(typeof x!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(x))throw Error('Invalid '+label);
 }
 function direction(x){if(!['positive','negative'].includes(x))throw Error('Expected positive or negative normal direction');return x==='positive'?1:-1;}
-function asinAngle(s){
-  // Tiny overshoot from valid trigonometric rounding is clipped; a genuinely
-  // impossible angle is NOT clamped into a valid physical solution.
-  if(!Number.isFinite(s)||s<0||s>1+2e-12)return null;
-  return Math.asin(Math.min(1,s))/RAD;
-}
 function invalid(reason,reasonCode='UNAVAILABLE'){return {status:'unavailable',value:null,reason,reasonCode};}
 function uncertain(reason,reasonCode='NEAR_CRITICAL_NUMERIC'){return {status:'numerically-indeterminate',value:null,reason,reasonCode};}
-// Distinguish physical branch absence from floating-point uncertainty. The
-// uncertainty band is not a claim that every nearby value is exactly critical.
-const CRITICAL_UNCERTAINTY=2e-12;
 // Reduced, closed-form fact view for ideal angular questions. A list order is
 // a stated negative-to-positive medium order, not inferred drawing geometry.
 // No brightness, thickness, source position or native reflection policy is
@@ -256,16 +247,11 @@ function branchResults(request,query,l){
       const iface=l.planes[travel===1?region:next];
       if(e.interfaceId!==iface.id)return {id:b.id,...invalid('Branch skips or misorders the next physical interface ('+iface.id+').'),events};
       const n1=l.regions[region],n2=l.regions[next];
-      const ratio=transverse/n2;
       const at=asinAngle(transverse/n1);
       if(at===null)return {id:b.id,...invalid('Previous branch is evanescent.','INVALID_PREVIOUS_REGION'),events};
       // Identical materials have no refractive bend or Fresnel reflection;
       // in particular nearly tangent rays are NOT critical at equal indices.
-      const sameMedium=n1===n2;
-      const delta=ratio-1;
-      const uncertainCritical=!sameMedium&&Math.abs(delta)<=CRITICAL_UNCERTAINTY;
-      const tir=!sameMedium&&delta>CRITICAL_UNCERTAINTY;
-      const out=sameMedium?at:asinAngle(ratio);
+      const {sameMedium,uncertainCritical,tir,out}=classifySnellTransmission(transverse,n1,n2,at);
       const step={interfaceId:iface.id,action:e.action,fromIndex:n1,toIndex:n2,
         incidenceAngleDeg:at,totalInternalReflection:tir,
         nativeBranchStatus:'not-checked'};

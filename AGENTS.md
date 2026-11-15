@@ -167,3 +167,14 @@ See `evaluation/reusable-model-v1/README.md` for a bounded developmental scenari
   to existing `ideal-image` completion/hash gates is permitted. Preserve the
   reserved-case exposure and later numerical-hardening history. See
   `docs/LENS-TRAIN-FACTS.md`.
+
+- Reduced prism angular facts support only a homogeneous prism, the same explicit
+  exterior index at both faces, and a declared nonnegative direct two-face
+  transmission branch. Forward angles and deviation-based index inversion reuse
+  the shared analytical Snell helper, not a new native ray tracer. Require signed
+  or magnitude deviation explicitly; preserve all unresolved/ambiguous branches.
+  Do not invent finite geometry, minimum deviation, refractive indices, native
+  Fresnel policy, a third-face route or a critical-incidence inverse. Reduced
+  analytical success never qualifies incomplete native evidence. Historical
+  planar results, native tolerances, engine pin and sealed attempts stay intact.
+  See docs/PRISM-ANGULAR-FACTS.md.

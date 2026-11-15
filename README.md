@@ -507,3 +507,15 @@ object height. Results are conditional ideal-model calculations, not native
 image detections; the old `ideal-image` native gate is unchanged. See
 [the fact contract and limits](docs/LENS-TRAIN-FACTS.md) and
 [the minimal analytical request](examples/lens-train-facts.json).
+
+## Prism angles from explicit reduced facts
+
+The existing problem workflow now exposes conditional forward prism angles and
+index inference from a signed or explicitly magnitude-only deviation. It reuses
+shared analytical Snell classification and needs no invented source, dimensions
+or illumination. Magnitude ambiguity, TIR, missing facts and numerical uncertainty
+remain explicit; no native path or minimum-deviation condition is inferred.
+See [the contract and numerical boundaries](docs/PRISM-ANGULAR-FACTS.md),
+[forward facts](examples/prism-angle-facts.json), and
+[ambiguous inverse facts](examples/prism-index-facts.json). These are analytical
+requests, not native scenes for the browser importer.

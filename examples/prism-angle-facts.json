@@ -1,0 +1,19 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-prism-angular-facts-v1",
+    "model": "homogeneous-prism",
+    "branch": "direct-two-face-transmission",
+    "apexAngleDeg": 60,
+    "incidenceAngleDeg": 50,
+    "outsideIndex": 1,
+    "insideIndex": 1.5
+  },
+  "requests": [{"id": "angles", "kind": "prism-transmission-angles"}],
+  "interpretation": {
+    "stated": [],
+    "derived": [],
+    "assumptions": ["Explicit synthetic angular investigation, not a first interpretation of an archived question.", "Direct transmission through the declared pair of faces; finite-face reach is not established."],
+    "unknowns": ["No source position, illumination, prism dimensions, finite path, intensity or native simulation is implied."]
+  }
+}

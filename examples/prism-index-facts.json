@@ -1,0 +1,20 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-prism-angular-facts-v1",
+    "model": "homogeneous-prism",
+    "branch": "direct-two-face-transmission",
+    "apexAngleDeg": 40,
+    "incidenceAngleDeg": 30,
+    "outsideIndex": 1.5,
+    "deviationDeg": 5,
+    "deviationConvention": "magnitude"
+  },
+  "requests": [{"id": "material", "kind": "prism-index-from-deviation"}],
+  "interpretation": {
+    "stated": [],
+    "derived": [],
+    "assumptions": ["Explicit synthetic immersed-prism investigation; only deviation magnitude is supplied."],
+    "unknowns": ["The deviation sign is unknown. No material-index candidate may be selected merely to yield a preferred answer."]
+  }
+}
