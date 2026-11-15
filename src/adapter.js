@@ -11,6 +11,8 @@ import en from '../vendor/ray-optics/locales/en/simulator.json';
 import { validate, mirrorEndpoints } from './contract.js';
 i18next.init({ lng: 'en', resources: { en: { simulator: en } }, initImmediate: false, interpolation: { escapeValue: false } });
 import {compileInterface,observeInterfaceSet} from './planar-media.js';
+import {createRayProvenanceTracker} from './ray-provenance.js';
+export {createRayProvenanceTracker};
 export {observeInterfaceSet};
 const compilers = {
   'circular-dielectric':compileCircular,[PRISM_TYPE]:compilePrism,[POLYGON_TYPE]:compilePolygon,
@@ -72,22 +74,25 @@ export function loadDocument(doc, width, height) {
 export function nativeExport(doc) { return loadDocument(doc).scene.toJSON(); }
 // Instance-local observation only: one native call, same return value and rays.
 // No tracing, resampling, or source prototype/upstream modification.
-export function observeSourceEmission(source) {
+export function observeSourceEmission(source,{sourceId=null,provenance=null}={}) {
   const meter = { emitted: null, brightnessScale: null };
   const nativeStart = source.onSimulationStart;
-  source.onSimulationStart = function (...args) {
+  const wrapped=function (...args) {
     const result = nativeStart.apply(this, args);
     meter.emitted = result?.newRays?.length || 0;
     meter.brightnessScale = result?.brightnessScale ?? null;
+    provenance?.sourceStart(sourceId,result);
     return result;
   };
+  source.onSimulationStart=wrapped;
+  if(provenance)provenance.register(sourceId,source,'onSimulationStart',wrapped);
   return meter;
 }
 // Wrap each authored source once; no ray provenance is assigned after emission.
 // Stable-ID counts describe actual PhyDemo sampling, never detector attribution.
-export function observeSourceSet(doc, scene, idMap) {
+export function observeSourceSet(doc, scene, idMap,{provenance=null}={}) {
   const entries=doc.physics.components.filter(c=>c.type==='point-source')
-    .map(c=>[c.id,observeSourceEmission(scene.objs[idMap.get(c.id)])]);
+    .map(c=>[c.id,observeSourceEmission(scene.objs[idMap.get(c.id)],{sourceId:c.id,provenance})]);
   return {
     get emitted() {
       return entries.some(([,meter])=>meter.emitted===null) ? null :
@@ -144,17 +149,19 @@ function nativeDetectorHit(ray,incidentPoint,segment){
     along<DETECTOR_HIT_ENDPOINT_MM||length-along<DETECTOR_HIT_ENDPOINT_MM)return null;
   return {pointMm:{x,y},incomingUnit:{x:vx/travel,y:-vy/travel},distanceFromP1Mm:along};
 }
-export function observeDetectorSet(doc,scene,idMap,{captureHitEvents=false}={}) {
+export function observeDetectorSet(doc,scene,idMap,{captureHitEvents=false,provenance=null}={}) {
   const entries=doc.physics.components.filter(c=>c.type==='ray-detector').map(c=>{
     const detector=scene.objs[idMap.get(c.id)],original=detector.onRayIncident;
     let crossings=0,issue=null;const events=[];
     const [a,b]=mirrorEndpoints(c.parameters),dx=b.x-a.x,dy=b.y-a.y;
     const segment={a,b,dx,dy,length:Math.hypot(dx,dy)};
-    detector.onRayIncident=function(...args){
+    const wrapped=function(...args){
       // Snapshot native inputs BEFORE Detector.onRayIncident mutates ray.p1/p2.
-      const sample=captureHitEvents?nativeDetectorHit(args[0],args[2],segment):null;
+      const ray=args[0];
+      const sample=captureHitEvents||provenance?nativeDetectorHit(ray,args[2],segment):null;
       const result=original.apply(this,args); // Exactly one native delegation.
       crossings++;
+      provenance?.detectorIncident(c.id,ray,!!sample);
       if(captureHitEvents){
         if(!sample)issue??='AMBIGUOUS_DETECTOR_HIT';
         else if(events.length>=DETECTOR_HIT_EVENT_LIMIT)issue??='HIT_EVENT_LIMIT_EXCEEDED';
@@ -162,6 +169,8 @@ export function observeDetectorSet(doc,scene,idMap,{captureHitEvents=false}={}) 
       }
       return result;
     };
+    detector.onRayIncident=wrapped;
+    if(provenance)provenance.register(c.id,detector,'onRayIncident',wrapped);
     return {id:c.id,detector,get crossings(){return crossings;},
       get hitEvents(){return {observedCount:crossings,limit:DETECTOR_HIT_EVENT_LIMIT,
         status:!issue&&events.length===crossings?'complete':'unavailable',
@@ -194,7 +203,7 @@ export function observeBlockerSet(doc, scene, idMap) {
       id+': native blocker incident did not report absorption');}
   };
 }
-export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, detectorMeter = null, interfaceMeter = null, blockerMeter = null, {detectorHitEvents=false,nativeEvent=null}={}) {
+export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, detectorMeter = null, interfaceMeter = null, blockerMeter = null, {detectorHitEvents=false,nativeEvent=null,rayProvenance=null}={}) {
   const errors = [...(interfaceMeter?.errors||[]),...(blockerMeter?.errors||[]),scene.error, simulator.error, ...scene.objs.map(o => o.getError())].filter(Boolean);
   const warnings = [scene.warning, simulator.warning, ...scene.objs.map(o => o.getWarning())].filter(Boolean);
   const emissionsById=meter?.byId ?? null;
@@ -214,7 +223,14 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
       errors.length===0&&simulator.totalTruncation===0&&simulator.totalUndefinedBehavior===0?
       detectorMeter?.hitEventsById??null:null}:{}),
     interfacesById: interfaceMeter?.byId ?? null,
-    blockersById: blockerMeter?.byId ?? null }; 
+    blockersById: blockerMeter?.byId ?? null,
+    ...(rayProvenance?(()=>{
+      const qualified=rayProvenance.project({event:nativeEvent,errors,warnings,
+        truncation:simulator.totalTruncation,undefinedBehavior:simulator.totalUndefinedBehavior,
+        emissionsById,detectorsById:detectorMeter?.byId??null});
+      // No public graph fields on failed, stopped, truncated or undefined runs.
+      return qualified?{detectorRayProvenanceById:qualified}:{};
+    })():{}) }; 
 }
 export function classifyRun(event, data) {
   return data.errors.length ? 'failed' : event === 'simulationStop' ? 'stopped' :
