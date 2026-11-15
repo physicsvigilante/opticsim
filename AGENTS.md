@@ -57,6 +57,7 @@ See `evaluation/reusable-model-v1/README.md` for a bounded developmental scenari
   IDs; report total and per-ID reflection hits via native observers. Do not
   prescribe ray paths, fabricate image predictions, or use analytical equations
   from the restricted lens/mirror return family for arbitrary mixed systems.
+- Bounded optional `detector-hit-events` records actual native Detector callback points/directions in y-up and mm, at most 32 per detector. Preserve existing detector-count/power results and old report shape unless explicitly selected. Refuse clipped, ambiguous, stale, incomplete and unsupported events; do not infer ray pairing, source IDs, image formation or continuous visibility. See `docs/DETECTOR-HIT-EVENTS.md`.
 - Ray-detector readings are derived native observations by stable ID: crossing
   count and signed native detector power in relative units. Do not call them watts,
   physical irradiance, detected images, or continuous throughput. Detectors must

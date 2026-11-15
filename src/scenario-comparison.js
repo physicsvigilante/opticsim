@@ -67,6 +67,8 @@ export async function compareScenario(baseline,scenario){
     r.nativeImageDetected===false&&orig.nativeImageDetected===false&&
     typeof r.analysisModel==='string'&&r.analysisModel===orig.analysisModel&&same(r.assumptions??[],orig.assumptions??[]))
    comparison='conditional-ideal-comparison';
+  else if(r.method==='native-hit-event-observation')
+   reason='Native hit-event lists need explicit geometrical/directional interpretation; no automatic paired-ray or physical displacement claim.';
   else if(r.method==='native-observation'){
    if(!sameNumerics)reason='Native sampled counts/power use different numerical policies; not a physical change claim.';
    else if(!compatibleEmission||!unclipped||r.status==='qualified'||orig.status==='qualified'||

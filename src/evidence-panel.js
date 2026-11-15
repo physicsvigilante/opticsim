@@ -76,7 +76,7 @@ export function evidencePanelView({doc=null,qualification=null,requests=[],state
   let native=0,conditional=0,unavailable=0,suppressed=0,other=0,qualified=0;
   const missing=[];
   for(const r of results){
-    if(['available','qualified'].includes(r.status)&&r.method==='native-observation'){
+    if(['available','qualified'].includes(r.status)&&['native-observation','native-hit-event-observation'].includes(r.method)){
       native++;if(r.status==='qualified')qualified++;
     }else if(r.status==='conditional')conditional++;
     else if(r.status==='unavailable'){unavailable++;missing.push(r);}

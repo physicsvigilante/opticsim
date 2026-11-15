@@ -1,0 +1,16 @@
+{
+  "format": "opticsim-detector-hit-integration-rebase-v1",
+  "baselineCommit": "c0d4e3048b9e0935cfd567e5f3c81aab23ddd823",
+  "qualification": "post-transfer corrective integration; not part of the original preexecution freeze",
+  "reason": "The pre-transfer local source snapshot omitted the already-merged v10-to-v11 qualified composition upgrade in two files. Restore those exact existing contract behaviors before publishing.",
+  "historicalFreezeFile": "test/fixtures/detector-hit-transfer-freeze.json",
+  "changedAfterReservedExecution": [
+    "src/exploration.js",
+    "scripts/qualified-scene.mjs"
+  ],
+  "replacementHashes": {
+    "src/exploration.js": "855f1b3dc786852f881e75c761e191515b6fefe87bdbb82dcca3711481e02dab",
+    "scripts/qualified-scene.mjs": "6ae41a34e73b3e2eb80a682558c0dee0eb66393a15785f1e324236c628af9ab3"
+  },
+  "assessment": "Reserved R1 first-run remains retained historical developmental evidence; subsequent replay is exposed regression, not a still-blind transfer."
+}

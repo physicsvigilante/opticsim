@@ -17,12 +17,14 @@ let scheduled;
 let explorationUI;
 let bindings = [];
 let activeSourceId = null; // UI selection only; not part of authoritative scene JSON.
+let captureRequestedDetectorHits = false; // Set from the current approved observation requests before a native run.
 function cancelScheduled() { clearTimeout(scheduled); scheduled = undefined; }
 const session = new Session(doc => {
   const { scene, idMap } = loadDocument(doc, size.width, size.height);
   const meter = observeSourceSet(doc, scene, idMap);
   const mirrorMeter = observeMirrorSet(doc, scene, idMap);
-  const detectorMeter = observeDetectorSet(doc, scene, idMap);
+  const captureHitEvents = captureRequestedDetectorHits;
+  const detectorMeter = observeDetectorSet(doc, scene, idMap,{captureHitEvents});
   const interfaceMeter = observeInterfaceSet(doc, scene, idMap);
   const blockerMeter = observeBlockerSet(doc, scene, idMap);
   const sim = new Simulator(scene, ...canvases.map(c => c.getContext('2d')), null, true, doc.simulation.processedRayLimit);
@@ -31,7 +33,7 @@ const session = new Session(doc => {
     sim.simulationTimerId = -1; sim.shouldSimulatorStop = true;
   };
   return { scene, cancel, run: notify => {
-    for (const event of ['simulationComplete', 'simulationStop']) sim.on(event, () => notify(event, diagnostics(scene, sim, meter, mirrorMeter, detectorMeter, interfaceMeter, blockerMeter)));
+    for (const event of ['simulationComplete', 'simulationStop']) sim.on(event, () => notify(event, diagnostics(scene, sim, meter, mirrorMeter, detectorMeter, interfaceMeter, blockerMeter,{detectorHitEvents:captureHitEvents,nativeEvent:event})));
     sim.updateSimulation(false, false);
   } };
 }, update);
@@ -369,7 +371,10 @@ function apply(doc, rebuild = false, imported = undefined) {
   let tracked;
   try { tracked = qualificationUI.prepare(doc, imported); }
   catch (error) { session.invalidate(error); return false; }
+  const priorCapture = captureRequestedDetectorHits;
+  captureRequestedDetectorHits = tracked.requests.some(request => request.kind === 'detector-hit-events');
   const accepted = session.apply(doc);
+  if (!accepted) captureRequestedDetectorHits = priorCapture;
   if (accepted) qualificationUI.commit(tracked);
   if (accepted && rebuild) controls();
   return accepted;

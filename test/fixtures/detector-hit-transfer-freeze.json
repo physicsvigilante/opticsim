@@ -1,0 +1,23 @@
+{
+  "format": "opticsim-detector-hit-transfer-freeze-v1",
+  "baseline": "c0d4e3048b9e0935cfd567e5f3c81aab23ddd823",
+  "status": "preexecution-freeze",
+  "note": "One reserved synthetic transfer case was selected and frozen before this implementation. Same assistant has prior knowledge; no independence claim. Physical authoring and checking code frozen before R1 first execution.",
+  "frozenFiles": {
+    "src/adapter.js": "82bb66e3618bfb1ac6c5d2aca7b3ed4282e9823d5ee6d4d9831590954daf7478",
+    "src/app.js": "aad952e4c0b90a6812c21cd5f4ac92f35b52caf59f733d814deef3d32f43faf4",
+    "src/native-observations.js": "b23421503b72bae948b305a375e58ffbdcc5b996e351674772a02758820ea58e",
+    "src/observables.js": "b99198adbf7e5eb842037c7236d0ed545bac1da9b085e06b787d3a2ebc19827e",
+    "src/qualified-ui.js": "1855c2412adba45230458c84440e6d94bcaa85333d2208518382e39550bcf235",
+    "src/exploration.js": "6aafdcc783e6b50a6cedc964fe5b88506d7d393e312f3f4fbaab5cecde555bfc",
+    "src/exploration-ui.js": "dca1172ad93a90b2fe64fe534332f3ca82721f6216a5b3fd75ce68035d487604",
+    "src/result-preview.js": "9da9ad3c28507150996441c7c00678419a7bf5c88ae8833378b2c3661739c126",
+    "src/scenario-comparison.js": "7852e615d59b88ed7eba1ba9bc15e450cdfa49eda7b04f5ee2398df334452bbf",
+    "scripts/author-scene.mjs": "afa477f1352b3159fa2315b931975aa2cdf83c488733c8433010692c9cff4f7d",
+    "scripts/run-problem.mjs": "69afff4674249e4a3bfa5f6fd5ae8b1f42690fff852a69b7060fc92c29c1ecbb",
+    "scripts/qualified-scene.mjs": "29c265246c209be7bfafcffba1eca1364a2bac7621f6a24c89db9b2d51208705",
+    "skills/sim-ro-image-to-scene/scripts/check-scene.mjs": "9243a1c92d6078bdbc31a062ec36f2ffdbce744eb91062326026f750605d2e39",
+    "test/detector-hit-events.test.mjs": "763cfdd0fae6ece731b46940f51d1fa3b6a5694d4c4b6357b0996486a5e7d0cc"
+  },
+  "reservedInputSha256": "8e8deca8af9919cb56906c2491eb2ac2e8de50f833e30134272b1a074213c756"
+}

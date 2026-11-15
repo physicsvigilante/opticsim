@@ -155,7 +155,7 @@ export class QualifiedUI {
     $('observable-results').textContent='Checking results for this revision…';
     (async()=>{
       const execution={canonicalSha256:await sceneHash(doc),executionPassed:true,
-        native:{status,warnings:data?.warnings||[]},observations:snapshotNativeObservations(data)};
+        native:{status,warnings:data?.warnings||[]},observations:snapshotNativeObservations(data,requests)};
       const results=await evaluateObservables(doc,requests,execution);
       if(sequence!==this.sequence||revision!==s.revision)return;
       this.currentResults=results;this.resultRevision=revision;

@@ -124,24 +124,55 @@ export function observeMirrorSet(doc, scene, idMap) {
     get byId() {return Object.fromEntries(entries.map(([id,meter])=>[id,meter.reflections]));}
   };
 }
-// Observe only authored detectors. Native onRayIncident and power accounting
-// stay authoritative; the observer counts calls and delegates exactly once.
-export function observeDetectorSet(doc, scene, idMap) {
+// Native incident events are sampled, NOT an inferred source/ray history.
+// The existing byId count/power projection stays byte-for-byte unchanged.
+export const DETECTOR_HIT_EVENT_LIMIT=32;
+const DETECTOR_HIT_RESIDUAL_MM=1e-5;
+const DETECTOR_HIT_ENDPOINT_MM=.01;
+function nativeDetectorHit(ray,incidentPoint,segment){
+  const {a,b,length,dx,dy}=segment;
+  if(!ray?.p1||!ray?.p2||!incidentPoint||
+    !Number.isFinite(incidentPoint.x)||!Number.isFinite(incidentPoint.y))return null;
+  const vx=ray.p2.x-ray.p1.x,vy=ray.p2.y-ray.p1.y,travel=Math.hypot(vx,vy);
+  if(!(travel>0&&Number.isFinite(travel)))return null;
+  const x=incidentPoint.x,y=-incidentPoint.y;
+  const along=((x-a.x)*dx+(y-a.y)*dy)/length;
+  const deviation=Math.abs((x-a.x)*dy-(y-a.y)*dx)/length;
+  // Conservative detector endpoint and out-of-segment refusals are
+  // qualification rules only. They never relocate or reroute a native ray.
+  if(!Number.isFinite(along)||deviation>DETECTOR_HIT_RESIDUAL_MM||
+    along<DETECTOR_HIT_ENDPOINT_MM||length-along<DETECTOR_HIT_ENDPOINT_MM)return null;
+  return {pointMm:{x,y},incomingUnit:{x:vx/travel,y:-vy/travel},distanceFromP1Mm:along};
+}
+export function observeDetectorSet(doc,scene,idMap,{captureHitEvents=false}={}) {
   const entries=doc.physics.components.filter(c=>c.type==='ray-detector').map(c=>{
-    const detector=scene.objs[idMap.get(c.id)], original=detector.onRayIncident;
-    let crossings=0;
-    detector.onRayIncident=function (...args) {
-      const result=original.apply(this,args);
+    const detector=scene.objs[idMap.get(c.id)],original=detector.onRayIncident;
+    let crossings=0,issue=null;const events=[];
+    const [a,b]=mirrorEndpoints(c.parameters),dx=b.x-a.x,dy=b.y-a.y;
+    const segment={a,b,dx,dy,length:Math.hypot(dx,dy)};
+    detector.onRayIncident=function(...args){
+      // Snapshot native inputs BEFORE Detector.onRayIncident mutates ray.p1/p2.
+      const sample=captureHitEvents?nativeDetectorHit(args[0],args[2],segment):null;
+      const result=original.apply(this,args); // Exactly one native delegation.
       crossings++;
+      if(captureHitEvents){
+        if(!sample)issue??='AMBIGUOUS_DETECTOR_HIT';
+        else if(events.length>=DETECTOR_HIT_EVENT_LIMIT)issue??='HIT_EVENT_LIMIT_EXCEEDED';
+        else if(!issue)events.push(sample);
+      }
       return result;
     };
-    return {id:c.id,detector,get crossings(){return crossings;}};
+    return {id:c.id,detector,get crossings(){return crossings;},
+      get hitEvents(){return {observedCount:crossings,limit:DETECTOR_HIT_EVENT_LIMIT,
+        status:!issue&&events.length===crossings?'complete':'unavailable',
+        reasonCode:issue,events:!issue&&events.length===crossings?structuredClone(events):null};}};
   });
   if(!entries.length)return null;
   return {get byId(){return Object.fromEntries(entries.map(entry=>[
     entry.id,{crossings:entry.crossings,
       signedPower:Number.isFinite(entry.detector.power)?entry.detector.power:null}
-  ]));}};
+  ]));},
+  get hitEventsById(){return captureHitEvents?Object.fromEntries(entries.map(e=>[e.id,e.hitEvents])):null;}};
 }
 // Per-instance native absorber observations; never trace or reroute a ray.
 export function observeBlockerSet(doc, scene, idMap) {
@@ -163,7 +194,7 @@ export function observeBlockerSet(doc, scene, idMap) {
       id+': native blocker incident did not report absorption');}
   };
 }
-export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, detectorMeter = null, interfaceMeter = null, blockerMeter = null) {
+export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, detectorMeter = null, interfaceMeter = null, blockerMeter = null, {detectorHitEvents=false,nativeEvent=null}={}) {
   const errors = [...(interfaceMeter?.errors||[]),...(blockerMeter?.errors||[]),scene.error, simulator.error, ...scene.objs.map(o => o.getError())].filter(Boolean);
   const warnings = [scene.warning, simulator.warning, ...scene.objs.map(o => o.getWarning())].filter(Boolean);
   const emissionsById=meter?.byId ?? null;
@@ -177,6 +208,11 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
     reflections: mirrorMeter?.reflections ?? null,
     reflectionsById: mirrorMeter?.byId ?? null,
     detectorsById: detectorMeter?.byId ?? null,
+    // Raw positions are withheld even from execution diagnostics unless the
+    // ENTIRE native run completed with no truncation, undefined behavior or errors.
+    ...(detectorHitEvents?{detectorHitEventsById:nativeEvent==='simulationComplete'&&
+      errors.length===0&&simulator.totalTruncation===0&&simulator.totalUndefinedBehavior===0?
+      detectorMeter?.hitEventsById??null:null}:{}),
     interfacesById: interfaceMeter?.byId ?? null,
     blockersById: blockerMeter?.byId ?? null }; 
 }

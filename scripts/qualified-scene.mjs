@@ -84,7 +84,7 @@ async function main(context){
  execFileSync(process.execPath,[resolve(root,'scripts/build.mjs'),'--test'],{cwd:root,stdio:['ignore','pipe','pipe']});
  const core=createRequire(import.meta.url)(resolve(root,'dist/test-core.cjs'));
  context.nativeStarted=true;
- const execution=evaluateDocument(doc,core);
+ const execution=evaluateDocument(doc,core,requests);
  const requestedResults=await evaluateObservables(doc,requests,execution.summary);
  const bundle=await createQualifiedBundle(doc,qualification,requests);
  const summary={...execution.summary,qualification,requestedResults,integritySha256:bundle.integritySha256,

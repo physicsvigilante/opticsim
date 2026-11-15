@@ -15,10 +15,10 @@ import {canonicalJSON,sceneHash} from '../src/qualified-utils.js';
 import {reserveAuthoringOutput,writeEvidence} from './authoring-evidence.mjs';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
-function executeNative(scene){
+function executeNative(scene,requests=[]){
   execFileSync(process.execPath,[resolve(root,'scripts/build.mjs'),'--test'],{cwd:root,stdio:['ignore','pipe','pipe']});
   const core=createRequire(import.meta.url)(resolve(root,'dist/test-core.cjs'));
-  return evaluateDocument(scene,core);
+  return evaluateDocument(scene,core,requests);
 }
 // execute is a trusted test seam, never data loaded from user JSON.
 export async function runProblemEvidence({inputBytes,outputPath,execute=executeNative}){
@@ -64,7 +64,7 @@ export async function runProblemEvidence({inputBytes,outputPath,execute=executeN
   let results=structuredClone(plan.results);
   if(plan.native.canRun){
     try{
-      execution=await execute(structuredClone(plan.scene));
+      execution=await execute(structuredClone(plan.scene),structuredClone(plan.nativeRequests));
       if(!execution?.summary||execution.summary.canonicalSha256!==await sceneHash(plan.scene))
         throw Error('Native evidence does not match the planned scene hash');
       native={...execution.summary.native,executionPassed:execution.summary.executionPassed};

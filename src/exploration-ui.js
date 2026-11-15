@@ -75,7 +75,7 @@ export class ExplorationUI {
   const q=structuredClone(this.qualified.qualification),requests=structuredClone(this.qualified.requests);
   const selected=seedReadouts&&!requests.length?nativeComparisonReadouts(doc):requests;
   const bundle=await explorationBundle(doc,q,selected);
-  const execution=await browserExecution(doc,state,data);
+  const execution=await browserExecution(doc,state,data,selected);
   const match=this.intent?.childIntegritySha256===bundle.integritySha256;
   const snapshot=await snapshotScenario(bundle,execution,label,match?this.intent:{});
   this.guard(token);return snapshot;

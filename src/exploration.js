@@ -93,7 +93,7 @@ export async function prepareExplorationProposal(input,raw){
 }
 // Project ACTUAL Session diagnostics, not result labels, into the same evidence
 // fields used by the CLI. Never call this with a merely prepared candidate.
-export async function browserExecution(doc,state,data){
+export async function browserExecution(doc,state,data,requests=[]){
  [doc,state,data]=structuredClone([doc,state,data]);
  const accepted=complete.has(state)&&data&&data.truncation===0&&data.undefinedBehavior===0&&
   Array.isArray(data.errors)&&!data.errors.length;
@@ -101,7 +101,7 @@ export async function browserExecution(doc,state,data){
  return {summary:{canonicalSha256:await sceneHash(doc),executionPassed:true,
   native:{status:state,errors:data.errors,warnings:data.warnings||[],error:null,
    emitted:data.emitted,processed:data.processed,truncation:data.truncation,undefinedBehavior:data.undefinedBehavior},
-  observations:snapshotNativeObservations(data),measurementState:data.warnings?.length?'qualified-with-warnings':
+  observations:snapshotNativeObservations(data,requests),measurementState:data.warnings?.length?'qualified-with-warnings':
     doc.physics.components.some(c=>c.type==='ray-detector')?'complete':'not-requested'}};
 }
 export async function snapshotScenario(input,execution,label,{intent=null,parentIntegritySha256=null}={}){
