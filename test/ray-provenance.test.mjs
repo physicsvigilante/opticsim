@@ -229,3 +229,45 @@ test('injected duplicate child, parent-equal-child and caps withhold complete gr
   assert.equal(r.reasonCode,fault.includes('overflow')?'PROVENANCE_LIMIT_EXCEEDED':'PROVENANCE_UNKNOWN_OR_INCONSISTENT');
  }
 });
+
+
+test('native high-to-low Snell and TIR keep distinct spawned-child versus same-object semantics',async()=>{
+ const expectedCritical=Math.asin(1/1.5)*180/Math.PI;
+ assert.ok(Math.abs(expectedCritical-41.8103148957786)<1e-11);
+ const testDoc=incidence=>scene([
+  src('S1',100,0,180-incidence),
+  {id:'Surface',type:'planar-interface',parameters:{x:0,y:0,normalDeg:0,
+    negativeIndex:1,positiveIndex:1.5,partialReflection:true}},
+  detector('Left',-150,100,90,600),
+  detector('Right',150,100,90,600)
+ ]);
+ for(const [angle,tir] of [[30,false],[50,true]]){
+  const doc=testDoc(angle),req=[request('Left'),request('Right')];
+  const before=run(doc),current=run(doc,req),res=await read(doc,current,req);
+  assert.equal(current.summary.native.status,'completed');
+  assert.equal(current.summary.native.truncation,0);
+  assert.equal(current.summary.native.processed,before.summary.native.processed);
+  assert.deepEqual(current.summary.observations.detectorsById,before.summary.observations.detectorsById);
+  const interfaceEvent=current.summary.observations.interfacesById.Surface.first;
+  assert.ok(Math.abs(interfaceEvent.incidentAngleDeg-angle)<1e-8);
+  const left=res.find(r=>r.componentId==='Left'),right=res.find(r=>r.componentId==='Right');
+  assert.equal(left.status,'available');assert.equal(right.status,'available');
+  assert.equal(right.value.crossings.length,1);
+  const rightNode=byToken(right).get(right.value.crossings[0].rayToken);
+  if(tir){
+   assert.equal(interfaceEvent.outcome,'total-internal-reflection');
+   assert.equal(interfaceEvent.transmittedAngleDeg,null);
+   assert.equal(rightNode.origin,'native-emission',
+    'Native total internal reflection mutates the actual primary object in place');
+   assert.deepEqual(left.value,{nodes:[],crossings:[]});
+  }else{
+   const snell=Math.asin(1.5*Math.sin(Math.PI*angle/180))*180/Math.PI;
+   assert.ok(Math.abs(snell-48.5903778907291)<1e-11);
+   assert.ok(Math.abs(interfaceEvent.transmittedAngleDeg-snell)<1e-7);
+   assert.equal(rightNode.origin,'native-spawn');
+   assert.equal(rightNode.spawnComponentId,'Surface');
+   assert.equal(left.value.crossings.length,1);
+   assert.equal(byToken(left).get(left.value.crossings[0].rayToken).origin,'native-emission');
+  }
+ }
+});
