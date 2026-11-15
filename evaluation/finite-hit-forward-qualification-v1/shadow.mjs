@@ -159,17 +159,24 @@ function analyze(row,core){
     instrumented=nativeObservation(doc,core),regular=evaluateDocument(doc,core);
   assert.equal(serializeSave(doc),bytes,'Authored input was mutated');
   const n=regular.report.native,d=n.diagnostics,m=instrumented.metrics;
-  assert.equal(n.status,instrumented.status,row.id+' changed native completion');
+  // Preserve the FULL native disagreement before any assertion: the first
+  // research run demonstrated that near-critical native status parity is NOT
+  // something we may assume. A later status change remains a recorded failure.
+  const parityDifferences=[];
+  const check=(key,a,b)=>{if(JSON.stringify(a)!==JSON.stringify(b))
+    parityDifferences.push({key,ordinary:a,instrumented:b});};
+  check('status',n.status,instrumented.status);
   for(const k of ['processed','truncation','undefinedBehavior'])
-    assert.equal(d[k],m[k],row.id+' observer changed '+k);
-  assert.deepEqual(d.emissionsById,m.emissionsById,row.id+' changed source readings');
+    check(k,d[k],m[k]);
+  check('emissionsById',d.emissionsById,m.emissionsById);
+  check('errors',d.errors,m.errors);
   for(const k of ['interactions','invalidObservations','transmitted',
       'reflected','totalInternalReflections'])
-    assert.equal(d.interfacesById.Boundary[k],m.interface[k],row.id+' changed '+k);
-  assert.equal(d.interfacesById.Boundary.first?.outcome,m.interface.first?.outcome);
-  assert.equal(instrumented.actual,instrumented.delegates,'Native callbacks not delegated once');
-  assert.equal(instrumented.actual,m.interface.interactions,'Native observer lost interface callback');
-  assert.equal(m.emissionsById.S.emitted,1,'SingleRay source emission unexpected');
+    check('interface.'+k,d.interfacesById.Boundary[k],m.interface[k]);
+  check('interface.first.outcome',d.interfacesById.Boundary.first?.outcome,m.interface.first?.outcome);
+  check('originalDelegationCount',instrumented.actual,instrumented.delegates);
+  check('meterCallCount',instrumented.actual,m.interface.interactions);
+  check('singleRayEmitted',1,m.emissionsById.S.emitted);
   const faces=instrumented.events.map((e,j)=>({callback:j+1,
     ...faceEvidence(e,doc.physics.components.find(c=>c.id==='Boundary').parameters,
       instrumented.cutoffSquared)}));
@@ -182,7 +189,15 @@ function analyze(row,core){
       'withheld-audit-unknown':contradictions.length?
         'withheld-forward-inconsistency':'candidate-clean-forward-only';
   return {id:row.id,regime:row.regime,transform:row.transform,
-    canonicalHash:hash(bytes),nativeStatus:n.status,shadowDecision,
+    canonicalHash:hash(bytes),nativeStatus:n.status,
+    instrumentedNativeStatus:instrumented.status,parityDifferences,
+    ...(parityDifferences.length?{
+      originalNativeDiagnostics:{errors:d.errors,warnings:d.warnings,
+        interface:d.interfacesById.Boundary,processed:d.processed,
+        truncation:d.truncation,undefinedBehavior:d.undefinedBehavior},
+      incidentSnapshots:instrumented.events
+    }:{}),
+    shadowDecision,
     canonicalReadoutStatus:regular.summary.observations===null?'withheld':'present',
     nativeMetrics:{processed:d.processed,truncation:d.truncation,
       undefinedBehavior:d.undefinedBehavior,interfaceCount:m.interface.interactions,
@@ -216,10 +231,15 @@ async function main(){
     baseMain:'fa158fc78da7a35b6a02eaed58c0cdbd4b699220',upstream:UPSTREAM,
     inputSha256:hash(input),cases:list.length,actualRuns:results.length*2,
     exactCheckCount:results.reduce((n,r)=>n+r.audit.checked+r.audit.contradictions,0),
+    parityIssueCount:results.filter(r=>r.parityDifferences.length).length,
+    parityIssues:results.filter(r=>r.parityDifferences.length).map(r=>({id:r.id,
+      differences:r.parityDifferences})),
     tally,errors,results,
     limit:'Only actual represented-ray finite-line forward/cutoff consistency checked. This is not a general physics-accuracy oracle, a production gate, new solver, repaired native path, or source interpretation review.'};
   writeEvidence(output.report,JSON.stringify(report,null,2)+'\n');
-  assert.equal(errors.length,0,'Shadow audit setup or native parity failed; inspect retained report');
+  assert.equal(errors.length,0,'Shadow audit setup failed; inspect retained report');
+  assert.equal(report.parityIssueCount,0,
+    'An actual ordinary/instrumented native discrepancy remains; inspect retained report before trusting any shadow result');
   assert.equal(results.length,24,'Expected 20 original geometry variants plus four normal controls');
   const contradictions=results.filter(r=>r.audit.contradictions>0).map(r=>r.id).sort();
   assert.deepEqual(contradictions,[
