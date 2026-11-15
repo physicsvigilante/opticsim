@@ -41,7 +41,7 @@ async function main(){
   cdp.on(e=>{if(e.method==='Runtime.exceptionThrown')report.errors.push(e.params.exceptionDetails.text);});
   await cdp.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:downloads});
   const js=async expression=>{const r=await cdp.send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result?.value;};
-  const state=()=>js(`(()=>{const e=id=>document.getElementById(id);return {native:e('status').dataset.state,error:e('error').textContent,results:JSON.parse(e('observable-results').dataset.results||'null'),text:e('observable-results').textContent,saveDisabled:e('save-qualified').disabled,fitDisabled:e('fit-results').disabled};})()`);
+  const state=()=>js(`(()=>{const e=id=>document.getElementById(id);return {native:e('status').dataset.state,error:e('error').textContent,results:JSON.parse(e('observable-results').dataset.results||'null'),text:e('observable-results').textContent,evidence:e('evidence-summary').textContent,limits:e('evidence-result-limits').textContent,saveDisabled:e('save-qualified').disabled,fitDisabled:e('fit-results').disabled};})()`);
   const upload=async file=>{const dom=await cdp.send('DOM.getDocument',{depth:-1}),n=await cdp.send('DOM.querySelector',{nodeId:dom.root.nodeId,selector:'#load'});await cdp.send('DOM.setFileInputFiles',{nodeId:n.nodeId,files:[file]});};
   const edit=async(id,value)=>js(`(()=>{const e=document.getElementById(${JSON.stringify(id)});if(!e||e.disabled)throw Error('Field not editable');e.value=${JSON.stringify(String(value))};e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));})()`);
   const check=name=>report.checks.push({name,passed:true});
@@ -59,7 +59,10 @@ async function main(){
   assert.ok(original[0].incomingUnit.y<0&&original[1].incomingUnit.y>0);
   assert.ok(original.every(e=>!('sourceId'in e)&&!('rayId'in e)));
   assert.match(s.text,/Hit 1.*x=/);assert.match(s.text,/callback order/i);
-  check('One native SingleRay gives two actual detector points and distinct incoming directions');await shot('native-plate-two-hits');
+  check('One native SingleRay gives two actual detector points and distinct incoming directions');
+  assert.match(s.evidence,/^2 native sampled readouts/);assert.doesNotMatch(s.evidence,/other result state/);
+  assert.match(s.limits,/2 native readouts qualified by warnings/);
+  check('Evidence summary recognizes hit events and crossing count as two qualified native readouts');await shot('native-plate-two-hits');
   const originalPackage=await parseQualifiedBundle(await readFile(bundle('plate-initial'),'utf8'));
   await edit('I1-positiveIndex',1.6);
   s=await until(state,s=>s.native==='completed'&&s.results?.[0]?.value?.length===2&&Math.abs(s.results[0].value[1].pointMm.x-original[1].pointMm.x)>1,'fresh index revision');
@@ -75,9 +78,10 @@ async function main(){
   await upload(exported);s=await until(state,s=>s.native==='completed'&&s.results?.[0]?.value?.length===2&&Math.abs(s.results[0].value[1].pointMm.x-original[1].pointMm.x)>1,'qualified reopen');
   check('Reopened package obtains fresh matching native hits, not stale evidence');
   await upload(bundle('plate-miss'));s=await until(state,s=>s.native==='completed'&&s.results?.[0]?.value?.length===0,'zero-hit case');
-  assert.equal(s.results[1].value,0);check('Native miss is an available empty position list');
+  assert.equal(s.results[1].value,0);assert.match(s.evidence,/^2 native sampled readouts/);check('Native miss is an available empty position list');
   await upload(bundle('over-limit'));s=await until(state,s=>s.native==='completed'&&s.results?.[0]?.status==='unavailable'&&s.results[1].value>32,'bounded overflow');
-  assert.equal(s.results[0].value,null);assert.match(s.results[0].reason,/withheld, not clipped/);check('Overflow cannot show a clipped position list as complete');await shot('bounded-overflow');
+  assert.equal(s.results[0].value,null);assert.match(s.results[0].reason,/withheld, not clipped/);
+  assert.match(s.evidence,/^1 native sampled readout/);assert.match(s.evidence,/1 unavailable quantity/);check('Overflow cannot show a clipped position list as complete');await shot('bounded-overflow');
   await upload(bundle('fresnel-incomplete'));s=await until(state,s=>s.native==='incomplete'&&s.results===null&&s.text.includes('suppressed'),'incomplete Fresnel');
   assert.equal(s.fitDisabled,true);check('Incomplete native branching suppresses all hit positions and detector counts');await shot('fresnel-withheld');
   assert.deepEqual(report.errors,[]);report.status='passed';
