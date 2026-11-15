@@ -81,8 +81,11 @@ export async function evaluateObservables(doc,requests,execution){
     if(!Object.hasOwn(kinds,r.kind))return {...base,reason:'Requested quantity is not exposed by the current result contract.'};
     const spec=kinds[r.kind],component=doc.physics.components.find(c=>c.id===r.componentId);
     if(!component||!(Array.isArray(spec.type)?spec.type.includes(component.type):component.type===spec.type))return {...base,reason:'Requested component is missing or has the wrong physical type.'};
-    if(!complete)return {...base,status:'suppressed',reason:!fresh?
-      'Execution evidence does not match the current scene hash.':'Current native run is incomplete, failed, or not yet available.'};
+    if(!complete)return {...base,status:'suppressed',
+      ...(r.kind==='detector-ray-provenance'?{reasonCode:!fresh?
+        'STALE_PROVENANCE_EXECUTION':'NATIVE_PROVENANCE_INCOMPLETE'}:{}),
+      reason:!fresh?'Execution evidence does not match the current scene hash.':
+        'Current native run is incomplete, failed, or not yet available.'};
     if(r.kind==='ideal-image'){
       try{
         const result=conditionalImage(doc);
