@@ -27,8 +27,9 @@ function parseInput(bytes){
   try{return JSON.parse(bytes.toString('utf8'));}
   catch(error){throw new AuthoringError([{path:'$',code:'INVALID_JSON',message:error.message}]);}
 }
-export function evaluateDocument(doc,core) {
-  const sceneText=serializeSave(doc),run=checkCandidate(sceneText,core);
+export function evaluateDocument(doc,core,requests=[]) {
+  const sceneText=serializeSave(doc),run=checkCandidate(sceneText,core,
+    {captureDetectorHits:requests.some(r=>r.kind==='detector-hit-events')});
   const diag=run.native.diagnostics||{};
   const completed=run.native.completed;
   const warnings=diag.warnings||[];
@@ -46,7 +47,7 @@ export function evaluateDocument(doc,core) {
       truncation:diag.truncation??null,undefinedBehavior:diag.undefinedBehavior??null,
       errors:diag.errors||[],warnings
     },
-    observations:completed?snapshotNativeObservations(diag):null,
+    observations:completed?snapshotNativeObservations(diag,requests):null,
     measurementState,analysis:{status:run.analysis.status,reason:run.analysis.reason},
     executionPassed:run.executionPassed,
     interpretation:'not-assessed-by-engine',questionSupport:'not-assessed-by-engine'

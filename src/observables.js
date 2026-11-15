@@ -15,6 +15,7 @@ const kinds=Object.freeze({
   'blocker-absorptions':{type:['line-blocker','circle-blocker','finite-aperture'],unit:'sampled absorbed rays'},
   'mirror-reflections':{type:['plane-mirror','ideal-curved-mirror','circular-arc-mirror'],unit:'sampled interactions'},
   'detector-crossings':{type:'ray-detector',unit:'sampled crossings'},
+  'detector-hit-events':{type:'ray-detector',unit:'mm positions and unitless incoming directions; native sampled events'},
   'detector-signed-power':{type:'ray-detector',unit:'relative native units; not watts'},
   'ideal-image':{type:'point-source',unit:'mm; magnification dimensionless'}
 });
@@ -24,7 +25,8 @@ export function observableCapabilities(){
       'Ideal image is conditional analysis, never native image detection.',
       'A requested result does not certify interpretation of its source question.',
       'Blocker absorption is a sampled native incident count; a zero detector count is not proof of continuous shadow or invisibility.',
-      'Circular dielectric angles are relative to the local normal at the first actual native hit, not a whole path or detected image.']};
+      'Circular dielectric angles are relative to the local normal at the first actual native hit, not a whole path or detected image.',
+      'Detector hit-event order is native callback order, not source attribution, a ray history, a continuous footprint or image detection. More than 32 hits or uncertain endpoints withhold the entire position list.']};
 }
 export function validateObservables(requests){
   if(!Array.isArray(requests)||requests.length>16)throw Error('Expected at most 16 observable requests');
@@ -88,6 +90,20 @@ export async function evaluateObservables(doc,requests,execution){
       }catch(error){return {...base,reason:'Analytical calculation unavailable: '+error.message};}
     }
     const o=execution.observations;
+    if(r.kind==='detector-hit-events'){
+      const sample=o?.detectorHitEventsById?.[r.componentId],count=o?.detectorsById?.[r.componentId]?.crossings;
+      if(!sample||sample.status!=='complete'||!Array.isArray(sample.events)||
+        sample.events.length!==count||sample.observedCount!==count){
+        return {...base,reason:sample?.reasonCode==='HIT_EVENT_LIMIT_EXCEEDED'?
+          'More than 32 actual detector hits: the bounded position list is withheld, not clipped.':
+          sample?.reasonCode==='AMBIGUOUS_DETECTOR_HIT'?
+          'At least one native hit is too close to a detector endpoint or is geometrically/numerically ambiguous.':
+          'No complete, count-matched native hit-event evidence exists for this detector.'};
+      }
+      return {...base,status:warnings.length?'qualified':'available',value:sample.events,
+        method:'native-hit-event-observation',unit:spec.unit,warnings,
+        limitation:'Positions are native crossing coordinates in x-right/y-up mm. List order is native callback order, not one ray path or per-source attribution. No continuous illumination, physical image or inferred input/output pairing.'};
+    }
     if(r.kind.startsWith('interface-')){
       const meter=o?.interfacesById?.[r.componentId],event=meter?.first;
       const value=r.kind==='interface-face-events'?meter?.faces:r.kind==='interface-interactions'?meter?.interactions:r.kind==='interface-tir-count'?meter?.totalInternalReflections:

@@ -14,7 +14,7 @@ const git = args => execFileSync('git', args, { cwd: root, encoding: 'utf8', std
 
 // Exported for focused tests using the already-built core. The CLI always builds
 // afresh before loading that core. This function makes no files or native exports.
-export function checkCandidate(text, core) {
+export function checkCandidate(text, core,{captureDetectorHits=false}={}) {
   const report = { documentSha256: hash(text), validation: { valid: false },
     interpretation: 'not-assessed-by-checker', executionPassed: false };
   let doc;
@@ -33,14 +33,15 @@ export function checkCandidate(text, core) {
     loaded = core.loadDocument(candidate);
     const emission = core.observeSourceSet(candidate, loaded.scene, loaded.idMap);
     const reflections = core.observeMirrorSet(candidate, loaded.scene, loaded.idMap);
-    const detectors = core.observeDetectorSet(candidate, loaded.scene, loaded.idMap);
+    const detectors = core.observeDetectorSet(candidate, loaded.scene, loaded.idMap,{captureHitEvents:captureDetectorHits});
     const interfaces = core.observeInterfaceSet?.(candidate, loaded.scene, loaded.idMap);
     const blockers = core.observeBlockerSet?.(candidate, loaded.scene, loaded.idMap);
     const simulator = new core.Simulator(loaded.scene, null, null, null, null, null, false, candidate.simulation.processedRayLimit);
     return {
       cancel() { simulator.shouldSimulatorStop = true; },
       run(notify) {
-        for (const event of ['simulationComplete', 'simulationStop']) simulator.on(event, () => notify(event, core.diagnostics(loaded.scene, simulator, emission, reflections, detectors, interfaces, blockers)));
+        for (const event of ['simulationComplete', 'simulationStop']) simulator.on(event, () => notify(event, core.diagnostics(loaded.scene, simulator, emission, reflections, detectors, interfaces, blockers,
+          {detectorHitEvents:captureDetectorHits,nativeEvent:event})));
         simulator.updateSimulation();
       }
     };

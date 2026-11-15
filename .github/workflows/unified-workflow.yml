@@ -48,10 +48,14 @@ jobs:
           retention-days: 14
       - name: Build unchanged existing browser for teaching tasks
         run: npm run build
+      - name: Verify bounded native detector-hit positions in public problem workflow
+        run: node scripts/detector-hit-acceptance.mjs
       - name: Exercise existing teaching controls in actual Chrome
         run: node evaluation/teaching-fidelity-v1/browser.mjs
       - name: Exercise practical model exploration in actual Chrome
         run: node scripts/exploration-browser.mjs
+      - name: Exercise qualified native detector-hit events in actual Chrome
+        run: node scripts/detector-hit-browser.mjs
       - name: Package the local viewer (no public deployment)
         run: node scripts/pack-demo.mjs
       - uses: actions/upload-artifact@v4
@@ -60,6 +64,7 @@ jobs:
           name: browser-exploration-workbench
           path: |
             test-artifacts/browser-exploration/
+            test-artifacts/browser-detector-hit/
             test-artifacts/demo-site/
           if-no-files-found: error
           retention-days: 14
@@ -115,6 +120,7 @@ jobs:
             test-artifacts/llm-authoring/general-composition-v1/
             test-artifacts/llm-authoring/method-suitability-v1/
             test-artifacts/llm-authoring/lens-train-facts-v1/
+            test-artifacts/llm-authoring/detector-hit-events-v2/
             test-artifacts/llm-authoring/prism-angle-facts-v1/
             test-artifacts/llm-authoring/prism-native-facts-v1/
             test-artifacts/llm-authoring/reduced-inverse/

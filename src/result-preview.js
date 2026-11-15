@@ -12,7 +12,7 @@ const CAMERA_BOUNDS={centerMm:[-10000,10000],zoom:[0.03,10]};
 const finite=Number.isFinite;
 const number=n=>finite(n)?Number(n.toPrecision(8)).toString():'unavailable';
 export function formatRequestedResult(r){
-  const label=r.method==='native-observation'?'Native sampled observation':
+  const label=['native-observation','native-hit-event-observation'].includes(r.method)?'Native sampled observation':
     r.status==='conditional'?'Conditional analytical prediction':'No current value';
   let value=r.reason||'';
   if(r.value!==null&&r.value!==undefined){
@@ -26,6 +26,11 @@ export function formatRequestedResult(r){
       value=Object.entries(r.value).map(([id,f])=>id+': '+f.interactions+' native hits; '+(f.first?
         f.first.from+' → '+f.first.outcome+'; incidence '+number(f.first.incidentAngleDeg)+'°; transmission '+number(f.first.transmittedAngleDeg)+'°; '+
         f.first.branches.map(b=>b.kind+' heading '+number(Math.atan2(b.direction.y,b.direction.x)*180/Math.PI)+'°').join(', '):'no encounter')).join('\n');
+    }else if(r.kind==='detector-hit-events'){
+      value=!r.value.length?'No sampled detector hits.':r.value.map((e,i)=>
+        `Hit ${i+1} (native callback order): x=${number(e.pointMm.x)}, y=${number(e.pointMm.y)} mm; `+
+        `distance from detector p1=${number(e.distanceFromP1Mm)} mm; `+
+        `incoming direction=(${number(e.incomingUnit.x)}, ${number(e.incomingUnit.y)}).`).join('\n');
     }else if(r.kind==='interface-first-event'){
       const p=r.value;value=`First native encounter: ${p.outcome}. ${p.from} side, index ${number(p.incidentIndex)} → ${number(p.destinationIndex)}.\n`+
         `Incidence: ${number(p.incidentAngleDeg)}°; transmission: ${number(p.transmittedAngleDeg)}°; reflection: ${number(p.reflectedAngleDeg)}°.\n`+

@@ -1,0 +1,74 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 5,
+  "adapterVersion": 5,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "planar-media-tracing",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -173.20508075688767,
+          "y": 100,
+          "brightness": 0.08
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": -30,
+          "angleDeg": 30
+        }
+      },
+      {
+        "id": "I1",
+        "type": "planar-interface",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "normalDeg": -90,
+          "negativeIndex": 1,
+          "positiveIndex": 1.8,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "M1",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": 0,
+          "y": -60,
+          "orientationDeg": 0,
+          "length": 400
+        }
+      },
+      {
+        "id": "Dhit",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 0,
+          "y": 50,
+          "orientationDeg": 0,
+          "length": 450
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "Synthetic: planar glass interface, mirror return and detector",
+    "view": {
+      "x": 0,
+      "y": 20,
+      "zoom": 1.9615384615384615
+    },
+    "mode": "rays",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000
+  }
+}
