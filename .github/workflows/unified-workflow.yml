@@ -17,6 +17,16 @@ jobs:
           node-version: '24.19.0'
       - run: npm run setup
       - run: npm test
+      - name: Test-only native ray-lineage boundary qualification (do not merge research step)
+        run: node evaluation/native-lineage-boundaries-v1/run.mjs
+      - name: Retain raw native boundary research evidence even if a test fails
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-lineage-boundaries-v1-evidence
+          path: test-artifacts/llm-authoring/native-lineage-boundaries-v1/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Teaching-fidelity source preservation and native physical checks
         run: node evaluation/teaching-fidelity-v1/run.mjs
       - name: Exercise one immutable model across physically validated teacher scenarios
