@@ -17,6 +17,17 @@ jobs:
           node-version: '24.19.0'
       - run: npm run setup
       - run: npm test
+      - name: Replay frozen source-backed transfer on supported Node and exact checkout
+        run: node evaluation/source-backed-transfer-v2/run.mjs
+      - name: Probe native ray-object identity and Fresnel branch lineage (test-only)
+        run: node evaluation/source-backed-transfer-v2/lineage.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-backed-transfer-v2-evidence
+          path: test-artifacts/llm-authoring/source-backed-transfer-v2/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Teaching-fidelity source preservation and native physical checks
         run: node evaluation/teaching-fidelity-v1/run.mjs
       - name: Exercise one immutable model across physically validated teacher scenarios
