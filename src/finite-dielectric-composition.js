@@ -10,6 +10,7 @@ export const FINITE_COMPOSITION_MODEL='finite-dielectric-composition';
 export const FINITE_COMPOSITION_VERSION=10;
 export const FINITE_COMPOSITION_EXTENDED_VERSION=11;
 export const FINITE_COMPOSITION_SHAPES_VERSION=12;
+export const FINITE_COMPOSITION_BLOCKER_VERSION=13;
 export const isFiniteCompositionVersion=v=>!!compositionProfile(FINITE_COMPOSITION_MODEL,v);
 // The shape owns region geometry and material boundaries; composition owns
 // external placement. The native adapter still compiles the original component.
@@ -20,6 +21,13 @@ const regions=Object.freeze({
 export const isFiniteCompositionRegion=type=>Object.hasOwn(regions,type);
 const counts=compositionProfile(FINITE_COMPOSITION_MODEL,FINITE_COMPOSITION_EXTENDED_VERSION).counts;
 const {counts:shapeCounts,groups:shapeGroups}=compositionProfile(FINITE_COMPOSITION_MODEL,FINITE_COMPOSITION_SHAPES_VERSION);
+export function finiteBlockerCompositionPolicy(){
+  const policy=compositionProfile(FINITE_COMPOSITION_MODEL,FINITE_COMPOSITION_BLOCKER_VERSION);
+  return {schemaVersion:policy.schemaVersion,model:policy.model,
+    counts:structuredClone(policy.counts),groups:structuredClone(policy.groups),sourceMode:'single-ray',
+    geometry:'One triangle OR convex quadrilateral; external line blocker, mirror and detectors require a common separating face and 0.01 mm mutual clearance. Sources retain supporting-line and shape guards.',
+    limits:'At most one opaque line blocker and one plane mirror. No circular stops, apertures, extra media, implicit upgrade or new numerical budget. Zero blocker/mirror permits removal within v13; completion and requested results are checked separately.'};
+}
 export function finiteShapeCompositionPolicy(){
   return {schemaVersion:FINITE_COMPOSITION_SHAPES_VERSION,model:FINITE_COMPOSITION_MODEL,
     counts:Object.fromEntries(Object.entries(shapeCounts).map(([type,limit])=>[type,{...limit}])),
@@ -34,11 +42,13 @@ export function extendedFiniteCompositionPolicy(){
     limits:'One convex quadrilateral; external mirrors and detectors; no other optics, nested media or automatic migration. Geometry and native completion are separate checks.'};
 }
 export function finiteCompositionVersionFor(components){
+  if(components.some(c=>c.type==='line-blocker'))return FINITE_COMPOSITION_BLOCKER_VERSION;
   if(components.some(c=>c.type===PRISM_TYPE))return FINITE_COMPOSITION_SHAPES_VERSION;
   return components.filter(c=>c.type==='plane-mirror').length>1?FINITE_COMPOSITION_EXTENDED_VERSION:FINITE_COMPOSITION_VERSION;
 }
 export function validateFiniteDielectricComposition(components,endpoints,fail,version=FINITE_COMPOSITION_VERSION){
   const path='$.physics.components',mirrors=components.filter(c=>c.type==='plane-mirror');
+  const externalBlockers=version===FINITE_COMPOSITION_BLOCKER_VERSION;
   if(!isFiniteCompositionVersion(version))fail(path,'Unsupported finite composition version.','UNSUPPORTED_SCOPE');
   if(version===FINITE_COMPOSITION_VERSION){
     if(!compositionCountWithin(FINITE_COMPOSITION_MODEL,version,'plane-mirror',mirrors.length)||
@@ -47,19 +57,25 @@ export function validateFiniteDielectricComposition(components,endpoints,fail,ve
   }else if(version===FINITE_COMPOSITION_EXTENDED_VERSION){
     if(!compositionCountsMatch(components,FINITE_COMPOSITION_MODEL,version))
       fail(path,'Finite composition v11 requires one convex quadrilateral, 1–2 external plane mirrors, 1–4 single rays and 0–2 external detectors; no other optics or media.','UNSUPPORTED_SCOPE');
+  }else if(externalBlockers){
+    if(!compositionCountsMatch(components,FINITE_COMPOSITION_MODEL,version))
+      fail(path,'Finite composition v13 requires one triangle or convex quadrilateral, 0–1 external opaque line blocker, 0–1 external plane mirror, 1–4 single rays and 0–2 external detectors; no other optics or media.','UNSUPPORTED_SCOPE');
   }else if(!compositionCountsMatch(components,FINITE_COMPOSITION_MODEL,version))
     fail(path,'Finite composition v12 requires exactly one triangle or convex quadrilateral, 1–2 external plane mirrors, 1–4 single rays and 0–2 external detectors; no other optics or media.','UNSUPPORTED_SCOPE');
   // Reuse the unchanged region/source/detector checks. No component is removed
   // from the canonical scene, its native compilation or result qualification.
   const glass=components.find(c=>isFiniteCompositionRegion(c.type));
-  const shape=version===FINITE_COMPOSITION_SHAPES_VERSION?regions[glass.type]:regions[POLYGON_TYPE];
-  shape.validate(components.filter(c=>c.type!=='plane-mirror'),endpoints,fail);
+  const shape=(version===FINITE_COMPOSITION_SHAPES_VERSION||externalBlockers)?regions[glass.type]:regions[POLYGON_TYPE];
+  // These are read-only validation views; every component is still compiled.
+  // The same exterior proof and pair clearance apply to both region shapes.
+  const external=externalBlockers?components.filter(c=>['plane-mirror','line-blocker'].includes(c.type)):mirrors;
+  shape.validate(components.filter(c=>!external.includes(c)),endpoints,fail);
   const faces=shape.faces(glass.parameters);
-  if(mirrors.some(m=>!segmentOutsideFiniteGlass(faces,endpoints(m.parameters),shape.clearance)))
-    fail(path,'Mirror must lie entirely outside the dielectric and at least 0.01 mm beyond a common separating face.','UNSUPPORTED_SCOPE');
-  const segments=components.filter(c=>['plane-mirror','ray-detector'].includes(c.type));
+  if(external.some(c=>!segmentOutsideFiniteGlass(faces,endpoints(c.parameters),shape.clearance)))
+    fail(path,externalBlockers?'External mirror/blocker must lie entirely outside the dielectric and at least 0.01 mm beyond a common separating face.':'Mirror must lie entirely outside the dielectric and at least 0.01 mm beyond a common separating face.','UNSUPPORTED_SCOPE');
+  const segments=components.filter(c=>external.includes(c)||c.type==='ray-detector');
   for(let i=0;i<segments.length;i++)for(let j=0;j<i;j++){
     if(separatedSegmentDistance(endpoints(segments[i].parameters),endpoints(segments[j].parameters))<shape.clearance)
-      fail(path,'External mirror/detector segments need 0.01 mm mutual clearance.','UNSUPPORTED_SCOPE');
+      fail(path,externalBlockers?'External mirror/blocker/detector segments need 0.01 mm mutual clearance.':'External mirror/detector segments need 0.01 mm mutual clearance.','UNSUPPORTED_SCOPE');
   }
 }

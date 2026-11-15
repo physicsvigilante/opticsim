@@ -1,0 +1,116 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "Synthetic glass mirror return and external opaque blocker",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -40,
+          "y": 0,
+          "brightness": 1
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 0
+        }
+      },
+      {
+        "id": "G1",
+        "type": "polygon-dielectric",
+        "parameters": {
+          "x1": 0,
+          "y1": -30,
+          "x2": 0,
+          "y2": 30,
+          "x3": 20,
+          "y3": 30,
+          "x4": 20,
+          "y4": -30,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "M1",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": 60,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 70
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": -100,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 60
+        }
+      },
+      {
+        "id": "B1",
+        "type": "line-blocker",
+        "parameters": {
+          "x": -75,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 60
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "glass",
+      "kind": "interface-interactions",
+      "componentId": "G1"
+    },
+    {
+      "id": "faces",
+      "kind": "interface-face-events",
+      "componentId": "G1"
+    },
+    {
+      "id": "absorbed",
+      "kind": "blocker-absorptions",
+      "componentId": "B1"
+    },
+    {
+      "id": "crossings",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "power",
+      "kind": "detector-signed-power",
+      "componentId": "D1"
+    },
+    {
+      "id": "mirror",
+      "kind": "mirror-reflections",
+      "componentId": "M1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Inspect native interactions and absorption in an explicitly chosen synthetic apparatus; compare valid blocker moves and removals.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "Synthetic fully specified 2D apparatus, not an interpretation of an unseen source.",
+      "A fully opaque finite line segment is strictly outside one homogeneous finite dielectric.",
+      "partialReflection=false explicitly omits partial Fresnel reflections; native total internal reflection remains active."
+    ],
+    "unknowns": [
+      "No continuous shadow, irradiance, image detection or source-attributed detector power is established."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}

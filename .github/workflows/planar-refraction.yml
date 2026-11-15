@@ -54,6 +54,10 @@ jobs:
         run: node scripts/finite-shape-composition-acceptance.mjs
       - name: Prism and quadrilateral composition browser edits and qualification
         run: node scripts/finite-shape-composition-browser.mjs
+      - name: Native external opaque surfaces, negative controls and qualified branches
+        run: node scripts/external-blocker-composition-acceptance.mjs
+      - name: External opaque surfaces browser edits, qualification and suppression
+        run: node scripts/external-blocker-composition-browser.mjs
       - name: Package existing allowlisted static viewer (not a deployment)
         run: node scripts/pack-demo.mjs
       - uses: actions/upload-artifact@v4
@@ -76,6 +80,8 @@ jobs:
             test-artifacts/browser-two-mirror-composition/
             test-artifacts/llm-authoring/finite-shape-composition/
             test-artifacts/browser-finite-shape-composition/
+            test-artifacts/llm-authoring/external-blocker-composition/
+            test-artifacts/browser-external-blocker-composition/
           if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v4

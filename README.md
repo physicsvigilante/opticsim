@@ -488,3 +488,11 @@ four-vertex dielectric, one or two external plane mirrors, explicit single rays
 and optional external detectors. The viewer includes **Finite glass + two external
 mirrors**. Historical v10 remains exactly one mirror; no automatic migration,
 engine repin or numerical-budget change. See [the scope and verification](docs/TWO-MIRROR-COMPOSITION.md).
+
+### External opaque surfaces with finite glass (prospective v13)
+
+A shared exterior-surface qualification rule supports one triangular or convex
+quadrilateral region with an optional external line blocker and plane mirror.
+The same native components determine absorption, reflection, transmission and
+finite misses; no ray route is authored. Existing scenes retain their original
+contracts. See [scope, qualification evidence and pending release gates](docs/EXTERNAL-OPAQUE-SURFACES.md).
