@@ -122,8 +122,18 @@ function inverseBranch(f,signedDeviationDeg){
    unavailable('UNQUALIFIED_INDEX_CANDIDATE','This sign has a mathematical candidate outside the qualified index range; it is not certified or silently discarded')),
    signedDeviationDeg};
  }
- if(own(f,'insideIndex')&&!closeIndex(n,f.insideIndex))
-  return {...unavailable('INCONSISTENT_PRISM_FACTS','This candidate contradicts the explicitly supplied insideIndex'),signedDeviationDeg};
+ if(own(f,'insideIndex')){
+  if(!closeIndex(n,f.insideIndex))
+   return {...unavailable('INCONSISTENT_PRISM_FACTS','This candidate contradicts the explicitly supplied insideIndex'),signedDeviationDeg};
+  // Index proximity alone is insufficient near critical/grazing emergence.
+  // Qualify the author's actual material and angular constraint as well as
+  // the inferred candidate; never silently substitute a nearby transmitting index.
+  const supplied=forward(f,f.insideIndex);
+  if(supplied.status!=='conditional')return {...supplied,signedDeviationDeg};
+  if(Math.abs(supplied.value.emergenceAngleDeg-e)>ANGLE_TOLERANCE_DEG||
+     Math.abs(supplied.value.signedDeviationDeg-signedDeviationDeg)>ANGLE_TOLERANCE_DEG)
+   return {...unavailable('INCONSISTENT_PRISM_FACTS','The supplied insideIndex and measured deviation disagree on this sign branch'),signedDeviationDeg};
+ }
  const checked=forward(f,n);
  if(checked.status!=='conditional')return {...checked,signedDeviationDeg};
  const v=checked.value;
