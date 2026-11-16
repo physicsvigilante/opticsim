@@ -45,7 +45,7 @@ async function connect(url){
 }
 await mkdir(output,{recursive:false});const downloads=join(output,'downloads');await mkdir(downloads);
 const report={format:'opticsim-finite-hit-stage1-real-chrome-v1',status:'running',
- checks:[],screenshots:[],errors:[],browser:null,
+ checks:[],screenshots:[],timings:[],errors:[],browser:null,
  externalModelCalls:0,teacherParticipants:0,advisoryNotPhysicalCertification:true};
 let server,browser,cdp,profile;
 try{
@@ -83,9 +83,12 @@ try{
   await cdp.send('DOM.setFileInputFiles',{nodeId:n.nodeId,files:[file]});
  };
  const importCurrent=async(file,accept,label)=>{
-   const before=(await state()).revision;
+   const before=(await state()).revision,start=Date.now();
    await upload(file);
-   return until(state,x=>x.revision>before&&accept(x),label);
+   const result=await until(state,x=>x.revision>before&&accept(x),label);
+   report.timings.push({label,elapsedMs:Date.now()-start,revision:result.revision,
+     type:'measured UI import-to-current-native-result wall time, not numerical solver CPU'});
+   return result;
  };
  const shot=async name=>{
   const s=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
