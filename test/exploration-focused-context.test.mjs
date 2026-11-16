@@ -6,6 +6,7 @@ import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {explorationBundle,explorationContext,prepareExplorationProposal} from '../src/exploration.js';
+import {focusedExplorationContext} from '../src/focused-exploration-context.js';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
 const fixtures=[
@@ -23,9 +24,9 @@ for(const [name,path] of fixtures){
   const doc=read(path),untouched=JSON.stringify(doc);
   const input=await explorationBundle(doc,null,[]);
   const full=await explorationContext(input,question);
-  const explicitFull=await explorationContext(input,question,{profile:'full'});
-  const focus=await explorationContext(input,question,{profile:'focused'});
-  assert.deepEqual(full,explicitFull,'The original full-context contract must remain unchanged');
+  const repeatedFull=await explorationContext(input,question);
+  const focus=await focusedExplorationContext(input,question);
+  assert.deepEqual(full,repeatedFull,'The byte-frozen full-context contract must remain stable');
   assert.deepEqual(focus.baseline,full.baseline,'Full qualified source bytes and hashes are retained');
   assert.equal(focus.responseContract.expectedIntegritySha256,input.integritySha256);
   assert.equal(focus.contextProfile,'focused-existing-components-v1');
@@ -63,7 +64,7 @@ for(const [name,path] of fixtures){
 test('Existing focal-length edit generated from focused context passes unchanged validated proposal path',async()=>{
  const doc=read('scenes/single-lens-detector.json');
  const parent=await explorationBundle(doc,null,[]);
- const focused=await explorationContext(parent,'Set lens-1 focalLength to 150 mm',{profile:'focused'});
+ const focused=await focusedExplorationContext(parent,'Set lens-1 focalLength to 150 mm');
  const proposal={format:'opticsim-exploration-proposal-v1',
   expectedIntegritySha256:focused.responseContract.expectedIntegritySha256,
   intent:'Teacher hypothetical: longer focal length, not an original source fact',
@@ -80,7 +81,7 @@ test('Existing focal-length edit generated from focused context passes unchanged
 test('Existing single-ray direction edit and explicit new observation work without structural context',async()=>{
  const doc=read('scenes/polygon-dielectric.json');
  const parent=await explorationBundle(doc,null,[]);
- const focus=await explorationContext(parent,'Set only S1 direction to 5 degrees',{profile:'focused'});
+ const focus=await focusedExplorationContext(parent,'Set only S1 direction to 5 degrees');
  assert.ok(Object.hasOwn(focus.observables.kinds,'interface-face-events'));
  assert.ok(!Object.hasOwn(focus.observables.kinds,'mirror-reflections'));
  const proposal={format:'opticsim-exploration-proposal-v1',
@@ -92,5 +93,7 @@ test('Existing single-ray direction edit and explicit new observation work witho
  assert.equal(checked.child.scene.physics.components.find(c=>c.id==='S1').emission.directionDeg,5);
  assert.equal(checked.child.observables[0].kind,'interface-face-events');
  assert.deepEqual(parent.observables,[]);
- await assert.rejects(()=>explorationContext(parent,'next',{profile:'unbounded'}),/Unknown exploration context profile/);
+ const tampered=structuredClone(parent);
+ tampered.scene.physics.components.find(c=>c.id==='S1').emission.directionDeg=17;
+ await assert.rejects(()=>focusedExplorationContext(tampered,'next'),/integrity mismatch/i);
 });
