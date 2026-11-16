@@ -45,7 +45,7 @@ test('reported native incident point must agree with independent exact crossing,
  const outside=ref(sample({x:0,y:-20},{x:1,y:-20},{x:10,y:-5}));
  assert.equal(outside.status,'inconsistent');
  assert.equal(outside.reasonCode,'EXACT_INTERSECTION_OUTSIDE_FINITE_EDGE');
- for(const near of [sample({x:0,y:0},{x:1,y:0},{x:10,y:0}),
+ for(const near of [sample({x:0,y:10},{x:1,y:10},{x:10,y:10}),
    sample({x:0,y:-10},{x:1,y:-10},{x:10,y:-10}),
    sample({x:0,y:-5},{x:0,y:-4},{x:10,y:-5})]){
    assert.equal(ref(near).status,'unknown');
