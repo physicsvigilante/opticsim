@@ -1,0 +1,35 @@
+# Test-only investigation: PhyDemo's pinned floating-point line-intersection arithmetic
+
+**Research only. No production optical engine or measurement change.** This work follows the independently reviewed and **unmerged** [PR #92 numerical evidence](https://github.com/physicsvigilante/review_sandbox/blob/main/projects/opticsim/pr-92/reviews/review-01-chat-b.md), which preserved 87 original binary64 incoming native ray endpoints and native callback incident points from the **single native-calling Stage-1 owning observer with a separate synchronous method tap**. PR #92 included 60 actual native runs (53 completed, seven genuinely failed); the extra method tap was not proven neutral and its raw hits cannot be inferred for every uninstrumented run.
+
+The original **byte-identical** 13,067-byte PR #92 ZIP is durably retained in the owner-accessible [evidence Page](https://chatgpt.com/space/page_875b83faac008191b060217019ceb0d8). Its GitHub Actions original source [artifact 14220951106](https://github.com/physicsvigilante/opticsim/actions/runs/43854663361/artifacts/14220951106) has a 14-day retention and **must not** be replaced or silently edited.
+
+## Exact physical and software source
+
+- **Existing production/main baseline** `50dd0f4d9530d0a61bb4c7064c4326a8ac0ce518`, pinned native upstream `ricktu288/ray-optics@811f508d2b070898c241a568b0c167dcb8645251`.
+- **Actual pinned upstream** [`src/core/geometry.js` lines 99–106](https://github.com/ricktu288/ray-optics/blob/811f508d2b070898c241a568b0c167dcb8645251/src/core/geometry.js), original Git blob `d5c3c5b5a4ae97a24bcfe330fb7d752a780cc893`. Its `linesIntersection` computes two global-coordinate line determinants `A`/`B` and two projected numerators over denominator `xa*yb−xb*ya`, **all in ordinary JavaScript binary64** (not exact arithmetic). The independent [`Glass.checkRayIntersects` line-segment branch, lines 442–457](https://github.com/ricktu288/ray-optics/blob/811f508d2b070898c241a568b0c167dcb8645251/src/core/sceneObjs/glass/Glass.js) invokes this function, then `intersectionIsOnSegment`, `intersectionIsOnRay` and the existing native min-segment-squared cutoff. **No native upstream edit is made.**
+- **Original saved native evidence SHA-256:** ZIP `b6acf9c4c519d7f3826fcd501c622636ee67a937cdf41d6c0df5ded33e6db43b`; `inputs.json` `79be6692d8e107ed5fa2198abbcfe56a0fb97633aac55db573eec021ea37fc45`, `report.json` `bc0fee95fe8e0d61176aed8adf96081324cfa0ea1846caf1997e9fbc51570960`, `exact-reference.json` `9e3d386abceaa907063f0c01b3b40fc399e8a6e764da231a1959e6d24c1145ee`. The present script **refuses** any mutated input bytes. 87 original hits include repeated identical numerical patterns: repeated hits are **not independent physical samples**.
+- **Coordinate frames corrected (review N-01):** prior source field `nativeFaceVertices` actually stores authored **y-up** edge endpoints; recorded PhyDemo ray p1/p2/incident are already native **y-down**. The new replay reports these explicitly as `authoredFacesAreYUp` and `nativeRayPointsAreYDown` and transforms only face y.
+
+## Three separate evidential questions, no new optics
+
+1. **Can we reproduce the actual callback point from pinned source arithmetic?** For every retained hit, evaluate exactly the **same binary64 operation order** as pinned `geometry.linesIntersection`, with original ray and authored finite-edge coordinates, and compare it numerically to the actual captured native callback point. Note signed `-0.0` versus `+0.0` separately; no invented float-error tolerance is permitted.
+2. **Why could a callback be accepted but geometrically nonforward?** Replay the pinned `intersectionIsOnRay`, `intersectionIsOnSegment` and **unaltered** cutoff predicates on the **rounded native-calculated hit point**. Compare these decisions to exact dyadic **represented incoming ray** `t/u` from the original PR #92 raw reference: `t>0` is an exact geometric necessary condition, **not** a full ray physics solver. An incident can be ahead under a rounded native point test while exact represented t is zero/negative. This contrast is a **source-based numerical mechanism consistent with observed events**, not universal proof of an upstream root cause, of ideal critical-angle behavior, or of complete physical ray trajectory correctness.
+3. **How large are the observed point discrepancies?** Record displacement between the original supplied incident point and the independently computed exact represented straight-line intersection `P*`, along with coordinate-scale, input max ULP and dimensionless ray/face crossing sine. Summaries are **descriptive distributions** for observed source floats, not a validated scale/conditioning-dependent native incident-point error envelope. No new acceptance threshold, numeric fallback, or mandatory Stage-2 measurement suppression follows.
+
+The work **does not run new native simulations** or introduce a new ray solver. It replays **the original already-reviewed 87 captured hits** from PR #92, including captures from genuinely failed native runs. The original native data are not modified or reclassified under a new physical rule. The narrow comparison is between (i) archived actual native reported points, (ii) pinned source binary64 line-intersection formula and its rounded-point gates, and (iii) exact rational values implied by the **already recorded** binary64 ray/edge endpoints.
+
+## Reproduction and provenance
+
+The draft PR temporarily adds a **standalone research-only GitHub Actions workflow**, with `actions:read` access, that downloads the **original** PR #92 Actions artifact by pinned run ID and immutable file digests. It verifies the original ZIP member SHA-256 digests, pins the exact native PhyDemo revision from `npm run setup`, executes `analyze.py`, retains **all** output and any mismatch with `if:always()`, and never alters the original raw inputs. The existing 11 production CI workflows also execute on this draft head. This workflow must **NOT be merged into main**.
+
+After the original Actions artifact expires, download the **identical original ZIP** from its private [evidence Page](https://chatgpt.com/space/page_875b83faac008191b060217019ceb0d8) and extract into a fresh directory; run:
+
+```sh
+python3 evaluation/native-determinant-roundoff-v1/analyze.py \
+  /path/to/extracted-pr92-original-zip /path/to/NEW-output-folder
+```
+
+A new `analysis.json` retains every event and exact reduced t/u and pinned native binary64 predicate status; `summary.json` holds aggregates. Any mismatch fails the research action and remains archived. **Do not use these source-derived tests to alter PhyDemo, current Stage-1 native readings, benchmark answers, or default Stage-2 policy without a separate independent R2 numerical design/implementation review and owner decision.**
+
+**Reviewer must independently rederive** native operation-order replay and exact dyadic geometry from the actual archived input, distinguish equality of quoted rounded coordinates from physical truth, and challenge endpoint/cancellation/conditional bounds. This is Chat A-authored research until an actual independent Chat B R2 evidence review is completed.
