@@ -192,24 +192,6 @@ function shuffle(xs,random){const out=[...xs];for(let i=out.length-1;i>0;i--){
 const tally=(xs,key)=>Object.fromEntries([...new Set(xs.map(key))].sort()
  .map(k=>[k,xs.filter(x=>key(x)===k).length]));
 function labelledCounts(rows){
- const ordinary=rows.filter(x=>x.mode==='ordinary-on');
- const tapped=rows.filter(x=>x.mode==='single-owner-tap');
- const total=rows.length;
- // Falsification barrier: never call all-profile counts "genuine ordinary".
- assert.equal(ordinary.length+tapped.length,total);
- const byMode={ordinaryOn:ordinary.length,singleOwnerTap:tapped.length};
- const counts={ordinaryOnNativeStates:tally(ordinary,x=>x.native.status),
-  singleOwnerTapNativeStates:tally(tapped,x=>x.native.status),
-  allNativeStates:tally(rows,x=>x.native.status)};
- const countEntries=x=>Object.values(x).reduce((a,b)=>a+b,0);
- assert.equal(countEntries(counts.ordinaryOnNativeStates),ordinary.length);
- assert.equal(countEntries(counts.singleOwnerTapNativeStates),tapped.length);
- assert.equal(countEntries(counts.allNativeStates),total);
- return {byMode,...counts};
-}
-const tally=(xs,key)=>Object.fromEntries([...new Set(xs.map(key))].sort()
- .map(k=>[k,xs.filter(x=>key(x)===k).length]));
-function labelledCounts(rows){
  const profiles=['ordinary-off','ordinary-on','single-owner-tap'];
  const own=Object.fromEntries(profiles.map(m=>[m,rows.filter(r=>r.mode===m)]));
  assert.equal(profiles.reduce((s,m)=>s+own[m].length,0),rows.length);
