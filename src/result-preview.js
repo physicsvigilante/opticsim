@@ -12,7 +12,8 @@ const CAMERA_BOUNDS={centerMm:[-10000,10000],zoom:[0.03,10]};
 const finite=Number.isFinite;
 const number=n=>finite(n)?Number(n.toPrecision(8)).toString():'unavailable';
 export function formatRequestedResult(r){
-  const label=['native-observation','native-hit-event-observation','native-observed-object-parentage'].includes(r.method)?'Native sampled observation':
+  const label=r.kind==='finite-hit-numerical-diagnostic'?'ADVISORY ONLY — NOT A VERIFIED OPTICAL MEASUREMENT':
+    ['native-observation','native-hit-event-observation','native-observed-object-parentage'].includes(r.method)?'Native sampled observation':
     r.status==='conditional'?'Conditional analytical prediction':'No current value';
   let value=r.reason||'';
   if(r.value!==null&&r.value!==undefined){
@@ -22,6 +23,19 @@ export function formatRequestedResult(r){
         `Global image position: x = ${number(p.x)} mm; y = ${number(p.y)} mm.\n`+
         (finite(p.magnification)?`Magnification: ${number(p.magnification)} (dimensionless).\n`:'')+
         `Image type: ${kind}. Not a native image detection.`;
+    }else if(r.kind==='finite-hit-numerical-diagnostic'){
+      const q=r.value;
+      value='Noncertifying native finite-hit advisory: '+q.status+
+        '; reason '+q.reasonCode+'.\nActual sampled Glass callbacks: '+q.observedGlassIncidents+
+        '; audited: '+q.analyzedGlassIncidents+
+        '; exact matches: '+q.checked+
+        '; contradictions: '+q.conflicting+
+        '; unknown: '+q.unknown+'.\n'+
+        (q.status==='inconsistent'?
+          'NUMERICAL CAUTION: reported native geometry contradicts the recorded represented finite ray/edge. '+
+          'Existing native measurements are NOT independently certified by this advisory.':
+          q.status==='unknown'?'NUMERICAL UNCERTAINTY: diagnostic coverage, point agreement or native conditions are unproven; existing measurements are NOT independently certified.':
+            'A bounded necessary check passed. This does NOT certify optical correctness or complete ray history.');
     }else if(r.kind==='interface-face-events'){
       value=Object.entries(r.value).map(([id,f])=>id+': '+f.interactions+' native hits; '+(f.first?
         f.first.from+' → '+f.first.outcome+'; incidence '+number(f.first.incidentAngleDeg)+'°; transmission '+number(f.first.transmittedAngleDeg)+'°; '+

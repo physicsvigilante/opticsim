@@ -72,7 +72,7 @@ export function loadDocument(doc, width, height) {
 export function nativeExport(doc) { return loadDocument(doc).scene.toJSON(); }
 // Instance-local observation only: one native call, same return value and rays.
 // No tracing, resampling, or source prototype/upstream modification.
-export function observeSourceEmission(source,{parentage=null,sourceId=null}={}) {
+export function observeSourceEmission(source,{parentage=null,finiteDiagnostic=null,sourceId=null}={}) {
   const meter = { emitted: null, brightnessScale: null };
   const nativeStart = source.onSimulationStart;
   source.onSimulationStart = function (...args) {
@@ -80,16 +80,19 @@ export function observeSourceEmission(source,{parentage=null,sourceId=null}={}) 
     meter.emitted = result?.newRays?.length || 0;
     meter.brightnessScale = result?.brightnessScale ?? null;
     parentage?.sourceStarted(sourceId,result);
+    try{finiteDiagnostic?.sourceStarted(sourceId,result);}catch{reportAuditFault(finiteDiagnostic);}
     return result;
   };
   if(parentage)parentage.register(sourceId,'point-source',source,source.onSimulationStart,'onSimulationStart');
+  try{finiteDiagnostic?.register(sourceId,'point-source',source,source.onSimulationStart,'onSimulationStart');}
+  catch{reportAuditFault(finiteDiagnostic);}
   return meter;
 }
 // Wrap each authored source once; no ray provenance is assigned after emission.
 // Stable-ID counts describe actual PhyDemo sampling, never detector attribution.
-export function observeSourceSet(doc, scene, idMap,{parentage=null}={}) {
+export function observeSourceSet(doc, scene, idMap,{parentage=null,finiteDiagnostic=null}={}) {
   const entries=doc.physics.components.filter(c=>c.type==='point-source')
-    .map(c=>[c.id,observeSourceEmission(scene.objs[idMap.get(c.id)],{parentage,sourceId:c.id})]);
+    .map(c=>[c.id,observeSourceEmission(scene.objs[idMap.get(c.id)],{parentage,finiteDiagnostic,sourceId:c.id})]);
   return {
     get emitted() {
       return entries.some(([,meter])=>meter.emitted===null) ? null :
@@ -131,6 +134,7 @@ export function observeMirrorSet(doc, scene, idMap) {
 export const DETECTOR_HIT_EVENT_LIMIT=32;
 const DETECTOR_HIT_RESIDUAL_MM=1e-5;
 const DETECTOR_HIT_ENDPOINT_MM=.01;
+const reportAuditFault=d=>{try{d?.captureFault?.();}catch{/* Never affect native propagation. */}};
 function nativeDetectorHit(ray,incidentPoint,segment){
   const {a,b,length,dx,dy}=segment;
   if(!ray?.p1||!ray?.p2||!incidentPoint||
@@ -146,7 +150,7 @@ function nativeDetectorHit(ray,incidentPoint,segment){
     along<DETECTOR_HIT_ENDPOINT_MM||length-along<DETECTOR_HIT_ENDPOINT_MM)return null;
   return {pointMm:{x,y},incomingUnit:{x:vx/travel,y:-vy/travel},distanceFromP1Mm:along};
 }
-export function observeDetectorSet(doc,scene,idMap,{captureHitEvents=false,parentage=null}={}) {
+export function observeDetectorSet(doc,scene,idMap,{captureHitEvents=false,parentage=null,finiteDiagnostic=null}={}) {
   const entries=doc.physics.components.filter(c=>c.type==='ray-detector').map(c=>{
     const detector=scene.objs[idMap.get(c.id)],original=detector.onRayIncident;
     let crossings=0,issue=null;const events=[];
@@ -166,6 +170,8 @@ export function observeDetectorSet(doc,scene,idMap,{captureHitEvents=false,paren
       return result;
     };
     if(parentage)parentage.register(c.id,'ray-detector',detector,detector.onRayIncident,'onRayIncident');
+    try{finiteDiagnostic?.register(c.id,'ray-detector',detector,detector.onRayIncident,'onRayIncident');}
+    catch{reportAuditFault(finiteDiagnostic);}
     return {id:c.id,detector,get crossings(){return crossings;},
       get hitEvents(){return {observedCount:crossings,limit:DETECTOR_HIT_EVENT_LIMIT,
         status:!issue&&events.length===crossings?'complete':'unavailable',
@@ -198,12 +204,24 @@ export function observeBlockerSet(doc, scene, idMap) {
       id+': native blocker incident did not report absorption');}
   };
 }
-export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, detectorMeter = null, interfaceMeter = null, blockerMeter = null, {detectorHitEvents=false,nativeEvent=null,parentage=null}={}) {
+export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, detectorMeter = null, interfaceMeter = null, blockerMeter = null, {detectorHitEvents=false,nativeEvent=null,parentage=null,finiteDiagnostic=null}={}) {
   const errors = [...(interfaceMeter?.errors||[]),...(blockerMeter?.errors||[]),scene.error, simulator.error, ...scene.objs.map(o => o.getError())].filter(Boolean);
   const warnings = [scene.warning, simulator.warning, ...scene.objs.map(o => o.getWarning())].filter(Boolean);
   const emissionsById=meter?.byId ?? null;
   const sourceCount=emissionsById ? Object.keys(emissionsById).length : 0;
   const parentageById=parentage?.finish({event:nativeEvent,simulator,errors,warnings,sources:meter,detectors:detectorMeter,interfaces:interfaceMeter});
+  let finiteHitAdvisory=null;
+  if(finiteDiagnostic)try{
+    finiteHitAdvisory=finiteDiagnostic.finish({event:nativeEvent,simulator,errors,warnings,
+      sources:meter,detectors:detectorMeter,interfaces:interfaceMeter,scene});
+  }catch{
+    // A faulty OPTIONAL numerical auditor must never change true native
+    // completion, source or detector readouts. It cannot certify anything.
+    finiteHitAdvisory={status:'unknown',reasonCode:'NATIVE_FINITE_HIT_AUDITOR_FAILED',
+      method:'advisory-native-finite-hit-binary64-v1',advisory:true,
+      observedGlassIncidents:0,analyzedGlassIncidents:0,checked:0,unknown:0,
+      conflicting:0,limit:128,nativeMeasurementQualificationUnchanged:true};
+  }
   return { errors, warnings, processed: simulator.processedRayCount, truncation: simulator.totalTruncation,
     undefinedBehavior: simulator.totalUndefinedBehavior, emitted: meter?.emitted ?? null,
     // There is no meaningful single scale for multiple independently emitting
@@ -220,7 +238,8 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
       detectorMeter?.hitEventsById??null:null}:{}),
     interfacesById: interfaceMeter?.byId ?? null,
     blockersById: blockerMeter?.byId ?? null,
-    ...(parentage?{detectorRayProvenanceById:parentageById}:{} ) }; 
+    ...(parentage?{detectorRayProvenanceById:parentageById}:{} ),
+    ...(finiteDiagnostic?{finiteHitDiagnostic:finiteHitAdvisory}:{}) }; 
 }
 export function classifyRun(event, data) {
   return data.errors.length ? 'failed' : event === 'simulationStop' ? 'stopped' :

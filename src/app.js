@@ -3,6 +3,7 @@ import {isCurved} from './curved-mirrors.js';
 import {QualifiedUI} from './qualified-ui.js';
 import { loadDocument, Simulator, diagnostics, nativeExport, observeSourceSet, observeMirrorSet, observeDetectorSet, observeInterfaceSet, observeBlockerSet } from './adapter.js';
 import {createNativeRayParentage} from './native-ray-parentage.js';
+import {createNativeFiniteHitDiagnostic} from './native-finite-hit-diagnostic.js';
 import { parseSave, serializeSave, SAMPLING_PRESETS, samplingPreset, setSourceMode } from './contract.js';
 import { Session } from './session.js';
 import pointSourceIcon from '../vendor/ray-optics/src/img/PointSource.svg';
@@ -20,15 +21,18 @@ let bindings = [];
 let activeSourceId = null; // UI selection only; not part of authoritative scene JSON.
 let captureRequestedDetectorHits = false; // Set from the current approved observation requests before a native run.
 let captureRequestedParentageIds = []; // Ephemeral per-session native observer scope.
+let captureRequestedFiniteHitDiagnostic = false; // Explicit v9 advisory request only.
 function cancelScheduled() { clearTimeout(scheduled); scheduled = undefined; }
 const session = new Session(doc => {
   const { scene, idMap } = loadDocument(doc, size.width, size.height);
   const parentage=createNativeRayParentage(doc,scene,idMap,captureRequestedParentageIds);
-  const meter = observeSourceSet(doc, scene, idMap,{parentage});
+  const finiteDiagnostic=createNativeFiniteHitDiagnostic(doc,scene,idMap,
+    captureRequestedFiniteHitDiagnostic?doc.physics.components.filter(c=>c.type==='polygon-dielectric').map(c=>c.id):[]);
+  const meter = observeSourceSet(doc, scene, idMap,{parentage,finiteDiagnostic});
   const mirrorMeter = observeMirrorSet(doc, scene, idMap);
   const captureHitEvents = captureRequestedDetectorHits;
-  const detectorMeter = observeDetectorSet(doc, scene, idMap,{captureHitEvents,parentage});
-  const interfaceMeter = observeInterfaceSet(doc, scene, idMap,{parentage});
+  const detectorMeter = observeDetectorSet(doc, scene, idMap,{captureHitEvents,parentage,finiteDiagnostic});
+  const interfaceMeter = observeInterfaceSet(doc, scene, idMap,{parentage,finiteDiagnostic});
   const blockerMeter = observeBlockerSet(doc, scene, idMap);
   const sim = new Simulator(scene, ...canvases.map(c => c.getContext('2d')), null, true, doc.simulation.processedRayLimit);
   const cancel = () => {
@@ -36,7 +40,7 @@ const session = new Session(doc => {
     sim.simulationTimerId = -1; sim.shouldSimulatorStop = true;
   };
   return { scene, cancel, run: notify => {
-    for (const event of ['simulationComplete', 'simulationStop']) sim.on(event, () => notify(event, diagnostics(scene, sim, meter, mirrorMeter, detectorMeter, interfaceMeter, blockerMeter,{detectorHitEvents:captureHitEvents,nativeEvent:event,parentage})));
+    for (const event of ['simulationComplete', 'simulationStop']) sim.on(event, () => notify(event, diagnostics(scene, sim, meter, mirrorMeter, detectorMeter, interfaceMeter, blockerMeter,{detectorHitEvents:captureHitEvents,nativeEvent:event,parentage,finiteDiagnostic})));
     sim.updateSimulation(false, false);
   } };
 }, update);
@@ -374,11 +378,14 @@ function apply(doc, rebuild = false, imported = undefined) {
   let tracked;
   try { tracked = qualificationUI.prepare(doc, imported); }
   catch (error) { session.invalidate(error); return false; }
-  const priorCapture = captureRequestedDetectorHits,priorParentageIds=captureRequestedParentageIds;
+  const priorCapture = captureRequestedDetectorHits,priorParentageIds=captureRequestedParentageIds,
+    priorFiniteDiagnostic=captureRequestedFiniteHitDiagnostic;
   captureRequestedDetectorHits = tracked.requests.some(request => request.kind === 'detector-hit-events');
   captureRequestedParentageIds=tracked.requests.filter(request=>request.kind==='detector-ray-provenance').map(request=>request.componentId);
+  captureRequestedFiniteHitDiagnostic=tracked.requests.some(request=>request.kind==='finite-hit-numerical-diagnostic');
   const accepted = session.apply(doc);
-  if (!accepted){captureRequestedDetectorHits = priorCapture;captureRequestedParentageIds=priorParentageIds;}
+  if (!accepted){captureRequestedDetectorHits = priorCapture;captureRequestedParentageIds=priorParentageIds;
+    captureRequestedFiniteHitDiagnostic=priorFiniteDiagnostic;}
   if (accepted) qualificationUI.commit(tracked);
   if (accepted && rebuild) controls();
   return accepted;

@@ -73,11 +73,13 @@ export function evidencePanelView({doc=null,qualification=null,requests=[],state
     view.resultLimits='Inspect the detailed error below; previous readouts are not current.';return view;
   }
   if(phase!=='ready'||!Array.isArray(results)||results.length!==requests.length)return view;
-  let native=0,conditional=0,unavailable=0,suppressed=0,other=0,qualified=0;
+  let native=0,conditional=0,unavailable=0,suppressed=0,other=0,qualified=0,advisory=0,contradictions=0;
   const missing=[];
   for(const r of results){
     if(['available','qualified'].includes(r.status)&&['native-observation','native-hit-event-observation'].includes(r.method)){
       native++;if(r.status==='qualified')qualified++;
+    }else if(r.status==='advisory'&&r.kind==='finite-hit-numerical-diagnostic'){
+      advisory++;if(r.value?.status==='inconsistent')contradictions++;
     }else if(r.status==='conditional')conditional++;
     else if(r.status==='unavailable'){unavailable++;missing.push(r);}
     else if(r.status==='suppressed')suppressed++;
@@ -86,12 +88,16 @@ export function evidencePanelView({doc=null,qualification=null,requests=[],state
   view.state='ready';
   view.summary=[plural(native,'native sampled readout'),plural(conditional,'conditional prediction'),
     plural(unavailable,'unavailable quantity','unavailable quantities'),
+    ...(advisory?[plural(advisory,'NONCERTIFYING native diagnostic')]:[]),
     ...(suppressed?[plural(suppressed,'suppressed readout')]:[]),
     ...(other?[plural(other,'other result state')]:[])].join(' · ');
   const missingText=missing.length?' Unavailable: '+missing.slice(0,4)
     .map(r=>r.id+' ('+r.kind+')').join('; ')+(missing.length>4?'; '+(missing.length-4)+' more in details.':'.'):'';
   view.resultLimits='Sampled readings are not continuous irradiance. Conditional predictions are not native image detections.'+
-    (qualified?' '+plural(qualified,'native readout')+' qualified by warnings; inspect details.':'')+missingText;
+    (qualified?' '+plural(qualified,'native readout')+' qualified by warnings; inspect details.':'')+
+    (advisory?' This numerical check is ADVISORY only: it does NOT certify or change native measurements.':'')+
+    (contradictions?' NUMERICAL CAUTION: observed contradictory native finite-edge geometry; existing native readouts are NOT independently certified by this diagnostic.':'')+
+    missingText;
   return view;
 }
 export function renderEvidencePanel(dom,view){

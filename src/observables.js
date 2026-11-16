@@ -4,6 +4,7 @@ import {validate} from './contract.js';
 import {predict} from './analysis.js';
 import {sceneHash,isRecord,boundedText} from './qualified-utils.js';
 import {supportsNativeRayParentage} from './native-ray-parentage.js';
+import {supportsFiniteHitDiagnostic,FINITE_DIAGNOSTIC_METHOD} from './native-finite-hit-diagnostic.js';
 const kinds=Object.freeze({
   'interface-interactions':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric'],unit:'sampled interactions'},
   'interface-incidence-angle':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric'],unit:'degrees from normal; first native encounter'},
@@ -18,6 +19,7 @@ const kinds=Object.freeze({
   'detector-crossings':{type:'ray-detector',unit:'sampled crossings'},
   'detector-hit-events':{type:'ray-detector',unit:'mm positions and unitless incoming directions; native sampled events'},
   'detector-ray-provenance':{type:'ray-detector',unit:'native observed object ancestry; tokens are run-local'},
+  'finite-hit-numerical-diagnostic':{type:'polygon-dielectric',unit:'advisory represented binary64 finite-hit consistency; not physical correctness'},
   'detector-signed-power':{type:'ray-detector',unit:'relative native units; not watts'},
   'ideal-image':{type:'point-source',unit:'mm; magnification dimensionless'}
 });
@@ -29,7 +31,8 @@ export function observableCapabilities(){
       'Blocker absorption is a sampled native incident count; a zero detector count is not proof of continuous shadow or invisibility.',
       'Circular dielectric angles are relative to the local normal at the first actual native hit, not a whole path or detected image.',
       'Detector hit-event order is native callback order, not source attribution, a ray history, a continuous footprint or image detection. More than 32 hits or uncertain endpoints withhold the entire position list.',
-      'Opt-in detector ray provenance is observed direct native parentage in one complete v5 single-interface run, not a physical path, image, or continuous irradiance. Tokens are not stable across runs.']};
+      'Opt-in detector ray provenance is observed direct native parentage in one complete v5 single-interface run, not a physical path, image, or continuous irradiance. Tokens are not stable across runs.',
+      'Opt-in v9 finite-hit diagnostic is NONCERTIFYING advisory evidence; it never changes canonical native measurements or makes an original question answered. Unknown point error is not an accepted forward hit.']};
 }
 export function validateObservables(requests){
   if(!Array.isArray(requests)||requests.length>16)throw Error('Expected at most 16 observable requests');
@@ -84,6 +87,8 @@ export async function evaluateObservables(doc,requests,execution){
     if(!complete)return {...base,status:'suppressed',
       ...(r.kind==='detector-ray-provenance'?{reasonCode:!fresh?
         'STALE_PROVENANCE_EXECUTION':'NATIVE_PROVENANCE_INCOMPLETE'}:{}),
+      ...(r.kind==='finite-hit-numerical-diagnostic'?{reasonCode:!fresh?
+        'STALE_FINITE_HIT_DIAGNOSTIC':'NATIVE_FINITE_HIT_DIAGNOSTIC_INCOMPLETE'}:{}),
       reason:!fresh?'Execution evidence does not match the current scene hash.':
         'Current native run is incomplete, failed, or not yet available.'};
     if(r.kind==='ideal-image'){
@@ -96,6 +101,26 @@ export async function evaluateObservables(doc,requests,execution){
       }catch(error){return {...base,reason:'Analytical calculation unavailable: '+error.message};}
     }
     const o=execution.observations;
+    if(r.kind==='finite-hit-numerical-diagnostic'){
+      if(!supportsFiniteHitDiagnostic(doc))
+        return {...base,reasonCode:'FINITE_HIT_DIAGNOSTIC_SCOPE_UNSUPPORTED',
+          reason:'Diagnostic is available only for an already valid v9 single convex four-vertex native Glass scene.'};
+      const advisory=o?.finiteHitDiagnostic;
+      if(!advisory||advisory.method!==FINITE_DIAGNOSTIC_METHOD)
+        return {...base,reasonCode:'NATIVE_FINITE_HIT_DIAGNOSTIC_NOT_CAPTURED',
+          reason:'No opt-in, complete, native finite-hit diagnostic was captured on this exact run.'};
+      // Never count this advisory as an answered optical question or native
+      // measurement. Stage 2 measurement withholding is NOT implemented.
+      return {...base,status:'advisory',value:structuredClone(advisory),
+        method:FINITE_DIAGNOSTIC_METHOD,reasonCode:advisory.reasonCode,unit:spec.unit,
+        warnings:[...warnings,
+          advisory.status==='inconsistent'?
+            'NATIVE NUMERICAL CAUTION: this run contains an observed represented finite-edge contradiction. Existing native measurements are NOT independently certified by this diagnostic.':
+            advisory.status!=='checked'&&advisory.status!=='checked-no-hit'?
+              'NATIVE NUMERICAL CAUTION: this advisory lacks complete confirmation. Existing native measurements are NOT independently certified by this diagnostic.':
+              'This diagnostic is NONCERTIFYING even when its bounded necessary checks pass.'],
+        limitation:'Opt-in advisory only. Does NOT change canonical native status, detector counts, interface or other measurements; does not certify physical rays, Snell/Fresnel accuracy, image detection or original source truth. Exact binary64 reported-hit point disagreement without a validated error envelope is UNKNOWN, never checked.'};
+    }
     if(r.kind==='detector-ray-provenance'){
       if(!supportsNativeRayParentage(doc))return {...base,reasonCode:'UNSUPPORTED_PROVENANCE_SCOPE',
         reason:'Parentage requires one planar interface, one or two exact single-ray sources, one or two passive detectors, and no other objects.'};
