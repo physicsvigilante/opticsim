@@ -63,7 +63,7 @@ export function observeInterfaceSet(doc,scene,idMap,{parentage=null,finiteDiagno
       // exact BigInt work is deferred until after terminal native execution.
       if(finiteDiagnostic&&polygon){
         try{finiteDiagnostic.beforeIncident(component.id,args[0],args[2]);}
-        catch{finiteDiagnostic.captureFault?.();/* Native delegation remains mandatory. */}
+        catch{try{finiteDiagnostic.captureFault?.();}catch{/* Native delegation must still occur. */}}
       }
       const incoming=direction(args[0]),beforePower=power(args[0]);
       const encounter=prism?prismEncounter(component,args[2],incoming):polygon?polygonEncounter(component,args[2],incoming):circular?circularEncounter(component,args[2],incoming):null;
@@ -104,7 +104,8 @@ export function observeInterfaceSet(doc,scene,idMap,{parentage=null,finiteDiagno
       return returned;
     };
     if(parentage)parentage.register(component.id,component.type,native,native.onRayIncident,'onRayIncident');
-    if(finiteDiagnostic&&polygon)finiteDiagnostic.register(component.id,component.type,native,native.onRayIncident,'onRayIncident');
+    if(finiteDiagnostic&&polygon)try{finiteDiagnostic.register(component.id,component.type,native,native.onRayIncident,'onRayIncident');}
+    catch{try{finiteDiagnostic.captureFault?.();}catch{/* Native code is authoritative. */}}
     return [component.id,meter];
   });
   if(!entries.length)return null;
