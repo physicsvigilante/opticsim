@@ -103,7 +103,7 @@ function runOnce(input,mode,where,ordinal){
  const advisory=raw?.finiteHitDiagnostic??null;
  if(mode==='off'){
    assert.equal(Object.hasOwn(raw,'finiteHitDiagnostic'),false,'No opt-in means no native advisory observer output');
-   assert.equal(summary.observations&&Object.hasOwn(summary.observations,'finiteHitDiagnostic'),false,
+   assert.equal(Boolean(summary.observations&&Object.hasOwn(summary.observations,'finiteHitDiagnostic')),false,
     'No opt-in means no accepted advisory result');
  }else{
    assert.ok(advisory&&advisory.advisory===true,'Opt-in native diagnostic must retain honest status');
