@@ -20,6 +20,8 @@ const record=x=>x&&typeof x==='object'&&!Array.isArray(x);
 const same=(a,b)=>canonicalJSON(a)===canonicalJSON(b);
 const allowedStatus=new Set(['completed','completed-with-warnings']);
 export async function verifyPairCapture(capture,questions,commitment,dir){
+ if(commitment.note!=='Paired full/focused context eligibility: only supported revise/observe or negative; 2-12 even cases; external independent reviews and timestamped commitment required.')
+  throw Error('Reference was not frozen under the precommitted paired eligibility protocol');
  if(!record(capture)||capture.format!==PAIR_FORMAT||capture.referenceRead!==false||
     capture.firstAttemptOnly!==true||capture.repairs!==0||
     capture.questionsSha256!==commitment.questionsSha256||
