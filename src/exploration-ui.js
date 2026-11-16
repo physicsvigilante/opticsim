@@ -2,6 +2,7 @@
 // alternative ray renderer. All imported strings remain literal text.
 import {explorationBundle,explorationContext,parseExplorationProposal,prepareExplorationProposal,
  browserExecution,snapshotScenario,compareExplorationSnapshots,nativeComparisonReadouts} from './exploration.js';
+import {focusedExplorationContext} from './focused-exploration-context.js';
 import {verifyQualifiedBundle} from './qualification.js';
 import {canonicalJSON} from './qualified-utils.js';
 const same=(a,b)=>canonicalJSON(a)===canonicalJSON(b);
@@ -99,7 +100,9 @@ export class ExplorationUI {
  }
  async context(profile='full'){
   const {bundle,token}=await this.current();
-  const context=await explorationContext(bundle,this.question.value,{profile});this.guard(token);
+  const context=profile==='focused'?
+   await focusedExplorationContext(bundle,this.question.value):
+   await explorationContext(bundle,this.question.value);this.guard(token);
   this.download(json(context),profile==='focused'?
    'opticsim-exploration-focused-context.json':'opticsim-exploration-context.json');
   this.status.textContent=profile==='focused'?
