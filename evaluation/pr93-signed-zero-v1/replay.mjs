@@ -41,8 +41,10 @@ for(const row of report.records){
   assert.equal(candidates.length,1,'one source-grounded finite face');
   const face=candidates[0];
   const point=native(hit.p1,hit.p2,face.a,face.b);
-  assert.equal(point.x,hit.incident.x);
-  assert.equal(point.y,hit.incident.y);
+  // JS assert.strictEqual distinguishes -0 from +0 via Object.is;
+  // this step explicitly checks numerical == and leaves bit identity to bytes below.
+  assert.ok(point.x===hit.incident.x,'numeric x mismatch');
+  assert.ok(point.y===hit.incident.y,'numeric y mismatch');
   result.push({
    ordinal:row.ordinal,hitIndex:index,faceId:face.id,
    point:[point.x,point.y],pointBits:[bits(point.x),bits(point.y)],
