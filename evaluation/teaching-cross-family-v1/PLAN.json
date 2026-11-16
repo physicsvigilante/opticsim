@@ -1,0 +1,184 @@
+{
+  "format": "opticsim-cross-family-teaching-plan-v1",
+  "frozenBeforeExecution": true,
+  "sourceMain": "50dd0f4d9530d0a61bb4c7064c4326a8ac0ce518",
+  "nativePin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "sourceClassification": "Already exposed, fully specified repository fixtures; not unseen textbooks, independent LLM interpretation or teacher effectiveness evidence",
+  "scope": "Three different native optical families; existing qualified scene bundles, observations, result-aware Fit and browser UI. No production edits.",
+  "cases": [
+    {
+      "id": "lens",
+      "path": "scenes/single-lens-detector.json",
+      "gitBlob": "3dcdb0e8c01d1c950ee9bdbe2583b1892f6fc651",
+      "model": "ideal-thin-lens-geometric",
+      "requests": [
+        {
+          "id": "image",
+          "kind": "ideal-image",
+          "componentId": "source-1"
+        },
+        {
+          "id": "emissions",
+          "kind": "source-emissions",
+          "componentId": "source-1"
+        },
+        {
+          "id": "crossings",
+          "kind": "detector-crossings",
+          "componentId": "detector-1"
+        },
+        {
+          "id": "relative-power",
+          "kind": "detector-signed-power",
+          "componentId": "detector-1"
+        }
+      ],
+      "whatIf": {
+        "classification": "teacher-authored physical hypothetical, not original source given",
+        "changes": [
+          {
+            "id": "lens-1",
+            "section": "parameters",
+            "key": "focalLength",
+            "value": 150,
+            "unit": "mm"
+          }
+        ]
+      },
+      "teachingPrompts": [
+        "Identify the explicit source, ideal-lens and passive-detector geometry, mm and x-right/y-up.",
+        "Separate a conditional analytical ideal-image coordinate from sampled native detector crossings and relative power (not watts).",
+        "Change only lens-1 focalLength 100 to 150 mm as a teacher hypothetical; use Fit; inspect geometry and measured/predicted differences without treating a detector count as an image."
+      ]
+    },
+    {
+      "id": "mirror",
+      "path": "scenes/plane-mirror-detector.json",
+      "gitBlob": "979c104c25d907286eb09930cb76873a9796ba70",
+      "model": "plane-mirror-geometric",
+      "requests": [
+        {
+          "id": "image",
+          "kind": "ideal-image",
+          "componentId": "source-1"
+        },
+        {
+          "id": "emissions",
+          "kind": "source-emissions",
+          "componentId": "source-1"
+        },
+        {
+          "id": "reflections",
+          "kind": "mirror-reflections",
+          "componentId": "mirror-1"
+        },
+        {
+          "id": "crossings",
+          "kind": "detector-crossings",
+          "componentId": "detector-1"
+        }
+      ],
+      "whatIf": {
+        "classification": "teacher-authored physical hypothetical, not original source given",
+        "changes": [
+          {
+            "id": "source-1",
+            "section": "parameters",
+            "key": "y",
+            "value": 40,
+            "unit": "mm"
+          }
+        ]
+      },
+      "teachingPrompts": [
+        "Identify the finite two-sided mirror and directional source; distinguish its supporting-line virtual image from native sampled reflected rays.",
+        "Explain why native reflection counts and passive detector crossings do not identify a complete per-source ray path or physical image.",
+        "Change only source-1 y from 30 to 40 mm, preserve the source baseline and compare the current native result and conditional image without asserting every emitted ray hit the mirror."
+      ]
+    },
+    {
+      "id": "glass",
+      "path": "scenes/polygon-dielectric.json",
+      "gitBlob": "6c0b05379864dc6e8243b6ae9e28bd9ae8eb25be",
+      "model": "polygon-dielectric-tracing",
+      "requests": [
+        {
+          "id": "emissions",
+          "kind": "source-emissions",
+          "componentId": "S1"
+        },
+        {
+          "id": "first-event",
+          "kind": "interface-first-event",
+          "componentId": "G1"
+        },
+        {
+          "id": "face-events",
+          "kind": "interface-face-events",
+          "componentId": "G1"
+        },
+        {
+          "id": "crossings",
+          "kind": "detector-crossings",
+          "componentId": "D1"
+        },
+        {
+          "id": "finite-advisory",
+          "kind": "finite-hit-numerical-diagnostic",
+          "componentId": "G1"
+        },
+        {
+          "id": "unsupported-image",
+          "kind": "ideal-image",
+          "componentId": "S1"
+        }
+      ],
+      "whatIf": {
+        "classification": "teacher-authored physical hypothetical, not original source given",
+        "changes": [
+          {
+            "id": "S1",
+            "section": "emission",
+            "key": "directionDeg",
+            "value": 5,
+            "unit": "degrees"
+          }
+        ]
+      },
+      "teachingPrompts": [
+        "Identify authored four-face convex glass, explicit indices and the explicit Fresnel-off transmitted-only approximation; do not infer 3D material behavior.",
+        "Separate recorded first-face native encounters from a complete ray history; recognize optional finite-hit numerical diagnostic as NONCERTIFYING and an ideal-image request here as unavailable.",
+        "Change only S1 directionDeg from 0 to 5 degrees away from normal incidence, comparing observations without claiming exact-critical physics or upgrading any inconsistent/unknown numerical advisory."
+      ]
+    }
+  ],
+  "sharedQuestions": [
+    "Which values are originally source-given, versus an explicitly labelled teacher intervention?",
+    "Which displayed results are finite sampled native observations, which are conditional analytical model values, and which are unavailable/suppressed?",
+    "What cannot be concluded about continuous illumination, ray lineage, physical images, absolute watts and source interpretation?",
+    "Can a reader locate the source, canonical current status, intervention history, requested-result limitation and Fit without reading raw JSON?"
+  ],
+  "humanReview": {
+    "participantTarget": "at least two consenting actual teachers, not recruited or simulated by software",
+    "statuses": [
+      "completed-unaided",
+      "completed-with-guidance",
+      "not-completed",
+      "not-assessed"
+    ],
+    "privacy": "Keep participant identities and raw private feedback out of public repository and Actions artifacts.",
+    "initialTeacherParticipants": 0,
+    "initialStudentParticipants": 0,
+    "classroomLearningEffectiveness": "not-assessed",
+    "interpretationFidelity": "known source fixture field retention, not unfamiliar question interpretation",
+    "physicalCorrectness": "separate native software checks, not guaranteed real-world optical truth",
+    "simulationCoverage": "three preexisting supported families only",
+    "textbookAnswerCompleteness": "not-requested"
+  },
+  "noChanges": [
+    "Do not patch pinned PhyDemo ray tracer, numerical tolerance, native seed policy, source schema or canonical accepted measurements.",
+    "Never infer a textbook answer or recast a teacher hypothetical as an original source fact.",
+    "Do not merge research-only PR92-99 workflows or reuse critical-angle research cases as classroom physics ground truth.",
+    "No teacher/student effectiveness claim from CI, screenshots or same-assistant review."
+  ]
+}
