@@ -1,0 +1,90 @@
+// Advisory finite-Glass geometry check, NOT a ray tracer or native-intersection
+// replacement. Every arithmetic decision is exact on the already recorded
+// binary64 inputs. No tolerance means UNKNOWN, never a false "checked" result.
+import {distanceToFiniteSegment} from './finite-glass-geometry.js';
+export const FINITE_HIT_CAP=128;
+export const FINITE_HIT_FACE_RESIDUAL_MM=1e-5;
+export const FINITE_HIT_VERTEX_CLEARANCE_MM=.01;
+
+const finitePoint=p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y);
+const abs=a=>a<0n?-a:a;
+function rational(n,d=1n){
+  if(d===0n)throw Error('Zero rational denominator');
+  if(d<0n){n=-n;d=-d;}
+  let a=abs(n),b=d;
+  while(b){const r=a%b;a=b;b=r;}
+  return {n:n/a,d:d/a};
+}
+function bits(x){
+  if(!Number.isFinite(x))throw Error('Expected finite binary64');
+  const view=new DataView(new ArrayBuffer(8));view.setFloat64(0,x);
+  const b=view.getBigUint64(0),exp=Number(b>>52n&2047n);
+  if(exp===2047)throw Error('Nonfinite binary64');
+  let significand=b&((1n<<52n)-1n);
+  if(exp)significand+=1n<<52n;
+  if(b>>63n)significand=-significand;
+  const e=exp?exp-1075:-1074;
+  return e<0?rational(significand,1n<<BigInt(-e)):rational(significand<<BigInt(e));
+}
+const add=(a,b)=>rational(a.n*b.d+b.n*a.d,a.d*b.d);
+const sub=(a,b)=>rational(a.n*b.d-b.n*a.d,a.d*b.d);
+const mul=(a,b)=>rational(a.n*b.n,a.d*b.d);
+const div=(a,b)=>rational(a.n*b.d,a.d*b.n);
+const point=p=>({x:bits(p.x),y:bits(p.y)});
+const subtract=(a,b)=>({x:sub(a.x,b.x),y:sub(a.y,b.y)});
+const cross=(a,b)=>sub(mul(a.x,b.y),mul(a.y,b.x));
+const squared=v=>add(mul(v.x,v.x),mul(v.y,v.y));
+const cmp=(a,b)=>a.n*b.d<b.n*a.d?-1:a.n*b.d>b.n*a.d?1:0;
+const zero={n:0n,d:1n},one={n:1n,d:1n};
+const approx=x=>Number(x.n)/Number(x.d);
+const advisory=(status,reasonCode)=>({status,reasonCode});
+const unknown=reason=>advisory('unknown',reason);
+const inconsistent=reason=>advisory('inconsistent',reason);
+
+// All points in *actual native* x-right / y-down coordinates. "face" is an
+// authored native finite segment with native x/y, not an infinite glass plane.
+export function auditRecordedFiniteHit(sample,faces,cutoffSquared){
+  if(!sample||!finitePoint(sample.p1)||!finitePoint(sample.p2)||
+    !finitePoint(sample.incident)||!Array.isArray(faces)||faces.length!==4||
+    !Number.isFinite(cutoffSquared)||cutoffSquared<0)
+    return unknown('INVALID_OR_MISSING_NATIVE_HIT');
+  const toUp=p=>({x:p.x,y:-p.y}),reportedUp=toUp(sample.incident);
+  const candidates=faces.filter(f=>distanceToFiniteSegment(reportedUp,f.a,f.b)<=FINITE_HIT_FACE_RESIDUAL_MM);
+  if(candidates.length!==1)return unknown('NONUNIQUE_OR_UNGROUNDED_FINITE_FACE');
+  const face=candidates[0],a={x:face.a.x,y:-face.a.y},b={x:face.b.x,y:-face.b.y};
+  const reported=sample.incident;
+  if(Math.min(Math.hypot(reported.x-a.x,reported.y-a.y),
+    Math.hypot(reported.x-b.x,reported.y-b.y))<=FINITE_HIT_VERTEX_CLEARANCE_MM)
+    return unknown('REPORTED_HIT_AT_OR_NEAR_VERTEX');
+  try{
+    const p=point(sample.p1),q=point(a),r=subtract(point(sample.p2),p),
+      edge=subtract(point(b),q);
+    if(squared(r).n===0n||squared(edge).n===0n)return unknown('DEGENERATE_REPRESENTED_GEOMETRY');
+    const denom=cross(r,edge);
+    if(denom.n===0n)return unknown('PARALLEL_OR_COINCIDENT_REPRESENTED_LINES');
+    const offset=subtract(q,p),t=div(cross(offset,edge),denom),
+      u=div(cross(offset,r),denom);
+    // Any exact finite crossing at or outside a vertex is conservatively
+    // unknown within the retained 0.01 mm corner exclusion.
+    const edgeLength=Math.hypot(b.x-a.x,b.y-a.y);
+    const uc=approx(u);
+    if(!Number.isFinite(uc)||!(edgeLength>0))return unknown('UNBOUNDED_FINITE_EDGE_PARAMETER');
+    if(Math.min(Math.abs(uc),Math.abs(1-uc))*edgeLength<=FINITE_HIT_VERTEX_CLEARANCE_MM)
+      return unknown('COMPUTED_HIT_AT_OR_NEAR_VERTEX');
+    if(cmp(u,zero)<0||cmp(u,one)>0)return inconsistent('EXACT_INTERSECTION_OUTSIDE_FINITE_EDGE');
+    if(cmp(t,zero)<=0)return inconsistent('EXACT_INTERSECTION_NOT_FORWARD');
+    const travel=mul(mul(t,t),squared(r));
+    if(cmp(travel,bits(cutoffSquared))<=0)return inconsistent('EXACT_FORWARD_STEP_NOT_BEYOND_NATIVE_CUTOFF');
+    // Compare the *independently computed* intersection P* to the actual
+    // engine-supplied incident point. A nonzero binary64 discrepancy requires
+    // an independently justified, scale/conditioning-aware uncertainty
+    // envelope. Stage 1 has no validated envelope, so NEVER guess a tolerance.
+    const star={x:add(p.x,mul(t,r.x)),y:add(p.y,mul(t,r.y))};
+    const supplied=point(reported);
+    if(cmp(star.x,supplied.x)!==0||cmp(star.y,supplied.y)!==0)
+      return unknown('NATIVE_INCIDENT_POINT_AGREEMENT_UNBOUNDED');
+    return advisory('checked','EXACT_BINARY64_FINITE_FORWARD_AND_POINT_MATCH');
+  }catch{
+    return unknown('EXACT_ARITHMETIC_OR_CONDITIONING_UNAVAILABLE');
+  }
+}
