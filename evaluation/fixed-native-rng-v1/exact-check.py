@@ -129,7 +129,7 @@ def audit(hit, faces, cutoff):
 
 def main():
     root=pathlib.Path(sys.argv[1] if len(sys.argv)>1
-        else "test-artifacts/llm-authoring/repeated-critical-profile-controls-v1")
+        else "test-artifacts/llm-authoring/fixed-native-rng-v1")
     original_inputs=(root/"inputs.json").read_bytes()
     assert len(original_inputs)==19205
     assert sha(original_inputs)=="caa07af040d0a71b50ea6b69470aa55a545b04d52195994913123a902b434df3"
