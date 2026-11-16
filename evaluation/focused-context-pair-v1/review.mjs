@@ -59,7 +59,7 @@ export async function verifyPairCapture(capture,questions,commitment,dir){
    throw Error(q.id+'/'+profile+': original per-arm first response was replaced');
   models.add(a.model??null);
  }
- if(models.size!==1)throw Error('Mixed model identities across paired arms; cannot claim same-model comparison');
+ if(models.size!==1||models.has(null))throw Error('Missing or mixed reported model identity across paired arms; cannot claim same-model comparison');
  return true;
 }
 const statusRecord=a=>({id:a.id,profile:a.profile,position:a.position,firstAttemptSha256:a.outputSha256,
