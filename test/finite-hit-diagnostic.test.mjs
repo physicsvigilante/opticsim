@@ -106,6 +106,9 @@ test('real complete zero-hit source remains diagnostically checked only with pos
  assert.equal((await evaluateObservables(scene,req,out.summary)).results[0].status,'advisory');
 });
 
+// A positive source-start fixture must include ACTUAL finite nondegenerate
+// native ray geometry. An empty object is not positive emission evidence.
+const emittedRay=()=>({p1:{x:-200,y:-10},p2:{x:-180,y:-10}});
 function ledgerFixture({twoSources=false,twoDetectors=false}={}){
  const scene=doc(i=>{
   if(twoSources)i.components.push({...structuredClone(i.components[0]),id:'S2',
@@ -136,18 +139,18 @@ function fakeFinish({scene,loaded,ledger},extra={}){
 test('B5: zero-hit but missed source-start/Glass/detector ownership fails closed',()=>{
  for(const skip of ['S1','G1','D1']){
    const x=ledgerFixture();registerAll(x,{skip});
-   if(skip!=='S1')x.ledger.sourceStarted('S1',{newRays:[{p1:{},p2:{}}]});
+   if(skip!=='S1')x.ledger.sourceStarted('S1',{newRays:[emittedRay()]});
    const output=fakeFinish(x);
    assert.equal(output.status,'unknown');assert.equal(output.reasonCode,'NATIVE_CALLBACK_COVERAGE_UNAVAILABLE');
  }
  for(const f of ['missing-start','duplicate-start','bad-rays','replaced-handler']){
    const x=ledgerFixture();registerAll(x);
    if(f==='duplicate-start'){
-     x.ledger.sourceStarted('S1',{newRays:[{}]});
-     x.ledger.sourceStarted('S1',{newRays:[{}]});
+     x.ledger.sourceStarted('S1',{newRays:[emittedRay()]});
+     x.ledger.sourceStarted('S1',{newRays:[emittedRay()]});
    }else if(f==='bad-rays')x.ledger.sourceStarted('S1',{newRays:[]});
    else if(f==='replaced-handler'){
-     x.ledger.sourceStarted('S1',{newRays:[{}]});
+     x.ledger.sourceStarted('S1',{newRays:[emittedRay()]});
      x.loaded.scene.objs[x.loaded.idMap.get('G1')].onRayIncident=()=>({});
    }
    const output=fakeFinish(x);
@@ -157,7 +160,7 @@ test('B5: zero-hit but missed source-start/Glass/detector ownership fails closed
 test('B4: 128 is ONLY a diagnostic availability cap; 129 callbacks must not leak a clean result',()=>{
  assert.equal(FINITE_HIT_CAP,128);
  for(const n of [128,129]){
-   const x=ledgerFixture();registerAll(x);x.ledger.sourceStarted('S1',{newRays:[{}]});
+   const x=ledgerFixture();registerAll(x);x.ledger.sourceStarted('S1',{newRays:[emittedRay()]});
    for(let i=0;i<n;i++)x.ledger.beforeIncident('G1',
      {p1:{x:-200,y:-10},p2:{x:0,y:-10}}, {x:0,y:-10});
    const output=fakeFinish(x,{interfaces:{byId:{G1:{interactions:n}}}});
@@ -170,12 +173,12 @@ test('B4: 128 is ONLY a diagnostic availability cap; 129 callbacks must not leak
 test('native incomplete/stopped, warnings and malformed observer cannot be promoted to a clean finite-hit advisory',()=>{
  for(const config of [{event:'simulationStop'}, {errors:['failure']},
     {simulator:{totalTruncation:.01,totalUndefinedBehavior:0}}, {warnings:['native warning']}]){
-   const x=ledgerFixture();registerAll(x);x.ledger.sourceStarted('S1',{newRays:[{}]});
+   const x=ledgerFixture();registerAll(x);x.ledger.sourceStarted('S1',{newRays:[emittedRay()]});
    const ans=fakeFinish(x,config);
    if(config.warnings)assert.equal(ans.status,'unknown');
    else assert.equal(ans.status,'suppressed');
  }
- const x=ledgerFixture();registerAll(x);x.ledger.sourceStarted('S1',{newRays:[{}]});
+ const x=ledgerFixture();registerAll(x);x.ledger.sourceStarted('S1',{newRays:[emittedRay()]});
  x.ledger.beforeIncident('G1',{get p1(){throw Error('fault injected');},p2:{}},{});
  assert.equal(fakeFinish(x,{interfaces:{byId:{G1:{interactions:1}}}}).status,'unknown');
 });
@@ -240,4 +243,80 @@ test('controlled delayed native callback A→B→A cannot publish stale first-A 
  calls[2]('simulationComplete',event('CURRENT_A'));assert.equal(session.state,'completed');
  assert.equal(session.data.finiteHitDiagnostic.reasonCode,'CURRENT_A');
  assert.equal(session.revision,3);
+});
+
+test('F-01 reviewer exact near-parallel native hit is UNKNOWN, while ordinary forward and translated controls stay meaningful',()=>{
+ // A ray approaching a vertical finite edge at sin(angle) roughly 1e-12
+ // must not be certified despite an EXACT represented crossing at p2.
+ const almost={p1:{x:10-1e-12,y:-4},p2:{x:10,y:-5},
+   incident:{x:10,y:-5}};
+ assert.deepEqual(ref(almost),{status:'unknown',
+   reasonCode:'NEAR_PARALLEL_FINITE_HIT_ILL_CONDITIONED'});
+ for(const dx of [1e-13,8*Number.EPSILON]){
+   const x=10-dx;
+   assert.equal(ref({p1:{x,y:-4},p2:{x:10,y:-5},incident:{x:10,y:-5}}).status,
+    'unknown','shallow near-parallel dx '+dx);
+ }
+ assert.equal(ref(sample()).status,'checked','orthogonal native hit must remain checkable');
+ const shifted=finiteGlassFaces([
+   {x:90,y:40},{x:110,y:40},{x:110,y:60},{x:90,y:60}
+ ]);
+ const translation={p1:{x:110-1e-12,y:-54},p2:{x:110,y:-55},
+   incident:{x:110,y:-55}};
+ const translated=auditRecordedFiniteHit(translation,shifted,1e-12);
+ assert.equal(translated.status,'unknown');
+ assert.equal(translated.reasonCode,'NEAR_PARALLEL_FINITE_HIT_ILL_CONDITIONED');
+ const wellConditioned={p1:{x:10-1e-6,y:-4},p2:{x:10,y:-5},
+   incident:{x:10,y:-5}};
+ assert.equal(ref(wellConditioned).status,'checked',
+   'Conservative refusal must not arbitrarily reject every slanted finite crossing');
+});
+
+test('F-02 reviewer missing/malformed emitted native SingleRay cannot certify zero-hit even if count says one',()=>{
+ const malformed=[
+   {},{p1:{x:-200,y:-10}},
+   {p1:{x:-200,y:-10},p2:null},
+   {p1:{x:-200,y:-10},p2:{x:NaN,y:-10}},
+   {p1:{x:-200,y:-10},p2:{x:-180,y:Infinity}},
+   {p1:{x:-200,y:-10},p2:{x:-200,y:-10}},
+   {p1:{x:'-200',y:-10},p2:{x:-180,y:-10}}
+ ];
+ for(let i=0;i<malformed.length;i++){
+   const x=ledgerFixture();registerAll(x);
+   x.ledger.sourceStarted('S1',{newRays:[malformed[i]]});
+   const reading=fakeFinish(x);
+   assert.deepEqual({status:reading.status,reasonCode:reading.reasonCode},
+     {status:'unknown',reasonCode:'NATIVE_CALLBACK_COVERAGE_UNAVAILABLE'},
+     'malformed native emission '+i+' must never qualify zero hits');
+ }
+ const x=ledgerFixture({twoSources:true,twoDetectors:true});registerAll(x);
+ x.ledger.sourceStarted('S1',{newRays:[emittedRay()]});
+ x.ledger.sourceStarted('S2',{newRays:[emittedRay()]});
+ assert.equal(fakeFinish(x).status,'checked-no-hit',
+   'Distinct valid source ray objects and full native ownership justify sampled zero');
+ const same=ledgerFixture({twoSources:true});registerAll(same);
+ const shared=emittedRay();
+ same.ledger.sourceStarted('S1',{newRays:[shared]});
+ same.ledger.sourceStarted('S2',{newRays:[shared]});
+ assert.equal(fakeFinish(same).status,'unknown','duplicated native ray identity must not qualify');
+});
+
+test('F-03 explicit warning precedence: proven nonforward geometry remains inconsistent, otherwise warning is unknown',()=>{
+ const x=ledgerFixture();registerAll(x);
+ x.ledger.sourceStarted('S1',{newRays:[emittedRay()]});
+ // x=0 is a finite vertical face; ray x=1 → 2 cannot hit it forward.
+ x.ledger.beforeIncident('G1',
+   {p1:{x:1,y:0},p2:{x:2,y:0}}, {x:0,y:0});
+ const result=fakeFinish(x,{
+   warnings:['independently reported native warning'],
+   interfaces:{byId:{G1:{interactions:1}}}
+ });
+ assert.equal(result.status,'inconsistent');
+ assert.equal(result.reasonCode,'EXACT_INTERSECTION_NOT_FORWARD');
+ assert.equal(result.conflicting,1);
+ const warned=ledgerFixture();registerAll(warned);
+ warned.ledger.sourceStarted('S1',{newRays:[emittedRay()]});
+ const noHits=fakeFinish(warned,{warnings:['native warning']});
+ assert.equal(noHits.status,'unknown');
+ assert.equal(noHits.reasonCode,'NATIVE_WARNINGS_NOT_CERTIFIED');
 });
