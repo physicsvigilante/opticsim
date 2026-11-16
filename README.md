@@ -36,6 +36,10 @@ Solutions, rerun sealed authoring studies, score textbook answers, or modify
 native physics. Candidate systems include bounded polygonal glass and opaque
 screens. Beam sources for refractive systems remain deferred by the owner.
 
+## Cross-family teaching task readiness — software checks, not human effectiveness
+
+The [three-family teaching task pilot](evaluation/teaching-cross-family-v1/README.md) reuses **existing** source-frozen ideal-lens, plane-mirror and finite-glass fixtures. It preserves original physical values, derives three individually validated **teacher what-if** qualified scenes, and checks native sampled readouts versus conditional image calculations, noncertifying finite-hit advisories, and unavailable requests. Its [blank teacher worksheet](evaluation/teaching-cross-family-v1/TEACHER-WORKSHEET.md) covers source-versus-hypothetical claims, physical-versus-numerical changes, result-aware Fit and qualified export/reopen. Real Chrome software checks and original source evidence are separately archived; **no actual teacher or student effectiveness has yet been assessed**. See [human review tracking issue #101](https://github.com/physicsvigilante/opticsim/issues/101). No new optics physics, authoring schema or textbook-answer solver was introduced.
+
 ## Private independent-model authoring assessment (manual only)
 
 A separately reviewable, **local-only** held-out protocol is available at
