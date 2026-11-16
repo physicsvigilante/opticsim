@@ -39,6 +39,10 @@ New pure Node/browser-compatible notebook module tested with existing known **le
 
 Actual Chrome test uses the existing exploration panel to save baseline + a real teacher hypothetical, downloads the one-file notebook, imports it, verifies the original current saved state was not replaced, retraces an imported variant through the normal native simulation, reopens the baseline and checks unchanged provenance. Real screenshots do not establish teacher/student usefulness.
 
+## Retrace the notebook as a local native experiment
+
+To reconstruct **new** per-scenario evidence for every saved notebook entry without clicking through each in the browser, use the separate [local replay command](REPLAY-EXPLORATION-NOTEBOOK.md). It verifies the original whole-file and per-scene hashes before any native run, preserves source inputs byte-for-byte, records each genuinely completed/failed new native execution and only compares results allowed by the existing evidence guards. Old native results are never trusted or silently restored. This does not change the notebook v1 format.
+
 ## Hard boundaries
 
 No pinned PhyDemo patch, new ray tracer, model-family inference, source answer key, numerical error tolerance, native RNG default, Stage-1/Stage-2 measurement withholding, textbook-answer completeness target, auto-qualified saved outputs, or automatic GitHub Pages publishing. No independent LLM or human classroom participation claimed.
