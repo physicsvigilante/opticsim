@@ -17,6 +17,18 @@ jobs:
           node-version: '24.19.0'
       - run: npm run setup
       - run: npm test
+      - name: Research-only native Stage-1 single owning observer per-hit coordinate capture
+        run: node evaluation/native-single-owner-hit-capture-v1/run.mjs
+      - name: Independent-language exact dyadic reference for the original tapped native ray/incident coordinates
+        run: python3 evaluation/native-single-owner-hit-capture-v1/exact-check.py
+      - name: Retain original single-owner native and exact binary64 observations even on failure
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-single-owner-hit-capture-v1
+          path: test-artifacts/llm-authoring/native-single-owner-hit-capture-v1/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Verify v9 finite-hit diagnostic through ordinary public problem workflow
         run: node scripts/finite-hit-diagnostic-acceptance.mjs
       - name: Retain native finite-hit diagnostic raw and performance evidence even on failure
