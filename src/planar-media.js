@@ -50,7 +50,7 @@ const direction=ray=>{
 };
 const power=ray=>ray.brightness_s+ray.brightness_p;
 const angle=(d,n)=>d?Math.atan2(Math.abs(d.x*n.y-d.y*n.x),Math.abs(d.x*n.x+d.y*n.y))*180/Math.PI:null;
-export function observeInterfaceSet(doc,scene,idMap,{parentage=null}={}){
+export function observeInterfaceSet(doc,scene,idMap,{parentage=null,finiteDiagnostic=null}={}){
   const entries=doc.physics.components.filter(c=>c.type===PLANAR_TYPE||c.type===CIRCULAR_TYPE||c.type===PRISM_TYPE||c.type===POLYGON_TYPE).map(component=>{
     const native=scene.objs[idMap.get(component.id)],original=native.onRayIncident;
     const circular=component.type===CIRCULAR_TYPE,prism=component.type===PRISM_TYPE,
@@ -58,6 +58,13 @@ export function observeInterfaceSet(doc,scene,idMap,{parentage=null}={}){
     const meter={interactions:0,transmitted:0,reflected:0,totalInternalReflections:0,first:null,invalidObservations:0,
       ...(finite?{faces:Object.fromEntries((prism?prismFaces:polygonFaces)(component.parameters).map(f=>[f.id,{interactions:0,first:null}]))}:{})};
     native.onRayIncident=function(...args){
+      // Opt-in scalar evidence capture precedes all native ray mutation.
+      // Capture errors cannot prevent the sole original native delegation;
+      // exact BigInt work is deferred until after terminal native execution.
+      if(finiteDiagnostic&&polygon){
+        try{finiteDiagnostic.beforeIncident(component.id,args[0],args[2]);}
+        catch{/* The advisory is not allowed to change native execution. */}
+      }
       const incoming=direction(args[0]),beforePower=power(args[0]);
       const encounter=prism?prismEncounter(component,args[2],incoming):polygon?polygonEncounter(component,args[2],incoming):circular?circularEncounter(component,args[2],incoming):null;
       const n=encounter?.normal||interfaceNormal(component.parameters);
@@ -97,6 +104,7 @@ export function observeInterfaceSet(doc,scene,idMap,{parentage=null}={}){
       return returned;
     };
     if(parentage)parentage.register(component.id,component.type,native,native.onRayIncident,'onRayIncident');
+    if(finiteDiagnostic&&polygon)finiteDiagnostic.register(component.id,component.type,native,native.onRayIncident,'onRayIncident');
     return [component.id,meter];
   });
   if(!entries.length)return null;
