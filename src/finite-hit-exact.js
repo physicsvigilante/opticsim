@@ -5,6 +5,12 @@ import {distanceToFiniteSegment} from './finite-glass-geometry.js';
 export const FINITE_HIT_CAP=128;
 export const FINITE_HIT_FACE_RESIDUAL_MM=1e-5;
 export const FINITE_HIT_VERTEX_CLEARANCE_MM=.01;
+// This is a CONSERVATIVE classification-only angular conditioning budget,
+// not a PhyDemo intersection tolerance, change to any physical ray, or a
+// derived error bound for comparing two incident points. sqrt(binary64 eps)
+// flags nearly singular ray/face crossings where small coordinate rounding
+// can magnify computed hit-position uncertainty. UNKNOWN, never "checked".
+export const FINITE_HIT_MIN_CROSSING_SINE=Math.sqrt(Number.EPSILON);
 
 const finitePoint=p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y);
 const abs=a=>a<0n?-a:a;
@@ -62,6 +68,21 @@ export function auditRecordedFiniteHit(sample,faces,cutoffSquared){
     if(squared(r).n===0n||squared(edge).n===0n)return unknown('DEGENERATE_REPRESENTED_GEOMETRY');
     const denom=cross(r,edge);
     if(denom.n===0n)return unknown('PARALLEL_OR_COINCIDENT_REPRESENTED_LINES');
+    // An EXACT nonzero determinant does not establish NUMERICAL STABILITY.
+    // A nearly parallel intersection is ill-conditioned under even tiny
+    // native binary64 endpoint rounding. Use a scale-independent angular
+    // classifier: sine(theta)=|cross(unit(ray), unit(face))|. This may
+    // conservatively withhold genuinely valid near-parallel hits; it does not
+    // change PhyDemo's actual geometry, cutoff or propagation at all.
+    const rx=sample.p2.x-sample.p1.x,ry=sample.p2.y-sample.p1.y;
+    const ex=b.x-a.x,ey=b.y-a.y;
+    const rayLength=Math.hypot(rx,ry),edgeLengthNative=Math.hypot(ex,ey);
+    if(!(rayLength>0&&Number.isFinite(rayLength)&&edgeLengthNative>0&&Number.isFinite(edgeLengthNative)))
+      return unknown('UNBOUNDED_FINITE_HIT_CONDITIONING');
+    const crossingSine=Math.abs((rx/rayLength)*(ey/edgeLengthNative)-
+      (ry/rayLength)*(ex/edgeLengthNative));
+    if(!Number.isFinite(crossingSine)||crossingSine<=FINITE_HIT_MIN_CROSSING_SINE)
+      return unknown('NEAR_PARALLEL_FINITE_HIT_ILL_CONDITIONED');
     const offset=subtract(q,p),t=div(cross(offset,edge),denom),
       u=div(cross(offset,r),denom);
     // Any exact finite crossing at or outside a vertex is conservatively
