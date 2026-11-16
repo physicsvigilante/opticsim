@@ -153,6 +153,7 @@ try{
  report.errors.push(error.stack);throw error;
 }finally{
  cdp?.close();browser?.kill();server?.kill();
+ try{await until(async()=>[browser,server].every(p=>!p||p.exitCode!==null||p.signalCode!==null),x=>x,'Chrome/server shutdown');}catch{}
  if(profile)await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:200});
  await writeFile(join(output,'report.json'),JSON.stringify(report,null,2)+'\n');
 }
