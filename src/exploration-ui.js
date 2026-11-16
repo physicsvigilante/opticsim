@@ -3,6 +3,7 @@
 import {explorationBundle,explorationContext,parseExplorationProposal,prepareExplorationProposal,
  browserExecution,snapshotScenario,compareExplorationSnapshots,nativeComparisonReadouts} from './exploration.js';
 import {focusedExplorationContext} from './focused-exploration-context.js';
+import {createExplorationNotebook,parseExplorationNotebook,EXPLORATION_NOTEBOOK_MAX_BYTES} from './exploration-notebook.js';
 import {verifyQualifiedBundle} from './qualification.js';
 import {canonicalJSON} from './qualified-utils.js';
 const same=(a,b)=>canonicalJSON(a)===canonicalJSON(b);
@@ -12,6 +13,7 @@ export class ExplorationUI {
  constructor({session,qualified,applyBundle,download,hasPending=()=>false}){
   Object.assign(this,{session,qualified,applyBundle,download,hasPending});
   this.saved=[];this.preview=null;this.busy=false;this.comparison=null;this.intent=null;
+  this.importedNotebook=null;
   const el=(tag,id,text)=>{const x=document.createElement(tag);if(id)x.id=id;if(text)x.textContent=text;return x;};
   this.root=el('details','exploration-panel');this.root.className='exploration-panel';
   this.root.append(el('summary',null,'Explore this model with an LLM'));
@@ -47,8 +49,27 @@ export class ExplorationUI {
   this.reportButton=button('explore-report','Download comparison evidence',()=>this.exportComparison());
   const snapshots=el('div');snapshots.className='actions';snapshots.append(this.saveButton,this.restoreButton,this.exportButton,this.compareButton,this.reportButton);
   this.comparisonText=el('pre','explore-comparison','No saved comparison.');
-  this.root.append(labelled('Scenario label',this.name),labelled('Saved, individually executed scenarios (maximum 12 per tab)',this.select),snapshots,this.comparisonText,
-   el('p',null,'Scenario lists live in this tab only. Download qualified scenes before leaving; opening them retraces the model. Saved comparisons are historical evidence, not live results. Sampled counts are not continuous irradiance; conditional predictions are not detected images.'));
+  this.root.append(labelled('Scenario label',this.name),labelled('Saved, individually executed scenarios (maximum 12 per tab)',this.select),snapshots,this.comparisonText);
+  // Portable notebook carries qualified INPUTS only, never a cached native
+  // result, comparison or source-truth certificate. Import is non-destructive
+  // and each chosen imported scene must be retraced by the normal app.
+  this.notebookExportButton=button('explore-notebook-export','Download notebook (all saved scenes)',()=>this.exportNotebook());
+  this.notebookFile=el('input','explore-notebook-file');this.notebookFile.type='file';
+  this.notebookFile.accept='.json,application/json';this.notebookFile.hidden=true;
+  this.notebookFile.onchange=()=>{
+   const file=this.notebookFile.files?.[0]||null;this.notebookFile.value='';
+   if(file)this.act(()=>this.importNotebookFile(file));
+  };
+  this.notebookImportButton=button('explore-notebook-import','Import notebook (qualified inputs only)',()=>this.notebookFile.click());
+  const notebookActions=el('div');notebookActions.className='actions';
+  notebookActions.append(this.notebookExportButton,this.notebookImportButton,this.notebookFile);
+  this.notebookSelect=el('select','explore-notebook-scenarios');
+  this.notebookLoadButton=button('explore-notebook-load','Load imported scene and retrace',()=>this.loadNotebookScene());
+  this.notebookStatus=el('p','explore-notebook-status','No imported notebook. Saved native results are not stored in notebook files.');
+  this.notebookStatus.setAttribute('role','status');
+  this.root.append(el('p',null,'Portable notebook: bundle verified qualified scenes and teacher-authored labels in one file. Old native readings are NOT exported; importing never counts as a completed simulation.'),
+   notebookActions,labelled('Imported scenes (not yet retraced)',this.notebookSelect),this.notebookLoadButton,this.notebookStatus,
+   el('p',null,'Import does not replace this tab’s saved scenarios. Load an imported scene to run native optics again. To rebuild a comparison, first load its Baseline, start a new exploration, then load and save each variant after native completion. Source notes and labels are author-provided, not independently certified. Saved comparisons remain historical evidence, not live results. Sampled counts are not continuous irradiance; conditional predictions are not detected images.'));
   document.querySelector('.analysis').after(this.root);this.refresh();
  }
  token(){return canonicalJSON({revision:this.session.revision,qualification:this.qualified.qualification,requests:this.qualified.requests});}
@@ -68,6 +89,9 @@ export class ExplorationUI {
   this.applyButton.disabled=this.busy||!ready||!this.preview;
   for(const b of [this.restoreButton,this.exportButton,this.compareButton])b.disabled=this.busy||!this.saved.length;
   this.reportButton.disabled=this.busy||!this.comparison;
+  this.notebookExportButton.disabled=this.busy||!this.saved.length;
+  this.notebookImportButton.disabled=this.busy||!ready;
+  this.notebookLoadButton.disabled=this.busy||!ready||!this.importedNotebook;
  }
  async current(){
   this.requireCurrent();const token=this.token();
@@ -160,4 +184,39 @@ export class ExplorationUI {
   this.comparisonText.dataset.report=JSON.stringify(compared);
  }
  exportComparison(){if(!this.comparison)throw Error('Compare saved scenarios first.');this.download(json(this.comparison),'opticsim-saved-comparison.json');}
+ async exportNotebook(){
+  this.requireCurrent();const token=this.token(),saved=structuredClone(this.saved);
+  const notebook=await createExplorationNotebook(saved);this.guard(token);
+  this.download(json(notebook),'opticsim-exploration-notebook.json');
+  this.status.textContent='Portable notebook downloaded: '+notebook.entries.length+
+   ' qualified scenes, no cached native results or certified source claims.';
+ }
+ async importNotebookFile(file){
+  this.requireCurrent();const token=this.token();
+  if(file.size>EXPLORATION_NOTEBOOK_MAX_BYTES)
+   throw Error('Notebook file exceeds 4 MiB and was not imported.');
+  const originalText=await file.text();
+  const notebook=await parseExplorationNotebook(originalText);this.guard(token);
+  // Entire notebook validation finishes BEFORE any currently imported notebook
+  // is replaced. The active and saved browser scenes are never overwritten.
+  this.importedNotebook=notebook;
+  this.notebookSelect.replaceChildren();
+  notebook.entries.forEach((item,i)=>{
+   const o=document.createElement('option');o.value=String(i);
+   o.textContent=item.label+' (not retraced)';this.notebookSelect.append(o);
+  });
+  this.notebookSelect.value='0';
+  this.notebookStatus.textContent='Imported '+notebook.entries.length+
+   ' hash-checked qualified scene inputs. No old native observations were imported. Select a scene and retrace it explicitly.';
+ }
+ async loadNotebookScene(){
+  this.requireCurrent();
+  const selected=this.importedNotebook?.entries[Number(this.notebookSelect.value)];
+  if(!selected)throw Error('Import and select a valid notebook scene first.');
+  const token=this.token(),bundle=await verifyQualifiedBundle(selected.bundle);
+  this.guard(token);this.intent=null;this.invalidatePreview();
+  if(!this.applyBundle(bundle))throw Error('Imported scene failed native setup; no current results accepted.');
+  this.notebookStatus.textContent='Loaded '+selected.label+
+   ' as an imported teacher scene and started a NEW native trace. Old results were not reused. For comparisons, rebuild the saved baseline and variants after completion.';
+ }
 }
