@@ -146,6 +146,70 @@ try{
  assert.ok(qualified.results.some(x=>x.status==='qualified'));
  assert.ok(qualified.comparison.entries.every(x=>x.comparison==='not-comparable'));
  check('Circular dielectric works through the same UI and approximation qualifications prevent unqualified deltas');
+ // One non-lens educational investigation through the SAME general exploration UI.
+ // All facts are from already exposed synthetic prism fixture; no model provider,
+ // optics repair, source-specific ray route, or textbook answer oracle.
+ await selectExample('triangular-prism');
+ const prismCtx=await context('prism-index-context',
+  'Change ONLY P1 insideIndex from 1.5 to 1.6. Keep geometry, outside index, source and detector unchanged. Request native first face encounters.');
+ assert.equal(prismCtx.baseline.qualification.origin.preparationStatus,'unknown');
+ assert.equal(prismCtx.baseline.scene.schemaVersion,8);
+ const oldPrism=prismCtx.baseline.scene.physics.components.find(x=>x.id==='P1');
+ assert.equal(oldPrism.parameters.insideIndex,1.5);
+ const prismProposal=packet(prismCtx,{action:'revise',
+  patch:{changes:[{id:'P1',section:'parameters',key:'insideIndex',value:1.6}]},
+  additionalObservables:[{id:'prism-faces',kind:'interface-face-events',componentId:'P1'}]});
+ const prismRevision=(await state()).revision;
+ await inspect(prismProposal);
+ assert.equal((await state()).revision,prismRevision);
+ assert.equal(await js("document.getElementById('P1-insideIndex').value"),'1.5');
+ check('Finite prism proposal previews one physical material change and one passive face readout without retracing');
+ await apply();
+ assert.equal(await js("document.getElementById('P1-insideIndex').value"),'1.6');
+ const prismResult=await state(),face=prismResult.results.find(x=>x.id==='prism-faces');
+ assert.equal(face.status,'qualified'); // Fresnel-off remains explicitly approximate.
+ assert.equal(face.value['face-12'].interactions,1);
+ assert.equal(face.value['face-23'].interactions,1);
+ assert.equal(face.value['face-31'].interactions,0);
+ assert.equal(face.value['face-23'].first.from,'inside');
+ assert.equal(face.value['face-23'].first.outcome,'transmission');
+ assert.ok(Math.abs(face.value['face-23'].first.transmittedAngleDeg-Math.asin(.8)*180/Math.PI)<1e-6);
+ const prismDoc=await js("({sourceX:document.getElementById('S1-x').value,sourceY:document.getElementById('S1-y').value,detectorX:document.getElementById('D1-x').value,outside:document.getElementById('P1-outsideIndex').value})");
+ assert.equal(Number(prismDoc.sourceX),-200);assert.equal(Number(prismDoc.sourceY),20);
+ assert.equal(Number(prismDoc.detectorX),250);assert.equal(Number(prismDoc.outside),1);
+ await capture('Hypothetical refractive index 1.6',2);
+ await click('explore-compare');
+ const prismCompared=await until(state,s=>s.comparison?.scenarioLabel==='Hypothetical refractive index 1.6','prism comparison');
+ assert.equal(prismCompared.comparison.evidenceChecks.baseline.accepted,true);
+ assert.equal(prismCompared.comparison.evidenceChecks.scenario.accepted,true);
+ assert.equal(prismCompared.comparison.sameNumerics,true);
+ assert.equal(prismCompared.comparison.samePhysics,false);
+ assert.ok(prismCompared.comparison.entries.every(x=>x.comparison==='not-comparable'&&x.delta===null));
+ assert.match(prismCompared.comparison.entries.find(x=>x.id==='prism-faces').reason,/No exact named request/);
+ check('Prism native exit refraction changes with its declared index; qualified face evidence has no invented paired-ray delta');
+ const prismDir=join(out,'prism-qualified-export');await mkdir(prismDir);
+ await cdp.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:prismDir});
+ await click('explore-export');
+ const prismQualified=await until(async()=>{try{return await parseQualifiedBundle(await readFile(join(prismDir,'exploration-scene.qualified.json'),'utf8'));}catch{return null;}},Boolean,'prism qualified export');
+ assert.equal(prismQualified.scene.schemaVersion,8);
+ assert.equal(prismQualified.scene.physics.components.find(x=>x.id==='P1').parameters.insideIndex,1.6);
+ assert.equal(prismQualified.scene.physics.components.find(x=>x.id==='P1').parameters.partialReflection,false);
+ assert.equal(prismQualified.qualification.origin.preparationStatus,'unknown');
+ assert.equal(prismQualified.qualification.interpretation,null);
+ assert.ok(prismQualified.qualification.edits.some(e=>e.kind==='physics'&&e.changes.some(c=>c.path.endsWith('.insideIndex'))));
+ assert.ok(prismQualified.observables.some(x=>x.id==='prism-faces'));
+ check('Prism teaching hypothesis exports with source-unknown provenance, exact material edit and passive native face evidence');
+ await shot('prism-material-investigation');
+ const invalidPrismCtx=await context('prism-invalid-context','Set P1 insideIndex to zero. Do not invent replacement material.');
+ const invalidPrism=packet(invalidPrismCtx,{action:'revise',
+  patch:{changes:[{id:'P1',section:'parameters',key:'insideIndex',value:0}]}});
+ const prismStableRevision=(await state()).revision;
+ await set('explore-proposal',JSON.stringify(invalidPrism));await click('explore-preview');
+ await until(state,s=>s.workError.length>0,'invalid prism index proposal');
+ assert.equal((await state()).revision,prismStableRevision);
+ assert.equal((await state()).native,'completed');
+ assert.equal(Number(await js("document.getElementById('P1-insideIndex').value")),1.6);
+ check('Essential invalid prism material is refused before execution; previous completed simulation remains intact');
  await cdp.send('Emulation.setDeviceMetricsOverride',{width:600,height:900,deviceScaleFactor:1,mobile:false});await completed();
  const narrow=await js("(()=>{const r=document.getElementById('exploration-panel').getBoundingClientRect(),p=document.getElementById('explore-proposal').getBoundingClientRect();return {width:innerWidth,right:r.right,left:r.left,proposalRight:p.right};})()");
  assert.ok(narrow.left>=0&&narrow.right<=narrow.width+1&&narrow.proposalRight<=narrow.width+1);check('Proposal editor and scenario panel fit narrow screens',narrow);await shot('dielectric-narrow');
