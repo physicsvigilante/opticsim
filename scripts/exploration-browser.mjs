@@ -186,7 +186,12 @@ try{
  assert.equal(prismCompared.comparison.samePhysics,false);
  assert.ok(prismCompared.comparison.entries.every(x=>x.comparison==='not-comparable'&&x.delta===null));
  assert.match(prismCompared.comparison.entries.find(x=>x.id==='prism-faces').reason,/No exact named request/);
- check('Prism native exit refraction changes with its declared index; qualified face evidence has no invented paired-ray delta');
+ const prismReadable=await js("document.getElementById('explore-comparison').textContent");
+ assert.match(prismReadable,/face-23: 1 native hits/i);
+ assert.match(prismReadable,/Native sampled observation/);
+ assert.match(prismReadable,/no matching requested readout in this saved scenario/);
+ assert.equal(prismReadable.includes('{"face-12"'),false,'Structured prism face values must not be dumped as raw JSON');
+ check('Prism native exit refraction changes with its declared index; qualified face evidence is readable without an invented paired-ray delta');
  const prismDir=join(out,'prism-qualified-export');await mkdir(prismDir);
  await cdp.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:prismDir});
  await click('explore-export');
