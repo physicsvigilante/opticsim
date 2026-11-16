@@ -70,7 +70,7 @@ const check=(name,passed,details=null)=>{
 };
 const records=new Map();
 const sceneReqs=plan.cases.flatMap(c=>c.requests.map(r=>({...r,caseId:c.id})));
-assert.equal(sceneReqs.length,15,'Unexpected three-case observable fixture design');
+assert.equal(sceneReqs.length,14,'Unexpected three-case observable fixture design');
 // Store complete evidence for every attempted native run, including honest failed runs.
 async function execute(c,kind,doc,requests,q,classification){
  const label=c.id+'/'+kind;
