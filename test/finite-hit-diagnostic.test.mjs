@@ -7,7 +7,7 @@ import {serializeSave} from '../src/contract.js';
 import {auditRecordedFiniteHit,FINITE_HIT_CAP} from '../src/finite-hit-exact.js';
 import {createNativeFiniteHitDiagnostic,supportsFiniteHitDiagnostic,
   FINITE_DIAGNOSTIC_METHOD} from '../src/native-finite-hit-diagnostic.js';
-import {polygonFaces} from '../src/polygon-dielectric.js';
+import {finiteGlassFaces} from '../src/finite-glass-geometry.js';
 import {evaluateDocument} from '../scripts/author-scene.mjs';
 import {evaluateObservables} from '../src/observables.js';
 import {snapshotNativeObservations,NATIVE_OBSERVATION_KEYS} from '../src/native-observations.js';
@@ -25,7 +25,7 @@ const compare=(a,b)=>{
   b.summary.observations?.[k],k);
  assert.equal(a.summary.executionPassed,b.summary.executionPassed);
 };
-const face=polygonFaces([{x:-10,y:-10},{x:10,y:-10},{x:10,y:10},{x:-10,y:10}]);
+const face=finiteGlassFaces([{x:-10,y:-10},{x:10,y:-10},{x:10,y:10},{x:-10,y:10}]);
 const sample=(origin={x:0,y:-5},toward={x:1,y:-5},hit={x:10,y:-5})=>
  ({p1:origin,p2:toward,incident:hit});
 const ref=(s)=>auditRecordedFiniteHit(s,face,1e-12);
