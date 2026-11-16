@@ -1,0 +1,61 @@
+name: Research only - compare two fixed PhyDemo RNG seeds for one original Glass case
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  second-seed-native:
+    name: Preserve first seed and 24 second-seed native process states
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - name: Prepare pinned unmodified PhyDemo
+        run: npm run setup
+      - name: Build unchanged native test core
+        run: node scripts/build.mjs --test
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Get original PR96 immutable physical input
+        uses: actions/download-artifact@v4
+        with:
+          name: heldout-v9-native-profiles-research-only
+          run-id: 43872962563
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: test-artifacts/source-pr96-original
+      - name: Get original PR98 first fixed-seed native experiment (no rewriting)
+        uses: actions/download-artifact@v4
+        with:
+          name: fixed-native-rng-onecase-research-v1
+          run-id: 43886295485
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: test-artifacts/source-pr98-original
+      - name: Run 24 new native processes with preregistered second RNG seed
+        run: |
+          node evaluation/second-native-rng-v1/run.mjs \
+            test-artifacts/source-pr96-original/inputs.json
+      - name: Check all new TAP archive callbacks against exact represented geometry
+        run: python3 evaluation/second-native-rng-v1/exact-check.py
+      - name: Compare source-identical old/new seeded schedules and actual native outcomes
+        run: |
+          node evaluation/second-native-rng-v1/compare.mjs \
+            test-artifacts/source-pr98-original/llm-authoring/fixed-native-rng-v1/report.json \
+            test-artifacts/llm-authoring/second-native-rng-v1/report.json \
+            test-artifacts/llm-authoring/second-native-rng-v1/comparison.json
+      - name: Preserve original first-seed, source and new second-seed evidence even on failure
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: second-fixed-native-rng-onecase-research-v1
+          path: |
+            test-artifacts/source-pr96-original/
+            test-artifacts/source-pr98-original/
+            test-artifacts/llm-authoring/second-native-rng-v1/
+          if-no-files-found: warn
+          retention-days: 14
