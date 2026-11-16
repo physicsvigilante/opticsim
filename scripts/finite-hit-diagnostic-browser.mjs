@@ -128,6 +128,10 @@ try{
  if(s.native==='incomplete'||s.native==='failed'||s.native==='stopped')
   assert.equal(s.results,null,'Partial native Fresnel must suppress old accepted advisory');
  check('Full native Fresnel retains honest completed versus incomplete advisory suppression');
+ s=await importCurrent(bundle('full-fresnel-matched-index'),x=>x.native==='completed'&&
+  x.results?.[0]?.status==='advisory','completed full-Fresnel equal-index control');
+ assert.ok(!s.results[0].warnings.some(w=>/explicit transmitted-only approximation/.test(w)));
+ check('Real Chrome full-Fresnel true with equal indices preserves completed advisory and no transmitted-only caveat');
  s=await importCurrent(bundle('exposed-rotated-computed-critical'),x=>['completed','incomplete','failed','stopped'].includes(x.native)&&
   (x.results?.[0]?.status==='advisory'||x.native!=='completed'),
   'computed-critical case: no fixed branch claimed');
