@@ -146,7 +146,13 @@ try{
    equal(noAnswer.native.summary.observations,base.native.summary.observations));
   else check('glass: finite diagnostic capture remains opt-in and cannot certify native ray routing',
    base.row.results.find(x=>x.kind==='finite-hit-numerical-diagnostic')?.method?.startsWith('advisory-')===true);
-  const revision=reviseScene(source,{changes:c.whatIf.changes}).document;
+  // The frozen teaching plan uses "degrees" as a human-readable unit label.
+  // The existing strict revision API accepts explicit unit ONLY on length fields.
+  // Preserve the frozen plan, remove only the redundant angle unit at this API
+  // boundary, and revalidate exactly the same numeric directional change.
+  const nativeChanges=c.whatIf.changes.map(change=>
+   change.unit==='degrees'?((({unit,...rest})=>rest)(change)):change);
+  const revision=reviseScene(source,{changes:nativeChanges}).document;
   validate(revision);
   const q2=recordQualifiedEdit(source,revision,q);
   const changed=await execute(c,'what-if',revision,c.requests,q2,c.whatIf.classification);
