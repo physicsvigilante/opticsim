@@ -7,6 +7,7 @@ import {mkdir,mkdtemp,readFile,readdir,rm,writeFile} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {parseQualifiedBundle} from '../src/qualification.js';
+import {parseExplorationNotebook} from '../src/exploration-notebook.js';
 const root=fileURLToPath(new URL('../',import.meta.url)),out=resolve(root,'test-artifacts/browser-exploration');
 const pause=ms=>new Promise(ok=>setTimeout(ok,ms));
 async function until(fn,accept,label){let last,error;const end=Date.now()+25000;
@@ -36,7 +37,11 @@ try{
  const js=async expression=>{const r=await cdp.send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result?.value;};
  const click=id=>js(`document.getElementById(${JSON.stringify(id)}).click()`);
  const set=(id,value)=>js(`(()=>{const e=document.getElementById(${JSON.stringify(id)});e.value=${JSON.stringify(value)};e.dispatchEvent(new Event('input',{bubbles:true}));})()`);
- const state=()=>js(`(()=>{const e=id=>document.getElementById(id);return {native:e('status').dataset.state,revision:e('revision').textContent,error:e('error').textContent,workError:e('explore-error').textContent,workStatus:e('explore-status').textContent,preview:e('explore-changes').textContent,applyDisabled:e('explore-apply').disabled,scenarios:e('exploration-panel').dataset.scenarios,results:JSON.parse(e('observable-results').dataset.results||'null'),comparison:JSON.parse(e('explore-comparison').dataset.report||'null')};})()`);
+ const state=()=>js(`(()=>{const e=id=>document.getElementById(id);return {native:e('status').dataset.state,revision:e('revision').textContent,error:e('error').textContent,workError:e('explore-error').textContent,workStatus:e('explore-status').textContent,preview:e('explore-changes').textContent,applyDisabled:e('explore-apply').disabled,scenarios:e('exploration-panel').dataset.scenarios,
+  notebookEntries:e('explore-notebook-scenarios')?.options.length||0,
+  notebookStatus:e('explore-notebook-status')?.textContent||'',
+  notebookExportDisabled:e('explore-notebook-export')?.disabled,
+  results:JSON.parse(e('observable-results').dataset.results||'null'),comparison:JSON.parse(e('explore-comparison').dataset.report||'null')};})()`);
  const completed=()=>until(state,s=>['completed','completed-with-warnings'].includes(s.native)&&!s.error,'complete actual run');
  const check=(name,detail=null)=>report.checks.push({name,passed:true,detail});
  async function start(){await completed();await js("document.getElementById('exploration-panel').open=true");await click('explore-start');await until(state,s=>s.scenarios==='1'&&s.workStatus.startsWith('Baseline preserved'),'baseline captured');}
@@ -76,6 +81,46 @@ try{
  assert.equal(await js("document.getElementById('lens-1-focalLength').value"),'100');
  check('Preview shows exact stable-ID physical edits without running or altering the scene');
  await apply();assert.equal(await js("document.getElementById('lens-1-focalLength').value"),'150');await capture('Longer focal length',2);
+ // Notebook exports only qualified input, NOT stored native results; import is
+ // non-destructive and each selected imported scene retraces through the app.
+ const notebookDir=join(out,'notebook-original');await mkdir(notebookDir);
+ await cdp.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:notebookDir});
+ assert.equal((await state()).notebookExportDisabled,false);
+ await click('explore-notebook-export');
+ const notebookFile=join(notebookDir,'opticsim-exploration-notebook.json');
+ const notebook=await until(async()=>{
+  try{return await parseExplorationNotebook(await readFile(notebookFile,'utf8'));}catch{return null;}
+ },Boolean,'portable notebook export');
+ assert.equal(notebook.entries.length,2);
+ assert.equal(notebook.entries[0].label,'Baseline');
+ assert.equal(notebook.entries[1].label,'Longer focal length');
+ assert.ok(notebook.entries.every(e=>!('execution'in e)&&!('results'in e)&&!('native'in e)));
+ assert.equal(notebook.baselineIntegritySha256,ctx.baseline.integritySha256);
+ check('One portable notebook contains original full qualified baseline and hypothesis, never cached native results');
+ const docRoot=await cdp.send('DOM.getDocument',{depth:-1});
+ const notebookInput=await cdp.send('DOM.querySelector',{nodeId:docRoot.root.nodeId,selector:'#explore-notebook-file'});
+ assert.ok(notebookInput.nodeId);
+ await cdp.send('DOM.setFileInputFiles',{nodeId:notebookInput.nodeId,files:[notebookFile]});
+ await until(state,x=>x.notebookEntries===2&&x.notebookStatus.startsWith('Imported '),'portable notebook import');
+ assert.equal((await state()).scenarios,'2','Import must not destroy current saved native scenario list');
+ check('Notebook import preserves current completed saved scenarios and marks imported entries as unexecuted');
+ // A damaged label is refused by the outer SHA; it must not replace the last
+ // valid imported notebook or overwrite the active scene and comparison.
+ const modified=structuredClone(notebook);modified.entries[1].label='Tampered teacher label';
+ const badFile=join(notebookDir,'tampered-notebook.json');
+ await writeFile(badFile,JSON.stringify(modified),{flag:'wx'});
+ await cdp.send('DOM.setFileInputFiles',{nodeId:notebookInput.nodeId,files:[badFile]});
+ await until(state,x=>x.workError.includes('notebook integrity mismatch'),'notebook bad hash refusal');
+ assert.equal((await state()).notebookEntries,2);
+ assert.equal(await js("document.getElementById('lens-1-focalLength').value"),'150');
+ check('Notebook checksum tampering refuses import without changing active/saved scenes');
+ await js("document.getElementById('explore-notebook-scenarios').value='1'");
+ await click('explore-notebook-load');
+ await until(state,x=>x.notebookStatus.startsWith('Loaded Longer focal length')&&
+  ['completed','completed-with-warnings'].includes(x.native),'imported scenario retraces natively');
+ assert.equal(await js("document.getElementById('lens-1-focalLength').value"),'150');
+ assert.equal((await state()).scenarios,'2');
+ check('Imported hypothesis runs a fresh native simulation without importing prior native evidence');
  await click('explore-compare');const compared=await until(state,s=>!!s.comparison,'saved comparison');
  assert.ok(compared.comparison.evidenceChecks.baseline.accepted&&compared.comparison.evidenceChecks.scenario.accepted);
  assert.equal(compared.comparison.entries.find(r=>r.kind==='detector-crossings').delta,0);
