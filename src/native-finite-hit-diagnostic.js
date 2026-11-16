@@ -115,8 +115,11 @@ export function createNativeFiniteHitDiagnostic(doc,scene,idMap,requestedIds=[])
     else if(outcome.status==='checked')checked++;
     else {unknown++;firstUnknown??=outcome.reasonCode;}
    }
-   // Contradictory represented geometry is always visible as an ADVISORY,
-   // even if other individual encounters have unavailable point bounds.
+   // Explicit F-03 precedence: a ROBUST demonstrated represented-line
+   // contradiction stays 'inconsistent' even with an unrelated native
+   // warning; warnings prevent a clean 'checked' or 'checked-no-hit' when
+   // no contradiction is demonstrated. Never mask actual failure evidence,
+   // and never treat a warning itself as proof of invalid geometry.
    if(conflicting)return answer=result('inconsistent',firstConflict,checked,unknown,conflicting);
    if(warnings.length)return answer=result('unknown','NATIVE_WARNINGS_NOT_CERTIFIED',checked,unknown,conflicting);
    if(unknown)return answer=result('unknown',firstUnknown,checked,unknown,conflicting);
