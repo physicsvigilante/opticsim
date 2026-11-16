@@ -13,15 +13,28 @@ The source is the **existing** `examples/triangular-prism.json` / `scenes/triang
 5. Compare saved baseline and material hypothesis. Both runs preserve the native **Fresnel-off / TIR-on approximation warning**, so an automatic unqualified scalar delta is *not* published. The browser still shows the two actual native observation records individually. A new face readout has no baseline counterpart unless it was already requested. These are legitimate **not-comparable** results, not failures to run the physics.
 6. Export the qualified hypothetical: the original raw example's provenance remains **unknown**, while the one physical material edit and added passive observable are retained with stable IDs. An invalid proposed index such as zero must fail preview rather than changing the running apparatus.
 
-## Readable comparison evidence (narrow presentation fix)
+## Documented comparison readability limitation (not fixed in this milestone)
 
-The first real Chrome regression showed a concrete pedagogical problem: the saved-scenario comparison displayed nested finite-face events as a dense one-line `JSON.stringify` object even though the ordinary qualified-results panel already supplied readable native first-face descriptions. This is a **presentation defect**, not an optical solver error.
+The first real Chrome run identified a useful classroom presentation issue: when
+`interface-face-events` is displayed in the **saved scenario comparison**,
+the existing viewer prints its nested values as dense JSON. The ordinary
+qualified-results panel already formats these face events readably with
+sampling-order and approximation qualifications. That ordinary results view,
+and the downloaded comparison evidence JSON, remain the reliable ways to
+inspect the full readings here.
 
-The exploration comparison now **reuses the existing** `formatRequestedResult` for structured values such as `interface-face-events`, while retaining simple numeric readouts, explicit missing-baseline requests, each comparison eligibility reason, and the existing complete **Download comparison evidence** JSON unmodified. The ordinary formatter labels native sampling, approximation warnings, and simulation-order per-face evidence without inventing a paired source-specific ray path. All text is assigned using `textContent` rather than interpreted HTML.
+A proposed small change to `src/exploration-ui.js` encountered a historically
+frozen source fingerprint in the existing regression suite. It was **reverted**
+rather than weakening or rewriting that historical test. Its accompanying
+unverified presentation assertions were removed. The first failed CI of that
+proposal remains in the GitHub Actions history.
 
-If either saved comparison side fails the existing hash, native-completeness or results-recomputation gates, the visible comparison **withholds all stored readout values** rather than printing potentially stale/tampered JSON. The authoritative structured comparison result and qualified packages are unchanged. Node regression and real Chrome check assert readable `face-23` output, omission of raw nested face JSON, correct missing-baseline qualifier, and fail-closed reporting.
-
-This is a bounded R1 evidence-presentation change. Its tests establish that structured evidence is displayed accessibly, **not** actual teacher comprehension; no user-visible ray geometry, measurement, numerical policy, source provenance, physics or exported evidence formats are changed.
+This milestone **does not claim** that saved face-event comparisons are now
+readable. A future separately scoped, reviewed UI change must respect the
+historical contract and prove that structured values are rendered with
+correct request identity and qualification, including failures/stale cases.
+No production presentation change is needed to demonstrate the underlying
+prism physical investigation or exact native exit-face observations.
 
 ## What is verified and what remains unassessed
 
