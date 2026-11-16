@@ -10,8 +10,9 @@ import {initialQualification,createQualifiedBundle} from '../src/qualification.j
 import {reviseScene} from '../src/authoring.js';
 import {evaluateDocument} from '../scripts/author-scene.mjs';
 import {commitPair} from '../evaluation/focused-context-pair-v1/commit.mjs';
-import {capturePairMain,pairOrder,pairMessages,collectPairsOnce,
- parseExplorationAnswer} from '../evaluation/focused-context-pair-v1/capture.mjs';
+import {capturePairMain,pairOrder,pairMessages,collectPairsOnce}
+ from '../evaluation/focused-context-pair-v1/capture.mjs';
+import {parseExplorationAnswer} from '../evaluation/heldout-exploration-v1/capture.mjs';
 import {verifyPairCapture,reviewPair} from '../evaluation/focused-context-pair-v1/review.mjs';
 import {readJSON,sha256} from '../evaluation/heldout-authoring-v1/manifest.mjs';
 const core=createRequire(import.meta.url)('../dist/test-core.cjs');
