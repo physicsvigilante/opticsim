@@ -4,9 +4,43 @@ import {explorationBundle,explorationContext,parseExplorationProposal,prepareExp
  browserExecution,snapshotScenario,compareExplorationSnapshots,nativeComparisonReadouts} from './exploration.js';
 import {verifyQualifiedBundle} from './qualification.js';
 import {canonicalJSON} from './qualified-utils.js';
+import {formatRequestedResult} from './result-preview.js';
 const same=(a,b)=>canonicalJSON(a)===canonicalJSON(b);
 const complete=state=>['completed','completed-with-warnings'].includes(state);
 const json=x=>JSON.stringify(x,null,2)+'\n';
+// Text-only projection of ALREADY VERIFIED saved comparison evidence.
+// Reuse the ordinary requested-result formatter for structured observations:
+// never invent ray pairing, image detections or unqualified numeric deltas.
+// Do not expose unverified stored values when either side fails evidence checks.
+const corresponding=(snapshot,entry)=>snapshot?.results?.results?.find(r=>
+ r.id===entry.id&&r.kind===entry.kind&&r.componentId===entry.componentId);
+const savedReading=(snapshot,entry,label)=>{
+ const value=corresponding(snapshot,entry);
+ if(!value)return label+': no matching requested readout in this saved scenario.';
+ if(value.value===null||value.value===undefined)
+  return label+': '+value.status+(value.reason?' — '+value.reason:'; no current value.');
+ if(value.value!==null&&typeof value.value==='object')
+  return label+':\n'+formatRequestedResult(value);
+ return label+': '+JSON.stringify(value.value)+(value.unit?' '+value.unit:'');
+};
+export function describeSavedComparison(compared,baseline,selected){
+ const header='SAVED SCENARIOS: '+compared.baselineLabel+' → '+compared.scenarioLabel;
+ const checks=compared.evidenceChecks;
+ if(checks?.baseline?.accepted!==true||checks?.scenario?.accepted!==true){
+  return header+'\n\nNo verified paired scenario evidence; saved values are withheld.\n'+
+   (checks?.baseline?.reason?'Baseline: '+checks.baseline.reason+'\n':'')+
+   (checks?.scenario?.reason?'Scenario: '+checks.scenario.reason+'\n':'')+
+   (compared.notice||'');
+ }
+ const entries=compared.entries?.length?compared.entries.map(r=>
+  r.id+' ('+r.kind+'): '+r.comparison+'\n'+
+  (r.reason?r.reason+'\n':'')+
+  savedReading(baseline,r,'Baseline')+'\n'+savedReading(selected,r,'Scenario')+
+  (r.delta!==null&&r.delta!==undefined?'\nRecorded sampled delta: '+r.delta:'')
+ ).join('\n\n'):'No matching requested readouts. Add explicit observations to the baseline before comparing them.';
+ return header+'\n\n'+entries+'\n\n'+(compared.notice||'');
+}
+
 export class ExplorationUI {
  constructor({session,qualified,applyBundle,download,hasPending=()=>false}){
   Object.assign(this,{session,qualified,applyBundle,download,hasPending});
@@ -144,10 +178,7 @@ export class ExplorationUI {
   const compared=await compareExplorationSnapshots(baseline,selected);
   if(index!==this.select.value)throw Error('Scenario selection changed during comparison.');
   this.comparison=compared;
-  this.comparisonText.textContent='SAVED SCENARIOS: '+compared.baselineLabel+' → '+compared.scenarioLabel+'\n\n'+
-   (compared.entries.length?compared.entries.map(r=>r.id+' ('+r.kind+'): '+r.comparison+'\n'+
-     (r.reason?r.reason+'\n':'')+'Baseline: '+JSON.stringify(r.baselineValue??null)+' | Scenario: '+JSON.stringify(r.scenarioValue??null)+
-     (r.unit?' '+r.unit:'')+(r.delta!==null&&r.delta!==undefined?' | Sampled delta: '+r.delta:'')).join('\n\n'):'No matching requested readouts. Add explicit observations to the baseline before comparing them.')+'\n\n'+compared.notice;
+  this.comparisonText.textContent=describeSavedComparison(compared,baseline,selected);
   this.comparisonText.dataset.report=JSON.stringify(compared);
  }
  exportComparison(){if(!this.comparison)throw Error('Compare saved scenarios first.');this.download(json(this.comparison),'opticsim-saved-comparison.json');}
