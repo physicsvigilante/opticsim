@@ -61,7 +61,7 @@ export async function verifyPairCapture(capture,questions,commitment,dir){
  return true;
 }
 const statusRecord=a=>({id:a.id,profile:a.profile,position:a.position,firstAttemptSha256:a.outputSha256,
- kind:a.kind,model:a.model,usage:a.usage??null});
+ kind:a.kind,model:a.model,usage:a.usage??null,inputBytes:a.inputBytes});
 function countByArm(rows,profile,reference){
  const r=rows.filter(x=>x.profile===profile);
  const supported=r.filter(x=>reference.cases.find(z=>z.id===x.id)?.classification==='supported');
@@ -115,8 +115,18 @@ export async function reviewPair({questionsPath,referencePath,commitmentPath,cap
   }else if(a.kind==='declined'){
    row={...base,...scoreExplorationDecline(rowReference,a.reason),nativeCalls:0};
   }else{
-   try{
-    const prepared=await applyExplorationProposal(qrow.baseline,a.proposal);
+   // Only physical proposal validation errors are model-engine rejections.
+   // Once a proposal is admitted, any missing/failed evaluation infrastructure
+   // is a recorded infrastructure failure, NEVER recoded as a model rejection.
+   let prepared;
+   try{prepared=await applyExplorationProposal(qrow.baseline,a.proposal);}
+   catch(e){
+    row={...base,engineRejected:true,
+     code:e.code||'MODEL_PROPOSAL_REJECTED',issues:e.issues||[{message:e.message}],
+     physicalFidelity:false,exactRequestedChange:false,nativeCompleted:false,
+     nativeCalls:0,manualExplanationReview:'required'};
+   }
+   if(prepared){
     const execution=await run(structuredClone(prepared.document));
     if(!execution?.summary?.native)throw Error('Native infrastructure did not return a recorded status');
     const results=await evaluateObservables(prepared.document,prepared.child.observables,execution.summary);
@@ -133,14 +143,6 @@ export async function reviewPair({questionsPath,referencePath,commitmentPath,cap
     write(a.id+'.'+a.profile+'.native.json',execution.summary);
     write(a.id+'.'+a.profile+'.requested-results.json',results);
     write(a.id+'.'+a.profile+'.qualified-scene.json',prepared.child);
-   }catch(e){
-    // Existing model validator rejection is not a native numerical failure;
-    // do not manufacture a successful model or silently repair a patch.
-    if(/Native infrastructure did not return/.test(e.message))throw e;
-    row={...base,engineRejected:true,
-     code:e.code||'MODEL_OR_EVIDENCE_REJECTED',issues:e.issues||[{message:e.message}],
-     physicalFidelity:false,exactRequestedChange:false,nativeCompleted:false,
-     nativeCalls:0,manualExplanationReview:'required'};
    }
   }
   rows.push(row);write(a.id+'.'+a.profile+'.review.json',row);
