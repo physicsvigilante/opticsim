@@ -95,13 +95,14 @@ try{
    fitSequence:e('fit-note')?.dataset.fitSequence||null,
    fitDisabled:e('fit-results')?.disabled,saveDisabled:e('save-qualified')?.disabled
   };})()`);
- const upload=async path=>{
+ const upload=async(path,{allowUnqualified=false}={})=>{
   const prior=(await state()).revision;
   const document=await cdp.send('DOM.getDocument',{depth:-1});
   const input=await cdp.send('DOM.querySelector',{nodeId:document.root.nodeId,selector:'#load'});
   if(!input.nodeId)throw Error('Qualified package import input missing');
   await cdp.send('DOM.setFileInputFiles',{nodeId:input.nodeId,files:[path]});
-  return until(state,s=>s.revision>prior&&s.native==='completed'&&!s.error&&!s.saveDisabled,
+  return until(state,s=>s.revision>prior&&s.native==='completed'&&!s.error&&
+   (allowUnqualified||!s.saveDisabled),
    'qualified package import '+path);
  };
  const saveShot=async label=>{
@@ -209,7 +210,7 @@ try{
  const originalGlass=await readFile(join(base,'glass','baseline','scene.json'),'utf8');
  const rawPath=join(out,'glass-raw-source.json');
  await writeFile(rawPath,originalGlass,{flag:'wx'});
- await upload(rawPath);
+ await upload(rawPath,{allowUnqualified:true});
  const raw=await until(state,s=>s.qualification==='unknown'&&s.results===null&&s.native==='completed',
   'raw scene import must reset qualification');
  assert.match(raw.source,/unknown/i);
