@@ -1,0 +1,45 @@
+name: Research only - repeated native critical profiles and matched TAP controls
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  actions: read
+  contents: read
+jobs:
+  repeated-native:
+    name: Preserve original PR96 inputs and 48 true native process states
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - run: node scripts/build.mjs --test
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Retrieve unchanged original PR96 validated research archive
+        uses: actions/download-artifact@v4
+        with:
+          name: heldout-v9-native-profiles-research-only
+          run-id: 43872962563
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: test-artifacts/source-pr96-original
+      - name: Reuse two exact PR96 scenes in 48 fresh native process trials
+        run: |
+          node evaluation/repeated-critical-profile-controls-v1/run.mjs \
+            test-artifacts/source-pr96-original/inputs.json
+      - name: Check every saved TAP-archive hit with test-only exact rational reference
+        run: python3 evaluation/repeated-critical-profile-controls-v1/exact-check.py
+      - name: Preserve original inputs and original outcomes even if research fails
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: repeated-critical-native-controls-v1
+          path: |
+            test-artifacts/source-pr96-original/
+            test-artifacts/llm-authoring/repeated-critical-profile-controls-v1/
+          if-no-files-found: warn
+          retention-days: 14
