@@ -80,12 +80,12 @@ export function observeSourceEmission(source,{parentage=null,finiteDiagnostic=nu
     meter.emitted = result?.newRays?.length || 0;
     meter.brightnessScale = result?.brightnessScale ?? null;
     parentage?.sourceStarted(sourceId,result);
-    try{finiteDiagnostic?.sourceStarted(sourceId,result);}catch{finiteDiagnostic?.captureFault?.();}
+    try{finiteDiagnostic?.sourceStarted(sourceId,result);}catch{reportAuditFault(finiteDiagnostic);}
     return result;
   };
   if(parentage)parentage.register(sourceId,'point-source',source,source.onSimulationStart,'onSimulationStart');
   try{finiteDiagnostic?.register(sourceId,'point-source',source,source.onSimulationStart,'onSimulationStart');}
-  catch{finiteDiagnostic?.captureFault?.();}
+  catch{reportAuditFault(finiteDiagnostic);}
   return meter;
 }
 // Wrap each authored source once; no ray provenance is assigned after emission.
@@ -134,6 +134,7 @@ export function observeMirrorSet(doc, scene, idMap) {
 export const DETECTOR_HIT_EVENT_LIMIT=32;
 const DETECTOR_HIT_RESIDUAL_MM=1e-5;
 const DETECTOR_HIT_ENDPOINT_MM=.01;
+const reportAuditFault=d=>{try{d?.captureFault?.();}catch{/* Never affect native propagation. */}};
 function nativeDetectorHit(ray,incidentPoint,segment){
   const {a,b,length,dx,dy}=segment;
   if(!ray?.p1||!ray?.p2||!incidentPoint||
@@ -170,7 +171,7 @@ export function observeDetectorSet(doc,scene,idMap,{captureHitEvents=false,paren
     };
     if(parentage)parentage.register(c.id,'ray-detector',detector,detector.onRayIncident,'onRayIncident');
     try{finiteDiagnostic?.register(c.id,'ray-detector',detector,detector.onRayIncident,'onRayIncident');}
-    catch{finiteDiagnostic?.captureFault?.();}
+    catch{reportAuditFault(finiteDiagnostic);}
     return {id:c.id,detector,get crossings(){return crossings;},
       get hitEvents(){return {observedCount:crossings,limit:DETECTOR_HIT_EVENT_LIMIT,
         status:!issue&&events.length===crossings?'complete':'unavailable',
