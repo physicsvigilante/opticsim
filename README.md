@@ -36,6 +36,10 @@ Solutions, rerun sealed authoring studies, score textbook answers, or modify
 native physics. Candidate systems include bounded polygonal glass and opaque
 screens. Beam sources for refractive systems remain deferred by the owner.
 
+## Paired focused-vs-full first-attempt model evaluation (not yet run)
+
+The [private comparison protocol](evaluation/focused-context-pair-v1/README.md) defines a balanced A/B experiment on **independently curated revisions of the same qualified optical baseline**. Focused and full contexts use one model, identical source/investigation data, separate stateless first attempts, strict native scoring and separate fidelity/coverage denominators. It reuses the existing private held-out evaluator. **Current public checks use a MOCK model only; no actual external model inference or human-curated hidden cases are claimed.** Real execution requires independent physics adjudication and explicit provider/data/charge approval; see [Issue #60](https://github.com/physicsvigilante/opticsim/issues/60).
+
 ## Smaller LLM context for existing-model investigations
 
 The browser's **Explore this model with an LLM** panel now offers an optional **Download focused context (edit or observe)** for changes to existing component fields and explicit readouts. It includes the entire verified scene/source/qualification history and current integrity hash, but omits unrelated optical-family and structural authoring instructions. For adding/removing optical objects or upgrading a model, use the unchanged **Download full context (add or remove)** instead. In both modes the LLM proposes one typed JSON delta; Opticsim validates it, shows the exact physical changes for approval, and uses the unchanged native PhyDemo engine for actual simulation. No model API is called by the browser and no source interpretation is independently certified. See [focused exploration context and caveats](docs/FOCUSED-LLM-EXPLORATION.md).
