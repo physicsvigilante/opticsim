@@ -1,0 +1,43 @@
+name: Research only - PR93 signed-zero JS Python replay
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  actions: read
+  contents: read
+jobs:
+  sign-zero-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Retrieve unchanged original PR92 native callback JSON (no native simulation)
+        uses: actions/download-artifact@v4
+        with:
+          name: native-single-owner-hit-capture-v1
+          run-id: 43854663361
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: test-artifacts/pr93-original
+      - name: Replay exact pinned JavaScript Number geometry
+        run: |
+          mkdir -p test-artifacts/pr93-crosslang
+          node evaluation/pr93-signed-zero-v1/replay.mjs test-artifacts/pr93-original test-artifacts/pr93-crosslang/js.json
+      - name: Compare historical Python vs float64-coerced Python vs JS
+        run: |
+          python3 evaluation/pr93-signed-zero-v1/compare.py test-artifacts/pr93-original test-artifacts/pr93-crosslang/js.json
+      - name: Archive original and derived report even when checks fail
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr93-signed-zero-crosslanguage-test-only
+          path: |
+            test-artifacts/pr93-original/
+            test-artifacts/pr93-crosslang/
+          if-no-files-found: warn
+          retention-days: 14
