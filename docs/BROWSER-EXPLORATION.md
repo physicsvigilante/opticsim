@@ -10,6 +10,15 @@ Open the ordinary Opticsim viewer (`npm run setup`, `npm run build`, `npm start`
 4. Choose **Apply changes and simulate**. Parameter edits reuse `reviseScene`; structural additions/removals reuse `prepareQualifiedStructure`, including retired-ID protection; new result requests reuse the existing observable contract. Each accepted physical arrangement is retraced by pinned native PhyDemo and the same renderer. An old context hash is rejected even if only source metadata/readouts changed. No arbitrary code, full-scene replacement, model-family migration or hidden geometry repair is accepted.
 5. After completion, name and **Save completed scenario**. Use **Compare selected with baseline** to inspect the two saved runs, or **Load saved scenario and retrace** to return to the original or another branch. Changes made with the existing physical/sampling controls can also be saved; numerical settings remain separate from physical changes.
 
+Structured readouts in **Compare selected with baseline** use the same readable
+qualified native/conditional formatting as the ordinary results panel. A
+prism `interface-face-events` record is shown by authored face, outcome and
+angle rather than a large raw JSON object. If a baseline never requested that
+readout it is named as missing, not filled with a fabricated comparison.
+Automatic scalar deltas still require the original strict eligibility checks,
+and a failed/stale/tampered saved evidence check withholds displayed values.
+**Download comparison evidence** retains the existing unmodified complete JSON.
+
 The scenario list is local to the tab and limited to twelve entries. **Starting again clears it. Download qualified scenarios before leaving.** Existing qualified export/reimport preserves source history and changed fields, but the tab's scenario labels and free-text intent are not added to the canonical scene schema. Comparison evidence is separately downloadable and explicitly describes saved—not current—runs.
 
 ## LLM response format
