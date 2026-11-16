@@ -201,3 +201,43 @@ test('an unrequested diagnostic is absent from native observations and source sn
  assert.equal(snapshotNativeObservations({finiteHitDiagnostic:{status:'inconsistent'}},[]).finiteHitDiagnostic,undefined);
  assert.equal(snapshotNativeObservations({finiteHitDiagnostic:{status:'inconsistent'}},req).finiteHitDiagnostic.status,'inconsistent');
 });
+
+test('capture and fault-handler exceptions cannot change original native Glass return, this, rays, or call count',()=>{
+ const sceneDoc=doc(),loaded=core.loadDocument(sceneDoc);
+ const glass=loaded.scene.objs[loaded.idMap.get('G1')];
+ let calls=0;
+ const ray={p1:{x:-200,y:-10},p2:{x:0,y:-10},
+   brightness_s:.12,brightness_p:.13};
+ const incident={x:0,y:-10},expected={isAbsorbed:true};
+ glass.onRayIncident=function(...args){
+   assert.strictEqual(this,glass);assert.strictEqual(args[0],ray);
+   assert.strictEqual(args[2],incident);calls++;
+   ray.brightness_s=.07;return expected;
+ };
+ const badAudit={
+   register(){throw Error('injected registration failure')},
+   beforeIncident(){throw Error('injected capture failure')},
+   captureFault(){throw Error('injected double fault')}
+ };
+ const observed=core.observeInterfaceSet(sceneDoc,loaded.scene,loaded.idMap,{finiteDiagnostic:badAudit});
+ const returned=glass.onRayIncident(ray,0,incident,[]);
+ assert.strictEqual(returned,expected);assert.equal(calls,1);assert.equal(ray.brightness_s,.07);
+ assert.equal(observed.byId.G1.interactions,1);
+});
+
+test('controlled delayed native callback A→B→A cannot publish stale first-A diagnostic under same scene hash',()=>{
+ const a=doc(),b=doc(i=>{i.components.find(c=>c.type==='point-source').parameters.x-=.5;});
+ const calls=[];
+ const session=new core.Session(()=>({cancel(){},run(notify){calls.push(notify);}}),()=>{},()=>({kind:'unavailable'}));
+ assert.equal(session.apply(a),true);assert.equal(session.apply(b),true);assert.equal(session.apply(a),true);
+ const event=(reason)=>({errors:[],warnings:[],truncation:0,undefinedBehavior:0,
+  finiteHitDiagnostic:{method:FINITE_DIAGNOSTIC_METHOD,status:'unknown',reasonCode:reason,
+   observedGlassIncidents:0,advisory:true,nativeMeasurementQualificationUnchanged:true}});
+ calls[0]('simulationComplete',event('STALE_OLD_A'));assert.equal(session.state,'running');
+ assert.equal(session.data,null);
+ calls[1]('simulationComplete',event('STALE_B'));assert.equal(session.state,'running');
+ assert.equal(session.data,null);
+ calls[2]('simulationComplete',event('CURRENT_A'));assert.equal(session.state,'completed');
+ assert.equal(session.data.finiteHitDiagnostic.reasonCode,'CURRENT_A');
+ assert.equal(session.revision,3);
+});
