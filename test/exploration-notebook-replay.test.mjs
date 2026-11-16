@@ -2,7 +2,8 @@
 // Exposed fixture family controls, not unseen model/teacher/physics fidelity.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,writeFileSync,mkdirSync,mkdtempSync,readdirSync,rmSync} from 'node:fs';
+import {resolve,join} from 'node:path';
 import {createRequire} from 'node:module';
 import {explorationBundle,snapshotScenario} from '../src/exploration.js';
 import {createExplorationNotebook} from '../src/exploration-notebook.js';
@@ -11,6 +12,7 @@ import {replayExplorationNotebook,NOTEBOOK_REPLAY_FORMAT}
 import {reviseScene} from '../src/authoring.js';
 import {createQualifiedBundle,recordQualifiedEdit} from '../src/qualification.js';
 import {evaluateDocument} from '../scripts/author-scene.mjs';
+import {main as replayCli} from '../scripts/replay-exploration-notebook.mjs';
 const core=createRequire(import.meta.url)('../dist/test-core.cjs');
 const scene=path=>JSON.parse(readFileSync(new URL('../'+path,import.meta.url),'utf8'));
 const families=[
@@ -147,4 +149,38 @@ test('Replay does not allow a result-less/injected runner to appear native compl
  assert.equal(r.rows[0].nativeStatus,'not-certified');
  assert.equal(r.rows[0].currentFromNewExecution,false);
  assert.equal(r.rows[0].qualifiedResults,null);
+});
+
+test('The actual local replay CLI preserves original input bytes and writes only NEW native evidence',async()=>{
+ const {notebook}=await pair(families[0][1],families[0][2],
+  [{id:'emissions',kind:'source-emissions',componentId:'source-1'}]);
+ const root=resolve('test-artifacts/llm-authoring');
+ mkdirSync(root,{recursive:true});
+ const base=mkdtempSync(join(root,'cli-notebook-test-'));
+ const input=join(base,'notebook.json'),out=join(base,'new-replay');
+ const original=JSON.stringify(notebook,null,2)+'\n';
+ writeFileSync(input,original,{flag:'wx'});
+ const beforeExit=process.exitCode;
+ try{
+  const result=await replayCli([input,'--out',out],{nativeCore:core});
+  assert.equal(result.status,'all-native-qualified');
+  assert.equal(result.plannedEntries,2);assert.equal(result.attemptedEntries,2);
+  assert.equal(result.comparisonsMade,1);
+  assert.equal(result.newNativeQualified,2);
+  assert.equal(readFileSync(join(out,'input.json'),'utf8'),original,
+   'Notebook copied byte-for-byte, not reconstructed');
+  const written=JSON.parse(readFileSync(join(out,'report.json'),'utf8'));
+  assert.equal(written.status,'all-native-qualified');
+  assert.equal(written.originalInputSha256,result.originalInputSha256);
+  assert.deepEqual(readdirSync(out).sort(),[
+   'comparison-02.json','input.json','report.json','trial-01.json','trial-02.json'
+  ]);
+  const a=JSON.parse(readFileSync(join(out,'trial-02.json'),'utf8'));
+  assert.equal(a.nativeStatus,'completed');
+  assert.equal(a.status,'native-qualified');
+  assert.equal(a.currentNativeSummary.canonicalSha256,
+   notebook.entries[1].bundle.sceneSha256);
+  await assert.rejects(()=>replayCli([input,'--out',out],{nativeCore:core}),
+   /already exists/i,'Original evidence cannot be overwritten');
+ }finally{process.exitCode=beforeExit;rmSync(base,{recursive:true,force:true});}
 });
