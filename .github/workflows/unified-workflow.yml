@@ -17,6 +17,16 @@ jobs:
           node-version: '24.19.0'
       - run: npm run setup
       - run: npm test
+      - name: Research only — native critical-angle repeatability on frozen input with and without opt-in advisory
+        run: node evaluation/native-observer-repeatability-v1/run.mjs
+      - name: Retain every fixed-input native observer repeatability observation on success OR failure
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-observer-repeatability-v1
+          path: test-artifacts/llm-authoring/native-observer-repeatability-v1/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Verify v9 finite-hit diagnostic through ordinary public problem workflow
         run: node scripts/finite-hit-diagnostic-acceptance.mjs
       - name: Retain native finite-hit diagnostic raw and performance evidence even on failure
