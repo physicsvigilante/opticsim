@@ -1,0 +1,42 @@
+name: Research only - preregistered heldout native finite Glass geometry
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  heldout-native:
+    name: Run immutable 120-trial three-profile heldout experiment
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: npm run setup
+      - name: Build existing pinned native test core only
+        run: node scripts/build.mjs --test
+      - name: Verify exact original frozen preregistration Git blob, untouched
+        run: |
+          set -euo pipefail
+          test "$(git hash-object evaluation/native-heldout-conditioning-v1/locked-design.json)" = "a3e48bd3efb02ebb263ae86066cb2e74290704a2"
+          test "$(git -C vendor/ray-optics rev-parse HEAD)" = "811f508d2b070898c241a568b0c167dcb8645251"
+      - name: Execute original 120 native runs in fresh processes, preserving actual failures
+        run: node evaluation/native-heldout-conditioning-v1/run.mjs
+      - name: Recheck all original saved native records against independent-language exact dyadic reference
+        run: |
+          python3 evaluation/native-heldout-conditioning-v1/analyze.py \
+            test-artifacts/llm-authoring/native-heldout-conditioning-v1 \
+            test-artifacts/llm-authoring/native-heldout-conditioning-v1/exact
+      - name: Archive original frozen inputs, every native result, and derived analysis (including any failure)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-heldout-conditioning-research-v1
+          path: test-artifacts/llm-authoring/native-heldout-conditioning-v1/
+          if-no-files-found: warn
+          retention-days: 14
