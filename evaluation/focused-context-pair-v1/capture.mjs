@@ -52,6 +52,7 @@ export async function collectPairsOnce({questions,commitment,maxCases,send,onAtt
  selectedCount(maxCases,questions.cases.length);
  if(typeof send!=='function')throw Error('No authorized model transport injected');
  if(!isObject(commitment)||commitment.numberOfCases!==questions.cases.length||
+    commitment.note!=='Paired full/focused context eligibility: only supported revise/observe or negative; 2-12 even cases; external independent reviews and timestamped commitment required.'||
     commitment.ids?.join('|')!==questions.cases.map(x=>x.id).join('|'))
   throw Error('Frozen original case list mismatch');
  const attempts=[],casePlans=[];
