@@ -82,6 +82,11 @@ try{
   const n=await cdp.send('DOM.querySelector',{nodeId:dom.root.nodeId,selector:'#load'});
   await cdp.send('DOM.setFileInputFiles',{nodeId:n.nodeId,files:[file]});
  };
+ const importCurrent=async(file,accept,label)=>{
+   const before=(await state()).revision;
+   await upload(file);
+   return until(state,x=>x.revision>before&&accept(x),label);
+ };
  const shot=async name=>{
   const s=await cdp.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
   await writeFile(join(output,name+'.png'),Buffer.from(s.data,'base64'));report.screenshots.push(name+'.png');
@@ -93,8 +98,7 @@ try{
  const baseline=await parseQualifiedBundle(await readFile(bundle('normal-and-detector'),'utf8'));
  const raw=join(output,'scene.raw.json');
  await writeFile(raw,JSON.stringify(baseline.scene,null,2)+'\n');
- await upload(bundle('normal-and-detector'));
- let s=await until(state,s=>s.native==='completed'&&s.results?.[0]?.status==='advisory','normal v9 opt-in advisory');
+ let s=await importCurrent(bundle('normal-and-detector'),s=>s.native==='completed'&&s.results?.[0]?.status==='advisory','normal v9 opt-in advisory');
  assert.equal(s.error,'');assert.equal(s.results[0].kind,'finite-hit-numerical-diagnostic');
  assert.equal(s.results[0].method,'advisory-native-finite-hit-binary64-v1');
  assert.ok(['checked','unknown'].includes(s.results[0].value.status));
@@ -111,25 +115,20 @@ try{
  assert.equal('execution'in exported,false);assert.equal('results'in exported,false);
  assert.ok(!JSON.stringify(exported).includes('observedGlassIncidents'));
  check('Qualified browser export contains request, no previous run-local numeric observations');
- await upload(exportPath);
- s=await until(state,x=>x.native==='completed'&&x.results?.[0]?.status==='advisory','qualified native reopen');
+ s=await importCurrent(exportPath,x=>x.native==='completed'&&x.results?.[0]?.status==='advisory','qualified native reopen');
  check('Reimport creates a new completed native observation without inherited readout');
- await upload(bundle('valid-zero-glass-hit'));
- s=await until(state,x=>x.native==='completed'&&x.results?.[0]?.value?.status==='checked-no-hit','valid zero hit');
+ s=await importCurrent(bundle('valid-zero-glass-hit'),x=>x.native==='completed'&&x.results?.[0]?.value?.status==='checked-no-hit','valid zero hit');
  assert.match(s.text,/NONCERTIFYING/i);
  check('Positive native emission with genuinely no Glass incidence reports sampled checked-no-hit, not darkness');
- await upload(bundle('two-detectors-two-sources'));
- s=await until(state,x=>x.native==='completed'&&x.results?.[0]?.status==='advisory','multiple sources/detectors');
+ s=await importCurrent(bundle('two-detectors-two-sources'),x=>x.native==='completed'&&x.results?.[0]?.status==='advisory','multiple sources/detectors');
  check('Two sources and both detectors retain bounded advisory and true native measurements');
- await upload(bundle('full-fresnel'));
- s=await until(state,x=>['completed','completed-with-warnings','incomplete','failed','stopped'].includes(x.native)&&
+ s=await importCurrent(bundle('full-fresnel'),x=>['completed','completed-with-warnings','incomplete','failed','stopped'].includes(x.native)&&
   (x.results?.[0]?.status==='advisory'||x.native==='incomplete'||x.native==='failed'||x.native==='stopped'),
   'full Fresnel status');
  if(s.native==='incomplete'||s.native==='failed'||s.native==='stopped')
   assert.equal(s.results,null,'Partial native Fresnel must suppress old accepted advisory');
  check('Full native Fresnel retains honest completed versus incomplete advisory suppression');
- await upload(bundle('exposed-rotated-computed-critical'));
- s=await until(state,x=>['completed','incomplete','failed','stopped'].includes(x.native)&&
+ s=await importCurrent(bundle('exposed-rotated-computed-critical'),x=>['completed','incomplete','failed','stopped'].includes(x.native)&&
   (x.results?.[0]?.status==='advisory'||x.native!=='completed'),
   'computed-critical case: no fixed branch claimed');
  if(s.results?.[0]?.value?.status==='inconsistent'){
@@ -140,11 +139,9 @@ try{
  await shot('stage1-critical-observation');
  // Raw import deliberately discards both source qualification and opt-in
  // requests, even when it reproduces the same geometry as an old run.
- await upload(raw);
- s=await until(state,x=>x.native==='completed'&&x.results===null&&x.qualification==='unknown','raw import clears requests');
+ s=await importCurrent(raw,x=>x.native==='completed'&&x.results===null&&x.qualification==='unknown','raw import clears requests');
  check('Raw scene import clears opt-in diagnostic and old qualified readout');
- await upload(bundle('normal-and-detector'));
- s=await until(state,x=>x.native==='completed'&&x.results?.[0]?.status==='advisory','revisit A after B');
+ s=await importCurrent(bundle('normal-and-detector'),x=>x.native==='completed'&&x.results?.[0]?.status==='advisory','revisit A after B');
  assert.match(s.text,/ADVISORY ONLY/);
  check('A-B-A reimport requires a current run and never publishes prior raw diagnostic coordinates');
  assert.deepEqual(report.errors,[]);
