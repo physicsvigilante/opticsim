@@ -84,6 +84,10 @@ const four=await run('four-sources',i=>{
 const fresnel=await run('full-fresnel',i=>{
  i.physical.components.find(c=>c.type==='polygon-dielectric').parameters.partialReflection=true;
 });
+const matched=await run('full-fresnel-matched-index',i=>{
+ const g=i.physical.components.find(c=>c.type==='polygon-dielectric').parameters;
+ g.partialReflection=true;g.insideIndex=g.outsideIndex=1.5;
+},{status:'completed'});
 const angle=Math.asin(1.3/1.6)*180/Math.PI,rotation=37*Math.PI/180;
 const rotate=({x,y})=>({x:x*Math.cos(rotation)-y*Math.sin(rotation),
   y:x*Math.sin(rotation)+y*Math.cos(rotation)});
