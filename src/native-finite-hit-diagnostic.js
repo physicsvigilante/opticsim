@@ -36,6 +36,7 @@ export function createNativeFiniteHitDiagnostic(doc,scene,idMap,requestedIds=[])
      advisory:true,nativeMeasurementQualificationUnchanged:true};
  };
  return {
+  captureFault(){issue();},
   register(id,type,native,handler,method){
    const ex=expected.get(id);
    if(!ex||ex.type!==type||ex.native!==native||ex.method!==method||
