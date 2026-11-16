@@ -10,7 +10,7 @@
 4. Ask the LLM for **one JSON proposal**, using `responseContract`. Paste it back, **Preview proposed changes**, check the exact physical delta, then **Apply changes and simulate**. The unchanged native engine validates the full physical system and only an actually completed current run qualifies for saving.
 5. **For adding/removing components, a schema upgrade or unfamiliar optical system**, use the existing **Download full context (add or remove)**. The full file `opticsim-exploration-context.json`, structural contract and old proposal workflow remain unchanged.
 
-The focused packet is requested with `explorationContext(bundle,question,{profile:'focused'})`. The default `explorationContext(bundle,question)` and explicit `profile:'full'` still return the original complete contract.
+The focused packet is requested with `focusedExplorationContext(bundle,question)` from the separate `src/focused-exploration-context.js` companion. The existing `explorationContext(bundle,question)` in `src/exploration.js` remains **byte-identical** to the previously reviewed core and still returns the original complete contract. Keeping the focused view outside that file preserves the historical sealed transfer replay.
 
 ## What the optional packet contains
 
