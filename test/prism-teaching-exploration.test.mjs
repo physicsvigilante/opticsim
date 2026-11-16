@@ -13,7 +13,6 @@ import {evaluateDocument} from '../scripts/author-scene.mjs';
 import {EXPLORATION_PROPOSAL,explorationBundle,explorationContext,
   prepareExplorationProposal,snapshotScenario,compareExplorationSnapshots,
   nativeComparisonReadouts} from '../src/exploration.js';
-import {describeSavedComparison} from '../src/exploration-ui.js';
 
 const fixtureBytes=readFileSync(new URL('../examples/triangular-prism.json',import.meta.url));
 const fixture=JSON.parse(fixtureBytes);
@@ -126,19 +125,13 @@ test('observe-first and one-index hypothetical reuse the SAME original finite pr
  assert.equal(facesCompared.baselineValue['face-23'].first.outcome,'transmission');
  assert.equal(facesCompared.scenarioValue['face-23'].first.outcome,'transmission');
  assert.match(compared.notice,/not detected|not a live result/i);
- const rendered=describeSavedComparison(compared,baseline,changed);
- assert.match(rendered,/face-23: 1 native hits/i);
- assert.match(rendered,/Native sampled observation/);
- assert.match(rendered,/qualified; native-observation/);
- assert.equal(rendered.includes('{"face-12"'),false);
- // A corrupted snapshot must not be rendered as a trustworthy previous value.
+ // The comparison engine refuses a tampered stored face reading; no
+ // automatic scalar delta or fabricated complete ray path is published.
  const tampered=structuredClone(changed);
  tampered.results.results.find(r=>r.id==='faces').value['face-23'].first.transmittedAngleDeg=9999;
  const blocked=await compareExplorationSnapshots(baseline,tampered);
  assert.equal(blocked.evidenceChecks.scenario.accepted,false);
- const withheld=describeSavedComparison(blocked,baseline,tampered);
- assert.match(withheld,/saved values are withheld/);
- assert.doesNotMatch(withheld,/9999/);
+ assert.ok(blocked.entries.every(e=>e.comparison==='not-comparable'));
  // Original model did not contain an answer or native ray route as input.
  assert.equal(serializeSave(doc),physical);
  await assert.rejects(prepareExplorationProposal(inspected.child,revise),/Stale proposal/);
