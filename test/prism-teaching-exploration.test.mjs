@@ -130,7 +130,7 @@ test('observe-first and one-index hypothetical reuse the SAME original finite pr
  assert.match(rendered,/face-23: 1 native hits/i);
  assert.match(rendered,/Native sampled observation/);
  assert.match(rendered,/qualified; native-observation/);
- assert.doesNotMatch(rendered,/\\{"face-12"/);
+ assert.equal(rendered.includes('{"face-12"'),false);
  // A corrupted snapshot must not be rendered as a trustworthy previous value.
  const tampered=structuredClone(changed);
  tampered.results.results.find(r=>r.id==='faces').value['face-23'].first.transmittedAngleDeg=9999;
