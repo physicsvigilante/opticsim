@@ -6,6 +6,15 @@ import {auditRecordedFiniteHit,FINITE_HIT_CAP} from './finite-hit-exact.js';
 export const FINITE_DIAGNOSTIC_KIND='finite-hit-numerical-diagnostic';
 export const FINITE_DIAGNOSTIC_METHOD='advisory-native-finite-hit-binary64-v1';
 const object=x=>x!==null&&typeof x==='object';
+const nativePoint=p=>object(p)&&Number.isFinite(p.x)&&Number.isFinite(p.y);
+// A native source returning [{}] has NOT proved that an actual usable
+// SingleRay emission occurred, even if the source meter counts "1".
+const nativeEmission=ray=>{
+ if(!object(ray)||!nativePoint(ray.p1)||!nativePoint(ray.p2))return false;
+ const dx=ray.p2.x-ray.p1.x,dy=ray.p2.y-ray.p1.y;
+ const length=Math.hypot(dx,dy);
+ return Number.isFinite(length)&&length>0;
+};
 const complete=new Set(['simulationComplete']);
 export function supportsFiniteHitDiagnostic(doc){
  const components=doc?.physics?.components;
@@ -48,7 +57,9 @@ export function createNativeFiniteHitDiagnostic(doc,scene,idMap,requestedIds=[])
     starts.set(id,(starts.get(id)||0)+1);
     const ex=expected.get(id),rays=returned?.newRays;
     if(ex?.type!=='point-source'||starts.get(id)!==1||!Array.isArray(rays)||
-       rays.length!==1||!object(rays[0])||emitted.has(rays[0])){issue();return;}
+       rays.length!==1||!nativeEmission(rays[0])||emitted.has(rays[0])){
+      issue();return;
+    }
     emitted.add(rays[0]);
    }catch{issue();}
   },
