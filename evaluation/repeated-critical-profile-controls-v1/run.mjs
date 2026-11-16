@@ -265,5 +265,5 @@ if(process.argv[2]==='single'){
  if(!item||!profiles.includes(mode))
   throw Error('Missing fixed case or research profile');
  const trial=mode.startsWith('tap-')?tappedOn(item,mode):ordinary(item,mode);
- console.log('HELDOUT_NATIVE_RECORD '+JSON.stringify(trial));
+ console.log('REPEATED_CRITICAL_RECORD '+JSON.stringify(trial));
 }else if(process.argv[1]&&resolve(process.argv[1])===self)run();
