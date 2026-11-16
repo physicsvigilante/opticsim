@@ -19,7 +19,7 @@ function options(args){
   throw Error('Usage: node scripts/replay-exploration-notebook.mjs <notebook.json> --out test-artifacts/llm-authoring/<fresh-replay>');
  return {input:resolve(args[0]),output:args[2]};
 }
-export async function main(args=process.argv.slice(2)){
+export async function main(args=process.argv.slice(2),{nativeCore=null}={}){
  const {input,output}=options(args);
  const bytes=readFileSync(input);
  if(bytes.length>EXPLORATION_NOTEBOOK_MAX_BYTES)
@@ -32,9 +32,12 @@ export async function main(args=process.argv.slice(2)){
   const notebook=await parseExplorationNotebook(bytes.toString('utf8'));
   // All nested qualified scenes, metadata and whole-file SHA verified before
   // any build or native invocation. Never automatically "fix" invalid scenes.
-  execFileSync(process.execPath,[resolve(root,'scripts/build.mjs'),'--test'],
-   {cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']});
-  const core=createRequire(import.meta.url)(resolve(root,'dist/test-core.cjs'));
+  if(nativeCore===null)
+   execFileSync(process.execPath,[resolve(root,'scripts/build.mjs'),'--test'],
+    {cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']});
+  // Dependency injection is only for already-built Node software tests;
+  // direct user CLI always builds/loads the same pinned existing test core.
+  const core=nativeCore??createRequire(import.meta.url)(resolve(root,'dist/test-core.cjs'));
   nativeStarted=true;
   const report=await replayExplorationNotebook(notebook,{
    run:(doc,requests)=>evaluateDocument(doc,core,requests),
