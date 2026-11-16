@@ -63,7 +63,7 @@ export function observeInterfaceSet(doc,scene,idMap,{parentage=null,finiteDiagno
       // exact BigInt work is deferred until after terminal native execution.
       if(finiteDiagnostic&&polygon){
         try{finiteDiagnostic.beforeIncident(component.id,args[0],args[2]);}
-        catch{/* The advisory is not allowed to change native execution. */}
+        catch{finiteDiagnostic.captureFault?.();/* Native delegation remains mandatory. */}
       }
       const incoming=direction(args[0]),beforePower=power(args[0]);
       const encounter=prism?prismEncounter(component,args[2],incoming):polygon?polygonEncounter(component,args[2],incoming):circular?circularEncounter(component,args[2],incoming):null;
