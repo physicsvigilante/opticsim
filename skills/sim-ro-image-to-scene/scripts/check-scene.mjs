@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { validate, parseSave, serializeSave } from '../../../src/contract.js';
 import {createNativeRayParentage} from '../../../src/native-ray-parentage.js';
+import {createNativeFiniteHitDiagnostic} from '../../../src/native-finite-hit-diagnostic.js';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -15,7 +16,7 @@ const git = args => execFileSync('git', args, { cwd: root, encoding: 'utf8', std
 
 // Exported for focused tests using the already-built core. The CLI always builds
 // afresh before loading that core. This function makes no files or native exports.
-export function checkCandidate(text, core,{captureDetectorHits=false,captureRayParentageIds=[]}={}) {
+export function checkCandidate(text, core,{captureDetectorHits=false,captureRayParentageIds=[],captureFiniteHitDiagnostic=false}={}) {
   const report = { documentSha256: hash(text), validation: { valid: false },
     interpretation: 'not-assessed-by-checker', executionPassed: false };
   let doc;
@@ -33,17 +34,19 @@ export function checkCandidate(text, core,{captureDetectorHits=false,captureRayP
   const session = new core.Session(candidate => {
     loaded = core.loadDocument(candidate);
     const parentage=createNativeRayParentage(candidate,loaded.scene,loaded.idMap,captureRayParentageIds);
-    const emission = core.observeSourceSet(candidate, loaded.scene, loaded.idMap,{parentage});
+    const finiteDiagnostic=createNativeFiniteHitDiagnostic(candidate,loaded.scene,loaded.idMap,
+      captureFiniteHitDiagnostic?candidate.physics.components.filter(c=>c.type==='polygon-dielectric').map(c=>c.id):[]);
+    const emission = core.observeSourceSet(candidate, loaded.scene, loaded.idMap,{parentage,finiteDiagnostic});
     const reflections = core.observeMirrorSet(candidate, loaded.scene, loaded.idMap);
-    const detectors = core.observeDetectorSet(candidate, loaded.scene, loaded.idMap,{captureHitEvents:captureDetectorHits,parentage});
-    const interfaces = core.observeInterfaceSet?.(candidate, loaded.scene, loaded.idMap,{parentage});
+    const detectors = core.observeDetectorSet(candidate, loaded.scene, loaded.idMap,{captureHitEvents:captureDetectorHits,parentage,finiteDiagnostic});
+    const interfaces = core.observeInterfaceSet?.(candidate, loaded.scene, loaded.idMap,{parentage,finiteDiagnostic});
     const blockers = core.observeBlockerSet?.(candidate, loaded.scene, loaded.idMap);
     const simulator = new core.Simulator(loaded.scene, null, null, null, null, null, false, candidate.simulation.processedRayLimit);
     return {
       cancel() { simulator.shouldSimulatorStop = true; },
       run(notify) {
         for (const event of ['simulationComplete', 'simulationStop']) simulator.on(event, () => notify(event, core.diagnostics(loaded.scene, simulator, emission, reflections, detectors, interfaces, blockers,
-          {detectorHitEvents:captureDetectorHits,nativeEvent:event,parentage})));
+          {detectorHitEvents:captureDetectorHits,nativeEvent:event,parentage,finiteDiagnostic})));
         simulator.updateSimulation();
       }
     };
