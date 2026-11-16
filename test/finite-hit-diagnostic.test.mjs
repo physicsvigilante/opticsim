@@ -89,8 +89,8 @@ test('explicit advisory request cannot upgrade existing native detector and inte
  assert.deepEqual(withMore.slice(1),old);
  assert.equal(withMore[0].status,'advisory');
 });
-test('unsupported v5 planar scope is refused, with no diagnostic code installed',async()=>{
- const scene=JSON.parse(readFileSync(new URL('../scenes/planar-refraction.json',import.meta.url)));
+test('unsupported v8 prism scope is refused, with no diagnostic code installed',async()=>{
+ const scene=JSON.parse(readFileSync(new URL('../scenes/triangular-prism.json',import.meta.url)));
  assert.equal(supportsFiniteHitDiagnostic(scene),false);
  const out=evaluateDocument(scene,core,req);
  assert.equal(out.report.native.diagnostics?.finiteHitDiagnostic,undefined);
