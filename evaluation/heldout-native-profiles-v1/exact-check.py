@@ -128,7 +128,7 @@ def audit(hit, faces, cutoff):
 
 def main():
     root=pathlib.Path(sys.argv[1] if len(sys.argv)>1
-        else "test-artifacts/llm-authoring/native-single-owner-hit-capture-v1")
+        else "test-artifacts/llm-authoring/heldout-native-profiles-v1")
     original=(root/"report.json").read_bytes()
     data=json.loads(original)
     assert data["status"]=="research-complete"
