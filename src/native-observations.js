@@ -9,7 +9,9 @@ export function snapshotNativeObservations(diagnostics,requests=[]){
   // Opt-in only: never add keys or change any existing default result shape.
   const hits=requests.some(r=>r?.kind==='detector-hit-events');
   const parentage=requests.some(r=>r?.kind==='detector-ray-provenance');
+  const finite=requests.some(r=>r?.kind==='finite-hit-numerical-diagnostic');
   return {...ordinary,
     ...(hits?{detectorHitEventsById:structuredClone(diagnostics?.detectorHitEventsById??null)}:{}),
-    ...(parentage?{detectorRayProvenanceById:structuredClone(diagnostics?.detectorRayProvenanceById??null)}:{})};
+    ...(parentage?{detectorRayProvenanceById:structuredClone(diagnostics?.detectorRayProvenanceById??null)}:{}),
+    ...(finite?{finiteHitDiagnostic:structuredClone(diagnostics?.finiteHitDiagnostic??null)}:{})};
 }
