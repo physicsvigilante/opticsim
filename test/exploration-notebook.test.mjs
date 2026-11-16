@@ -72,7 +72,7 @@ test('Notebook refuses old, wrong, mixed-origin, tampered or non-executed eviden
  bad1.entries[1].bundle.scene.physics.components.find(c=>c.id==='lens-1').parameters.focalLength=77;
  await assert.rejects(()=>verifyExplorationNotebook(bad1),/Qualified package integrity mismatch/);
  const bad2=structuredClone(good);bad2.entries[1].label='Altered';
- await assert.rejects(()=>verifyExplorationNotebook(bad2),/Notebook integrity mismatch/);
+ await assert.rejects(()=>verifyExplorationNotebook(bad2),/notebook integrity mismatch/i);
  const bad3=structuredClone(good);bad3.entries[1].results=[{trusted:true}];
  await assert.rejects(()=>verifyExplorationNotebook(bad3),/unexpected or missing data/i);
  const bad4=structuredClone(good);bad4.cachedNativeStatus='completed';
@@ -111,5 +111,5 @@ test('Verification snapshots original notebook data before async hashes and reje
  tampered.integritySha256=await sha256Text(canonicalJSON({
   ...payload,entries:payload.entries.map((e,i)=>i?{...e,label:'Altered after honest revision'}:e)
  }));
- await assert.rejects(()=>verifyExplorationNotebook(tampered),/Notebook integrity mismatch/);
+ await assert.rejects(()=>verifyExplorationNotebook(tampered),/notebook integrity mismatch/i);
 });
