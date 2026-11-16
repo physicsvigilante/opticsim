@@ -1,0 +1,61 @@
+name: Research only - replay pinned native binary64 line intersection
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  actions: read
+  contents: read
+jobs:
+  source-replay:
+    name: Preserve original PR92 hit arithmetic without changing native optics
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Verify pinned native geometry source and original determinant expression order
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          text=Path('vendor/ray-optics/src/core/geometry.js').read_text()
+          anchors=[
+            'var A = l1.p2.x * l1.p1.y - l1.p1.x * l1.p2.y;',
+            'var B = l2.p2.x * l2.p1.y - l2.p1.x * l2.p2.y;',
+            'var xa = l1.p2.x - l1.p1.x;',
+            'var xb = l2.p2.x - l2.p1.x;',
+            'var ya = l1.p2.y - l1.p1.y;',
+            'var yb = l2.p2.y - l2.p1.y;',
+            'return geometry.point((A * xb - B * xa) / (xa * yb - xb * ya), (A * yb - B * ya) / (xa * yb - xb * ya));'
+          ]
+          for anchor in anchors:
+            assert anchor in text, 'Pinned native source arithmetic drift: '+anchor
+          print('PINNED_SOURCE_INTERSECTION_OPERATION_ORDER_CONFIRMED')
+          PY
+      - name: Retrieve ORIGINAL PR92 recorded native binary64 hit evidence, not a regenerated run
+        uses: actions/download-artifact@v4
+        with:
+          name: native-single-owner-hit-capture-v1
+          run-id: 43854663361
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: test-artifacts/replay-pr92-original-input
+      - name: Compare pinned native rounded-intersection computation to original 87 callback points and exact dyadic references
+        run: |
+          python3 evaluation/native-determinant-roundoff-v1/analyze.py \
+            test-artifacts/replay-pr92-original-input \
+            test-artifacts/native-determinant-roundoff-v1
+      - name: Preserve the ORIGINAL input and NEW source-arithmetic replay even if the replay fails
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-determinant-roundoff-research-v1
+          path: |
+            test-artifacts/replay-pr92-original-input/
+            test-artifacts/native-determinant-roundoff-v1/
+          if-no-files-found: warn
+          retention-days: 14
