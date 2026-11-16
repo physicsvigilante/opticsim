@@ -52,6 +52,24 @@ try{
  const ctx=await context('lens-context','Set only lens-1 focalLength to 150 mm; inspect the new native rays.');
  assert.equal(ctx.baseline.qualification.origin.preparationStatus,'unknown');assert.equal(ctx.baseline.qualification.interpretation,null);
  check('Raw example is immediately usable but its source provenance remains unknown');
+ // Optional smaller context is a separate download; original full button and
+ // response-hash/native proposal validation remain unchanged.
+ const focusedDir=join(out,'lens-focused-context');await mkdir(focusedDir);
+ await cdp.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:focusedDir});
+ await click('explore-focused-context');
+ await until(state,s=>s.workStatus.startsWith('Focused context downloaded'),'focused context download');
+ const focused=await until(async()=>{
+  try{return JSON.parse(await readFile(join(focusedDir,'opticsim-exploration-focused-context.json'),'utf8'));}
+  catch{return null;}
+ },Boolean,'focused context file');
+ assert.equal(focused.contextProfile,'focused-existing-components-v1');
+ assert.deepEqual(focused.baseline,ctx.baseline);
+ assert.equal(focused.responseContract.expectedIntegritySha256,ctx.responseContract.expectedIntegritySha256);
+ assert.ok(!Object.hasOwn(focused,'qualifiedStructure'));
+ assert.deepEqual(Object.keys(focused.authoring.componentTypes).sort(),['point-source','ideal-lens','ray-detector'].sort());
+ assert.ok(JSON.stringify(focused).length<JSON.stringify(ctx).length*.8);
+ check('Focused LLM context downloads with exact source/hash and removes unrelated component families without changing full context',
+  {fullBytes:Buffer.byteLength(JSON.stringify(ctx)),focusedBytes:Buffer.byteLength(JSON.stringify(focused))});
  const originalRevision=(await state()).revision;
  const change=packet(ctx,{action:'revise',patch:{changes:[{id:'lens-1',section:'parameters',key:'focalLength',value:150,unit:'mm'}]}});
  await inspect(change);assert.equal((await state()).revision,originalRevision);

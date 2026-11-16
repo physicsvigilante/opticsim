@@ -1,0 +1,16 @@
+{
+  "format": "opticsim-focused-exploration-postfreeze-v1",
+  "historicalFreezeFile": "test/fixtures/detector-hit-transfer-freeze.json",
+  "baselineCommit": "c0d4e3048b9e0935cfd567e5f3c81aab23ddd823",
+  "originalFrozenHashes": {
+    "src/exploration-ui.js": "dca1172ad93a90b2fe64fe534332f3ca82721f6216a5b3fd75ce68035d487604"
+  },
+  "replacementHashes": {
+    "src/exploration-ui.js": "b28e7bf381e2165161932f116fa9f1b94f94ee609db8514d392e3a889370af33"
+  },
+  "newlyAddedCompanion": "src/focused-exploration-context.js",
+  "frozenCoreRestored": "src/exploration.js",
+  "qualification": "Intentional post-exposure optional UI change. Not part of original reserved native transfer or any newly blind assessment.",
+  "releaseBoundary": "Existing full exploration download, exact transfer source/answers and original frozen fixture are unmodified. Focused context is an additional LLM authoring aid; all proposals still pass original strict validation and native execution.",
+  "evidence": "This exact expected replacement SHA was observed from the first CI failure on the new feature head; historical reserved expected SHA is not rewritten. Additional source checks and Chrome regression are required before merge."
+}

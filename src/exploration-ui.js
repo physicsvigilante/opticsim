@@ -2,6 +2,7 @@
 // alternative ray renderer. All imported strings remain literal text.
 import {explorationBundle,explorationContext,parseExplorationProposal,prepareExplorationProposal,
  browserExecution,snapshotScenario,compareExplorationSnapshots,nativeComparisonReadouts} from './exploration.js';
+import {focusedExplorationContext} from './focused-exploration-context.js';
 import {verifyQualifiedBundle} from './qualification.js';
 import {canonicalJSON} from './qualified-utils.js';
 const same=(a,b)=>canonicalJSON(a)===canonicalJSON(b);
@@ -23,9 +24,12 @@ export class ExplorationUI {
   this.error=el('p','explore-error');this.error.setAttribute('role','alert');
   this.question=el('textarea','explore-question');this.question.rows=2;this.question.maxLength=1200;
   this.question.placeholder='For example: Move source S2 upward by 25 mm, keeping everything else unchanged.';
-  this.contextButton=button('explore-context','Download model context for LLM',()=>this.context());
-  this.root.append(this.status,this.error,labelled('Your investigation (not a source-given fact)',this.question),this.contextButton,
-   el('p',null,'Inspect the downloaded context before sharing it in your chosen chat. It includes the model and source notes. Ask for the proposed JSON change; no API key or provider connection is required here.'));
+  this.focusedContextButton=button('explore-focused-context','Download focused context (edit or observe)',()=>this.context('focused'));
+  this.contextButton=button('explore-context','Download full context (add or remove)',()=>this.context('full'));
+  const contextActions=el('div');contextActions.className='actions';
+  contextActions.append(this.focusedContextButton,this.contextButton);
+  this.root.append(this.status,this.error,labelled('Your investigation (not a source-given fact)',this.question),contextActions,
+   el('p',null,'Use focused context for small edits to current components or requested readouts. Use full context for adding/removing components or a model upgrade. Both retain the original model and source notes: review these locally before sharing them with your chosen chat. No provider or API call is made.'));
   this.proposal=el('textarea','explore-proposal');this.proposal.rows=7;this.proposal.maxLength=64000;
   this.proposal.spellcheck=false;this.proposal.placeholder='Paste the LLM’s JSON proposal here. Missing physical facts should be clarified in the conversation, not guessed.';
   this.proposal.oninput=()=>{this.invalidatePreview();this.refresh();};
@@ -60,7 +64,7 @@ export class ExplorationUI {
   const ready=!!this.session.document&&complete(this.session.state)&&!this.hasPending();
   if(this.preview&&this.preview.token!==this.token())this.invalidatePreview();
   this.startButton.disabled=this.busy||!ready;
-  for(const b of [this.contextButton,this.previewButton,this.saveButton])b.disabled=this.busy||!ready||!this.saved.length;
+  for(const b of [this.contextButton,this.focusedContextButton,this.previewButton,this.saveButton])b.disabled=this.busy||!ready||!this.saved.length;
   this.applyButton.disabled=this.busy||!ready||!this.preview;
   for(const b of [this.restoreButton,this.exportButton,this.compareButton])b.disabled=this.busy||!this.saved.length;
   this.reportButton.disabled=this.busy||!this.comparison;
@@ -94,11 +98,16 @@ export class ExplorationUI {
   this.comparisonText.textContent='One completed baseline saved. Source provenance: '+first.bundle.qualification.origin.preparationStatus+'.';
   this.root.dataset.scenarios='1';
  }
- async context(){
+ async context(profile='full'){
   const {bundle,token}=await this.current();
-  const context=await explorationContext(bundle,this.question.value);this.guard(token);
-  this.download(json(context),'opticsim-exploration-context.json');
-  this.status.textContent='Context downloaded locally. No model call or upload occurred.';
+  const context=profile==='focused'?
+   await focusedExplorationContext(bundle,this.question.value):
+   await explorationContext(bundle,this.question.value);this.guard(token);
+  this.download(json(context),profile==='focused'?
+   'opticsim-exploration-focused-context.json':'opticsim-exploration-context.json');
+  this.status.textContent=profile==='focused'?
+   'Focused context downloaded locally. Use full context for structural changes; no model call or upload occurred.':
+   'Context downloaded locally. No model call or upload occurred.';
  }
  async inspect(){
   this.invalidatePreview();const rawText=this.proposal.value,raw=parseExplorationProposal(rawText);
