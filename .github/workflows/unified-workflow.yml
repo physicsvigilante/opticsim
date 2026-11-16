@@ -17,6 +17,16 @@ jobs:
           node-version: '24.19.0'
       - run: npm run setup
       - run: npm test
+      - name: Verify v9 finite-hit diagnostic through ordinary public problem workflow
+        run: node scripts/finite-hit-diagnostic-acceptance.mjs
+      - name: Retain native finite-hit diagnostic raw and performance evidence even on failure
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: finite-hit-diagnostic-v1-public
+          path: test-artifacts/llm-authoring/finite-hit-diagnostic-v1/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Verify requested native detector ray parentage using public problem workflow
         run: node scripts/native-ray-parentage-acceptance.mjs
       - name: Retain bounded source-parentage native evidence even on failures
@@ -68,6 +78,16 @@ jobs:
         run: node scripts/detector-hit-browser.mjs
       - name: Verify native ray parentage provenance in actual Chrome
         run: node scripts/native-ray-parentage-browser.mjs
+      - name: Verify optional noncertifying v9 finite-hit diagnostic in actual Chrome
+        run: node scripts/finite-hit-diagnostic-browser.mjs
+      - name: Retain real-Chrome numerical diagnostic screenshots and readout evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: finite-hit-diagnostic-v1-browser
+          path: test-artifacts/browser-finite-hit-diagnostic-v1/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Retain real-Chrome ray parentage review evidence
         uses: actions/upload-artifact@v4
         if: always()
