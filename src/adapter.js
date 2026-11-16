@@ -80,11 +80,12 @@ export function observeSourceEmission(source,{parentage=null,finiteDiagnostic=nu
     meter.emitted = result?.newRays?.length || 0;
     meter.brightnessScale = result?.brightnessScale ?? null;
     parentage?.sourceStarted(sourceId,result);
-    finiteDiagnostic?.sourceStarted(sourceId,result);
+    try{finiteDiagnostic?.sourceStarted(sourceId,result);}catch{finiteDiagnostic?.captureFault?.();}
     return result;
   };
   if(parentage)parentage.register(sourceId,'point-source',source,source.onSimulationStart,'onSimulationStart');
-  finiteDiagnostic?.register(sourceId,'point-source',source,source.onSimulationStart,'onSimulationStart');
+  try{finiteDiagnostic?.register(sourceId,'point-source',source,source.onSimulationStart,'onSimulationStart');}
+  catch{finiteDiagnostic?.captureFault?.();}
   return meter;
 }
 // Wrap each authored source once; no ray provenance is assigned after emission.
@@ -168,7 +169,8 @@ export function observeDetectorSet(doc,scene,idMap,{captureHitEvents=false,paren
       return result;
     };
     if(parentage)parentage.register(c.id,'ray-detector',detector,detector.onRayIncident,'onRayIncident');
-    finiteDiagnostic?.register(c.id,'ray-detector',detector,detector.onRayIncident,'onRayIncident');
+    try{finiteDiagnostic?.register(c.id,'ray-detector',detector,detector.onRayIncident,'onRayIncident');}
+    catch{finiteDiagnostic?.captureFault?.();}
     return {id:c.id,detector,get crossings(){return crossings;},
       get hitEvents(){return {observedCount:crossings,limit:DETECTOR_HIT_EVENT_LIMIT,
         status:!issue&&events.length===crossings?'complete':'unavailable',
@@ -207,8 +209,18 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
   const emissionsById=meter?.byId ?? null;
   const sourceCount=emissionsById ? Object.keys(emissionsById).length : 0;
   const parentageById=parentage?.finish({event:nativeEvent,simulator,errors,warnings,sources:meter,detectors:detectorMeter,interfaces:interfaceMeter});
-  const finiteHitAdvisory=finiteDiagnostic?.finish({event:nativeEvent,simulator,errors,warnings,
-    sources:meter,detectors:detectorMeter,interfaces:interfaceMeter,scene});
+  let finiteHitAdvisory=null;
+  if(finiteDiagnostic)try{
+    finiteHitAdvisory=finiteDiagnostic.finish({event:nativeEvent,simulator,errors,warnings,
+      sources:meter,detectors:detectorMeter,interfaces:interfaceMeter,scene});
+  }catch{
+    // A faulty OPTIONAL numerical auditor must never change true native
+    // completion, source or detector readouts. It cannot certify anything.
+    finiteHitAdvisory={status:'unknown',reasonCode:'NATIVE_FINITE_HIT_AUDITOR_FAILED',
+      method:'advisory-native-finite-hit-binary64-v1',advisory:true,
+      observedGlassIncidents:0,analyzedGlassIncidents:0,checked:0,unknown:0,
+      conflicting:0,limit:128,nativeMeasurementQualificationUnchanged:true};
+  }
   return { errors, warnings, processed: simulator.processedRayCount, truncation: simulator.totalTruncation,
     undefinedBehavior: simulator.totalUndefinedBehavior, emitted: meter?.emitted ?? null,
     // There is no meaningful single scale for multiple independently emitting
