@@ -36,6 +36,10 @@ Solutions, rerun sealed authoring studies, score textbook answers, or modify
 native physics. Candidate systems include bounded polygonal glass and opaque
 screens. Beam sources for refractive systems remain deferred by the owner.
 
+## Re-evaluate a portable investigation with native physics
+
+The [local notebook replay command](docs/REPLAY-EXPLORATION-NOTEBOOK.md) verifies a portable investigation's full qualified inputs, then **retraces each saved scene separately through the pinned native Opticsim simulator**. It records new actual native statuses and requested results, and only compares compatible, successfully executed evidence against the newly replayed baseline. It never imports old optical results, silently repairs a failed ray trace or changes the source notebook. An incomplete native run remains an explicit failure with no inferred measurement or delta. This is a reproducibility tool for teaching explorations, **not** independent physical/source-textbook certification or LLM accuracy evidence.
+
 ## Portable exploration notebooks — group inputs, retrace results
 
 An exploration's saved baseline and qualified variants can now be downloaded as **one portable notebook**, rather than many individual qualified scene files. The separate import view validates nested qualified source/history and selects a scene for **fresh native retracing**; importing never accepts cached detector counts, ray paths, image results or a claimed physical solution. The current tab's saved scenarios are not overwritten by importing, and comparisons can be rebuilt by retracing the imported baseline and variants. This is a local file workflow with no LLM/provider calls or new physics. See [portable notebook format, guarantees and limits](docs/PORTABLE-EXPLORATION-NOTEBOOK.md).
