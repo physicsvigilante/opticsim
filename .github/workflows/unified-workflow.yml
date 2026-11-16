@@ -19,6 +19,8 @@ jobs:
       - run: npm test
       - name: Research-only randomized fresh-process v9 native repeatability and separate raw-hit SHADOW evidence
         run: node evaluation/native-observer-randomized-v2/run.mjs
+      - name: Separate Python exact-rational audit of preserved original native SHADOW hit coordinates
+        run: python3 evaluation/native-observer-randomized-v2/exact-check.py
       - name: Retain original randomized native and bounded SHADOW geometry on success or failure
         uses: actions/upload-artifact@v4
         if: always()
