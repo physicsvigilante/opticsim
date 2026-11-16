@@ -1,0 +1,32 @@
+name: Research only - preregistered held-out v9 native profiles
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  heldout-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: npm run setup
+      - run: node scripts/build.mjs --test
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Reproduce 36 fresh-process ordinary OFF, ordinary ON and separate TAP native trials
+        run: node evaluation/heldout-native-profiles-v1/run.mjs
+      - name: Exact dyadic reference on original tapped callback coordinates only
+        run: python3 evaluation/heldout-native-profiles-v1/exact-check.py
+      - name: Retain all actual native outcomes and any failed partial research evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: heldout-v9-native-profiles-research-only
+          path: test-artifacts/llm-authoring/heldout-native-profiles-v1/
+          if-no-files-found: warn
+          retention-days: 14
