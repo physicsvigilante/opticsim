@@ -36,6 +36,10 @@ Solutions, rerun sealed authoring studies, score textbook answers, or modify
 native physics. Candidate systems include bounded polygonal glass and opaque
 screens. Beam sources for refractive systems remain deferred by the owner.
 
+## Portable exploration notebooks — group inputs, retrace results
+
+An exploration's saved baseline and qualified variants can now be downloaded as **one portable notebook**, rather than many individual qualified scene files. The separate import view validates nested qualified source/history and selects a scene for **fresh native retracing**; importing never accepts cached detector counts, ray paths, image results or a claimed physical solution. The current tab's saved scenarios are not overwritten by importing, and comparisons can be rebuilt by retracing the imported baseline and variants. This is a local file workflow with no LLM/provider calls or new physics. See [portable notebook format, guarantees and limits](docs/PORTABLE-EXPLORATION-NOTEBOOK.md).
+
 ## Paired focused-vs-full first-attempt model evaluation (not yet run)
 
 The [private comparison protocol](evaluation/focused-context-pair-v1/README.md) defines a balanced A/B experiment on **independently curated revisions of the same qualified optical baseline**. Focused and full contexts use one model, identical source/investigation data, separate stateless first attempts, strict native scoring and separate fidelity/coverage denominators. It reuses the existing private held-out evaluator. **Current public checks use a MOCK model only; no actual external model inference or human-curated hidden cases are claimed.** Real execution requires independent physics adjudication and explicit provider/data/charge approval; see [Issue #60](https://github.com/physicsvigilante/opticsim/issues/60).

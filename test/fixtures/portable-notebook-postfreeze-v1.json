@@ -1,0 +1,13 @@
+{
+  "format": "opticsim-exploration-notebook-postfreeze-v1",
+  "historicalFreezeFile": "test/fixtures/detector-hit-transfer-freeze.json",
+  "priorPostfreezeFile": "test/fixtures/focused-exploration-postfreeze.json",
+  "originalFrozenUiSha256": "dca1172ad93a90b2fe64fe534332f3ca82721f6216a5b3fd75ce68035d487604",
+  "priorFocusedUiSha256": "b28e7bf381e2165161932f116fa9f1b94f94ee609db8514d392e3a889370af33",
+  "portableNotebookUiSha256": "d6be4107b8432a8c737a4c93cfcb350345a386009c829f3e9a45a40de2ac6fb5",
+  "companion": "src/exploration-notebook.js",
+  "frozenCoreUnchanged": "src/exploration.js",
+  "kind": "Post-exposure opt-in UI addition for portable qualified scene INPUTS; never reclassified as originally blind detector-transfer evidence.",
+  "boundary": "No native runtime, original qualifying schema, source-truth claim, cached results, Stage-1/Stage-2 gating or optical physics change. Import retraces from existing verified qualified package.",
+  "evidence": "Exact current UI SHA computed separately from source bytes, with historical predecessor SHA verified against unchanged prior pinned file; new browser/native tests must pass before merge."
+}

@@ -14,6 +14,7 @@ const hash=p=>createHash('sha256').update(read(p)).digest('hex');
 const freeze=JSON.parse(read('test/fixtures/detector-hit-transfer-freeze.json'));
 const integration=JSON.parse(read('test/fixtures/detector-hit-integration-rebase.json'));
 const focusedPostFreeze=JSON.parse(read('test/fixtures/focused-exploration-postfreeze.json'));
+const notebookPostFreeze=JSON.parse(read('test/fixtures/portable-notebook-postfreeze-v1.json'));
 // Historical SHA-256 values remain immutable evidence of the earlier R1 run.
 // The NEW parentage milestone intentionally modifies these current production
 // paths, and does not retroactively make the old transfer a newly blind test.
@@ -44,6 +45,14 @@ test('original reserved transfer evidence remains frozen; explicit later parenta
  assert.equal(focusedPostFreeze.historicalFreezeFile,'test/fixtures/detector-hit-transfer-freeze.json');
  assert.equal(focusedPostFreeze.baselineCommit,freeze.baseline);
  assert.deepEqual(Object.keys(focusedPostFreeze.replacementHashes),['src/exploration-ui.js']);
+ // Second, distinct post-exposure additive feature. Do not modify either
+ // historical SHA record; check every link in the UI provenance chain.
+ assert.equal(notebookPostFreeze.historicalFreezeFile,'test/fixtures/detector-hit-transfer-freeze.json');
+ assert.equal(notebookPostFreeze.priorPostfreezeFile,'test/fixtures/focused-exploration-postfreeze.json');
+ assert.equal(notebookPostFreeze.originalFrozenUiSha256,
+  freeze.frozenFiles['src/exploration-ui.js']);
+ assert.equal(notebookPostFreeze.priorFocusedUiSha256,
+  focusedPostFreeze.replacementHashes['src/exploration-ui.js']);
  for(const [path,expected] of Object.entries(freeze.frozenFiles)){
   if(integration.changedAfterReservedExecution.includes(path)){
    assert.equal(integration.baselineCommit,freeze.baseline);
@@ -52,8 +61,11 @@ test('original reserved transfer evidence remains frozen; explicit later parenta
   }else if(Object.hasOwn(focusedPostFreeze.replacementHashes,path)){
    assert.equal(focusedPostFreeze.originalFrozenHashes[path],expected,
     'Original reserved transfer SHA must remain immutable: '+path);
-   assert.equal(hash(path),focusedPostFreeze.replacementHashes[path],
-    'Explicit post-exposure optional focused-exploration UI must remain pinned: '+path);
+   assert.equal(notebookPostFreeze.priorFocusedUiSha256,
+    focusedPostFreeze.replacementHashes[path],
+    'Previously reviewed focused UI SHA is still immutable');
+   assert.equal(hash(path),notebookPostFreeze.portableNotebookUiSha256,
+    'Exact later portable-notebook UI version must remain pinned: '+path);
    assert.notEqual(hash(path),expected,'Do not relabel the old reserve test as newly blind: '+path);
   }else if(parentageFeaturePaths.has(path)){
    assert.notEqual(hash(path),expected,'New parentage feature modifies this formerly frozen source path: '+path);
