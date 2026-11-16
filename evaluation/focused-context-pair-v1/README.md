@@ -8,6 +8,8 @@ This small extension reuses the **same** qualified scene/source, `explorationCon
 
 Use only independently reviewed previously **unseen** tasks targeting existing-component `revise` or explicit `observe`, plus meaningful missing/ambiguous/unsupported/invalid negatives. **Structural changes are excluded**: focused context does not advertise adding/removing objects or schema upgrades. Run **an even number of cases** (2–12), including at least two already-supported optical families and negative tasks if the independent curator can supply them. Both arms see the same original task and exact hash-verified baseline. The only deliberately varied prompt payload is **full versus focused context**; the system instruction, model/provider, configured decoding, sampling assumptions and original question are identical.
 
+The two context designs differ in **relevance, available contract descriptions and some authored context instructions**, not only JSON length. The model provider may remain stochastic between otherwise identical API requests; this 1-attempt/arm comparison does **not** isolate token-length causality or prove a universal effect. Interpret any case-level differences descriptively until independently replicated.
+
 For case indices 0,2,4,... capture **focused then full**; indices 1,3,5,... **full then focused**. Calls are separate stateless single-turn model requests. Preserve raw first text, hashes, model identity and provider-reported usage. **No retries, repairs or answers from another arm.** The original frozen reference is never imported by capture. Comparison scoring is **offline**, after verifying original responses and bytes.
 
 ### 1. Prepare independent private materials
