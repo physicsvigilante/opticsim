@@ -30,7 +30,8 @@ function parseInput(bytes){
 export function evaluateDocument(doc,core,requests=[]) {
   const sceneText=serializeSave(doc),run=checkCandidate(sceneText,core,
     {captureDetectorHits:requests.some(r=>r.kind==='detector-hit-events'),
-      captureRayParentageIds:requests.filter(r=>r.kind==='detector-ray-provenance').map(r=>r.componentId)});
+      captureRayParentageIds:requests.filter(r=>r.kind==='detector-ray-provenance').map(r=>r.componentId),
+      captureFiniteHitDiagnostic:requests.some(r=>r.kind==='finite-hit-numerical-diagnostic')});
   const diag=run.native.diagnostics||{};
   const completed=run.native.completed;
   const warnings=diag.warnings||[];
