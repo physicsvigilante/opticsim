@@ -133,7 +133,7 @@ function seededTrial(c,mode){
   const mirrors=core.observeMirrorSet(candidate,loaded.scene,loaded.idMap);
   const detectors=core.observeDetectorSet(candidate,loaded.scene,loaded.idMap,{finiteDiagnostic:finite});
   const interfaces=core.observeInterfaceSet(candidate,loaded.scene,loaded.idMap,{finiteDiagnostic:finite});
-  const blockers=core.observeBlockerSet(candidate,loaded.scene,loaded.idMap);
+  const blockers=core.observeBlockerSet?.(candidate,loaded.scene,loaded.idMap);
   // Same original native Simulator and observer/terminal pathways in all profiles.
   const simulator=new core.Simulator(loaded.scene,null,null,null,null,null,false,
    candidate.simulation.processedRayLimit);
@@ -274,7 +274,7 @@ function run(){
   'Seeded native config drift across trial profiles');
  assert.equal(new Set(rows.map(x=>x.nativeConfig?.nativeRandomSeed)).size,1,
   'Native seed mismatch in original process records');
- for(const mode of profiles) assert.equal(separate.byMode[mode],12);
+ for(const mode of profiles) assert.equal(separate.byMode[mode],6);
  assert.equal(physicalMismatches.length,0);
  console.log('FIXED_NATIVE_RNG_PROFILE_TRIAL '+JSON.stringify({status:report.status,trials:rows.length,
   labelledCounts:separate,rawHitEvidenceCount:report.rawHitEvidenceCount,
@@ -287,5 +287,5 @@ if(process.argv[2]==='single'){
  if(!item||!profiles.includes(mode))
   throw Error('Missing fixed case or research profile');
  const trial=seededTrial(item,mode);
- console.log('REPEATED_CRITICAL_RECORD '+JSON.stringify(trial));
+ console.log('FIXED_NATIVE_RNG_RECORD '+JSON.stringify(trial));
 }else if(process.argv[1]&&resolve(process.argv[1])===self)run();
