@@ -26,6 +26,8 @@ jobs:
         run: node scripts/opaque-circle-blocker-acceptance.mjs
       - name: Native finite aperture and immutable opening-width sweep
         run: node scripts/finite-aperture-acceptance.mjs
+      - name: JEE-first v19 parallel beam native public problem workflow
+        run: node scripts/jee-parallel-beam-acceptance.mjs
       - name: Opaque blocker browser edits, detector readings and qualified exports
         run: node scripts/opaque-line-blocker-browser.mjs
       - name: LLM authoring CLI with real native execution and revision guards
@@ -62,6 +64,7 @@ jobs:
             test-artifacts/llm-authoring/opaque-line-blocker/
             test-artifacts/browser-opaque-line-blocker/
             test-artifacts/llm-authoring/finite-aperture/
+            test-artifacts/llm-authoring/jee-parallel-beam-v19/
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
