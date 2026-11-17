@@ -112,12 +112,21 @@ test('Strict biconvex geometry, nonoverlap, source/rim clearance and legacy isol
   r=>param(r,'D1').x=0,
   r=>component(r,'S1').emission.mode='directional',
   r=>r.components.push({...structuredClone(component(r,'L2')),id:'L3',parameters:{...param(r,'L2'),x:300}}),
-  r=>r.components.push({id:'M1',type:'plane-mirror',parameters:{x:300,y:0,orientationDeg:90,length:100}})
  ];
  for(const [i,change] of edits.entries()){
   const r=structuredClone(b);change(r);
   assert.throws(()=>prepare(r),null,'Invalid v15 authoring case '+i+' must be refused');
  }
+ // New physical requests can deliberately select the *new* v17 profile,
+ // but an already-saved v15 model cannot acquire a mirror by mutation.
+ const withMirror=structuredClone(b);
+ withMirror.components.push({id:'M1',type:'plane-mirror',
+  parameters:{x:300,y:0,orientationDeg:90,length:100}});
+ assert.equal(prepare(withMirror).schemaVersion,17);
+ const historical=prepare(b),forged=structuredClone(historical);
+ forged.physics.components.push(structuredClone(withMirror.components.at(-1)));
+ assert.throws(()=>validate(forged),
+  'An existing v15 document cannot admit a plane mirror without explicit new authoring');
  const g=thickLensGeometry(param(b,'L1'));
  assert.ok(g.edgeThickness>1);
  close(g.left,-15);close(g.right,15);
