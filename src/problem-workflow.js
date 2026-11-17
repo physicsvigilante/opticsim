@@ -7,6 +7,7 @@ import {assessMethodSuitability,METHOD_SUITABILITY_FORMAT} from './method-suitab
 import {analyzeReducedInverseQuery,reducedInverseCapabilities,INVERSE_FACTS_FORMAT,INVERSE_QUERY_FORMAT} from './reduced-inverse-queries.js';
 import {problemCapabilities,resolveProblemRequest} from './problem-authoring.js';
 import {analyzePlanarAngleQuery,angularCapabilities,ANGLE_QUERY_FORMAT,ANGLE_FACTS_FORMAT} from './planar-angle-queries.js';
+import {analyzePlanarApparentDepthQuery,apparentDepthCapabilities,APPARENT_DEPTH_FACTS_FORMAT,APPARENT_DEPTH_QUERY_FORMAT,APPARENT_DEPTH_KIND} from './planar-apparent-depth-queries.js';
 import {analyzePlaneMirrorAngleQuery,mirrorAngularCapabilities,MIRROR_FACTS_FORMAT,MIRROR_QUERY_FORMAT} from './mirror-angle-queries.js';
 import {observableCapabilities,validateObservables} from './observables.js';
 import {validateInterpretation} from './qualification.js';
@@ -18,6 +19,7 @@ const lensKinds=new Set(lensTrainCapabilities().kinds);
 const curvedKinds=new Set(curvedQueryCapabilities().kinds);
 const inverseKinds=new Set(reducedInverseCapabilities().kinds);
 const angularKinds=new Set(angularCapabilities().kinds);
+const apparentDepthKinds=new Set(apparentDepthCapabilities().kinds);
 const mirrorKinds=new Set(mirrorAngularCapabilities().kinds);
 const observableKinds=observableCapabilities().kinds;
 // References the live fact/query formats, not a second physics validator.
@@ -27,7 +29,8 @@ const factContracts=Object.freeze({
  [CURVED_QUERY_FORMAT]:[CURVED_FACTS_FORMAT,'authoring-scene'],
  [INVERSE_QUERY_FORMAT]:[INVERSE_FACTS_FORMAT],
  [ANGLE_QUERY_FORMAT]:[ANGLE_FACTS_FORMAT,'authoring-scene'],
- [MIRROR_QUERY_FORMAT]:[MIRROR_FACTS_FORMAT]
+ [MIRROR_QUERY_FORMAT]:[MIRROR_FACTS_FORMAT],
+ [APPARENT_DEPTH_QUERY_FORMAT]:[APPARENT_DEPTH_FACTS_FORMAT]
 });
 const requestKindRegistry=()=>({
  ...Object.fromEntries(prismAngleCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:PRISM_QUERY_FORMAT}])),
@@ -35,6 +38,7 @@ const requestKindRegistry=()=>({
  ...Object.fromEntries(reducedInverseCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:INVERSE_QUERY_FORMAT}])),
  ...Object.fromEntries(curvedQueryCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:CURVED_QUERY_FORMAT}])),
  ...Object.fromEntries(angularCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:ANGLE_QUERY_FORMAT}])),
+ ...Object.fromEntries(apparentDepthCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:APPARENT_DEPTH_QUERY_FORMAT}])),
  ...Object.fromEntries(mirrorAngularCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:MIRROR_QUERY_FORMAT}])),
  ...Object.fromEntries(Object.entries(observableKinds).map(([k,v])=>[k,{...v,route:k==='ideal-image'?'existing-analysis-with-native-gate':'native-observation'}]))
 });
@@ -44,14 +48,14 @@ export function problemWorkflowCapabilities(){
   // nested fact contracts, or a solver's shared list of registered kinds.
   return structuredClone({format:PROBLEM_FORMAT,version:1,maxRequests:16,maxCalculations:4,
     required:['format','physical','requests'],optional:['interpretation','illustration','verifyNative'],
-    physical:'Existing minimal authoring request, reduced prism/lens-train/angular/mirror/inverse facts, or null. No invented apparatus fields.',
+    physical:'Existing minimal authoring request, reduced prism/lens-train/angular/mirror/inverse/apparent-depth facts, or null. No invented apparatus fields.',
     requestKinds:requestKindRegistry(),
     methodSuitability:{format:METHOD_SUITABILITY_FORMAT,mode:'exact-typed-request-diagnostic',
       contractFamilies:structuredClone(factContracts),
       limits:['No natural-language interpretation, image parsing or automatic method aliasing.',
         'Known method does not prove original question fidelity; wrong or unregistered kinds stay unrepresented.',
         'An authoring-scene fact family match is not sufficient for physical validity or native run completion.']},
-    authoring:problemCapabilities(),prismAngular:prismAngleCapabilities(),lensTrain:lensTrainCapabilities(),curvedMirrors:curvedQueryCapabilities(),reducedInverse:reducedInverseCapabilities(),angular:angularCapabilities(),mirrorAngular:mirrorAngularCapabilities(),observables:observableCapabilities(),
+    authoring:problemCapabilities(),prismAngular:prismAngleCapabilities(),lensTrain:lensTrainCapabilities(),curvedMirrors:curvedQueryCapabilities(),reducedInverse:reducedInverseCapabilities(),angular:angularCapabilities(),apparentDepth:apparentDepthCapabilities(),mirrorAngular:mirrorAngularCapabilities(),observables:observableCapabilities(),
     policy:'One request file; route by kind, never by answers or expected values. Native componentId may be omitted only when exactly one compatible authored component exists; its binding is recorded, not guessed from geometry or ray paths. Ambiguous or absent targets remain unresolved. No physical repairs or method fallback. Angular-only requests do not trigger native work unless verifyNative is true. Interpretation remains author-provided and unverified.'});
 }
 function validateEnvelope(input){
@@ -66,13 +70,15 @@ function validateEnvelope(input){
     if(!isRecord(r))throw Error('Invalid requested quantity');
     boundedText(r.id,'Request ID',64);boundedText(r.kind,'Request kind',80);
     if(ids.has(r.id))throw Error('Duplicate request ID');ids.add(r.id);
-    if(prismKinds.has(r.kind)||lensKinds.has(r.kind)||curvedKinds.has(r.kind)||inverseKinds.has(r.kind)||mirrorKinds.has(r.kind)||angularKinds.has(r.kind)){if(++angularCount>4)throw Error('At most four analytical calculations per problem');}
+    if(prismKinds.has(r.kind)||lensKinds.has(r.kind)||curvedKinds.has(r.kind)||inverseKinds.has(r.kind)||mirrorKinds.has(r.kind)||angularKinds.has(r.kind)||apparentDepthKinds.has(r.kind)){if(++angularCount>4)throw Error('At most four analytical calculations per problem');}
     if(prismKinds.has(r.kind)){
       if(Object.keys(r).some(k=>!['id','kind'].includes(k)))throw Error('Unsupported prism-angle request field');
     }else if(lensKinds.has(r.kind)){
       if(Object.keys(r).some(k=>!['id','kind'].includes(k)))throw Error('Unsupported lens-train request field');
     }else if(inverseKinds.has(r.kind)){
       if(Object.keys(r).some(k=>!['id','kind'].includes(k)))throw Error('Unsupported inverse request field');
+    }else if(apparentDepthKinds.has(r.kind)){
+      if(Object.keys(r).some(k=>!['id','kind'].includes(k)))throw Error('Unsupported apparent-depth request field');
     }else if(curvedKinds.has(r.kind)){
       if(Object.keys(r).some(k=>!['id','kind','componentId'].includes(k)))throw Error('Unsupported curved-mirror request field');
     }else if(mirrorKinds.has(r.kind)){
@@ -92,7 +98,7 @@ export function planProblem(input){
   const authoredNativeRequests=request.requests.filter(r=>own(observableKinds,r.kind));
   const needsNative=authoredNativeRequests.length>0||request.verifyNative===true;
   let preparation=null,scene=null,sceneConflict=false;
-  if(physical&&physical.format!==PRISM_FACTS_FORMAT&&physical.format!==LENS_FACTS_FORMAT&&physical.format!==ANGLE_FACTS_FORMAT&&physical.format!==MIRROR_FACTS_FORMAT&&physical.format!==CURVED_FACTS_FORMAT&&physical.format!==INVERSE_FACTS_FORMAT){
+  if(physical&&physical.format!==PRISM_FACTS_FORMAT&&physical.format!==LENS_FACTS_FORMAT&&physical.format!==ANGLE_FACTS_FORMAT&&physical.format!==MIRROR_FACTS_FORMAT&&physical.format!==CURVED_FACTS_FORMAT&&physical.format!==INVERSE_FACTS_FORMAT&&physical.format!==APPARENT_DEPTH_FACTS_FORMAT){
     preparation=resolveProblemRequest(physical,{illustration:request.illustration===true});
     scene=preparation.prepared?.document??null;
   }
@@ -163,6 +169,31 @@ export function planProblem(input){
         const missing=/required|Invalid mirror angular query fields|Expected one|Unknown reference|undefined/i.test(error.message);
         results.push(empty(r,missing?'needs-information':'invalid-input',
           missing?'MISSING_MIRROR_ANGLE_FACTS':'INVALID_MIRROR_ANGLE_FACTS',error.message));
+      }
+    }else if(apparentDepthKinds.has(r.kind)){
+      if(!physical){
+        results.push(empty(r,'needs-information','NO_PHYSICAL_FACTS',
+          'Explicit real normal depth, two medium indices and the paraxial viewing assumption are required.'));
+        continue;
+      }
+      const {id,...fields}=r,query={format:APPARENT_DEPTH_QUERY_FORMAT,...fields};
+      try{
+        const result=analyzePlanarApparentDepthQuery(physical,query);
+        calculations.push({id,query,result});
+        results.push({id,kind:r.kind,status:result.status,value:result.value,
+          method:result.method,reasonCode:result.reasonCode,reason:result.reason,
+          assumptions:result.assumptions,limitations:result.limitations,
+          qualification:result.qualification,native:result.native,
+          nativeObservation:false,nativeImageDetected:false,
+          interpretation:result.interpretation,questionSupport:result.questionSupport});
+      }catch(error){
+        const code=error.code||'INVALID_APPARENT_DEPTH_FACTS';
+        const status=code==='MISSING_FACTS'?'needs-information':
+          ['UNSUPPORTED_SCOPE','UNSUPPORTED_VIEWING_MODEL','OUTSIDE_PARAXIAL_DOMAIN',
+            'NONTRANSMITTING_CONE','PARAXIAL_CONSTRUCTION_DISCREPANCY',
+            'OUTSIDE_DERIVED_DEPTH_ENVELOPE'].includes(code)?'unavailable':
+          code==='UNSTABLE_PARAXIAL_RESULT'?'numerically-indeterminate':'invalid-input';
+        results.push(empty(r,status,code,error.message));
       }
     }else if(angularKinds.has(r.kind)){
       const {id,...rest}=r,query={format:ANGLE_QUERY_FORMAT,...rest};
@@ -244,8 +275,14 @@ export function planProblem(input){
   const canRun=needsNative&&!!scene&&!invalid&&
     (request.verifyNative===true||nativeRequests.length>0);
   const {prepared:ignored,...prep}=preparation||{};
+  const unverifiedApparentDepth=physical?.format===APPARENT_DEPTH_FACTS_FORMAT&&
+    request.requests.every(r=>r.kind===APPARENT_DEPTH_KIND)&&request.verifyNative===true&&!scene;
   const native={required:needsNative,canRun,
-    reason:!needsNative?'No registered native result or verification requested.':!scene?'No unambiguous validated forward scene.':!canRun?'No uniquely determined native measurement target.':null};
+    reason:unverifiedApparentDepth?'Reduced apparent-depth facts do not define a complete native scene; native verification requires explicit source, boundary, detector and policy.':
+      !needsNative?'No registered native result or verification requested.':
+      !scene?'No unambiguous validated forward scene.':
+      !canRun?'No uniquely determined native measurement target.':null,
+    ...(unverifiedApparentDepth?{reasonCode:'NATIVE_SCENE_REQUIRED'}:{})};
   const plan={format:'opticsim-problem-plan-v1',request,results,calculations,
     preparation:preparation?prep:null,scene,diagnostics,targetBindings,
     native,nativeRequests,interpretation:'author-provided-not-independently-verified',
