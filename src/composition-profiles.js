@@ -1,7 +1,7 @@
 // Reviewed whole-system compatibility data. No ray propagation, executable user
 // rules, example names, physical defaults, or implicit saved-scene migration.
 // A profile is an admission contract, NOT a prescribed optical encounter order.
-const source='point-source',mirror='plane-mirror',detector='ray-detector';
+const source='point-source',beam='parallel-beam',mirror='plane-mirror',detector='ray-detector';
 const lens='ideal-lens',prism='triangular-prism',polygon='polygon-dielectric';
 const circle='circular-dielectric',plane='planar-interface';
 const curves=['ideal-curved-mirror','circular-arc-mirror'];
@@ -71,6 +71,15 @@ define(13,finite,{
   [mirror]:range(0,1),'line-blocker':range(0,1),[detector]:range(0,2)
 },[group([polygon,prism],1,1)],
   [rule('finite-composition'),optical('general-optical',polygon,prism)],single);
+// v19 is deliberately reserved for a separate JEE-first source family while
+// v14–v18 remain held. It never upgrades or broadens old saved profiles.
+// It admits one true finite native Beam, not a point-source mode or a route.
+define(19,'native-parallel-lens-tracing',{
+  [beam]:range(1,1),[lens]:range(0,1),'finite-aperture':range(0,1),[detector]:range(0,2)
+},[],[rule('native-parallel-beam')],[]);
+define(19,'native-parallel-planar-tracing',{
+  [beam]:range(1,1),[plane]:range(1,2),[detector]:range(0,2)
+},[],[rule('native-parallel-beam')],[]);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 
@@ -78,6 +87,8 @@ const byKey=new Map(definitions.map(p=>[p.id,p]));
 // mixtures. It identifies a candidate contract, never certifies it or retries
 // a more permissive profile after geometry/material validation fails.
 const selection=freeze([
+  {model:'native-parallel-planar-tracing',version:19,when:[group([beam],1,32),group([plane],1,32)]},
+  {model:'native-parallel-lens-tracing',version:19,when:[group([beam],1,32)]},
   {model:finite,version:13,when:[group([polygon,prism],1,32),group(['line-blocker'],1,32)]},
   {model:finite,version:12,when:[group([prism],1,32),group([mirror],1,32)]},
   {model:finite,version:11,when:[group([polygon],1,32),group([mirror],2,32)]},
