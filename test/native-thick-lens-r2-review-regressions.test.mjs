@@ -294,3 +294,54 @@ test('R2-02 conservative adjacent admission boundaries never silently change phy
   sourceDetectorClearance:true,nearCornerControl:true
  }));
 });
+
+test('R2-02 near-clearance native rays actually meet both bodies and nearby detectors',async()=>{
+ const trials=[
+  {name:'0.011-mm interlens axial gap',edit:r=>{
+   source(r).parameters.y=0;
+   lens(r,'L2').x=30.011;
+  },counts:{L1:2,L2:2},detector:1},
+  {name:'0.011-mm source-to-front axial entry',edit:r=>{
+   single(r);
+   Object.assign(source(r).parameters,{x:-15.011,y:0});
+  },counts:{L1:2},detector:1},
+  {name:'0.011-mm back-face-to-detector crossing',edit:r=>{
+   single(r);
+   source(r).parameters.y=0;
+   component(r,'D1').parameters.x=15.011;
+  },counts:{L1:2},detector:1}
+ ];
+ for(const spec of trials){
+  const r=make();spec.edit(r);
+  const doc=prepare(r);
+  const out=execute(doc,fixture.requests);
+  assert.equal(out.summary.native.status,'completed',
+   spec.name+' must not silently qualify an incomplete native ray');
+  assert.equal(out.summary.executionPassed,true);
+  for(const [id,count] of Object.entries(spec.counts)){
+   const meter=out.summary.observations.interfacesById[id];
+   assert.equal(meter.interactions,count,spec.name+' genuine native lens interactions');
+   for(const face of ['front-arc','back-arc'])
+    independentFace(meter.faces[face].first,lens(r,id));
+  }
+  assert.equal(out.summary.observations.detectorsById.D1.crossings,spec.detector);
+  console.log('V15_R2_CLEARANCE_NATIVE '+JSON.stringify({
+   case:spec.name,status:out.summary.native.status,
+   meters:out.summary.observations.interfacesById,
+   detectorCrossings:out.summary.observations.detectorsById.D1.crossings
+  }));
+ }
+ const corner=single(make()),p=lens(corner),frontRim=-p.centerThickness/2+
+  sag(p.frontRadius,p.apertureHeight/2);
+ Object.assign(source(corner).parameters,{x:-200,y:55});
+ source(corner).emission.directionDeg=Math.atan2(-5,frontRim+0.5+200)*180/Math.PI;
+ const doc=prepare(corner),out=execute(doc,requests);
+ const first=out.report.native.diagnostics.interfacesById.L1.first;
+ assert.ok(first&&first.faceId==='top-rim','Accepted near-corner ray must really reach the top rim');
+ const face=independentFace(first,p);
+ const results=await verifyWithholding(doc,out,'accepted near-corner');
+ console.log('V15_R2_NEAR_CORNER_NATIVE '+JSON.stringify({
+  status:out.summary.native.status,first:face,truncation:out.summary.native.truncation,
+  results
+ }));
+});
