@@ -110,7 +110,7 @@ test('v16 validates whole mirror segment, lens geometry, detector/source and mod
  const twoLenses=structuredClone(baseline);
  twoLenses.components.push({...structuredClone(comp(twoLenses,'L1')),id:'L2',
   parameters:{...comp(twoLenses,'L1').parameters,x:75}});
- assert.equal(prepare(twoLenses).schemaVersion,17);
+ assert.equal(prep(twoLenses).schemaVersion,17);
  const forged=prep(baseline);
  forged.physics.components.push(structuredClone(twoLenses.components.at(-1)));
  assert.throws(()=>validate(forged),
