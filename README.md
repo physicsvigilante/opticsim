@@ -26,6 +26,10 @@ the [synthetic problem request](examples/polygon-dielectric.json), and the
 `polygon-dielectric` viewer example. This is 2D software validation, not a
 claim that an original JEE square-glass question was solved.
 
+## Two separated finite dielectric bodies — native v14 (review candidate)
+
+A new, isolated **v14** optical arrangement composes **two explicitly authored, non-overlapping convex four-vertex glass regions**, 1–4 exact single-ray sources, and up to two external native detectors. Each body has its own vertices, material index and Fresnel policy; both must declare the **same exterior refractive index**. Pinned PhyDemo `Glass` chooses real entry/exit/reflection encounters for each body, with per-body and per-face native observations. The contract conservatively rejects overlapping, nested or nearly touching bodies, and does not add a new solver, prescribe ray routes or infer optical images. Existing one-region scene versions remain unchanged. See [two finite dielectrics: scope, examples and review limits](docs/TWO-SEPARATED-DIELECTRICS.md). **This physical milestone requires a separate R2 review before merging; a passing native trace is not independent correctness certification.**
+
 ## JEE Optical Systems Atlas — capability discovery, not problem solving
 
 The [Optical Systems Atlas](evaluation/optical-systems-atlas-v1/README.md)
