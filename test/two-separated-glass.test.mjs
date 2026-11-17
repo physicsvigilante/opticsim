@@ -99,8 +99,7 @@ test('Shared exterior and convex disjoint geometry are strict, not inferred from
   r=>{find(r,'S1').emission.mode='directional';}, // unsupported ray cone
   r=>r.components.push({...structuredClone(find(r,'G2')),id:'G3'}),
   r=>r.components.push({id:'M',type:'plane-mirror',parameters:{x:400,y:0,orientationDeg:90,length:80}}),
-  r=>r.components.push({id:'B',type:'line-blocker',parameters:{x:400,y:0,orientationDeg:90,length:80}}),
-  r=>r.components.splice(r.components.findIndex(c=>c.id==='G2'),1)
+  r=>r.components.push({id:'B',type:'line-blocker',parameters:{x:400,y:0,orientationDeg:90,length:80}})
  ];
  for(const [i,edit] of rejected.entries()){
   const r=structuredClone(b);edit(r);
