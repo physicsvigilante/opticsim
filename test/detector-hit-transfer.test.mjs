@@ -16,7 +16,7 @@ const integration=JSON.parse(read('test/fixtures/detector-hit-integration-rebase
 const focusedPostFreeze=JSON.parse(read('test/fixtures/focused-exploration-postfreeze.json'));
 const notebookPostFreeze=JSON.parse(read('test/fixtures/portable-notebook-postfreeze-v1.json'));
 const footprintPostFreeze=JSON.parse(read('test/fixtures/directional-footprint-app-postfreeze-v1.json'));
-const gitBlobSha1=p=>{const bytes=read(p);return createHash('sha1').update(Buffer.from('blob '+bytes.length+'\\0')).update(bytes).digest('hex');};
+const gitBlobSha1=p=>{const bytes=read(p);const header=Buffer.concat([Buffer.from('blob '+bytes.length),Buffer.from([0])]);return createHash('sha1').update(header).update(bytes).digest('hex');};
 // Historical SHA-256 values remain immutable evidence of the earlier R1 run.
 // The NEW parentage milestone intentionally modifies these current production
 // paths, and does not retroactively make the old transfer a newly blind test.
