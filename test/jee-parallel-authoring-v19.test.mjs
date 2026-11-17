@@ -54,7 +54,14 @@ test('native v19 lens-aperture scene reports exactly two sampled focal-plane hit
  assert.deepEqual(r.map(x=>x.status),['available','available','available','available']);
  assert.equal(r[0].value,8);assert.equal(r[1].value,6);
  assert.equal(r[2].value,2);assert.equal(r[3].value.length,2);
- for(const e of r[3].value){near(e.pointMm.x,100);near(e.pointMm.y,0);near(e.incomingUnit.x,1);}
+ for(const e of r[3].value){
+   near(e.pointMm.x,100);near(e.pointMm.y,0);
+   // Actual ideal-lens focal rays still have the nonzero outgoing slope
+   // -y/f. A focal-plane crossing does NOT make their direction horizontal.
+   const slope=2.5/100,scale=Math.hypot(1,slope);
+   near(e.incomingUnit.x,1/scale);
+   near(Math.abs(e.incomingUnit.y),slope/scale);
+ }
  assert.equal(out.summary.native.truncation,0);
  assert.equal(out.summary.native.undefinedBehavior,0);
  assert.equal(out.summary.observations.emissionsById.B1.emitted,8);
