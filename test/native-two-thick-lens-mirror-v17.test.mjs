@@ -230,3 +230,79 @@ test('v17 native full Fresnel remains incomplete/withheld rather than claiming a
   truncation:result.summary.native.truncation,undefinedBehavior:result.summary.native.undefinedBehavior,
   requests:measured.results.map(x=>x.status)}));
 });
+
+test('v17 composition admits mirror between lenses without manufacturing L2 encounters',async()=>{
+ const r=make();c(r,'M1').parameters.x=75;
+ const d=prepare(r),raw=inspectNative(d),ids=raw.trace.map(e=>e.id);
+ assert.equal(d.schemaVersion,17);
+ assert.deepEqual(ids,['D1','L1','L1','M1','L1','L1','D1']);
+ assert.equal(raw.diagnostic.interfacesById.L1.interactions,4);
+ assert.equal(raw.diagnostic.interfacesById.L2.interactions,0);
+ assert.equal(raw.diagnostic.reflectionsById.M1,1);
+ assert.equal(raw.diagnostic.detectorsById.D1.crossings,2);
+ raw.trace.filter(e=>e.id==='L1').forEach(e=>evidenceFace(e,lens(r,'L1')));
+ const s=run(d).summary,measured=await evaluateObservables(d,fixture.requests,s);
+ assert.equal(s.native.status,'completed');
+ assert.deepEqual(measured.results.map(x=>typeof x.value==='number'?x.value:null),
+   [4,0,null,null,1,2]);
+ assert.ok(measured.results.every(x=>x.status==='qualified'));
+ console.log('V17_NATIVE_TOPOLOGY_CONTROLS '+JSON.stringify({
+  topology:'mirror-between-lenses',ids,mirrorAt:75,unhitLens:'L2',
+  runStatus:s.native.status
+ }));
+});
+test('v17 genuinely reflects from mirror FIRST, then traverses the two thick lenses',()=>{
+ const r=make();
+ c(r,'S1').emission.directionDeg=180;
+ c(r,'M1').parameters.x=-250;
+ Object.assign(c(r,'D1').parameters,{x:350,y:0,length:400,orientationDeg:90});
+ const doc=prepare(r),raw=inspectNative(doc),ids=raw.trace.map(x=>x.id);
+ assert.deepEqual(ids,['M1','L1','L1','L2','L2','D1']);
+ assert.equal(raw.diagnostic.reflectionsById.M1,1);
+ assert.equal(raw.diagnostic.interfacesById.L1.interactions,2);
+ assert.equal(raw.diagnostic.interfacesById.L2.interactions,2);
+ assert.equal(raw.diagnostic.detectorsById.D1.crossings,1);
+ raw.trace.filter(x=>x.id==='L1'||x.id==='L2')
+  .forEach(e=>evidenceFace(e,lens(r,e.id)));
+ const mirror=raw.trace.find(x=>x.id==='M1');
+ assert.ok(mirror.incoming.x<0&&mirror.outgoing[0].x>0);
+ close(mirror.outgoing[0].x,-mirror.incoming.x);
+ close(mirror.outgoing[0].y,mirror.incoming.y);
+ console.log('V17_NATIVE_MIRROR_FIRST '+JSON.stringify({
+  ids,mirrorPoint:mirror.point,status:'completed'}));
+});
+test('v17 genuinely misses both finite lenses while reflecting at the finite mirror',async()=>{
+ const r=make();c(r,'S1').parameters.y=80;
+ const d=prepare(r),raw=inspectNative(d),ids=raw.trace.map(e=>e.id);
+ assert.deepEqual(ids,['D1','M1','D1']);
+ assert.equal(raw.diagnostic.interfacesById.L1.interactions,0);
+ assert.equal(raw.diagnostic.interfacesById.L2.interactions,0);
+ assert.equal(raw.diagnostic.reflectionsById.M1,1);
+ assert.equal(raw.diagnostic.detectorsById.D1.crossings,2);
+ const result=run(d).summary;
+ assert.equal(result.native.status,'completed');
+ const read=await evaluateObservables(d,fixture.requests,result);
+ assert.deepEqual(read.results.map(x=>typeof x.value==='number'?x.value:null),
+  [0,0,null,null,1,2]);
+ assert.ok(read.results.every(x=>x.status==='qualified'));
+ console.log('V17_NATIVE_LENS_MISS '+JSON.stringify({ids,status:result.native.status,
+  detectorCrossings:raw.diagnostic.detectorsById.D1.crossings}));
+});
+test('v17 reverse illumination returns through both native lens bodies from the right',()=>{
+ const r=make();
+ Object.assign(c(r,'S1').parameters,{x:400,y:0});
+ c(r,'S1').emission.directionDeg=180;
+ c(r,'M1').parameters.x=-250;
+ Object.assign(c(r,'D1').parameters,{x:350,y:0,orientationDeg:90,length:400});
+ const d=prepare(r),raw=inspectNative(d),ids=raw.trace.map(e=>e.id);
+ assert.deepEqual(ids,['D1','L2','L2','L1','L1','M1','L1','L1','L2','L2','D1']);
+ assert.equal(raw.diagnostic.interfacesById.L1.interactions,4);
+ assert.equal(raw.diagnostic.interfacesById.L2.interactions,4);
+ assert.equal(raw.diagnostic.reflectionsById.M1,1);
+ assert.equal(raw.diagnostic.detectorsById.D1.crossings,2);
+ raw.trace.filter(e=>e.id==='L1'||e.id==='L2')
+  .forEach(e=>evidenceFace(e,lens(r,e.id)));
+ console.log('V17_NATIVE_REVERSE_RETURN '+JSON.stringify({
+  ids,status:'completed',mirror:raw.trace.find(e=>e.id==='M1').point
+ }));
+});
