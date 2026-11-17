@@ -87,7 +87,18 @@ export function validateParallelBeamComposition(components,model,rayDensity,mirr
     fail(path,'A native beam sample lies within 0.01 mm of a finite lens rim.','UNSUPPORTED_SCOPE');
   }
   if(stop){
-   const a=stop.parameters,geometry=apertureGeometry(a,mirrorEndpoints);
+   const a=stop.parameters;
+   // Initial straight-line corner checks are valid only BEFORE a lens can
+   // change the direction. A native post-lens ray can meet the stop's inner
+   // endpoint even though its original parallel sample was nowhere near it.
+   // Until a bounded, separately reviewed downstream policy exists, refuse
+   // an aperture beyond a forward ideal lens. This checks only authored plane
+   // order, not a prescribed ray route, transmitted sample or image.
+   if(lens&&(lens.parameters.x-p.x)*direction.x>BEAM_CLEARANCE_MM&&
+      (a.x-p.x)*direction.x>BEAM_CLEARANCE_MM&&
+      (a.x-lens.parameters.x)*direction.x>BEAM_CLEARANCE_MM)
+    fail(path,'A parallel-beam aperture downstream of a forward ideal lens is not admitted: refracted rays may hit gap/arm endpoints not checked by the initial-sample guard. Place the stop before the lens or use a separately validated arrangement.','UNSUPPORTED_SCOPE');
+   const geometry=apertureGeometry(a,mirrorEndpoints);
    if(![90,-90].includes(a.orientationDeg)||
       [geometry.p1,geometry.p2,geometry.p3,geometry.p4].some(v=>!allowed(v.x,v.y)))
     fail(path,'v19 aperture must be vertical with all solid and gap endpoints inside coordinate bounds.','UNSUPPORTED_SCOPE');

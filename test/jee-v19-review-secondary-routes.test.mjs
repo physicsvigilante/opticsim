@@ -106,7 +106,10 @@ test('Chat B N3: canonical v19 ideal lens focuses +180 and -180 native Beam from
  }
 });
 
-// N2: an actual *admitted* v19 scene can place a native refracted ray near
+// N2 historical pre-fix geometry: independently demonstrated in parent PR128
+// that an admitted post-lens aperture can coincide with a native ray endpoint.
+// The corrected validator now refuses that layout before native propagation.
+// Previously, an actual *admitted* v19 scene could place a refracted ray near
 // an aperture corner. The first-path guard checks emitted y=17.5 at x=50,
 // but at x=0 an ideal f=100 lens changes the ray's eventual y at x=50 to
 // 17.5*(1-50/100)=8.75, exactly the upper gap endpoint for openingLength=17.5.
@@ -118,63 +121,54 @@ function postLensStop(openingLength){
  component(p,'A1').parameters.openingLength=openingLength;
  return p;
 }
-function probeNative(p){
- const d=prepareScene(p).document,compiled=core.loadDocument(d);
- const {scene,idMap}=compiled;
- const sources=core.observeSourceSet(d,scene,idMap);
- const mirrors=core.observeMirrorSet(d,scene,idMap);
- const detectors=core.observeDetectorSet(d,scene,idMap,{captureHitEvents:true});
- const interfaces=core.observeInterfaceSet(d,scene,idMap);
- const blockers=core.observeBlockerSet(d,scene,idMap);
- const native=scene.objs[idMap.get('A1')],original=native.onRayIncident,events=[];
- native.onRayIncident=function(...args){
-  const ray=args[0],hit=args[2],dx=ray.p2.x-ray.p1.x,dy=ray.p1.y-ray.p2.y;
-  const incoming={x:dx/Math.hypot(dx,dy),y:-dy/Math.hypot(dx,dy)};
-  const point=hit&&Number.isFinite(hit.x)&&Number.isFinite(hit.y)?{x:hit.x,y:-hit.y}:null;
-  const response=original.apply(this,args);
-  if(events.length>=128)throw Error('Test-only native event list would overflow');
-  events.push({point,incoming,absorbed:response?.isAbsorbed===true});
-  return response;
- };
- const sim=new core.Simulator(scene,null,null,null,null,null,false,d.simulation.processedRayLimit);
- let event=null;
- for(const name of ['simulationComplete','simulationStop'])sim.on(name,()=>event=name);
- sim.updateSimulation();
- const diagnostic=core.diagnostics(scene,sim,sources,mirrors,detectors,interfaces,blockers,
-  {detectorHitEvents:true,nativeEvent:event});
- return {d,events,status:core.classifyRun(event,diagnostic),diagnostic,event};
-}
-test('Chat B N2: post-lens stop at an analytically exact corner is admitted and a native event is recorded without fixing its path',()=>{
- const results=[];
- for(const openingLength of [17.46,17.5,17.54]){
-  const p=postLensStop(openingLength);
-  const native=probeNative(p);
-  const emitting=parallelBeamSamples(component(p,'B1').parameters,.2);
-  assert.equal(emitting.length,8);
-  assert.equal(native.d.schemaVersion,19);
-  assert.ok(['completed','completed-with-warnings','incomplete'].includes(native.status),
-   'Unexpected native execution status '+native.status);
-  assert.equal(native.diagnostic.emitted,8);
-  const gap=openingLength/2,cornerY=17.5*(1-50/100);
-  const distance=Math.abs(cornerY-gap);
-  close(cornerY,8.75);
-  if(openingLength===17.5)close(distance,0,1e-12);
-  for(const hit of native.events){
-   assert.equal(hit.absorbed,true,'Every real native aperture hit must terminate a ray');
-   assert.ok(hit.point&&Math.abs(hit.point.x-50)<1e-5);
-  }
-  const nearCorner=native.events.filter(e=>e.point&&Math.abs(Math.abs(e.point.y)-gap)<.05).length;
-  assert.equal(native.diagnostic.blockersById.A1.absorptions,native.events.length);
-  results.push({openingLength,sourceCount:8,expectedPostLensUpperRayY:cornerY,
-   distanceToInnerCornerMm:distance,status:native.status,
-   nativeAbsorptions:native.diagnostic.blockersById.A1.absorptions,
-   nativeDetectorCrossings:native.diagnostic.detectorsById.D1.crossings,
-   nearCornerNativeAbsorptions:nearCorner,
-   closestNativeArmY:native.events.reduce((n,e)=>e.point?Math.min(n,Math.abs(Math.abs(e.point.y)-gap)):n,Infinity),
-   truncation:native.diagnostic.truncation,undefinedBehavior:native.diagnostic.undefinedBehavior});
+// On the separately preserved original research HEAD 1b712dc00a0e49...,
+// a real pinned native post-lens endpoint produced 2 absorbed rays and 6
+// detector crossings in a completed run, but did NOT prove the exact-corner
+// optical decision was numerically unambiguous. This source changes admission,
+// never PhyDemo. No post-lens native report is relabelled as new blind evidence.
+test('N2 correction: refuse every forward post-lens aperture near-corner configuration before any native run',()=>{
+ for(const gap of [17.46,17.5,17.54]){
+  const p=postLensStop(gap);
+  assert.throws(()=>prepareScene(p),/downstream of a forward ideal lens/,String(gap));
  }
- assert.equal(results.length,3);
- console.log('V19_REVIEW_POST_LENS_CORNER '+JSON.stringify(results));
+ const p=postLensStop(17.5);
+ Object.assign(component(p,'B1').parameters,{x:100,directionDeg:180});
+ Object.assign(component(p,'A1').parameters,{x:-50});
+ Object.assign(component(p,'D1').parameters,{x:-100});
+ assert.throws(()=>prepareScene(p),/downstream of a forward ideal lens/,'reverse-going postlens stop');
+ component(p,'B1').parameters.directionDeg=-180;
+ assert.throws(()=>prepareScene(p),/downstream of a forward ideal lens/,'equivalent -180 direction');
+ console.log('V19_POST_LENS_STOP_REFUSAL '+JSON.stringify({
+  testedGapsMm:[17.46,17.50,17.54],forwardRejected:true,
+  reversePositive180Rejected:true,reverseNegative180Rejected:true,
+  reason:'initial native sample clearances do not cover refracted corner encounters'
+ }));
+});
+
+test('N2 correction: preserve true native aperture BEFORE lens in both directions and ordinary no-stop focusing',async()=>{
+ const original=sourceInput('lens'),reference=await observe(original,[
+  {id:'emitted',kind:'source-emissions',componentId:'B1'},
+  {id:'abs',kind:'blocker-absorptions',componentId:'A1'},
+  {id:'count',kind:'detector-crossings',componentId:'D1'}
+ ]);
+ assert.equal(reference.out.native.status,'completed');
+ assert.deepEqual(reference.results.map(x=>x.value),[8,6,2]);
+ const p=sourceInput('lens');
+ Object.assign(component(p,'B1').parameters,{x:100,directionDeg:180});
+ Object.assign(component(p,'A1').parameters,{x:50,openingLength:12});
+ Object.assign(component(p,'D1').parameters,{x:-100});
+ const reverse=await observe(p,[
+  {id:'emitted',kind:'source-emissions',componentId:'B1'},
+  {id:'abs',kind:'blocker-absorptions',componentId:'A1'},
+  {id:'count',kind:'detector-crossings',componentId:'D1'}
+ ]);
+ assert.equal(reverse.out.native.status,'completed');
+ assert.equal(reverse.out.native.truncation,0);
+ assert.deepEqual(reverse.results.map(x=>x.value),[8,6,2]);
+ console.log('V19_PRE_LENS_STOP_ALLOWED '+JSON.stringify({
+  forward:reference.results.map(x=>x.value),
+  reverse:reverse.results.map(x=>x.value)
+ }));
 });
 
 test('Chat B N4: explicit numerical limits below default remain hash-bound and suppress incomplete native output',async()=>{
