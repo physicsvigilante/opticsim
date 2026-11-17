@@ -104,6 +104,11 @@ try{
  check('Both native Glass bodies report their own true entry/exit face and detector crossings');
  const pixels=await js(`(()=>{const c=document.getElementById('light'),p=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let n=0;for(let i=3;i<p.length;i+=4)if(p[i]>0)n++;return n;})()`);
  assert.ok(pixels>100);check('Native two-region rays render visibly in actual Chrome',{pixels});await shot('two-glass-native-ray');
+ const fields=await js("(()=>({first:!!document.getElementById('G1-insideIndex'),second:!!document.getElementById('G2-insideIndex'),sourceMode:document.getElementById('S1-mode')?.textContent??'',sampling:document.getElementById('sampling-note').textContent,model:document.getElementById('model-label').textContent}))()");
+ assert.equal(fields.first,true);assert.equal(fields.second,true);
+ assert.match(fields.sourceMode,/Single ray/);assert.match(fields.sampling,/one exact native ray/);
+ assert.match(fields.model,/Two separate glass regions/);
+ check('v14 rebuilt both physical input sets and uses truthful native single-ray controls',fields);
  await edit('G2-insideIndex',1.4);
  const revised=await until(state,s=>s.status==='completed'&&s.results?.[1]?.value===2&&
   s.results?.[3]?.value?.['face-12']?.first?.destinationIndex===1.4,'G2 physical index edit');
