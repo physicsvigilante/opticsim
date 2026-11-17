@@ -101,7 +101,7 @@ function update() {
       (r.signedPower===null?'unavailable':format(r.signedPower))+' (relative native units)').join('  |  ');
   const blockerSummary=d?.blockersById&&blockers?Object.entries(d.blockersById).map(([id,r])=>
     id+': '+r.absorptions+' absorbed native ray'+(r.absorptions===1?'':'s')).join(' · '):'';
-  $('sampling-note').textContent = ['planar-media-tracing','circular-dielectric-tracing','triangular-prism-tracing','polygon-dielectric-tracing','finite-dielectric-composition'].includes(session.document?.physics.model) ?
+  $('sampling-note').textContent = ['planar-media-tracing','circular-dielectric-tracing','triangular-prism-tracing','polygon-dielectric-tracing','finite-dielectric-composition','two-separated-dielectrics-tracing'].includes(session.document?.physics.model) ?
     'Each single-ray source emits one exact native ray. Sampling density does not widen it into a cone; change its explicit direction to investigate incidence.' : d && d.emitted < 3 ?
     !hasOptics ? `Only ${d.emitted} native ray${d.emitted===1?'':'s'} emitted; increase sampling to inspect free-space propagation.` :
     `Only ${d.emitted} native ray${d.emitted===1?'':'s'} emitted. This cone is sparsely sampled and may miss the ${mixed ? 'lens or mirror' : mirror ? 'mirror' : 'lenses'}. Increase sampling or opening angle to inspect more rays.` :
