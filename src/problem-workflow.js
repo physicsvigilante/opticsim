@@ -311,5 +311,6 @@ export function resultCoverage(results){
       available.length===results.length?'all-requested-quantities-available':
       available.length?'partially-available':'none-available',
     ...(unverifiedA?{nativeVerification:'requested-but-no-native-scene'}:{}),
-    meaning:'Coverage of authored requests only, never proof that the original question was faithfully interpreted or answered or that explicit native verification succeeded.'};
+    meaning:unverifiedA?'A conditional apparent-depth calculation exists, but explicitly requested native verification was not performed. Coverage is not proof of the original question or a measured image.':
+      'Coverage of authored requests only, never proof that the original question was faithfully interpreted or answered.'};
 }
