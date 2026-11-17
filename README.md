@@ -4,6 +4,10 @@ A standalone-browser-capable optical bench powered by PhyDemo Ray Optics Simulat
 pinned to **811f508d2b070898c241a568b0c167dcb8645251**. Browser runtime resources
 are local. No LLM request is needed to open, simulate, or edit supported scenes.
 
+## Direction-resolved sampled detector footprint (draft measurement extension)
+
+The opt-in `detector-directional-footprint` result derives **unweighted sampled mean position, min/max, span and RMS spread** separately for actual crossings travelling toward each detector-normal direction. It reuses the existing native `detector-hit-events` collector with no new ray tracing, no user path plan and no image inference. The 32-hit bound, endpoint ambiguity and incomplete/stale-run withholding still apply; empty crossing groups have **null** centroid and spread. The feature remains a draft measurement proposal pending exact-head CI and independent review. See the [directional detector footprint contract](docs/DETECTOR-DIRECTIONAL-FOOTPRINT.md).
+
 ## Bounded native detector hit-position observations
 
 Opticsim can now return ordered, actual native `ray-detector` callback positions and incoming directions when `detector-hit-events` is explicitly requested. Only a complete, current native run qualifies up to 32 events per detector; ambiguous or overflowed lists are withheld without changing existing crossing counts. A hit list is not a tracked ray history, attributed source, detected image, continuous shadow, or irradiance. See [detector-hit position contract](docs/DETECTOR-HIT-EVENTS.md).
