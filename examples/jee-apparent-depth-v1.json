@@ -1,0 +1,38 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-planar-apparent-depth-facts-v1",
+    "lengthUnit": "mm",
+    "object": {
+      "id": "O1",
+      "normalDepth": 120
+    },
+    "media": {
+      "objectIndex": 1.5,
+      "observerIndex": 1
+    },
+    "viewing": {
+      "model": "paraxial",
+      "maxIncidentAngleDeg": 5
+    }
+  },
+  "requests": [
+    {
+      "id": "apparentDepth",
+      "kind": "paraxial-apparent-depth"
+    }
+  ],
+  "verifyNative": false,
+  "interpretation": {
+    "requestedResult": "Conditional near-normal apparent depth of a stated point object below one ideal planar interface.",
+    "stated": [
+      "Synthetic teaching problem: real normal depth is 120 mm; object-side index 1.5, receiving-side index 1; viewing is assumed paraxial."
+    ],
+    "assumptions": [
+      "Maximum object-medium incident ray angle of 5 degrees is stipulated for an optional symmetric-ray comparison, not inferred from an eye or pupil."
+    ],
+    "unknowns": [
+      "The actual observer position, eye aperture, native rays and a physical image are not specified."
+    ]
+  }
+}
