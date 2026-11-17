@@ -264,9 +264,12 @@ test('verifyNative:true refuses to misrepresent a conditional formula as native 
   assert.equal(calls,0);assert.equal(r.exitCode,2);
   assert.equal(r.report.status,'blocked-native-verification');
   assert.equal(r.report.results[0].status,'conditional');
-  assert.equal(r.report.coverage.status,'all-requested-quantities-available');
+  assert.equal(r.report.coverage.status,'blocked-native-verification');
+  assert.equal(r.report.coverage.available,1,'conditional math still calculated, but requested native verification is blocked');
   assert.equal(r.report.native.status,'not-run');
-  assert.equal(r.report.native.reasonCode,'NATIVE_SCENE_REQUIRED');
+  assert.match(r.report.native.reason,/NATIVE_SCENE_REQUIRED/);
+  assert.ok(r.report.diagnostics.some(d=>d.code==='NATIVE_SCENE_REQUIRED'));
+  assert.equal(r.report.results[0].nativeVerificationUnfulfilled,true);
   assert.equal(r.report.portable.status,'not-created');
   assert.equal(r.report.dispatch.nativeCalls,0);
   assert.ok(!existsSync(resolve(r.output,'qualified-scene.json')));
