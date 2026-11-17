@@ -11,6 +11,7 @@ const twoFinite='two-separated-dielectrics-tracing';
 const thickTrain='native-thick-lens-tracing';
 const thickMirror='native-thick-lens-mirror-tracing';
 const twoThickMirror='native-two-thick-lens-mirror-tracing';
+const thickAperture='native-two-thick-lens-mirror-aperture-tracing';
 const range=(min,max)=>({min,max});
 const group=(types,min,max)=>({types,min,max});
 const rule=(name,excludeTypes=[])=>({name,excludeTypes});
@@ -96,6 +97,12 @@ define(16,thickMirror,{
 define(17,twoThickMirror,{
  [source]:range(1,4),[thick]:range(2,2),[mirror]:range(1,1),[detector]:range(0,2)
 },[],[rule('native-two-thick-mirror'),optical('general-optical',thick)],single);
+// New v18, independently bounded native stop added to the same finite optical
+// objects. v17 and all earlier saved versions remain unchanged and sealed.
+define(18,thickAperture,{
+ [source]:range(1,4),[thick]:range(2,2),[mirror]:range(1,1),
+ 'finite-aperture':range(1,1),[detector]:range(0,2)
+},[],[rule('native-thick-aperture'),optical('general-optical',thick)],single);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 
@@ -103,6 +110,7 @@ const byKey=new Map(definitions.map(p=>[p.id,p]));
 // mixtures. It identifies a candidate contract, never certifies it or retries
 // a more permissive profile after geometry/material validation fails.
 const selection=freeze([
+  {model:thickAperture,version:18,when:[group([thick],2,32),group([mirror],1,32),group(['finite-aperture'],1,32)]},
   {model:twoThickMirror,version:17,when:[group([thick],2,32),group([mirror],1,32)]},
   {model:thickMirror,version:16,when:[group([thick],1,32),group([mirror],1,32)]},
   {model:thickTrain,version:15,when:[group([thick],1,32)]},
