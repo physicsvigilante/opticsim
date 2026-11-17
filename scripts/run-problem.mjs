@@ -7,6 +7,7 @@ import {execFileSync} from 'node:child_process';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {planProblem,resultCoverage,problemWorkflowCapabilities} from '../src/problem-workflow.js';
+import {APPARENT_DEPTH_FACTS_FORMAT,APPARENT_DEPTH_KIND} from '../src/planar-apparent-depth-queries.js';
 import {evaluateDocument} from './author-scene.mjs';
 import {evaluateObservables} from '../src/observables.js';
 import {initialQualification,createQualifiedBundle} from '../src/qualification.js';
@@ -60,7 +61,8 @@ export async function runProblemEvidence({inputBytes,outputPath,execute=executeN
       portable={status:'created',file:'qualified-scene.json',sceneSha256:bundle.sceneSha256,integritySha256:bundle.integritySha256};
     }catch(error){portable={status:'failed',reason:error.message};}
   }
-  let native={status:'not-run',reason:plan.native.reason};
+  let native={status:'not-run',reason:plan.native.reason,
+    ...(plan.native.reasonCode?{reasonCode:plan.native.reasonCode}:{})};
   let results=structuredClone(plan.results);
   if(plan.native.canRun){
     try{
@@ -80,7 +82,15 @@ export async function runProblemEvidence({inputBytes,outputPath,execute=executeN
     results=results.map(r=>map.get(r.id)||r);
   }
   const coverage=resultCoverage(results),invalid=results.some(r=>r.status==='invalid-input')||plan.preparation?.status==='invalid-input';
-  const status=invalid?'invalid-input':coverage.status;
+  // A-only reduced depth can be calculated, but an explicit native
+  // verification request is STILL UNFULFILLED without authored geometry.
+  // Keep its separately valid math, while making the overall report blocked.
+  // This correction deliberately does not change older analytical families.
+  const blockedApparentVerification=plan.request.physical?.format===APPARENT_DEPTH_FACTS_FORMAT&&
+    plan.request.verifyNative===true&&plan.native.required&&!plan.native.canRun&&!plan.scene&&
+    results.some(r=>r.kind===APPARENT_DEPTH_KIND&&r.status==='conditional')&&!invalid;
+  const status=invalid?'invalid-input':
+    blockedApparentVerification?'blocked-native-verification':coverage.status;
   const report={format:'opticsim-problem-report-v1',inputSha256,status,coverage,
     dispatch:{calculationRequests:plan.calculations.length,nativeRequested:plan.native.required,
       nativeCalls:plan.native.canRun?1:0,nativeCallDefinition:'executor attempts, including setup failure',
