@@ -27,6 +27,15 @@ test('R2 F2: native G2-origin TIR is followed by a distinct top-face transmissio
  const doc=prepare(r);
  const evidence=inspectNative(doc); // Real pinned native callbacks, not an authored itinerary.
  const glass=evidence.trace.filter(e=>e.type==='polygon-dielectric');
+ const g2=evidence.diagnostic.interfacesById.G2;
+ assert.equal(g2.first.outcome,'total-internal-reflection');
+ assert.equal(g2.first.from,'inside');
+ near(g2.first.incidentIndex,1.3);near(g2.first.destinationIndex,1);
+ const faces=Object.values(g2.faces);
+ const top=faces.find(f=>f.first&&Math.abs(f.first.pointMm.y-100)<1e-5);
+ assert.ok(top,'Native G2 top-face callback was recorded');
+ assert.equal(top.first.outcome,'transmission');
+ near(top.first.transmittedAngleDeg,40.541601874,1e-5);
  assert.equal(evidence.diagnostic.interfacesById.G2.totalInternalReflections,1);
  assert.equal(evidence.diagnostic.interfacesById.G2.interactions,2);
  assert.equal(evidence.diagnostic.interfacesById.G1.interactions,0);
@@ -58,8 +67,37 @@ test('R2 F1: two-body full-Fresnel mode retains native branching and refuses to 
   {id:'g2',kind:'interface-interactions',componentId:'G2'},
   {id:'d1',kind:'detector-crossings',componentId:'D1'}
  ];
- const summary=evaluate(doc,requests);
+ const run=evaluateDocument(doc,core,requests),summary=run.summary;
+ // Raw native diagnostic is test evidence even when public observations are
+ // properly withheld. Never mistake it for a qualified user measurement.
+ const raw=run.report.native.diagnostics;
  assert.equal(summary.accepted,true);
+ const firstG1=raw.interfacesById.G1.first,firstG2=raw.interfacesById.G2.first;
+ assert.ok(firstG1&&firstG2,'Both bodies have actual native incident callbacks');
+ assert.equal(firstG1.partialReflection,true);
+ assert.equal(firstG2.partialReflection,true);
+ assert.equal(firstG1.incidentIndex,1);
+ assert.equal(firstG1.destinationIndex,1.5);
+ assert.equal(firstG2.incidentIndex,1);
+ assert.equal(firstG2.destinationIndex,1.3);
+ // Independent unpolarized Fresnel reference, NOT used for native ray tracing.
+ const theta=firstG1.incidentAngleDeg*Math.PI/180;
+ const trans=Math.asin(Math.sin(theta)/1.5);
+ const rs=((Math.cos(theta)-1.5*Math.cos(trans))/
+   (Math.cos(theta)+1.5*Math.cos(trans)))**2;
+ const rp=((1.5*Math.cos(theta)-Math.cos(trans))/
+   (1.5*Math.cos(theta)+Math.cos(trans)))**2;
+ const referenceR=(rs+rp)/2;
+ const reflected=firstG1.branches.find(x=>x.kind==='reflected');
+ const transmitted=firstG1.branches.find(x=>x.kind==='transmitted');
+ assert.ok(reflected&&transmitted,
+  'The first sufficiently bright G1 incident ray must yield real native Fresnel branches');
+ near(reflected.relativePower/firstG1.incidentRelativePower,referenceR,1e-6);
+ near(transmitted.relativePower/firstG1.incidentRelativePower,1-referenceR,1e-6);
+ near(reflected.angleDeg,firstG1.incidentAngleDeg,1e-6);
+ // G2 may omit weak branches under the unchanged native cutoff. A missing
+ // reflected ray is never interpreted as zero physical reflectance.
+ assert.ok(firstG2.branches.some(x=>x.kind==='transmitted'));
  assert.ok(['completed','completed-with-warnings','incomplete'].includes(summary.native.status),
   'Record unexpected native status instead of assuming a complete Fresnel tree');
  if(['completed','completed-with-warnings'].includes(summary.native.status)){
@@ -89,4 +127,21 @@ test('R2 F1: two-body full-Fresnel mode retains native branching and refuses to 
  assert.equal(short.executionPassed,false);
  const withheld=await evaluateObservables(limited,requests,short);
  assert.ok(withheld.results.every(x=>x.status==='suppressed'&&x.value===null));
+});
+
+test('R2 F3: diagonally disjoint glass is conservatively refused without a full face certificate',()=>{
+ const r=physical();
+ const assignSquare=(id,cx,cy)=>{
+  const p=body(r,id).parameters;
+  Object.assign(p,{x1:cx-10,y1:cy-10,x2:cx-10,y2:cy+10,
+   x3:cx+10,y3:cy+10,x4:cx+10,y4:cy-10});
+ };
+ assignSquare('G1',0,0);
+ assignSquare('G2',20.008,20.008);
+ // Independent Euclidean corner distance is >0.01 mm, but each supporting
+ // face projection is only 0.008 mm. This is an intentional safe refusal.
+ assert.ok(Math.hypot(.008,.008)>.01);
+ assert.throws(()=>prepare(r),/separation|disjoint|supporting|unsupported/i);
+ assignSquare('G2',20.011,20.011);
+ assert.equal(prepare(r).schemaVersion,14,'Full-face 0.011 mm clearance is admitted');
 });
