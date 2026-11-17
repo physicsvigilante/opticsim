@@ -345,3 +345,67 @@ test('R2-02 near-clearance native rays actually meet both bodies and nearby dete
   results
  }));
 });
+
+test('R2-03 native s/p Fresnel components match independent first-face power fractions',async()=>{
+ const r=single(),p=lens(r);
+ p.partialReflection=true;
+ const doc=prepare(r),loaded=core.loadDocument(doc);
+ const emissions=core.observeSourceSet(doc,loaded.scene,loaded.idMap);
+ const detectors=core.observeDetectorSet(doc,loaded.scene,loaded.idMap);
+ const interfaces=core.observeInterfaceSet(doc,loaded.scene,loaded.idMap);
+ const native=loaded.scene.objs[loaded.idMap.get('L1')];
+ const before=native.onRayIncident;
+ let first=null;
+ native.onRayIncident=function(...args){
+  const incoming={s:args[0].brightness_s,p:args[0].brightness_p};
+  const returned=before.apply(this,args);
+  const outputs=[...(!returned?.isAbsorbed?[args[0]]:[]),...(returned?.newRays||[])];
+  if(first===null){
+   const observation=interfaces.byId.L1.first;
+   assert.ok(observation&&observation.faceId==='front-arc');
+   const n=observation.outwardNormal,incident=observation.incidentDirection;
+   first={incoming,observation,
+    outputs:outputs.map(ray=>{
+     const dx=ray.p2.x-ray.p1.x,dy=-(ray.p2.y-ray.p1.y);
+     const norm=Math.hypot(dx,dy),direction={x:dx/norm,y:dy/norm};
+     return {kind:dot(direction,n)*dot(incident,n)>0?'transmitted':'reflected',
+      s:ray.brightness_s,p:ray.brightness_p,direction};
+    })};
+  }
+  return returned;
+ };
+ const simulator=new core.Simulator(loaded.scene,null,null,null,null,null,false,doc.simulation.processedRayLimit);
+ let event=null;
+ for(const e of ['simulationComplete','simulationStop'])simulator.on(e,()=>{event=e;});
+ simulator.updateSimulation();
+ const diagnostic=core.diagnostics(loaded.scene,simulator,emissions,null,detectors,interfaces);
+ const status=core.classifyRun(event,diagnostic);
+ assert.ok(first);
+ independentFace(first.observation,p);
+ const inc=first.observation.incidentAngleDeg*Math.PI/180;
+ const trans=Math.asin(Math.sin(inc)/p.insideIndex);
+ const Rs=((Math.cos(inc)-p.insideIndex*Math.cos(trans))/
+   (Math.cos(inc)+p.insideIndex*Math.cos(trans)))**2;
+ const Rp=((p.insideIndex*Math.cos(inc)-Math.cos(trans))/
+   (p.insideIndex*Math.cos(inc)+Math.cos(trans)))**2;
+ assert.ok(first.incoming.s>0&&first.incoming.p>0);
+ near(first.incoming.s,0.25,1e-9);near(first.incoming.p,0.25,1e-9);
+ const reflected=first.outputs.find(o=>o.kind==='reflected');
+ const transmitted=first.outputs.find(o=>o.kind==='transmitted');
+ assert.equal(first.outputs.length,2);
+ assert.ok(reflected&&transmitted,'The true first native hit must emit both s/p branches');
+ near(reflected.s,first.incoming.s*Rs,1e-8);
+ near(reflected.p,first.incoming.p*Rp,1e-8);
+ near(transmitted.s,first.incoming.s*(1-Rs),1e-8);
+ near(transmitted.p,first.incoming.p*(1-Rp),1e-8);
+ near(reflected.s+transmitted.s,first.incoming.s,1e-8);
+ near(reflected.p+transmitted.p,first.incoming.p,1e-8);
+ const publicRun=execute(doc,requests);
+ const publicStatuses=await verifyWithholding(doc,publicRun,'polarized Fresnel');
+ assert.equal(publicRun.summary.native.status,status);
+ console.log('V15_R2_POLARIZATION_NATIVE '+JSON.stringify({
+  status,first,reference:{Rs,Rp},
+  nativeTruncation:diagnostic.truncation,
+  publicStatuses
+ }));
+});
