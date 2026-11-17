@@ -102,3 +102,59 @@ test('SphericalLens native ray height matters; a physically missed lens has no i
  assert.equal(miss.diagnostics.detectorsById.D1.crossings,1,
   'A ray missing the lens still crosses the finite native detector');
 });
+
+test('Two disjoint pinned native thick lenses trace actual faces irrespective of object list order',()=>{
+ function run(reversed){
+  // TEST-ONLY direct assembly. Neither a public mixed lens-train contract
+  // nor a precomputed optical route is admitted.
+  const json=core.compile(base).native;
+  const source={type:'SingleRay',p1:{x:-200,y:-10},p2:{x:-180,y:-10},brightness:0.5};
+  const l1={id:'L1',data:lens(),n:1.5};
+  const l2={id:'L2',data:{...lens(),p1:{x:150,y:-50},p2:{x:150,y:50},
+   refIndex:1.3},n:1.3};
+  const list=reversed?[l2,l1]:[l1,l2];
+  const detector={type:'Detector',p1:{x:350,y:-200},p2:{x:350,y:200},irradMap:false};
+  json.objs=[source,...list.map(x=>x.data),detector];
+  const scene=core.loadNative(json),actual=[];
+  for(const [i,element] of list.entries()){
+   const native=scene.objs[i+1],before=native.onRayIncident;
+   native.onRayIncident=function(...args){
+    const incoming=direction(args[0]),point={x:args[2].x,y:-args[2].y};
+    const ret=before.apply(this,args);
+    const outgoing=[...(!ret?.isAbsorbed?[args[0]]:[]),...(ret?.newRays||[])].map(direction);
+    assert.ok(actual.length<20,'Bounded direct native callback evidence');
+    actual.push({id:element.id,point,incoming,outgoing});
+    return ret;
+   };
+  }
+  const map=new Map([['S1',0],['D1',3]]);
+  const sources=core.observeSourceSet(base,scene,map);
+  const detectors=core.observeDetectorSet(base,scene,map);
+  const sim=new core.Simulator(scene,null,null,null,null,null,false,10000);
+  let event=null;for(const name of ['simulationComplete','simulationStop'])sim.on(name,()=>{event=name;});
+  sim.updateSimulation();
+  const diag=core.diagnostics(scene,sim,sources,null,detectors,null);
+  return {actual,status:core.classifyRun(event,diag),diag};
+ }
+ const first=run(false),reversed=run(true);
+ for(const r of [first,reversed]){
+  assert.equal(r.status,'completed');
+  assert.deepEqual(r.actual.map(e=>e.id),['L1','L1','L2','L2']);
+  assert.equal(r.diag.detectorsById.D1.crossings,1);
+  const secondEntry=r.actual[2];
+  const n={x:(235-secondEntry.point.x)/100,y:-secondEntry.point.y/100};
+  close(Math.hypot(235-secondEntry.point.x,secondEntry.point.y),100,1e-5);
+  assert.equal(secondEntry.outgoing.length,1);
+  close(Math.abs(cross(secondEntry.incoming,n)),
+    1.3*Math.abs(cross(secondEntry.outgoing[0],n)),1e-7);
+ }
+ for(let i=0;i<4;i++){
+  close(first.actual[i].point.x,reversed.actual[i].point.x,1e-7);
+  close(first.actual[i].point.y,reversed.actual[i].point.y,1e-7);
+ }
+ console.log('SPHERICAL_LENS_TRAIN_NATIVE_PROBE '+JSON.stringify({
+  status:first.status,faceIds:first.actual.map(x=>x.id),
+  fourHitPositions:first.actual.map(x=>x.point),
+  objectOrderReversalInvariant:true
+ }));
+});
