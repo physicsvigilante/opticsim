@@ -161,3 +161,76 @@ test('incomplete thick-lens and mirror native runs suppress all measurements wit
  console.log('V16_NATIVE_FRESNEL '+JSON.stringify({status:complete.summary.native.status,
   truncation:complete.summary.native.truncation,requested:values.map(x=>x.status)}));
 });
+
+test('v16 right-to-left illumination uses actual reverse curved faces and mirror return',()=>{
+ const r=fresh();
+ Object.assign(comp(r,'S1').parameters,{x:200,y:10});
+ comp(r,'S1').emission.directionDeg=180;
+ Object.assign(comp(r,'M1').parameters,{x:-130,y:0});
+ Object.assign(comp(r,'D1').parameters,{x:100,y:0});
+ const doc=prep(r),obs=inspectNative(doc);
+ assert.deepEqual(obs.trace.map(e=>e.id),['D1','L1','L1','M1','L1','L1','D1']);
+ const faces=obs.trace.filter(e=>e.id==='L1').map(e=>snell(e,comp(r,'L1').parameters));
+ assert.deepEqual(faces.map(x=>x.face),['back-arc','front-arc','front-arc','back-arc']);
+ assert.deepEqual(faces.map(x=>x.from),['outside','inside','outside','inside']);
+ const mirror=obs.trace.find(e=>e.id==='M1');
+ assert.ok(mirror.incoming.x<0);
+ close(mirror.outgoing[0].x,-mirror.incoming.x,1e-8);
+ close(mirror.outgoing[0].y,mirror.incoming.y,1e-8);
+ assert.equal(obs.diagnostic.reflectionsById.M1,1);
+ assert.equal(obs.diagnostic.detectorsById.D1.crossings,2);
+ console.log('V16_NATIVE_REVERSE_RETURN '+JSON.stringify({
+  ids:obs.trace.map(e=>e.id),faces,mirror:mirror.point}));
+});
+
+test('v16 mirror angle and explicit material changes do not impose an encounter route',()=>{
+ const variants=[
+  {label:'mirror 89 degrees',index:1.5,ambient:1,orientation:89},
+  {label:'mirror 91 degrees',index:1.5,ambient:1,orientation:91},
+  {label:'nonair exterior',index:1.5,ambient:1.2,orientation:90},
+  {label:'higher-index lens',index:1.8,ambient:1,orientation:90},
+  {label:'asymmetric biconvex',index:1.5,ambient:1,orientation:90,backRadius:120}
+ ];
+ for(const v of variants){
+  const r=fresh(),p=comp(r,'L1').parameters;
+  p.insideIndex=v.index;p.outsideIndex=v.ambient;
+  if(v.backRadius)p.backRadius=v.backRadius;
+  comp(r,'M1').parameters.orientationDeg=v.orientation;
+  const doc=prep(r),raw=inspectNative(doc);
+  const mirror=raw.trace.find(e=>e.id==='M1');
+  assert.ok(mirror&&mirror.outgoing.length===1,'Native mirror really receives the ray in '+v.label);
+  const a=v.orientation*Math.PI/180,n={x:-Math.sin(a),y:Math.cos(a)},k=dot(mirror.incoming,n);
+  close(mirror.outgoing[0].x,mirror.incoming.x-2*k*n.x,1e-7);
+  close(mirror.outgoing[0].y,mirror.incoming.y-2*k*n.y,1e-7);
+  const surfaceEvents=raw.trace.filter(e=>e.id==='L1');
+  assert.ok(surfaceEvents.length>=2,'Native physically enters and exits lens before mirror');
+  for(const e of surfaceEvents)snell(e,p);
+  assert.equal(raw.diagnostic.reflectionsById.M1,1);
+  console.log('V16_NATIVE_OBLIQUE_CONTROL '+JSON.stringify({
+   variant:v,actualRoute:raw.trace.map(e=>e.id),
+   nativeLensEvents:surfaceEvents.length,mirrorPoint:mirror.point
+  }));
+ }
+});
+
+test('v16 closest admitted 0.011 mm whole-body mirror gap still traces true axial return',()=>{
+ const r=fresh();
+ comp(r,'S1').parameters.y=0;
+ comp(r,'M1').parameters.x=15.011;
+ const doc=prep(r),raw=inspectNative(doc);
+ assert.deepEqual(raw.trace.map(e=>e.id),['D1','L1','L1','M1','L1','L1','D1']);
+ const meter=raw.diagnostic.interfacesById.L1;
+ assert.equal(meter.interactions,4);
+ assert.equal(raw.diagnostic.reflectionsById.M1,1);
+ assert.equal(raw.diagnostic.detectorsById.D1.crossings,2);
+ const mirror=raw.trace.find(e=>e.id==='M1');
+ close(mirror.point.x,15.011,1e-8);
+ for(const e of raw.trace.filter(e=>e.id==='L1'))snell(e,comp(r,'L1').parameters);
+ const rejected=fresh();
+ comp(rejected,'M1').parameters.x=15.009;
+ assert.throws(()=>prep(rejected),'No native trace with <0.01 mm certified body clearance');
+ console.log('V16_NATIVE_CLOSE_MIRROR '+JSON.stringify({
+  gap:0.011,status:'completed',ids:raw.trace.map(e=>e.id),
+  mirrorPoint:mirror.point
+ }));
+});
