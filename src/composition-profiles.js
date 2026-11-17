@@ -7,6 +7,7 @@ const circle='circular-dielectric',plane='planar-interface';
 const curves=['ideal-curved-mirror','circular-arc-mirror'];
 const stops=['line-blocker','circle-blocker','finite-aperture'];
 const finite='finite-dielectric-composition';
+const twoFinite='two-separated-dielectrics-tracing';
 const range=(min,max)=>({min,max});
 const group=(types,min,max)=>({types,min,max});
 const rule=(name,excludeTypes=[])=>({name,excludeTypes});
@@ -71,6 +72,12 @@ define(13,finite,{
   [mirror]:range(0,1),'line-blocker':range(0,1),[detector]:range(0,2)
 },[group([polygon,prism],1,1)],
   [rule('finite-composition'),optical('general-optical',polygon,prism)],single);
+// New isolated physically reviewed candidate: exactly TWO disjoint finite
+// homogeneous quadrilaterals in one explicitly common background medium.
+// No mirrors, blockers, other media, nesting, lenses or source beams.
+define(14,twoFinite,{
+  [source]:range(1,4),[polygon]:range(2,2),[detector]:range(0,2)
+ },[],[rule('two-separated-glass'),optical('general-optical',polygon)],single);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 
@@ -78,6 +85,7 @@ const byKey=new Map(definitions.map(p=>[p.id,p]));
 // mixtures. It identifies a candidate contract, never certifies it or retries
 // a more permissive profile after geometry/material validation fails.
 const selection=freeze([
+  {model:twoFinite,version:14,when:[group([polygon],2,32)]},
   {model:finite,version:13,when:[group([polygon,prism],1,32),group(['line-blocker'],1,32)]},
   {model:finite,version:12,when:[group([prism],1,32),group([mirror],1,32)]},
   {model:finite,version:11,when:[group([polygon],1,32),group([mirror],2,32)]},

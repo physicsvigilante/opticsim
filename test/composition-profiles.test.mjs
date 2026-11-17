@@ -25,8 +25,10 @@ const finite='finite-dielectric-composition',general='general-component-tracing'
 const types=(...values)=>values.map(type=>({type}));
 const componentPatch=operations=>({format:'opticsim-component-revision-v1',operations});
 
-test('one composition catalog preserves all 17 reviewed saved model/version contracts',()=>{
- const c=compositionCapabilities();assert.equal(c.profiles.length,18);
+test('one catalog preserves all 18 historical v1–v13 model/version contracts alongside isolated v14',()=>{
+ const c=compositionCapabilities();assert.equal(c.profiles.length,19);
+ assert.equal(c.profiles.filter(p=>p.schemaVersion<=13).length,18);
+ assert.equal(compositionModels(14).join('|'),'two-separated-dielectrics-tracing');
  c.profiles=c.profiles.filter(p=>p.schemaVersion<=12);assert.equal(c.profiles.length,17);
  assert.equal(new Set(c.profiles.map(p=>p.id)).size,17);
  assert.deepEqual(compositionModels(1),['ideal-thin-lens-geometric']);
@@ -42,6 +44,7 @@ test('one composition catalog preserves all 17 reviewed saved model/version cont
  assert.deepEqual(compositionSourceModes(4),['full-circle','directional']);
  assert.deepEqual(compositionSourceModes(6),['single-ray','full-circle','directional']);
  for(const v of [5,7,8,9,10,11,12])assert.deepEqual(compositionSourceModes(v),['single-ray']);
+ assert.deepEqual(compositionSourceModes(14),['single-ray']);
 });
 
 test('capabilities and legacy capacity bounds are defensive views, never mixture permissions',()=>{
