@@ -189,8 +189,14 @@ test('v17 rejects unsupported material/geometry/scope without deleting component
  v16.physics.model='native-thick-lens-mirror-tracing';v16.simulation.maxRayDepth=8;
  assert.throws(()=>validate(v16),'Older schema may never admit two physical thick lenses and a mirror');
  const noMirror=structuredClone(original);noMirror.components=noMirror.components.filter(x=>x.id!=='M1');
+ assert.throws(()=>prepare(noMirror),
+  'Native-deep-v17 is never transferable to an older two-lens-only scene');
+ delete noMirror.runPolicy;
  assert.equal(prepare(noMirror).schemaVersion,15);
  const oneLens=structuredClone(original);oneLens.components=oneLens.components.filter(x=>x.id!=='L2');
+ assert.throws(()=>prepare(oneLens),
+  'Native-deep-v17 is never transferable to an older one-lens/mirror scene');
+ delete oneLens.runPolicy;
  assert.equal(prepare(oneLens).schemaVersion,16);
  assert.throws(()=>reviseComponents(baseline,{format:'opticsim-component-revision-v1',
   operations:[{op:'remove',id:'L2'}]}),'A v17 save may not implicitly downgrade to v16');
