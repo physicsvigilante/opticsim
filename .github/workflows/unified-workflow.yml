@@ -70,6 +70,16 @@ jobs:
         run: npm run build
       - name: Verify bounded native detector-hit positions in public problem workflow
         run: node scripts/detector-hit-acceptance.mjs
+      - name: Verify opt-in detector directional footprint in the public native CLI
+        run: node scripts/detector-directional-footprint-acceptance.mjs
+      - name: Retain directional footprint CLI evidence, including incomplete cases
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: directional-detector-footprint-v1-cli
+          path: test-artifacts/llm-authoring/detector-directional-footprint-v1/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Exercise existing teaching controls in actual Chrome
         run: node evaluation/teaching-fidelity-v1/browser.mjs
       - name: Exercise practical model exploration in actual Chrome
