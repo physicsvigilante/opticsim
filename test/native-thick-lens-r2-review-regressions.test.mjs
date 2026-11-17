@@ -278,7 +278,11 @@ test('R2-02 conservative adjacent admission boundaries never silently change phy
   else assert.throws(()=>prepare(det));
  }
  const firstRim=-15+sag(100,50);
- for(const [delta,admit] of [[0.005,false],[0.02,true]]){
+ // The authored guard measures PERPENDICULAR distance to the forward ray,
+ // not a horizontal x offset. With this nearly horizontal direction, a
+ // +0.02 mm x shift still misses the corner by only ~0.0005 mm and must
+ // refuse. The +0.5 mm x control clears the original 0.01 mm guard.
+ for(const [delta,admit] of [[0.005,false],[0.02,false],[0.5,true]]){
   const r=single();
   Object.assign(source(r).parameters,{x:-200,y:55});
   source(r).emission.directionDeg=Math.atan2(-5,firstRim+delta+200)*180/Math.PI;
