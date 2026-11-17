@@ -280,11 +280,15 @@ export function planProblem(input){
   // The old run-problem CLI is byte-frozen by a historical transfer gate.
   // Mark ONLY this newly registered method so the existing report/status
   // reducer can indicate unfulfilled native verification without touching it.
-  if(unverifiedApparentDepth)for(const result of results)
-    if(result.kind===APPARENT_DEPTH_KIND&&result.status==='conditional')
-      result.nativeVerificationUnfulfilled=true;
+  if(unverifiedApparentDepth){
+    for(const result of results)
+      if(result.kind===APPARENT_DEPTH_KIND&&result.status==='conditional')
+        result.nativeVerificationUnfulfilled=true;
+    diagnostics.push({code:'NATIVE_SCENE_REQUIRED',
+      message:'A conditional reduced-facts result cannot fulfil explicitly requested native verification without separately authored optical geometry.'});
+  }
   const native={required:needsNative,canRun,
-    reason:unverifiedApparentDepth?'Reduced apparent-depth facts do not define a complete native scene; native verification requires explicit source, boundary, detector and policy.':
+    reason:unverifiedApparentDepth?'NATIVE_SCENE_REQUIRED: reduced apparent-depth facts do not define a complete native scene; verification requires explicit source, boundary, detector and policy.':
       !needsNative?'No registered native result or verification requested.':
       !scene?'No unambiguous validated forward scene.':
       !canRun?'No uniquely determined native measurement target.':null,
