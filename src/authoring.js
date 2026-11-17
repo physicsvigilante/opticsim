@@ -8,6 +8,7 @@ import {PRISM_TYPE,prismVertices} from './triangular-prism.js';
 import {POLYGON_TYPE,polygonVertices} from './polygon-dielectric.js';
 import {SPHERICAL_LENS_TYPE,thickLensExtents} from './spherical-lens.js';
 import {TWO_THICK_MIRROR_MODEL,TWO_THICK_MIRROR_VERSION,TWO_THICK_MIRROR_NATIVE_DEPTH} from './two-thick-lens-mirror-composition.js';
+import {THICK_APERTURE_MODEL,THICK_APERTURE_VERSION,THICK_APERTURE_NATIVE_DEPTH} from './thick-lens-aperture-composition.js';
 import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
 import {CIRCLE_BLOCKER_TYPE,circleBlockerExtents} from './opaque-circle-blocker.js';
 import {FINITE_APERTURE_TYPE} from './finite-aperture.js';
@@ -21,7 +22,9 @@ const policies=Object.freeze({
   'dense-v1':Object.freeze({rayDensity:SAMPLING_PRESETS.dense,maxRayDepth:8,processedRayLimit:10000}),
   // Only the isolated v17 composition can admit this higher native budget.
   'native-deep-v17':Object.freeze({rayDensity:SAMPLING_PRESETS.medium,
-    maxRayDepth:TWO_THICK_MIRROR_NATIVE_DEPTH,processedRayLimit:10000})
+    maxRayDepth:TWO_THICK_MIRROR_NATIVE_DEPTH,processedRayLimit:10000}),
+  'native-deep-v18':Object.freeze({rayDensity:SAMPLING_PRESETS.medium,
+    maxRayDepth:THICK_APERTURE_NATIVE_DEPTH,processedRayLimit:10000})
 });
 const prefixes=Object.freeze({
   'point-source':'source','ideal-lens':'lens','plane-mirror':'mirror','line-blocker':'blocker',[CIRCLE_BLOCKER_TYPE]:'circle-blocker',[FINITE_APERTURE_TYPE]:'aperture','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism',[POLYGON_TYPE]:'glass',[SPHERICAL_LENS_TYPE]:'thick-lens'
@@ -75,6 +78,7 @@ export function capabilities() {
       scope:'One strictly convex four-vertex dielectric, exactly one external finite plane mirror, 1–4 explicit single rays and 0–2 external detectors; no lenses, stops, other media or motion',
       geometry:'Existing polygon rules; mirror/detectors entirely beyond a separating face by 0.01 mm; external segments mutually separated by 0.01 mm',
       limitations:'No prescribed return route, source-attributed ray history or image prediction. Explicit Fresnel-off is an approximation; truncated runs remain incomplete.'},
+    nativeThickLensAperture:{schemaVersion:THICK_APERTURE_VERSION,model:THICK_APERTURE_MODEL,scope:'Exactly two disjoint native biconvex thick lenses, one independent finite plane mirror, one vertical native centered-gap aperture, 1–4 explicit single native rays and 0–2 passive detectors',geometry:'Inherits all v17 lens/mirror/material/source/detector checks, plus original v4 finite-arm/segment checks; entire vertical aperture x-plane stays >=0.01 mm from each lens body, mirror and detectors. Initial rays near gap/arm endpoints and near-parallel directions refused',execution:'Explicit native-deep-v18 only (16 interactions), no widening of v17 native-deep-v17 or v1–v16 depth 8; native incomplete/stale readings withheld',limits:'No tilted stop, second stop, third lens, arbitrary mixed optics, prescribed itinerary, reconstructed image or full Fresnel power guarantee'},
     nativeTwoThickLensMirror:{schemaVersion:17,model:TWO_THICK_MIRROR_MODEL,scope:'Exactly two disjoint native finite spherical biconvex lenses with a shared explicit outside index, one independent finite native plane mirror, 1–4 exact directed rays and 0–2 passive detectors',geometry:'Full unchanged v15 two-lens/rim/material/source/detector safeguards; mirror segment >=0.01 mm outside the complete x envelope of each lens',execution:'New explicit native-deep-v17 authoring policy (maxRayDepth 16); legacy v1–v16 always capped at 8; native incompleteness remains disqualifying',limits:'No prescribed itinerary, inferred focus/image, full Fresnel power guarantee, third lens, additional mirrors, nested media or arbitrary 3D optics'},
     nativeThickLensMirror:{schemaVersion:16,model:'native-thick-lens-mirror-tracing',scope:'Exactly one stationary finite biconvex thick SphericalLens, one independent finite native plane Mirror, 1–4 explicitly directed native SingleRay sources and 0–2 passive detectors',geometry:'Reuses full v15 lens geometry plus original mirror/detector checks; mirror entire finite segment must be strictly x-separated by >=0.01 mm from the thick lens',limits:'No prescribed lens→mirror→lens itinerary, no inferred image, no full Fresnel brightness guarantee; a mirror may genuinely be missed'},
     nativeThickLensTrain:{schemaVersion:15,model:'native-thick-lens-tracing',scope:'One or two explicitly dimensioned stationary biconvex spherical thick lenses with a shared outside index; 1–4 exact native rays and 0–2 external detectors',geometry:'Positive independent radii; aperture >=4 mm; central thickness >=2 mm; at least 1 mm rim; complete horizontal extents disjoint by >=0.01 mm',limits:'No meniscus/asymmetric concave surfaces, tilt, sources inside a lens, mixed optics, native image inference or near-critical certification'},
@@ -252,7 +256,10 @@ export function prepareScene(request) {
   });
   const {schemaVersion,adapterVersion,model}=selectAuthoringComposition(components);
   const policyName=requestedPolicy??(schemaVersion===TWO_THICK_MIRROR_VERSION?
-    'native-deep-v17':'preview-v1');
+    'native-deep-v17':schemaVersion===THICK_APERTURE_VERSION?'native-deep-v18':'preview-v1');
+  if((policyName==='native-deep-v17'&&schemaVersion!==TWO_THICK_MIRROR_VERSION)||
+     (policyName==='native-deep-v18'&&schemaVersion!==THICK_APERTURE_VERSION))
+    fail([issue('$.runPolicy','UNSUPPORTED_POLICY','Deep native ray budget is specific to the declared v17 or v18 optical profile')]);
   const doc={
     format:'ray-optics-2d',schemaVersion,adapterVersion,upstreamCommit:UPSTREAM,
     physics:{lengthUnit:'mm',coordinates:'x-right-y-up',model,components},

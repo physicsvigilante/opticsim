@@ -2,6 +2,7 @@ import {compositionModels,compositionSourceModes,compositionProfile,compositionC
 import {SPHERICAL_LENS_TYPE,SPHERICAL_PARAMETERS,validateSphericalLensTrain} from './spherical-lens.js';
 import {validateThickLensMirrorComposition} from './thick-lens-mirror-composition.js';
 import {TWO_THICK_MIRROR_VERSION,TWO_THICK_MIRROR_NATIVE_DEPTH,validateTwoThickLensMirrorComposition} from './two-thick-lens-mirror-composition.js';
+import {THICK_APERTURE_VERSION,THICK_APERTURE_NATIVE_DEPTH,validateThickApertureComposition} from './thick-lens-aperture-composition.js';
 import {validateFiniteDielectricComposition} from './finite-dielectric-composition.js';
 import {validateTwoSeparatedDielectrics} from './two-finite-dielectrics.js';
 import {PRISM_TYPE,PRISM_PARAMETERS,validatePrismGeometry} from './triangular-prism.js';
@@ -89,7 +90,7 @@ function validateVersion(doc, version) {
     object(c, ['id', 'type', 'parameters', ...(version >= 2 && c?.type === 'point-source' ? ['emission'] : [])], path);
     if (typeof c.id !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(c.id) || ids.has(c.id)) fail(`${path}.id`, 'expected a unique stable ID (letters, digits, underscores, hyphens)');
     ids.add(c.id);
-    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(version>=15||t!==SPHERICAL_LENS_TYPE)&&(version===4||(version===13&&t==='line-blocker')||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))) :
+    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(version>=15||t!==SPHERICAL_LENS_TYPE)&&(version===4||(version===13&&t==='line-blocker')||(version===18&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))) :
       version >= 3 ? ['point-source', 'ideal-lens', 'plane-mirror'] :
       ['point-source', 'ideal-lens'], `${path}.type`);
     object(c.parameters, componentParameterNames(c.type,version), `${path}.parameters`);
@@ -122,6 +123,7 @@ function validateVersion(doc, version) {
     'native-thick-lenses':c=>validateSphericalLensTrain(c,mirrorEndpoints,fail),
     'native-thick-mirror':c=>validateThickLensMirrorComposition(c,mirrorEndpoints,fail),
     'native-two-thick-mirror':c=>validateTwoThickLensMirrorComposition(c,mirrorEndpoints,fail),
+    'native-thick-aperture':c=>validateThickApertureComposition(c,mirrorEndpoints,fail),
     'polygon-region':c=>validatePolygonGeometry(c,mirrorEndpoints,fail),
     'prism-region':c=>validatePrismGeometry(c,mirrorEndpoints,fail),
     'circular-region':c=>validateCircularGeometry(c,mirrorEndpoints,fail),
@@ -147,10 +149,11 @@ function validateVersion(doc, version) {
   if (version === 1) number(v.brightness, 0.01, 1, '$.presentation.brightness');
   object(doc.simulation, ['rayDensity', 'maxRayDepth', 'processedRayLimit'], '$.simulation');
   number(doc.simulation.rayDensity, version === 1 ? 0.1 : SAMPLING_PRESETS.sparse, 1, '$.simulation.rayDensity');
-  // ONLY isolated v17 scenes may use the explicitly deeper pinned-native
-  // interaction budget. Every earlier contract remains bounded at depth 8.
+  // ONLY isolated v17 and v18 scenes may use their respective explicitly
+  // declared deeper native budgets. Every v1-v16 contract stays depth <=8.
   number(doc.simulation.maxRayDepth, 0,
-    version===TWO_THICK_MIRROR_VERSION?TWO_THICK_MIRROR_NATIVE_DEPTH:8,
+    version===TWO_THICK_MIRROR_VERSION?TWO_THICK_MIRROR_NATIVE_DEPTH:
+    version===THICK_APERTURE_VERSION?THICK_APERTURE_NATIVE_DEPTH:8,
     '$.simulation.maxRayDepth');
   number(doc.simulation.processedRayLimit, 1, 10000, '$.simulation.processedRayLimit');
   for (const key of ['maxRayDepth', 'processedRayLimit']) if (!Number.isInteger(doc.simulation[key])) fail(`$.simulation.${key}`, 'expected integer');
