@@ -69,6 +69,34 @@ test('Two glass elements independently record native events under rotation, scal
  assert.deepEqual(Object.keys(run(d).observations.interfacesById).sort(),['G1','G2']);
  assert.equal(run(d).observations.detectorsById.D1.crossings,1);
 });
+test('An explicitly non-air shared exterior index propagates n1/n2 at both independent native bodies',()=>{
+ const r=make();
+ p(r,'G1').outsideIndex=1.2;p(r,'G2').outsideIndex=1.2;
+ const d=prepare(r),x=inspectNative(d),observed=x.diagnostic.interfacesById;
+ assert.equal(observed.G1.interactions,2);assert.equal(observed.G2.interactions,2);
+ for(const [id,n] of [['G1',1.5],['G2',1.3]]){
+  const first=observed[id].first;
+  near(first.incidentIndex,1.2);near(first.destinationIndex,n);
+  near(1.2*Math.sin(first.incidentAngleDeg*Math.PI/180),
+   n*Math.sin(first.transmittedAngleDeg*Math.PI/180),1e-9);
+ }
+ assert.equal(x.diagnostic.detectorsById.D1.crossings,1);
+});
+test('An authored source inside second glass can refract out and encounter the first without assigned route',()=>{
+ const r=make();
+ Object.assign(p(r,'S1'),{x:300,y:10});
+ find(r,'S1').emission.directionDeg=180;
+ const doc=prepare(r),e=inspectNative(doc),m=e.diagnostic.interfacesById;
+ assert.equal(m.G2.interactions,1);
+ assert.equal(m.G1.interactions,2);
+ assert.deepEqual(e.trace.filter(x=>x.type==='polygon-dielectric').map(x=>x.id),
+  ['G2','G1','G1']);
+ near(m.G2.first.incidentIndex,1.3);
+ near(m.G2.first.destinationIndex,1);
+ assert.equal(m.G2.first.from,'inside');
+ assert.equal(m.G1.first.from,'outside');
+ assert.equal(e.diagnostic.detectorsById.D1.crossings,0);
+});
 test('Native first and second region misses are genuine outcomes, never prescribed routes',()=>{
  for(const [dir,g1,g2,hit] of [[0,2,2,1],[80,0,0,0]]){
   const r=make();find(r,'S1').emission.directionDeg=dir;const x=run(prepare(r));
