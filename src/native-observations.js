@@ -7,7 +7,7 @@ export function snapshotNativeObservations(diagnostics,requests=[]){
   const ordinary=Object.fromEntries(NATIVE_OBSERVATION_KEYS.map(key=>
     [key,structuredClone(diagnostics?.[key]??null)]));
   // Opt-in only: never add keys or change any existing default result shape.
-  const hits=requests.some(r=>r?.kind==='detector-hit-events');
+  const hits=requests.some(r=>r?.kind==='detector-hit-events'||r?.kind==='detector-directional-footprint');
   const parentage=requests.some(r=>r?.kind==='detector-ray-provenance');
   const finite=requests.some(r=>r?.kind==='finite-hit-numerical-diagnostic');
   return {...ordinary,
