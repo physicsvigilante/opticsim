@@ -1,0 +1,12 @@
+{
+  "format": "opticsim-native-thick-aperture-app-postfreeze-v1",
+  "historicalFreezeFile": "test/fixtures/detector-hit-transfer-freeze.json",
+  "priorPostfreezeFile": "test/fixtures/two-thick-lens-mirror-app-postfreeze-v1.json",
+  "target": "src/app.js",
+  "originalV17SourceCommit": "9157c7a9ba7b21d6c9fe816897612537e45e6b30",
+  "originalV17AppGitBlob": "9d447af4c8fc59ec1e8fdcfbcec0c4d739fc477f",
+  "newV18AppGitBlob": "cfbea455df3f7ea7a30002d0139730c25b235d32",
+  "classification": "Append-only separate post-exposure v18 viewer provenance. Does not modify original blind detector transfer freeze or retrospective v17 review claims.",
+  "changes": "Adds truthful native thick-lens/mirror/aperture model, explicit 16-interaction v18 depth policy, stop editor/source mode, sampled absorption limitations. No pinned physics, old schemas, native simulation threshold or measurement arithmetic changed.",
+  "release": "DRAFT / UNMERGED until separate R2 physics review and explicit owner authorization after prerequisites."
+}
