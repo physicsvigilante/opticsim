@@ -76,6 +76,8 @@ jobs:
         run: node scripts/exploration-browser.mjs
       - name: Exercise qualified native detector-hit events in actual Chrome
         run: node scripts/detector-hit-browser.mjs
+      - name: Exercise direction-resolved native detector footprint, editing and withholding in real Chrome
+        run: node scripts/detector-directional-footprint-browser.mjs
       - name: Verify native ray parentage provenance in actual Chrome
         run: node scripts/native-ray-parentage-browser.mjs
       - name: Verify optional noncertifying v9 finite-hit diagnostic in actual Chrome
@@ -106,6 +108,7 @@ jobs:
           path: |
             test-artifacts/browser-exploration/
             test-artifacts/browser-detector-hit/
+            test-artifacts/browser-detector-directional-footprint/
             test-artifacts/demo-site/
           if-no-files-found: error
           retention-days: 14
