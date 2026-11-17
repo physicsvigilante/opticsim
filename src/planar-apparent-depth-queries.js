@@ -17,7 +17,7 @@ export class ApparentDepthError extends Error {
 }
 const refuse=(code,message)=>{throw new ApparentDepthError(code,message);};
 function fields(o,allowed,required,label){
-  if(o===undefined||o===null)refuse('MISSING_FACTS','Missing '+label+'.');
+  if(o===undefined)refuse('MISSING_FACTS','Missing '+label+'.');
   if(!isRecord(o))refuse('INVALID_FACTS',label+' must be a JSON object.');
   if(Object.keys(o).some(k=>!allowed.includes(k)))
     refuse('INVALID_FACTS','Unsupported field in '+label+'.');
