@@ -18,6 +18,9 @@ const twoGlassUiPostFreeze=JSON.parse(read('test/fixtures/two-glass-app-postfree
 const thickLensUiPostFreeze=JSON.parse(read('test/fixtures/thick-lens-app-postfreeze-v1.json'));
 const thickMirrorUiPostFreeze=JSON.parse(read('test/fixtures/thick-lens-mirror-app-postfreeze-v1.json'));
 const twoThickMirrorUiPostFreeze=JSON.parse(read('test/fixtures/two-thick-lens-mirror-app-postfreeze-v1.json'));
+const footprintPostFreeze=JSON.parse(read('test/fixtures/directional-footprint-app-postfreeze-v1.json'));
+const combinedPostFreeze=JSON.parse(read('test/fixtures/v18-footprint-integration-app-postfreeze-v1.json'));
+const gitBlobSha1=p=>{const bytes=read(p);return createHash('sha1').update(Buffer.from('blob '+bytes.length+'\0')).update(bytes).digest('hex');};
 const thickApertureUiPostFreeze=JSON.parse(read('test/fixtures/thick-lens-aperture-app-postfreeze-v1.json'));
 const notebookPostFreeze=JSON.parse(read('test/fixtures/portable-notebook-postfreeze-v1.json'));
 // Historical SHA-256 values remain immutable evidence of the earlier R1 run.
@@ -88,7 +91,13 @@ test('original reserved transfer evidence remains frozen; explicit later parenta
   assert.equal(thickApertureUiPostFreeze.historicalFreezeFile,'test/fixtures/detector-hit-transfer-freeze.json');
   assert.equal(thickApertureUiPostFreeze.priorPostfreezeFile,'test/fixtures/two-thick-lens-mirror-app-postfreeze-v1.json');
   assert.equal(twoThickMirrorUiPostFreeze.candidateV17Sha256,'1d6aec648ad549917df6a511687151bbb8a65a8efb00e221023bacb485ebbbdb');
- for(const [path,expected] of Object.entries(freeze.frozenFiles)){
+ // Combined viewer is a new non-blind research integration, never the reviewed
+  // v18 or footprint UI source. Old SHA chains are immutable evidence.
+  assert.equal(footprintPostFreeze.historicalFreezeFile,'test/fixtures/detector-hit-transfer-freeze.json');
+  assert.equal(combinedPostFreeze.historicalFreezeFile,'test/fixtures/detector-hit-transfer-freeze.json');
+  assert.equal(combinedPostFreeze.parentV18AppGitBlobSha1,thickApertureUiPostFreeze.newV18AppGitBlob);
+  assert.equal(combinedPostFreeze.parentFootprintAppGitBlobSha1,footprintPostFreeze.candidateGitBlobSha1);
+  for(const [path,expected] of Object.entries(freeze.frozenFiles)){
   if(integration.changedAfterReservedExecution.includes(path)){
    assert.equal(integration.baselineCommit,freeze.baseline);
    assert.equal(hash(path),integration.replacementHashes[path],'Integration correction must remain frozen: '+path);
@@ -103,8 +112,8 @@ test('original reserved transfer evidence remains frozen; explicit later parenta
     'Exact later portable-notebook UI version must remain pinned: '+path);
    assert.notEqual(hash(path),expected,'Do not relabel the old reserve test as newly blind: '+path);
   }else if(path==='src/app.js'){
-   assert.equal(hash(path),thickApertureUiPostFreeze.candidateV18Sha256,
-    'Only this separately recorded v18 native thick-lens/aperture browser change is admitted');
+   assert.equal(gitBlobSha1(path),combinedPostFreeze.candidateGitBlobSha1,
+    'Only the separately recorded research v18-plus-footprint viewer source is admitted');
    assert.notEqual(hash(path),expected,'Do not rewrite original pre-transfer frozen app source evidence');
   }else if(parentageFeaturePaths.has(path)){
    assert.notEqual(hash(path),expected,'New parentage feature modifies this formerly frozen source path: '+path);
