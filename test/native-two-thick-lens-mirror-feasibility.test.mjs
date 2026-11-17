@@ -175,3 +175,31 @@ test('Default public native depth-8 policy retains genuine incomplete two-lens m
   errors:r.diagnostics.errors,warnings:r.diagnostics.warnings
  }));
 });
+
+test('Explicit native-depth sweep distinguishes admissible default incompleteness from research-only full return',()=>{
+ const depths=[8,9,10,11,12,16],cases=[];
+ for(const depth of depths){
+  const r=depth===8?makeScene():makeScene({testOnlyRayDepth:depth});
+  const ids=r.trace.map(e=>e.id);
+  cases.push({depth,status:r.status,ids,truncation:r.diagnostics.truncation,
+   undefinedBehavior:r.diagnostics.undefinedBehavior,errors:r.diagnostics.errors});
+ }
+ assert.equal(cases[0].depth,8);
+ assert.equal(cases[0].status,'incomplete');
+ assert.ok(cases[0].truncation>0,'The default incomplete ray must not count missing power as zero');
+ assert.equal(cases.at(-1).status,'completed');
+ assert.equal(cases.at(-1).truncation,0);
+ assert.equal(cases.at(-1).undefinedBehavior,0);
+ const firstFull=cases.find(x=>x.status==='completed');
+ assert.ok(firstFull?.depth>8,'No public scene depth is silently raised');
+ for(const c of cases.filter(x=>x.depth<firstFull.depth))
+  assert.equal(c.status,'incomplete','Insufficient native depth is not a qualified run');
+ for(const c of cases.filter(x=>x.depth>=firstFull.depth))
+  assert.equal(c.status,'completed','This tested native scene completes with sufficient explicit depth');
+ assert.deepEqual(cases.at(-1).ids,
+  ['D1','L1','L1','L2','L2','M1','L2','L2','L1','L1','D1']);
+ console.log('NATIVE_TWO_LENSES_DEPTH_SWEEP '+JSON.stringify({
+  publicV15MaximumDepth:8,firstCompletedNativeDepth:firstFull.depth,
+  researchOnlyBeyondPublicContract:true,cases
+ }));
+});
