@@ -72,7 +72,7 @@ test('moving only the native opening blocks the source before any glass/mirror/d
   const doc=prepare(r),e=inspectNative(doc),s=execute(doc).summary;
   assert.equal(s.native.status,'completed');
   assert.deepEqual(eventIds(e),['A1']);
-  assert.equal(e.trace[0].absorbed,true);
+  assert.deepEqual(e.trace[0].outgoing,[],'Native aperture absorption creates no outgoing ray');
   near(e.trace[0].point.x,-150);near(e.trace[0].point.y,0);
   assert.equal(s.observations.blockersById.A1.absorptions,1);
   assert.equal(s.observations.blockersById.A1.invalidObservations,0);
