@@ -6,6 +6,7 @@ import {FINITE_COMPOSITION_MODEL,FINITE_COMPOSITION_VERSION,extendedFiniteCompos
 import {NATIVE_OBSERVATION_KEYS} from './native-observations.js';
 import {PRISM_TYPE,prismVertices} from './triangular-prism.js';
 import {POLYGON_TYPE,polygonVertices} from './polygon-dielectric.js';
+import {SPHERICAL_LENS_TYPE,thickLensExtents} from './spherical-lens.js';
 import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
 import {CIRCLE_BLOCKER_TYPE,circleBlockerExtents} from './opaque-circle-blocker.js';
 import {FINITE_APERTURE_TYPE} from './finite-aperture.js';
@@ -19,7 +20,7 @@ const policies=Object.freeze({
   'dense-v1':Object.freeze({rayDensity:SAMPLING_PRESETS.dense,maxRayDepth:8,processedRayLimit:10000})
 });
 const prefixes=Object.freeze({
-  'point-source':'source','ideal-lens':'lens','plane-mirror':'mirror','line-blocker':'blocker',[CIRCLE_BLOCKER_TYPE]:'circle-blocker',[FINITE_APERTURE_TYPE]:'aperture','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism',[POLYGON_TYPE]:'glass'
+  'point-source':'source','ideal-lens':'lens','plane-mirror':'mirror','line-blocker':'blocker',[CIRCLE_BLOCKER_TYPE]:'circle-blocker',[FINITE_APERTURE_TYPE]:'aperture','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism',[POLYGON_TYPE]:'glass',[SPHERICAL_LENS_TYPE]:'thick-lens'
 });
 const lengthKeys=new Set(LENGTH_PARAMETERS);
 const own=(value,key)=>Object.prototype.hasOwnProperty.call(value,key);
@@ -70,6 +71,7 @@ export function capabilities() {
       scope:'One strictly convex four-vertex dielectric, exactly one external finite plane mirror, 1–4 explicit single rays and 0–2 external detectors; no lenses, stops, other media or motion',
       geometry:'Existing polygon rules; mirror/detectors entirely beyond a separating face by 0.01 mm; external segments mutually separated by 0.01 mm',
       limitations:'No prescribed return route, source-attributed ray history or image prediction. Explicit Fresnel-off is an approximation; truncated runs remain incomplete.'},
+    nativeThickLensTrain:{schemaVersion:15,model:'native-thick-lens-tracing',scope:'One or two explicitly dimensioned stationary biconvex spherical thick lenses with a shared outside index; 1–4 exact native rays and 0–2 external detectors',geometry:'Positive independent radii; aperture >=4 mm; central thickness >=2 mm; at least 1 mm rim; complete horizontal extents disjoint by >=0.01 mm',limits:'No meniscus/asymmetric concave surfaces, tilt, sources inside a lens, mixed optics, native image inference or near-critical certification'},
     polygonDielectrics:{schemaVersion:9,model:'polygon-dielectric-tracing',scope:'One strictly convex four-vertex dielectric, 1–4 exact rays and 0–2 external detectors; no other optics or nested media',geometry:'Four explicit vertices; edges and altitudes >=1 mm; all four faces are finite'},
     triangularPrisms:{schemaVersion:8,model:'triangular-prism-tracing',scope:'One stationary triangle; 1–4 explicit single rays; 0–2 external detectors; no other optics',geometry:'Three explicit vertices in either winding; edges and altitudes >=1 mm; initial corner rays excluded; no face route supplied'},
     interfaceVersion:1,canonicalFormat:'ray-optics-2d',schemaVersion:4,maxComponents:MAX_AUTHORING_COMPONENTS,
@@ -96,6 +98,7 @@ export function capabilities() {
       ...(type===CIRCULAR_TYPE?{booleanParameters:['partialReflection'],nativeType:'CircleGlass',indices:['insideIndex','outsideIndex'],geometry:'Finite 2D circle, not an ideal thin lens or a truncated sphere'}:{}),
       ...(type===PRISM_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-31'],geometry:'Three physical vertices; vertex order defines face labels, not a ray route'}:{}),
       ...(type===POLYGON_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-34','face-41'],geometry:'One strictly convex four-vertex finite region, never a ray route'}:{}),
+      ...(type===SPHERICAL_LENS_TYPE?{nativeType:'SphericalLens',booleanParameters:['partialReflection'],faceIds:['front-arc','back-arc','top-rim','bottom-rim'],geometry:'Finite 2D biconvex thick lens; radii are positive magnitudes, NOT ideal focal length; native DR1R2 uses back radius negative'}:{}),
       ...(type==='line-blocker'?{nativeType:'Blocker',geometry:'Opaque finite line segment; centre, tangent orientation, and length are explicit; absorbs each actual native ray incident'}:{}),
       ...(type===CIRCLE_BLOCKER_TYPE?{nativeType:'CircleBlocker',geometry:'Opaque 2D circular boundary with explicit centre and positive radius; absorbs actual native ray incidents; not a 3D body'}:{}),
       ...(type===FINITE_APERTURE_TYPE?{nativeType:'Aperture',geometry:'Opaque 2D line with an explicitly transparent centred opening; no wave diffraction'}:{}),
@@ -150,7 +153,7 @@ export function inspectAuthoringRequest(request){
       ['negativeIndex','positiveIndex','insideIndex','outsideIndex'].includes(key)?b.refractiveIndex:
       key==='normalDeg'?b.orientationDeg:key==='orientationDeg'?b.orientationDeg:key==='directionDeg'?b.directionDeg:
       key==='angleDeg'?b.openingAngleDeg:
-      ['length','openingLength','apertureHeight'].includes(key)?b.positiveLengthMm:b.coordinateMm;
+      ['length','openingLength','apertureHeight','centerThickness','frontRadius','backRadius'].includes(key)?b.positiveLengthMm:b.coordinateMm;
     if(!Number.isFinite(n)||n<bounds[0]||n>bounds[1]||
       (key==='focalLength'&&Math.abs(n)<b.minimumAbsFocalLengthMm)||
       (key==='radius'&&(type===CIRCULAR_TYPE?n<2:type===CIRCLE_BLOCKER_TYPE?n<1:Math.abs(n)<2)))
@@ -202,6 +205,7 @@ function camera(components) {
     else if(c.type===CIRCLE_BLOCKER_TYPE)vertices.push(...circleBlockerExtents(p));
     else if(c.type===PRISM_TYPE)vertices.push(...prismVertices(p));
     else if(c.type===POLYGON_TYPE)vertices.push(...polygonVertices(p));
+    else if(c.type===SPHERICAL_LENS_TYPE)vertices.push(...thickLensExtents(p));
     else if(isCurved(c.type))vertices.push(...curvedPoints(c));
     else if(c.type==='ideal-lens')vertices.push({x:p.x,y:-p.apertureHeight/2},
       {x:p.x,y:p.apertureHeight/2});
