@@ -6,7 +6,7 @@ are local. No LLM request is needed to open, simulate, or edit supported scenes.
 
 ## Direction-resolved sampled detector footprint (draft measurement extension)
 
-The opt-in `detector-directional-footprint` result derives **unweighted sampled mean position, min/max, span and RMS spread** separately for actual crossings travelling toward each detector-normal direction. It reuses the existing native `detector-hit-events` collector with no new ray tracing, no user path plan and no image inference. The 32-hit bound, endpoint ambiguity and incomplete/stale-run withholding still apply; empty crossing groups have **null** centroid and spread. The feature remains a draft measurement proposal pending exact-head CI and independent review. See the [directional detector footprint contract](docs/DETECTOR-DIRECTIONAL-FOOTPRINT.md).
+The opt-in `detector-directional-footprint` result derives **unweighted sampled mean position, min/max, span and RMS spread** separately for actual crossings travelling toward each detector-normal direction. It reuses the existing native `detector-hit-events` collector with no new ray tracing, no user path plan and no image inference. The 32-hit bound, endpoint ambiguity and incomplete/stale-run withholding still apply; empty crossing groups have **null** centroid and spread. The feature remains **draft and unreleased**. Its standalone exact-head CI and separate-context review have been completed, but explicit owner authorization and an integrated production release have not occurred. See the [directional detector footprint contract](docs/DETECTOR-DIRECTIONAL-FOOTPRINT.md).
 
 ## Bounded native detector hit-position observations
 
