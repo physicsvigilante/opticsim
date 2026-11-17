@@ -1,6 +1,7 @@
 // Requested results are separate from apparatus. Never changes the native scene
 // or invents rays. Existing analytical models are used only after scope checks.
 import {validate} from './contract.js';
+import {directionalDetectorFootprint,DIRECTIONAL_FOOTPRINT_METHOD} from './detector-directional-footprint.js';
 import {predict} from './analysis.js';
 import {sceneHash,isRecord,boundedText} from './qualified-utils.js';
 import {supportsNativeRayParentage} from './native-ray-parentage.js';
@@ -18,6 +19,7 @@ const kinds=Object.freeze({
   'mirror-reflections':{type:['plane-mirror','ideal-curved-mirror','circular-arc-mirror'],unit:'sampled interactions'},
   'detector-crossings':{type:'ray-detector',unit:'sampled crossings'},
   'detector-hit-events':{type:'ray-detector',unit:'mm positions and unitless incoming directions; native sampled events'},
+  'detector-directional-footprint':{type:'ray-detector',unit:'native sampled crossings grouped by detector-normal direction; millimeter distances and RMS spread'},
   'detector-ray-provenance':{type:'ray-detector',unit:'native observed object ancestry; tokens are run-local'},
   'finite-hit-numerical-diagnostic':{type:'polygon-dielectric',unit:'advisory represented binary64 finite-hit consistency; not physical correctness'},
   'detector-signed-power':{type:'ray-detector',unit:'relative native units; not watts'},
@@ -31,6 +33,7 @@ export function observableCapabilities(){
       'Blocker absorption is a sampled native incident count; a zero detector count is not proof of continuous shadow or invisibility.',
       'Circular dielectric and thick spherical lens angles use the local normal at an actual native hit, not a complete path or detected image. Thick-lens rim/arc corner events may be unqualified.',
       'Detector hit-event order is native callback order, not source attribution, a ray history, a continuous footprint or image detection. More than 32 hits or uncertain endpoints withhold the entire position list.',
+      'Detector directional footprint describes at most 32 complete native sampled crossings, separated by detector-normal direction. Unweighted RMS is not a physical image, PSF, source history or irradiance.',
       'Opt-in detector ray provenance is observed direct native parentage in one complete v5 single-interface run, not a physical path, image, or continuous irradiance. Tokens are not stable across runs.',
       'Opt-in v9 finite-hit diagnostic is NONCERTIFYING advisory evidence; it never changes canonical native measurements or makes an original question answered. Unknown point error is not an accepted forward hit.']};
 }
@@ -138,6 +141,21 @@ export async function evaluateObservables(doc,requests,execution){
         value:structuredClone(observed.value),unit:spec.unit,method:'native-observed-object-parentage',
         warnings:approximation?warnings:[],
         limitation:'Only directly observed native source/parent object identity at actual sampled detector crossings; same-object optical interactions have no edges. Tokens are local to this run; no complete path, material inference, physical image, continuous illumination or source-image authenticity.'};
+    }
+    if(r.kind==='detector-directional-footprint'){
+      const sample=o?.detectorHitEventsById?.[r.componentId];
+      const count=o?.detectorsById?.[r.componentId]?.crossings;
+      if(!sample||sample.status!=='complete'||sample.observedCount!==count||
+         !Array.isArray(sample.events)||sample.events.length!==count)
+        return {...base,reasonCode:sample?.reasonCode??'NATIVE_DETECTOR_HITS_UNAVAILABLE',
+          reason:'No complete, count-matched bounded native detector events were captured for this directional footprint.'};
+      const derived=directionalDetectorFootprint(sample,component.parameters);
+      if(derived.status!=='complete')
+        return {...base,reasonCode:derived.reasonCode,
+          reason:'Native hit positions or incoming directions are incomplete, contradictory, or too close to detector grazing to summarize safely.'};
+      return {...base,status:warnings.length?'qualified':'available',
+        value:derived.value,method:DIRECTIONAL_FOOTPRINT_METHOD,unit:spec.unit,warnings,
+        limitation:'Only unweighted statistics of real native sampled crossings. Detector p1→p2 defines a tangent; positive normal is its left perpendicular in y-up coordinates. Opposite crossing directions are never paired into paths. Empty groups have null, not zero, spread. No physical image, continuous spot/PSF, power, source ancestry, or complete Fresnel tree is inferred.'};
     }
     if(r.kind==='detector-hit-events'){
       const sample=o?.detectorHitEventsById?.[r.componentId],count=o?.detectorsById?.[r.componentId]?.crossings;

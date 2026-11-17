@@ -1,0 +1,11 @@
+{
+  "format": "opticsim-v18-footprint-integration-app-postfreeze-v1",
+  "historicalFreezeFile": "test/fixtures/detector-hit-transfer-freeze.json",
+  "sourceBaseV18": "1c566103842cc6c4841aa97360cc893b0ed710c4",
+  "sourceBaseFootprint": "7d44e52d2c4c5db30d91e4e87970b706c18a90f6",
+  "parentV18AppGitBlobSha1": "cfbea455df3f7ea7a30002d0139730c25b235d32",
+  "parentFootprintAppGitBlobSha1": "3b611f940f68e6814b9cc0577e4c063ac2dc7c28",
+  "candidateGitBlobSha1": "1a61bbe1460b30d16f37d29b83a1e0f0c98bfb66",
+  "classification": "Research-only combined viewer source; historical frozen R1, original v18 and original footprint candidate SHA values are preserved unchanged.",
+  "release": "Not an independently cleared integrated candidate. No merge into reviewed branches or production."
+}

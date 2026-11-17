@@ -40,3 +40,21 @@ test('unavailable, suppressed, unknown-method and incomplete results are not pro
   assert.match(blocked.summary,/Current readouts suppressed/);
  }
 });
+
+test('directional footprint is counted as a native sampled readout, not a conditional image',()=>{
+ const group=count=>({count,minDistanceFromP1Mm:count?10:null,maxDistanceFromP1Mm:count?10:null,
+  meanDistanceFromP1Mm:count?10:null,meanPointMm:count?{x:10,y:50}:null,
+  spanMm:count?0:null,rmsSpreadMm:count?0:null});
+ const derived={id:'foot',kind:'detector-directional-footprint',
+  method:'native-detector-directional-footprint',status:'qualified',
+  value:{observedCount:1,detectorLengthMm:100,
+   detectorNormalUnit:{x:0,y:1},
+   towardPositiveNormal:group(1),towardNegativeNormal:group(0)}};
+ const nativeHit={id:'count',kind:'detector-crossings',
+  method:'native-observation',status:'qualified',value:1};
+ const v=panel([derived,nativeHit]);
+ assert.match(v.summary,/^2 native sampled readouts/);
+ assert.doesNotMatch(v.summary,/other result state/);
+ assert.match(v.resultLimits,/2 native readouts qualified by warnings/);
+ assert.deepEqual(derived.value.towardNegativeNormal.meanPointMm,null);
+});

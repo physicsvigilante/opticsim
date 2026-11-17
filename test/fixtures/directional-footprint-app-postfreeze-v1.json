@@ -1,0 +1,12 @@
+{
+  "format": "opticsim-directional-detector-footprint-ui-postfreeze-v1",
+  "historicalFreezeFile": "test/fixtures/detector-hit-transfer-freeze.json",
+  "sourceBaseMain": "d3509e82fb65d81aabe336666851f8f2962623f4",
+  "target": "src/app.js",
+  "originalReservedSourceSha256": "aad952e4c0b90a6812c21cd5f4ac92f35b52caf59f733d814deef3d32f43faf4",
+  "preFeatureGitBlobSha1": "d8037fddf08e7536811bed961a4f8c0c59ece285",
+  "candidateGitBlobSha1": "3b611f940f68e6814b9cc0577e4c063ac2dc7c28",
+  "classification": "Separately proposed post-exposure measurement UI opt-in on already modified current main; NOT a replay of the original R1 frozen detector evidence.",
+  "change": "Enable existing opt-in native detector hit collector when the only request is the new directional summary kind. No native detector callback modification, physical engine version change, or default capture.",
+  "release": "Draft independent native-measurement review and owner authorization required."
+}
