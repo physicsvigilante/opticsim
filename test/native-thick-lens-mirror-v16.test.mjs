@@ -234,3 +234,45 @@ test('v16 closest admitted 0.011 mm whole-body mirror gap still traces true axia
   mirrorPoint:mirror.point
  }));
 });
+
+test('v16 two independently authored rays share native lens and mirror without source-route inference',async()=>{
+ const r=fresh(),second=structuredClone(comp(r,'S1'));
+ second.id='S2';second.parameters.y=-10;
+ r.components.push(second);
+ const doc=prep(r),native=inspectNative(doc),diag=native.diagnostic;
+ assert.equal(doc.schemaVersion,16);
+ assert.equal(diag.emissionsById.S1.emitted,1);
+ assert.equal(diag.emissionsById.S2.emitted,1);
+ assert.equal(diag.interfacesById.L1.interactions,8);
+ assert.equal(diag.interfacesById.L1.faces['front-arc'].interactions,4);
+ assert.equal(diag.interfacesById.L1.faces['back-arc'].interactions,4);
+ assert.equal(diag.reflectionsById.M1,2);
+ assert.equal(diag.detectorsById.D1.crossings,4);
+ const requests=[{id:'a',kind:'source-emissions',componentId:'S1'},
+  {id:'b',kind:'source-emissions',componentId:'S2'},
+  {id:'lens',kind:'interface-interactions',componentId:'L1'},
+  {id:'mirror',kind:'mirror-reflections',componentId:'M1'},
+  {id:'detector',kind:'detector-crossings',componentId:'D1'}];
+ const result=exec(doc,requests),read=await evaluateObservables(doc,requests,result.summary);
+ assert.equal(result.summary.native.status,'completed');
+ assert.deepEqual(read.results.map(e=>e.status),Array(5).fill('qualified'));
+ assert.deepEqual(read.results.map(e=>e.value),[1,1,8,2,4]);
+ assert.ok(native.trace.filter(e=>e.id==='L1').every(e=>{snell(e,comp(r,'L1').parameters);return true;}));
+ console.log('V16_NATIVE_TWO_SOURCES '+JSON.stringify({
+  emissions:diag.emissionsById,lens:diag.interfacesById.L1.interactions,
+  mirror:diag.reflectionsById.M1,detector:diag.detectorsById.D1.crossings,
+  statuses:read.results.map(e=>e.status)
+ }));
+});
+test('v16 explicit cm input converts only length fields and preserves exact physical scene',()=>{
+ const mm=fresh(),cm=structuredClone(mm);
+ cm.lengthUnit='cm';
+ const lengthKeys=new Set(['x','y','apertureHeight','centerThickness','frontRadius','backRadius','length']);
+ for(const component of cm.components)for(const [key,value] of Object.entries(component.parameters))
+  if(lengthKeys.has(key))component.parameters[key]=value/10;
+ assert.deepEqual(prep(cm),prep(mm));
+ const missing=structuredClone(mm);delete comp(missing,'L1').parameters.backRadius;
+ assert.throws(()=>prep(missing),'Missing physical curvature never inferred');
+ const noOrientation=structuredClone(mm);delete comp(noOrientation,'M1').parameters.orientationDeg;
+ assert.throws(()=>prep(noOrientation),'Mirror orientation never guessed');
+});
