@@ -56,6 +56,15 @@ test('R2 F2: native G2-origin TIR is followed by a distinct top-face transmissio
  const qualified=await evaluateObservables(doc,requests,summary);
  assert.deepEqual(qualified.results.map(x=>x.value),[1,2,0]);
  assert.ok(qualified.results.every(x=>x.status==='qualified'));
+ console.log('R2_F2_NATIVE_EVIDENCE '+JSON.stringify({
+  model:doc.physics.model, status:summary.native.status,
+  g2First:{outcome:g2.first.outcome,pointMm:g2.first.pointMm,
+   incidentIndex:g2.first.incidentIndex,destinationIndex:g2.first.destinationIndex},
+  g2Top:{outcome:top.first.outcome,pointMm:top.first.pointMm,
+   transmittedAngleDeg:top.first.transmittedAngleDeg},
+  g1Interactions:evidence.diagnostic.interfacesById.G1.interactions,
+  requestedStatuses:qualified.results.map(x=>x.status)
+ }));
 });
 
 test('R2 F1: two-body full-Fresnel mode retains native branching and refuses to certify incomplete runs',async()=>{
@@ -127,6 +136,16 @@ test('R2 F1: two-body full-Fresnel mode retains native branching and refuses to 
  assert.equal(short.executionPassed,false);
  const withheld=await evaluateObservables(limited,requests,short);
  assert.ok(withheld.results.every(x=>x.status==='suppressed'&&x.value===null));
+ console.log('R2_F1_NATIVE_EVIDENCE '+JSON.stringify({
+  model:doc.physics.model,status:summary.native.status,
+  truncation:summary.native.truncation,undefinedBehavior:summary.native.undefinedBehavior,
+  g1:{interactions:raw.interfacesById.G1.interactions,first:firstG1},
+  g2:{interactions:raw.interfacesById.G2.interactions,first:firstG2},
+  referenceFirstG1Reflectance:referenceR,
+  requestedStatuses:results.results.map(x=>x.status),
+  limited:{status:short.native.status,truncation:short.native.truncation,
+   requestedStatuses:withheld.results.map(x=>x.status)}
+ }));
 });
 
 test('R2 F3: diagonally disjoint glass is conservatively refused without a full face certificate',()=>{
