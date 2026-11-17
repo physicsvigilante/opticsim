@@ -1,5 +1,6 @@
 import {compilePrism,PRISM_TYPE} from './triangular-prism.js';
 import {compilePolygon,POLYGON_TYPE} from './polygon-dielectric.js';
+import {compileSphericalLens,SPHERICAL_LENS_TYPE} from './spherical-lens.js';
 import {compileCircular} from './circular-dielectric.js';
 import {CIRCLE_BLOCKER_TYPE,compileCircleBlocker} from './opaque-circle-blocker.js';
 import {FINITE_APERTURE_TYPE,compileFiniteAperture} from './finite-aperture.js';
@@ -14,6 +15,7 @@ import {compileInterface,observeInterfaceSet} from './planar-media.js';
 export {observeInterfaceSet};
 const compilers = {
   'circular-dielectric':compileCircular,[PRISM_TYPE]:compilePrism,[POLYGON_TYPE]:compilePolygon,
+  [SPHERICAL_LENS_TYPE]:compileSphericalLens,
   [CIRCLE_BLOCKER_TYPE]:compileCircleBlocker,
   [FINITE_APERTURE_TYPE]:c=>compileFiniteAperture(c,mirrorEndpoints),
   'ideal-curved-mirror':compileCurved,'circular-arc-mirror':compileCurved,
