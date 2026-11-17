@@ -16,6 +16,7 @@ const integration=JSON.parse(read('test/fixtures/detector-hit-integration-rebase
 const focusedPostFreeze=JSON.parse(read('test/fixtures/focused-exploration-postfreeze.json'));
 const twoGlassUiPostFreeze=JSON.parse(read('test/fixtures/two-glass-app-postfreeze-v1.json'));
 const thickLensUiPostFreeze=JSON.parse(read('test/fixtures/thick-lens-app-postfreeze-v1.json'));
+const thickMirrorUiPostFreeze=JSON.parse(read('test/fixtures/thick-lens-mirror-app-postfreeze-v1.json'));
 const notebookPostFreeze=JSON.parse(read('test/fixtures/portable-notebook-postfreeze-v1.json'));
 // Historical SHA-256 values remain immutable evidence of the earlier R1 run.
 // The NEW parentage milestone intentionally modifies these current production
@@ -68,6 +69,12 @@ test('original reserved transfer evidence remains frozen; explicit later parenta
  assert.equal(thickLensUiPostFreeze.priorPostfreezeFile,'test/fixtures/two-glass-app-postfreeze-v1.json');
  assert.equal(thickLensUiPostFreeze.originalFrozenSha256,freeze.frozenFiles['src/app.js']);
  assert.equal(thickLensUiPostFreeze.priorReviewedTwoGlassSha256,twoGlassUiPostFreeze.candidateTwoGlassSha256);
+ // A further v16 post-exposure browser patch is never relabelled as earlier
+ // blind R1 evidence, nor does it mutate the separately pinned v15 source.
+ assert.equal(thickMirrorUiPostFreeze.historicalFreezeFile,'test/fixtures/detector-hit-transfer-freeze.json');
+ assert.equal(thickMirrorUiPostFreeze.priorPostfreezeFile,'test/fixtures/thick-lens-app-postfreeze-v1.json');
+ assert.equal(thickMirrorUiPostFreeze.originalFrozenSha256,freeze.frozenFiles['src/app.js']);
+ assert.equal(thickMirrorUiPostFreeze.priorReviewedThickLensSha256,thickLensUiPostFreeze.candidateThickLensSha256);
  for(const [path,expected] of Object.entries(freeze.frozenFiles)){
   if(integration.changedAfterReservedExecution.includes(path)){
    assert.equal(integration.baselineCommit,freeze.baseline);
@@ -83,8 +90,8 @@ test('original reserved transfer evidence remains frozen; explicit later parenta
     'Exact later portable-notebook UI version must remain pinned: '+path);
    assert.notEqual(hash(path),expected,'Do not relabel the old reserve test as newly blind: '+path);
   }else if(path==='src/app.js'){
-   assert.equal(hash(path),thickLensUiPostFreeze.candidateThickLensSha256,
-    'Only this explicit later v15 thick-lens viewer addition is admitted');
+   assert.equal(hash(path),thickMirrorUiPostFreeze.candidateThickMirrorSha256,
+    'Only this separately pinned v16 native thick-lens/mirror viewer addition is admitted');
    assert.notEqual(hash(path),expected,'Do not rewrite original pre-transfer frozen app source evidence');
   }else if(parentageFeaturePaths.has(path)){
    assert.notEqual(hash(path),expected,'New parentage feature modifies this formerly frozen source path: '+path);

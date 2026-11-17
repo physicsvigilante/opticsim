@@ -46,6 +46,8 @@ jobs:
         run: node scripts/two-separated-glass-browser.mjs
       - name: Native spherical thick-lens train, real Chrome physical edits and qualified reopen
         run: node scripts/native-thick-lenses-browser.mjs
+      - name: Mixed native thick-lens and plane-mirror, return/miss/edits in actual Chrome
+        run: node scripts/native-thick-lens-mirror-browser.mjs
       - name: Native finite glass and external mirror composition, rejection and sweep
         run: node scripts/finite-composition-acceptance.mjs
       - name: Composition browser edits, misses, incomplete results and qualified exports
@@ -80,6 +82,7 @@ jobs:
             test-artifacts/browser-polygon-dielectric/
             test-artifacts/browser-two-separated-glass/
             test-artifacts/browser-native-thick-lenses/
+            test-artifacts/browser-native-thick-lens-mirror/
             test-artifacts/llm-authoring/finite-composition/
             test-artifacts/browser-finite-composition/
             test-artifacts/llm-authoring/two-mirror-composition/

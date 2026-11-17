@@ -1,5 +1,6 @@
 import {compositionModels,compositionSourceModes,compositionProfile,compositionCapacity,compositionCountsMatch,validateCompositionRules} from './composition-profiles.js';
 import {SPHERICAL_LENS_TYPE,SPHERICAL_PARAMETERS,validateSphericalLensTrain} from './spherical-lens.js';
+import {validateThickLensMirrorComposition} from './thick-lens-mirror-composition.js';
 import {validateFiniteDielectricComposition} from './finite-dielectric-composition.js';
 import {validateTwoSeparatedDielectrics} from './two-finite-dielectrics.js';
 import {PRISM_TYPE,PRISM_PARAMETERS,validatePrismGeometry} from './triangular-prism.js';
@@ -118,6 +119,7 @@ function validateVersion(doc, version) {
     'finite-composition':c=>validateFiniteDielectricComposition(c,mirrorEndpoints,fail,version),
     'two-separated-glass':c=>validateTwoSeparatedDielectrics(c,mirrorEndpoints,fail),
     'native-thick-lenses':c=>validateSphericalLensTrain(c,mirrorEndpoints,fail),
+    'native-thick-mirror':c=>validateThickLensMirrorComposition(c,mirrorEndpoints,fail),
     'polygon-region':c=>validatePolygonGeometry(c,mirrorEndpoints,fail),
     'prism-region':c=>validatePrismGeometry(c,mirrorEndpoints,fail),
     'circular-region':c=>validateCircularGeometry(c,mirrorEndpoints,fail),
