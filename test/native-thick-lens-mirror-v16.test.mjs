@@ -89,7 +89,7 @@ test('v16 validates whole mirror segment, lens geometry, detector/source and mod
   r=>comp(r,'M1').parameters.x=15,
   r=>comp(r,'M1').parameters.x=15.009,
   r=>{comp(r,'M1').parameters.x=40;comp(r,'M1').parameters.length=150;comp(r,'M1').parameters.orientationDeg=30;},
-  r=>comp(r,'M1').parameters.x=9999,
+  r=>{comp(r,'M1').parameters.x=9999;comp(r,'M1').parameters.orientationDeg=0;},
   r=>comp(r,'L1').parameters.centerThickness=20,
   r=>comp(r,'L1').parameters.frontRadius=49,
   r=>comp(r,'L1').parameters.apertureHeight=1,
