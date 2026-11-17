@@ -60,7 +60,7 @@ test('original reserved transfer evidence remains frozen; explicit later parenta
  assert.equal(footprintPostFreeze.historicalFreezeFile,'test/fixtures/detector-hit-transfer-freeze.json');
  assert.equal(footprintPostFreeze.originalReservedSourceSha256,freeze.frozenFiles['src/app.js']);
  assert.equal(footprintPostFreeze.sourceBaseMain,'d3509e82fb65d81aabe336666851f8f2962623f4');
- assert.equal(footprintPostFreeze.preFeatureGitBlobSha1,'d8037fddf08e7536814b9cc0577e4c063ac2dc7c28');
+ assert.equal(footprintPostFreeze.preFeatureGitBlobSha1,'d8037fddf08e7536811bed961a4f8c0c59ece285');
  assert.equal(gitBlobSha1('src/app.js'),footprintPostFreeze.candidateGitBlobSha1,
   'Only this exact post-exposure opt-in UI change is admitted; original transfer remains frozen');
  for(const [path,expected] of Object.entries(freeze.frozenFiles)){
