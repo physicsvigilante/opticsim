@@ -4,6 +4,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {prepareScene,reviseScene,reviseComponents,capabilities} from '../src/authoring.js';
 import {validate,parseSave,serializeSave} from '../src/contract.js';
@@ -202,4 +203,14 @@ test('v18 qualified edits protect physical identity and stale measurements',asyn
   assert.equal(reopened.scene.physics.components.find(c=>c.id==='A1').parameters.y,30);
   assert.equal(reopened.results,undefined);
   assert.throws(()=>reviseScene(original,{changes:[{id:'A1',section:'parameters',key:'x',value:0}]}));
+});
+
+test('v18 browser provenance is append-only relative to reviewed v17 code, never a blind reevaluation',()=>{
+  const p=JSON.parse(readFileSync(new URL('./fixtures/thick-lens-aperture-app-postfreeze-v1.json',import.meta.url),'utf8'));
+  const bytes=readFileSync(new URL('../src/app.js',import.meta.url));
+  const sha=createHash('sha1').update('blob '+bytes.length+'\\0').update(bytes).digest('hex');
+  assert.equal(p.newV18AppGitBlob,sha);
+  assert.equal(p.originalV17AppGitBlob,'9d447af4c8fc59ec1e8fdcfbcec0c4d739fc477f');
+  const historical=JSON.parse(readFileSync(new URL('./fixtures/two-thick-lens-mirror-app-postfreeze-v1.json',import.meta.url),'utf8'));
+  assert.equal(historical.sourceBaseV16,'94ea1a184e025065fe28da49691a3f39dc916296');
 });
