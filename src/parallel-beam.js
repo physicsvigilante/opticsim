@@ -1,7 +1,7 @@
 // v19 JEE-first, deterministic finite parallel emitter. Geometry/admission only.
 // Pinned native PhyDemo Beam alone emits every sample and traces every encounter.
 import {compositionCountsMatch} from './composition-profiles.js';
-import {mirrorEndpoints} from './contract.js';
+// Surface endpoints are supplied by the canonical contract at admission time.
 import {apertureGeometry,APERTURE_CLEARANCE_MM} from './finite-aperture.js';
 import {interfaceNormal} from './planar-media.js';
 
@@ -48,7 +48,7 @@ function supportDistance(point,[a,b]){
  const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy);
  return cross({x:dx,y:dy},{x:point.x-a.x,y:point.y-a.y})/len;
 }
-export function validateParallelBeamComposition(components,model,rayDensity,fail){
+export function validateParallelBeamComposition(components,model,rayDensity,mirrorEndpoints,fail){
  const path='$.physics.components';
  if(![PARALLEL_LENS_MODEL,PARALLEL_PLANAR_MODEL].includes(model)||
     !compositionCountsMatch(components,model,PARALLEL_BEAM_VERSION))
