@@ -1,0 +1,122 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "title": "Two physical spherical thick lenses with a finite plane mirror",
+    "lengthUnit": "mm",
+    "runPolicy": "native-deep-v17",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -200,
+          "y": 0,
+          "brightness": 0.5
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 0
+        }
+      },
+      {
+        "id": "L1",
+        "type": "spherical-lens",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "apertureHeight": 100,
+          "centerThickness": 30,
+          "frontRadius": 100,
+          "backRadius": 100,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "L2",
+        "type": "spherical-lens",
+        "parameters": {
+          "x": 150,
+          "y": 0,
+          "apertureHeight": 100,
+          "centerThickness": 30,
+          "frontRadius": 100,
+          "backRadius": 100,
+          "insideIndex": 1.3,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "M1",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": 300,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 400
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": -100,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 400
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "l1",
+      "kind": "interface-interactions",
+      "componentId": "L1"
+    },
+    {
+      "id": "l2",
+      "kind": "interface-interactions",
+      "componentId": "L2"
+    },
+    {
+      "id": "l1-faces",
+      "kind": "interface-face-events",
+      "componentId": "L1"
+    },
+    {
+      "id": "l2-faces",
+      "kind": "interface-face-events",
+      "componentId": "L2"
+    },
+    {
+      "id": "m1",
+      "kind": "mirror-reflections",
+      "componentId": "M1"
+    },
+    {
+      "id": "d1",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Simulate actual native ray intersections through two separated finite spherical thick lenses with a finite plane mirror and passive detector. Count sampled native events without prescribing a return path.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "This apparatus is synthetic and physically explicit, not a textbook problem interpretation.",
+      "Exactly two separate nonrotated biconvex finite spherical thick lenses share explicit exterior refractive index 1.",
+      "The mirror is finite and may be missed; no return itinerary is encoded.",
+      "Native-deep-v17 permits at most 16 native ray interactions, without changing the older versions' maximum 8.",
+      "Fresnel-off is an explicit approximation that neglects partial reflection but keeps total internal reflection."
+    ],
+    "unknowns": [
+      "Native sampled interactions alone do not establish a complete image, beam power, source-to-detector ancestry or full Fresnel tree."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}
