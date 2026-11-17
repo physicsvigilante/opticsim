@@ -13,7 +13,7 @@ const kinds=Object.freeze({
   'interface-tir-count':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric'],unit:'native TIR interactions'},
   'interface-first-event':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric'],unit:'native event; directions y-up; power relative'},
   'interface-face-events':{type:['triangular-prism','polygon-dielectric'],unit:'bounded first native encounter and total count per finite face'},
-  'source-emissions':{type:'point-source',unit:'sampled rays'},
+  'source-emissions':{type:['point-source','parallel-beam'],unit:'sampled rays'},
   'blocker-absorptions':{type:['line-blocker','circle-blocker','finite-aperture'],unit:'sampled absorbed rays'},
   'mirror-reflections':{type:['plane-mirror','ideal-curved-mirror','circular-arc-mirror'],unit:'sampled interactions'},
   'detector-crossings':{type:'ray-detector',unit:'sampled crossings'},
