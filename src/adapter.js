@@ -1,4 +1,5 @@
 import {compilePrism,PRISM_TYPE} from './triangular-prism.js';
+import {PARALLEL_BEAM_TYPE,compileParallelBeam} from './parallel-beam.js';
 import {compilePolygon,POLYGON_TYPE} from './polygon-dielectric.js';
 import {compileCircular} from './circular-dielectric.js';
 import {CIRCLE_BLOCKER_TYPE,compileCircleBlocker} from './opaque-circle-blocker.js';
@@ -13,6 +14,7 @@ i18next.init({ lng: 'en', resources: { en: { simulator: en } }, initImmediate: f
 import {compileInterface,observeInterfaceSet} from './planar-media.js';
 export {observeInterfaceSet};
 const compilers = {
+  [PARALLEL_BEAM_TYPE]:compileParallelBeam,
   'circular-dielectric':compileCircular,[PRISM_TYPE]:compilePrism,[POLYGON_TYPE]:compilePolygon,
   [CIRCLE_BLOCKER_TYPE]:compileCircleBlocker,
   [FINITE_APERTURE_TYPE]:c=>compileFiniteAperture(c,mirrorEndpoints),
@@ -72,7 +74,7 @@ export function loadDocument(doc, width, height) {
 export function nativeExport(doc) { return loadDocument(doc).scene.toJSON(); }
 // Instance-local observation only: one native call, same return value and rays.
 // No tracing, resampling, or source prototype/upstream modification.
-export function observeSourceEmission(source,{parentage=null,finiteDiagnostic=null,sourceId=null}={}) {
+export function observeSourceEmission(source,{parentage=null,finiteDiagnostic=null,sourceId=null,sourceType='point-source'}={}) {
   const meter = { emitted: null, brightnessScale: null };
   const nativeStart = source.onSimulationStart;
   source.onSimulationStart = function (...args) {
@@ -83,16 +85,16 @@ export function observeSourceEmission(source,{parentage=null,finiteDiagnostic=nu
     try{finiteDiagnostic?.sourceStarted(sourceId,result);}catch{reportAuditFault(finiteDiagnostic);}
     return result;
   };
-  if(parentage)parentage.register(sourceId,'point-source',source,source.onSimulationStart,'onSimulationStart');
-  try{finiteDiagnostic?.register(sourceId,'point-source',source,source.onSimulationStart,'onSimulationStart');}
+  if(parentage)parentage.register(sourceId,sourceType,source,source.onSimulationStart,'onSimulationStart');
+  try{finiteDiagnostic?.register(sourceId,sourceType,source,source.onSimulationStart,'onSimulationStart');}
   catch{reportAuditFault(finiteDiagnostic);}
   return meter;
 }
 // Wrap each authored source once; no ray provenance is assigned after emission.
 // Stable-ID counts describe actual PhyDemo sampling, never detector attribution.
 export function observeSourceSet(doc, scene, idMap,{parentage=null,finiteDiagnostic=null}={}) {
-  const entries=doc.physics.components.filter(c=>c.type==='point-source')
-    .map(c=>[c.id,observeSourceEmission(scene.objs[idMap.get(c.id)],{parentage,finiteDiagnostic,sourceId:c.id})]);
+  const entries=doc.physics.components.filter(c=>c.type==='point-source'||c.type===PARALLEL_BEAM_TYPE)
+    .map(c=>[c.id,observeSourceEmission(scene.objs[idMap.get(c.id)],{parentage,finiteDiagnostic,sourceId:c.id,sourceType:c.type})]);
   return {
     get emitted() {
       return entries.some(([,meter])=>meter.emitted===null) ? null :

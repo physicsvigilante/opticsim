@@ -1,0 +1,97 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "JEE-style finite parallel beam through oblique slab",
+    "runPolicy": "preview-v1",
+    "components": [
+      {
+        "id": "B1",
+        "type": "parallel-beam",
+        "parameters": {
+          "x": -100,
+          "y": 0,
+          "width": 40,
+          "directionDeg": 30,
+          "brightness": 0.08
+        }
+      },
+      {
+        "id": "I1",
+        "type": "planar-interface",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "normalDeg": 0,
+          "negativeIndex": 1,
+          "positiveIndex": 1.5,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "I2",
+        "type": "planar-interface",
+        "parameters": {
+          "x": 60,
+          "y": 0,
+          "normalDeg": 0,
+          "negativeIndex": 1.5,
+          "positiveIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 120,
+          "y": 50,
+          "orientationDeg": 90,
+          "length": 400
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "emitted",
+      "kind": "source-emissions",
+      "componentId": "B1"
+    },
+    {
+      "id": "entry",
+      "kind": "interface-interactions",
+      "componentId": "I1"
+    },
+    {
+      "id": "exit",
+      "kind": "interface-interactions",
+      "componentId": "I2"
+    },
+    {
+      "id": "detected",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "hits",
+      "kind": "detector-hit-events",
+      "componentId": "D1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Simulate native parallel illumination and observed crossing/absorption events for a fully specified synthetic JEE-style optical apparatus.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "Two infinite planar boundaries define one slab with explicitly consistent refractive indices.",
+      "Partial Fresnel reflection is omitted by explicit partialReflection=false; native total internal reflection remains active.",
+      "The finite Beam emits parallel geometrical rays across a perpendicular 40 mm segment with no randomization."
+    ],
+    "unknowns": [
+      "Only sampled geometric rays and conditional Snell relations are measured; no wave interference or physical radiometry."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}
