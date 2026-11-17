@@ -107,8 +107,15 @@ test('R2 F1: two-body full-Fresnel mode retains native branching and refuses to 
  // G2 may omit weak branches under the unchanged native cutoff. A missing
  // reflected ray is never interpreted as zero physical reflectance.
  assert.ok(firstG2.branches.some(x=>x.kind==='transmitted'));
- assert.ok(['completed','completed-with-warnings','incomplete'].includes(summary.native.status),
-  'Record unexpected native status instead of assuming a complete Fresnel tree');
+ assert.equal(firstG2.branches.some(x=>x.kind==='reflected'),false,
+  'Weak G2 Fresnel reflection was omitted by the pinned native threshold');
+ assert.ok(firstG2.nativeTruncation>0,
+  'The omitted branch must be recorded as native truncation, not physical zero');
+ near(firstG2.branches.reduce((n,b)=>n+b.relativePower,0)+firstG2.nativeTruncation,
+  firstG2.incidentRelativePower,1e-8);
+ assert.ok(summary.native.truncation>=firstG2.nativeTruncation);
+ assert.equal(summary.native.status,'incomplete',
+  'Pinned weak Fresnel cutoff must prevent a qualified complete result');
  if(['completed','completed-with-warnings'].includes(summary.native.status)){
   const g1=summary.observations.interfacesById.G1;
   const g2=summary.observations.interfacesById.G2;
