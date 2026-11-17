@@ -1,0 +1,13 @@
+{
+  "format": "opticsim-native-thick-lens-app-postfreeze-v1",
+  "historicalFreezeFile": "test/fixtures/detector-hit-transfer-freeze.json",
+  "priorPostfreezeFile": "test/fixtures/two-glass-app-postfreeze-v1.json",
+  "target": "src/app.js",
+  "originalFrozenSha256": "aad952e4c0b90a6812c21cd5f4ac92f35b52caf59f733d814deef3d32f43faf4",
+  "priorReviewedTwoGlassSha256": "2d9a4bc6cd9f41e6f75688505a60ae672c818cfc166ad02aa775735eb42e391c",
+  "candidateThickLensSha256": "d34a9a0dadeda8c8356b93adbd0f55246e24f6527fa7e5caf3b8ff36db38fda9",
+  "sourceBaseV14": "fe3a030be7bfba8e5808e4e1e2e66d6815e7add7",
+  "release": "R2 draft, CI and independent physics review required",
+  "classification": "Post-exposure v15 browser edit on top of independently reviewed v14 app. Neither original frozen R1 reserved transfer nor v14 source is rewritten.",
+  "changes": "Explicit native thick-lens source picker, editable spherical face radii, aperture and centre-thickness labels, qualified-revision controls and truthful model/readout warnings. No native propagation solver/threshold modifications."
+}
