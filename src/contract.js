@@ -1,6 +1,7 @@
 import {compositionModels,compositionSourceModes,compositionProfile,compositionCapacity,compositionCountsMatch,validateCompositionRules} from './composition-profiles.js';
 import {SPHERICAL_LENS_TYPE,SPHERICAL_PARAMETERS,validateSphericalLensTrain} from './spherical-lens.js';
 import {validateThickLensMirrorComposition} from './thick-lens-mirror-composition.js';
+import {TWO_THICK_MIRROR_VERSION,TWO_THICK_MIRROR_NATIVE_DEPTH,validateTwoThickLensMirrorComposition} from './two-thick-lens-mirror-composition.js';
 import {validateFiniteDielectricComposition} from './finite-dielectric-composition.js';
 import {validateTwoSeparatedDielectrics} from './two-finite-dielectrics.js';
 import {PRISM_TYPE,PRISM_PARAMETERS,validatePrismGeometry} from './triangular-prism.js';
@@ -120,6 +121,7 @@ function validateVersion(doc, version) {
     'two-separated-glass':c=>validateTwoSeparatedDielectrics(c,mirrorEndpoints,fail),
     'native-thick-lenses':c=>validateSphericalLensTrain(c,mirrorEndpoints,fail),
     'native-thick-mirror':c=>validateThickLensMirrorComposition(c,mirrorEndpoints,fail),
+    'native-two-thick-mirror':c=>validateTwoThickLensMirrorComposition(c,mirrorEndpoints,fail),
     'polygon-region':c=>validatePolygonGeometry(c,mirrorEndpoints,fail),
     'prism-region':c=>validatePrismGeometry(c,mirrorEndpoints,fail),
     'circular-region':c=>validateCircularGeometry(c,mirrorEndpoints,fail),
@@ -145,7 +147,11 @@ function validateVersion(doc, version) {
   if (version === 1) number(v.brightness, 0.01, 1, '$.presentation.brightness');
   object(doc.simulation, ['rayDensity', 'maxRayDepth', 'processedRayLimit'], '$.simulation');
   number(doc.simulation.rayDensity, version === 1 ? 0.1 : SAMPLING_PRESETS.sparse, 1, '$.simulation.rayDensity');
-  number(doc.simulation.maxRayDepth, 0, 8, '$.simulation.maxRayDepth');
+  // ONLY isolated v17 scenes may use the explicitly deeper pinned-native
+  // interaction budget. Every earlier contract remains bounded at depth 8.
+  number(doc.simulation.maxRayDepth, 0,
+    version===TWO_THICK_MIRROR_VERSION?TWO_THICK_MIRROR_NATIVE_DEPTH:8,
+    '$.simulation.maxRayDepth');
   number(doc.simulation.processedRayLimit, 1, 10000, '$.simulation.processedRayLimit');
   for (const key of ['maxRayDepth', 'processedRayLimit']) if (!Number.isInteger(doc.simulation[key])) fail(`$.simulation.${key}`, 'expected integer');
   return doc;

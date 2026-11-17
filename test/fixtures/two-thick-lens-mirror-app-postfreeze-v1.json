@@ -1,0 +1,13 @@
+{
+  "format": "opticsim-native-two-thick-mirror-app-postfreeze-v1",
+  "historicalFreezeFile": "test/fixtures/detector-hit-transfer-freeze.json",
+  "priorPostfreezeFile": "test/fixtures/thick-lens-mirror-app-postfreeze-v1.json",
+  "target": "src/app.js",
+  "originalFrozenSha256": "aad952e4c0b90a6812c21cd5f4ac92f35b52caf59f733d814deef3d32f43faf4",
+  "priorReviewedV16Sha256": "0df07545040ca490f7cb62a54fa92d5158c9b96f4fc24fd3390bc8ee311737e3",
+  "candidateV17Sha256": "1d6aec648ad549917df6a511687151bbb8a65a8efb00e221023bacb485ebbbdb",
+  "sourceBaseV16": "94ea1a184e025065fe28da49691a3f39dc916296",
+  "classification": "New v17 browser edit after independently reviewed v16; original frozen evaluation and v14/v15/v16 app source hashes are separately retained and not retrospectively qualified.",
+  "changes": "Adds truthful v17 deep native two-lens-plus-mirror source picker, model label, 16-interaction budget guidance and withheld-result notice. Does not change pinned physics, time/motion, solver, brightness threshold, native event shape or qualification.",
+  "release": "DRAFT R2 physics review and owner authorization required before release."
+}

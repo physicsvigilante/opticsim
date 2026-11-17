@@ -7,6 +7,7 @@ import {NATIVE_OBSERVATION_KEYS} from './native-observations.js';
 import {PRISM_TYPE,prismVertices} from './triangular-prism.js';
 import {POLYGON_TYPE,polygonVertices} from './polygon-dielectric.js';
 import {SPHERICAL_LENS_TYPE,thickLensExtents} from './spherical-lens.js';
+import {TWO_THICK_MIRROR_MODEL,TWO_THICK_MIRROR_VERSION,TWO_THICK_MIRROR_NATIVE_DEPTH} from './two-thick-lens-mirror-composition.js';
 import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
 import {CIRCLE_BLOCKER_TYPE,circleBlockerExtents} from './opaque-circle-blocker.js';
 import {FINITE_APERTURE_TYPE} from './finite-aperture.js';
@@ -17,7 +18,10 @@ import {validate,UPSTREAM,SAMPLING_PRESETS,COMPONENT_TYPES,componentParameterNam
 const lengthScales=Object.freeze({mm:1,cm:10,m:1000});
 const policies=Object.freeze({
   'preview-v1':Object.freeze({rayDensity:SAMPLING_PRESETS.medium,maxRayDepth:8,processedRayLimit:10000}),
-  'dense-v1':Object.freeze({rayDensity:SAMPLING_PRESETS.dense,maxRayDepth:8,processedRayLimit:10000})
+  'dense-v1':Object.freeze({rayDensity:SAMPLING_PRESETS.dense,maxRayDepth:8,processedRayLimit:10000}),
+  // Only the isolated v17 composition can admit this higher native budget.
+  'native-deep-v17':Object.freeze({rayDensity:SAMPLING_PRESETS.medium,
+    maxRayDepth:TWO_THICK_MIRROR_NATIVE_DEPTH,processedRayLimit:10000})
 });
 const prefixes=Object.freeze({
   'point-source':'source','ideal-lens':'lens','plane-mirror':'mirror','line-blocker':'blocker',[CIRCLE_BLOCKER_TYPE]:'circle-blocker',[FINITE_APERTURE_TYPE]:'aperture','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism',[POLYGON_TYPE]:'glass',[SPHERICAL_LENS_TYPE]:'thick-lens'
@@ -71,6 +75,7 @@ export function capabilities() {
       scope:'One strictly convex four-vertex dielectric, exactly one external finite plane mirror, 1–4 explicit single rays and 0–2 external detectors; no lenses, stops, other media or motion',
       geometry:'Existing polygon rules; mirror/detectors entirely beyond a separating face by 0.01 mm; external segments mutually separated by 0.01 mm',
       limitations:'No prescribed return route, source-attributed ray history or image prediction. Explicit Fresnel-off is an approximation; truncated runs remain incomplete.'},
+    nativeTwoThickLensMirror:{schemaVersion:17,model:TWO_THICK_MIRROR_MODEL,scope:'Exactly two disjoint native finite spherical biconvex lenses with a shared explicit outside index, one independent finite native plane mirror, 1–4 exact directed rays and 0–2 passive detectors',geometry:'Full unchanged v15 two-lens/rim/material/source/detector safeguards; mirror segment >=0.01 mm outside the complete x envelope of each lens',execution:'New explicit native-deep-v17 authoring policy (maxRayDepth 16); legacy v1–v16 always capped at 8; native incompleteness remains disqualifying',limits:'No prescribed itinerary, inferred focus/image, full Fresnel power guarantee, third lens, additional mirrors, nested media or arbitrary 3D optics'},
     nativeThickLensMirror:{schemaVersion:16,model:'native-thick-lens-mirror-tracing',scope:'Exactly one stationary finite biconvex thick SphericalLens, one independent finite native plane Mirror, 1–4 explicitly directed native SingleRay sources and 0–2 passive detectors',geometry:'Reuses full v15 lens geometry plus original mirror/detector checks; mirror entire finite segment must be strictly x-separated by >=0.01 mm from the thick lens',limits:'No prescribed lens→mirror→lens itinerary, no inferred image, no full Fresnel brightness guarantee; a mirror may genuinely be missed'},
     nativeThickLensTrain:{schemaVersion:15,model:'native-thick-lens-tracing',scope:'One or two explicitly dimensioned stationary biconvex spherical thick lenses with a shared outside index; 1–4 exact native rays and 0–2 external detectors',geometry:'Positive independent radii; aperture >=4 mm; central thickness >=2 mm; at least 1 mm rim; complete horizontal extents disjoint by >=0.01 mm',limits:'No meniscus/asymmetric concave surfaces, tilt, sources inside a lens, mixed optics, native image inference or near-critical certification'},
     polygonDielectrics:{schemaVersion:9,model:'polygon-dielectric-tracing',scope:'One strictly convex four-vertex dielectric, 1–4 exact rays and 0–2 external detectors; no other optics or nested media',geometry:'Four explicit vertices; edges and altitudes >=1 mm; all four faces are finite'},
@@ -223,7 +228,7 @@ export function prepareScene(request) {
   const issues=inspectAuthoringRequest(request);
   if(issues.length)fail(issues);
   const scale=units(request.lengthUnit,'$.lengthUnit');
-  const policyName=own(request,'runPolicy')?request.runPolicy:'preview-v1';
+  const requestedPolicy=own(request,'runPolicy')?request.runPolicy:null;
   const title=own(request,'title')?request.title:'LLM-authored optical scene';
   const knownIds=new Set(request.components.filter(c=>own(c,'id')).map(c=>c.id)),assignedIds=[];
   const components=request.components.map((component,i)=>{
@@ -246,6 +251,8 @@ export function prepareScene(request) {
     return result;
   });
   const {schemaVersion,adapterVersion,model}=selectAuthoringComposition(components);
+  const policyName=requestedPolicy??(schemaVersion===TWO_THICK_MIRROR_VERSION?
+    'native-deep-v17':'preview-v1');
   const doc={
     format:'ray-optics-2d',schemaVersion,adapterVersion,upstreamCommit:UPSTREAM,
     physics:{lengthUnit:'mm',coordinates:'x-right-y-up',model,components},

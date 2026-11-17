@@ -97,7 +97,7 @@ test('v16 validates whole mirror segment, lens geometry, detector/source and mod
   r=>comp(r,'S1').parameters.x=0,
   r=>{comp(r,'M1').parameters.x=-200;comp(r,'M1').parameters.y=10;},
   r=>comp(r,'S1').emission.mode='full-circle',
-  r=>r.components.push({...structuredClone(comp(r,'L1')),id:'L2',parameters:{...comp(r,'L1').parameters,x:75}}),
+
   r=>r.components.push({id:'B1',type:'line-blocker',parameters:{x:80,y:0,orientationDeg:90,length:100}}),
   r=>r.components.push({id:'C1',type:'circular-dielectric',parameters:{x:300,y:0,radius:10,insideIndex:1.4,outsideIndex:1,partialReflection:false}})
  ];
@@ -105,6 +105,16 @@ test('v16 validates whole mirror segment, lens geometry, detector/source and mod
   const r=structuredClone(baseline);edit(r);
   assert.throws(()=>prep(r),undefined,'Invalid v16 case '+i+' must not be repaired');
  }
+ // Fresh authoring can choose v17 when a SECOND physical lens is supplied;
+ // saved v16 scenes cannot add one without explicitly creating a new scene.
+ const twoLenses=structuredClone(baseline);
+ twoLenses.components.push({...structuredClone(comp(twoLenses,'L1')),id:'L2',
+  parameters:{...comp(twoLenses,'L1').parameters,x:75}});
+ assert.equal(prep(twoLenses).schemaVersion,17);
+ const forged=prep(baseline);
+ forged.physics.components.push(structuredClone(twoLenses.components.at(-1)));
+ assert.throws(()=>validate(forged),
+  'A saved v16 one-lens mirror model cannot silently become a two-lens model');
  const positive=structuredClone(baseline);
  comp(positive,'M1').parameters.x=15.011;
  comp(positive,'S1').parameters.y=0;
