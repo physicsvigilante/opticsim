@@ -14,6 +14,7 @@ const hash=p=>createHash('sha256').update(read(p)).digest('hex');
 const freeze=JSON.parse(read('test/fixtures/detector-hit-transfer-freeze.json'));
 const integration=JSON.parse(read('test/fixtures/detector-hit-integration-rebase.json'));
 const focusedPostFreeze=JSON.parse(read('test/fixtures/focused-exploration-postfreeze.json'));
+const twoGlassUiPostFreeze=JSON.parse(read('test/fixtures/two-glass-app-postfreeze-v1.json'));
 const notebookPostFreeze=JSON.parse(read('test/fixtures/portable-notebook-postfreeze-v1.json'));
 // Historical SHA-256 values remain immutable evidence of the earlier R1 run.
 // The NEW parentage milestone intentionally modifies these current production
@@ -53,6 +54,13 @@ test('original reserved transfer evidence remains frozen; explicit later parenta
   freeze.frozenFiles['src/exploration-ui.js']);
  assert.equal(notebookPostFreeze.priorFocusedUiSha256,
   focusedPostFreeze.replacementHashes['src/exploration-ui.js']);
+ // The v14 engine needs one later UI compatibility change to expose native
+ // SingleRay controls. Pin its exact SHA and original R1 freeze separately;
+ // do not treat any later app.js change as fresh blind source evidence.
+ assert.equal(twoGlassUiPostFreeze.historicalFreezeFile,'test/fixtures/detector-hit-transfer-freeze.json');
+ assert.equal(twoGlassUiPostFreeze.target,'src/app.js');
+ assert.equal(twoGlassUiPostFreeze.originalFrozenSha256,freeze.frozenFiles['src/app.js']);
+ assert.equal(twoGlassUiPostFreeze.productionBaseMain,'d3509e82fb65d81aabe336666851f8f2962623f4');
  for(const [path,expected] of Object.entries(freeze.frozenFiles)){
   if(integration.changedAfterReservedExecution.includes(path)){
    assert.equal(integration.baselineCommit,freeze.baseline);
@@ -67,6 +75,10 @@ test('original reserved transfer evidence remains frozen; explicit later parenta
    assert.equal(hash(path),notebookPostFreeze.portableNotebookUiSha256,
     'Exact later portable-notebook UI version must remain pinned: '+path);
    assert.notEqual(hash(path),expected,'Do not relabel the old reserve test as newly blind: '+path);
+  }else if(path==='src/app.js'){
+   assert.equal(hash(path),twoGlassUiPostFreeze.candidateTwoGlassSha256,
+    'Only this exact post-exposure v14 viewer compatibility patch is admitted');
+   assert.notEqual(hash(path),expected,'Do not rewrite original pre-transfer frozen app source evidence');
   }else if(parentageFeaturePaths.has(path)){
    assert.notEqual(hash(path),expected,'New parentage feature modifies this formerly frozen source path: '+path);
   }else assert.equal(hash(path),expected,'Unexpected change to an unrelated historically frozen path: '+path);
