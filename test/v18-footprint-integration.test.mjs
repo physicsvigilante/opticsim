@@ -62,3 +62,32 @@ test('depth-8 truncated v18 return suppresses footprint and original measurement
  assert.equal(run.observations,null);
  assert.ok(r.every(x=>x.status==='suppressed'&&x.value===null));
 });
+
+test('review F1: both v18 lenses Fresnel-on withhold footprint and old counts when native branching is incomplete',async()=>{
+ const d=doc(x=>{
+  for(const id of ['L1','L2']){
+   const lens=x.components.find(c=>c.id===id);
+   assert.ok(lens,'Required physical lens '+id);
+   lens.parameters.partialReflection=true;
+  }
+ });
+ const requests=[
+  {id:'foot-only',kind:'detector-directional-footprint',componentId:'D1'},
+  {id:'crossings',kind:'detector-crossings',componentId:'D1'},
+  {id:'absorbed',kind:'blocker-absorptions',componentId:'A1'}
+ ];
+ const {run,results:r}=await measure(d,requests);
+ assert.equal(d.schemaVersion,18);
+ assert.equal(d.simulation.maxRayDepth,16,'Native-deep-v18 remains unchanged');
+ assert.equal(run.native.status,'incomplete','Do not call a truncated Fresnel tree complete');
+ assert.equal(run.executionPassed,false);
+ assert.ok(run.native.truncation>0||run.native.undefinedBehavior>0);
+ assert.equal(run.observations,null,'Do not expose partially sampled event lists');
+ assert.deepEqual(r.map(x=>x.kind),requests.map(x=>x.kind));
+ assert.ok(r.every(x=>x.status==='suppressed'&&x.value===null),'No partial footprint or old native counts');
+ assert.ok(r.every(x=>/incomplete|failed|not yet available/i.test(x.reason)));
+ console.log('V18_FOOTPRINT_FRESNEL_WITHHELD '+JSON.stringify({
+  status:run.native.status,truncation:run.native.truncation,
+  undefinedBehavior:run.native.undefinedBehavior,requests:r.map(x=>({kind:x.kind,status:x.status,value:x.value}))
+ }));
+});
