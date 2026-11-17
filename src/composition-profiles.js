@@ -3,11 +3,12 @@
 // A profile is an admission contract, NOT a prescribed optical encounter order.
 const source='point-source',mirror='plane-mirror',detector='ray-detector';
 const lens='ideal-lens',prism='triangular-prism',polygon='polygon-dielectric';
-const circle='circular-dielectric',plane='planar-interface';
+const circle='circular-dielectric',plane='planar-interface',thick='spherical-lens';
 const curves=['ideal-curved-mirror','circular-arc-mirror'];
 const stops=['line-blocker','circle-blocker','finite-aperture'];
 const finite='finite-dielectric-composition';
 const twoFinite='two-separated-dielectrics-tracing';
+const thickTrain='native-thick-lens-tracing';
 const range=(min,max)=>({min,max});
 const group=(types,min,max)=>({types,min,max});
 const rule=(name,excludeTypes=[])=>({name,excludeTypes});
@@ -78,6 +79,11 @@ define(13,finite,{
 define(14,twoFinite,{
   [source]:range(1,4),[polygon]:range(2,2),[detector]:range(0,2)
  },[],[rule('two-separated-glass'),optical('general-optical',polygon)],single);
+// Independent v15 family: one or two fully specified native spherical
+// biconvex lenses. Nothing in v1–v14 is automatically upgraded.
+define(15,thickTrain,{
+ [source]:range(1,4),[thick]:range(1,2),[detector]:range(0,2)
+},[],[rule('native-thick-lenses'),optical('general-optical',thick)],single);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 
@@ -85,6 +91,7 @@ const byKey=new Map(definitions.map(p=>[p.id,p]));
 // mixtures. It identifies a candidate contract, never certifies it or retries
 // a more permissive profile after geometry/material validation fails.
 const selection=freeze([
+  {model:thickTrain,version:15,when:[group([thick],1,32)]},
   {model:twoFinite,version:14,when:[group([polygon],2,32)]},
   {model:finite,version:13,when:[group([polygon,prism],1,32),group(['line-blocker'],1,32)]},
   {model:finite,version:12,when:[group([prism],1,32),group([mirror],1,32)]},
