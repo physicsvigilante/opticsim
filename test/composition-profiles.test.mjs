@@ -25,12 +25,13 @@ const finite='finite-dielectric-composition',general='general-component-tracing'
 const types=(...values)=>values.map(type=>({type}));
 const componentPatch=operations=>({format:'opticsim-component-revision-v1',operations});
 
-test('one catalog preserves 18 historical v1–v13 contracts plus isolated v14–v16',()=>{
- const c=compositionCapabilities();assert.equal(c.profiles.length,21);
+test('one catalog preserves 18 historical v1–v13 contracts plus isolated v14–v17',()=>{
+ const c=compositionCapabilities();assert.equal(c.profiles.length,22);
  assert.equal(c.profiles.filter(p=>p.schemaVersion<=13).length,18);
  assert.equal(compositionModels(14).join('|'),'two-separated-dielectrics-tracing');
  assert.equal(compositionModels(15).join('|'),'native-thick-lens-tracing');
  assert.equal(compositionModels(16).join('|'),'native-thick-lens-mirror-tracing');
+ assert.equal(compositionModels(17).join('|'),'native-two-thick-lens-mirror-tracing');
  c.profiles=c.profiles.filter(p=>p.schemaVersion<=12);assert.equal(c.profiles.length,17);
  assert.equal(new Set(c.profiles.map(p=>p.id)).size,17);
  assert.deepEqual(compositionModels(1),['ideal-thin-lens-geometric']);
@@ -49,6 +50,7 @@ test('one catalog preserves 18 historical v1–v13 contracts plus isolated v14�
  assert.deepEqual(compositionSourceModes(14),['single-ray']);
  assert.deepEqual(compositionSourceModes(15),['single-ray']);
  assert.deepEqual(compositionSourceModes(16),['single-ray']);
+ assert.deepEqual(compositionSourceModes(17),['single-ray']);
 });
 
 test('capabilities and legacy capacity bounds are defensive views, never mixture permissions',()=>{
