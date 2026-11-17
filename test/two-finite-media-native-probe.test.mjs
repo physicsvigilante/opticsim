@@ -29,7 +29,7 @@ function system({firstInside=1.5,secondInside=1.3,angle=0,sourceX=-200,sourceY=1
  const t=angle*Math.PI/180;src.p2={x:sourceX+20*Math.cos(t),y:-sourceY-20*Math.sin(t)};
  const det=structuredClone(p.objs[2]);det.p1.x=500;det.p2.x=500;
  p.objs=[src,compilePolygon(first),compilePolygon(second),det];
- const loaded=core.loadNative(p),map=new Map(d.physics.components.map((c,i)=>[c.id,i]));
+ const loaded={scene:core.loadNative(p)},map=new Map(d.physics.components.map((c,i)=>[c.id,i]));
  const sources=core.observeSourceSet(d,loaded.scene,map),
   interfaces=core.observeInterfaceSet(d,loaded.scene,map),
   detectors=core.observeDetectorSet(d,loaded.scene,map);
