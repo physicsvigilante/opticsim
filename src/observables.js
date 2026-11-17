@@ -6,13 +6,13 @@ import {sceneHash,isRecord,boundedText} from './qualified-utils.js';
 import {supportsNativeRayParentage} from './native-ray-parentage.js';
 import {supportsFiniteHitDiagnostic,FINITE_DIAGNOSTIC_METHOD} from './native-finite-hit-diagnostic.js';
 const kinds=Object.freeze({
-  'interface-interactions':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric'],unit:'sampled interactions'},
-  'interface-incidence-angle':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric'],unit:'degrees from normal; first native encounter'},
-  'interface-transmission-angle':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric'],unit:'degrees from normal; first native encounter'},
-  'interface-reflection-angle':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric'],unit:'degrees from normal; first native encounter'},
-  'interface-tir-count':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric'],unit:'native TIR interactions'},
-  'interface-first-event':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric'],unit:'native event; directions y-up; power relative'},
-  'interface-face-events':{type:['triangular-prism','polygon-dielectric'],unit:'bounded first native encounter and total count per finite face'},
+  'interface-interactions':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','spherical-lens'],unit:'sampled interactions'},
+  'interface-incidence-angle':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','spherical-lens'],unit:'degrees from normal; first native encounter'},
+  'interface-transmission-angle':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','spherical-lens'],unit:'degrees from normal; first native encounter'},
+  'interface-reflection-angle':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','spherical-lens'],unit:'degrees from normal; first native encounter'},
+  'interface-tir-count':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','spherical-lens'],unit:'native TIR interactions'},
+  'interface-first-event':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','spherical-lens'],unit:'native event; directions y-up; power relative'},
+  'interface-face-events':{type:['triangular-prism','polygon-dielectric','spherical-lens'],unit:'bounded first native encounter and total count per finite face'},
   'source-emissions':{type:'point-source',unit:'sampled rays'},
   'blocker-absorptions':{type:['line-blocker','circle-blocker','finite-aperture'],unit:'sampled absorbed rays'},
   'mirror-reflections':{type:['plane-mirror','ideal-curved-mirror','circular-arc-mirror'],unit:'sampled interactions'},
@@ -29,7 +29,7 @@ export function observableCapabilities(){
       'Ideal image is conditional analysis, never native image detection.',
       'A requested result does not certify interpretation of its source question.',
       'Blocker absorption is a sampled native incident count; a zero detector count is not proof of continuous shadow or invisibility.',
-      'Circular dielectric angles are relative to the local normal at the first actual native hit, not a whole path or detected image.',
+      'Circular dielectric and thick spherical lens angles use the local normal at an actual native hit, not a complete path or detected image. Thick-lens rim/arc corner events may be unqualified.',
       'Detector hit-event order is native callback order, not source attribution, a ray history, a continuous footprint or image detection. More than 32 hits or uncertain endpoints withhold the entire position list.',
       'Opt-in detector ray provenance is observed direct native parentage in one complete v5 single-interface run, not a physical path, image, or continuous irradiance. Tokens are not stable across runs.',
       'Opt-in v9 finite-hit diagnostic is NONCERTIFYING advisory evidence; it never changes canonical native measurements or makes an original question answered. Unknown point error is not an accepted forward hit.']};
@@ -77,7 +77,7 @@ export async function evaluateObservables(doc,requests,execution){
   const fresh=execution?.canonicalSha256===canonicalSha256;
   const complete=fresh&&execution.executionPassed===true&&
     ['completed','completed-with-warnings'].includes(execution.native?.status);
-  const warnings=[...(execution?.native?.warnings||[]),...doc.physics.components.filter(c=>['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric'].includes(c.type)&&!c.parameters.partialReflection)
+  const warnings=[...(execution?.native?.warnings||[]),...doc.physics.components.filter(c=>['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','spherical-lens'].includes(c.type)&&!c.parameters.partialReflection)
     .map(c=>c.id+': explicit transmitted-only approximation omits Fresnel partial reflections; native TIR remains active.')];
   const results=requests.map(r=>{
     const base={...r,status:'unavailable',value:null,method:null,unit:null,reason:null};

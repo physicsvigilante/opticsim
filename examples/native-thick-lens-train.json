@@ -1,0 +1,104 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "Two separate native biconvex spherical thick lenses",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -200,
+          "y": 10,
+          "brightness": 0.5
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 0
+        }
+      },
+      {
+        "id": "L1",
+        "type": "spherical-lens",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "apertureHeight": 100,
+          "centerThickness": 30,
+          "frontRadius": 100,
+          "backRadius": 100,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "L2",
+        "type": "spherical-lens",
+        "parameters": {
+          "x": 150,
+          "y": 0,
+          "apertureHeight": 100,
+          "centerThickness": 30,
+          "frontRadius": 100,
+          "backRadius": 100,
+          "insideIndex": 1.3,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 350,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 400
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "first-lens-count",
+      "kind": "interface-interactions",
+      "componentId": "L1"
+    },
+    {
+      "id": "second-lens-count",
+      "kind": "interface-interactions",
+      "componentId": "L2"
+    },
+    {
+      "id": "first-lens-faces",
+      "kind": "interface-face-events",
+      "componentId": "L1"
+    },
+    {
+      "id": "second-lens-faces",
+      "kind": "interface-face-events",
+      "componentId": "L2"
+    },
+    {
+      "id": "detector-crossings",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Trace a specifically directed ray through two independent native finite biconvex spherical lenses and count actual per-lens curved-face interactions.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "This scene is synthetic physics-validation apparatus, not an interpreted textbook problem.",
+      "Each lens has explicitly authored positive front/back radius magnitudes, full aperture, centre thickness, separate homogeneous inside index and common outside index.",
+      "Fresnel-off is an explicit native transmitted-only approximation; native total internal reflection remains."
+    ],
+    "unknowns": [
+      "No complete image, paraxial focus, continuous brightness, polarization state or unobserved ray route is inferred from sampled native callbacks."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}
