@@ -22,7 +22,7 @@ function unit(ray){
  assert.ok(n>0&&Number.isFinite(n));
  return {x:dx/n,y:dy/n};
 }
-function makeScene({height=0,mirrorY=0,mirrorX=300,swapLenses=false,ambient=1}={}){
+function makeScene({height=0,mirrorY=0,mirrorX=300,swapLenses=false,ambient=1,testOnlyRayDepth=null}={}){
  const r=physical();
  r.components.find(c=>c.id==='S1').parameters.y=height;
  const detector=r.components.find(c=>c.id==='D1').parameters;
@@ -32,6 +32,12 @@ function makeScene({height=0,mirrorY=0,mirrorX=300,swapLenses=false,ambient=1}={
  assert.equal(doc.schemaVersion,15,'Two thick lenses are already valid v15 authoring');
  assert.equal(doc.physics.model,'native-thick-lens-tracing');
  const native=core.compile(doc).native;
+ if(testOnlyRayDepth!==null){
+  assert.ok(Number.isInteger(testOnlyRayDepth)&&testOnlyRayDepth>doc.simulation.maxRayDepth);
+  // RESEARCH ONLY: override a native JSON setting AFTER canonical v15
+  // validation. v15/v16 public scenes remain capped at depth 8.
+  native.maxRayDepth=testOnlyRayDepth;
+ }
  assert.deepEqual(native.objs.map(x=>x.type),
   ['SingleRay','SphericalLens','SphericalLens','Detector']);
  // This is not canonical/public authoring; native full physical object list is
@@ -95,7 +101,8 @@ function checkMirror(e){
 }
 
 test('Two thick lenses with a finite mirror: actual native axial return crosses both glass bodies twice',()=>{
- const r=makeScene(),actual=r.trace.map(e=>e.id);
+ const r=makeScene({testOnlyRayDepth:16}),actual=r.trace.map(e=>e.id);
+ console.log('NATIVE_TWO_LENSES_DEEP_AXIAL_DIAGNOSTIC '+JSON.stringify({status:r.status,trace:actual,truncation:r.diagnostics.truncation,undefinedBehavior:r.diagnostics.undefinedBehavior,errors:r.diagnostics.errors}));
  assert.equal(r.status,'completed');
  assert.deepEqual(actual,['D1','L1','L1','L2','L2','M1','L2','L2','L1','L1','D1']);
  assert.equal(r.diagnostics.truncation,0);
@@ -116,7 +123,8 @@ test('Two thick lenses with a finite mirror: actual native axial return crosses 
   actualNativePin:r.doc.upstreamCommit}));
 });
 test('Off-axis two-thick-lens/mirror native composition is independent of object-list order',()=>{
- const a=makeScene({height:2}),b=makeScene({height:2,swapLenses:true});
+ const a=makeScene({height:2,testOnlyRayDepth:16}),b=makeScene({height:2,swapLenses:true,testOnlyRayDepth:16});
+ console.log('NATIVE_TWO_LENSES_DEEP_OFFAXIS_DIAGNOSTIC '+JSON.stringify({a:{status:a.status,trace:a.trace.map(x=>x.id),truncation:a.diagnostics.truncation,undefinedBehavior:a.diagnostics.undefinedBehavior,errors:a.diagnostics.errors},b:{status:b.status,trace:b.trace.map(x=>x.id),truncation:b.diagnostics.truncation,undefinedBehavior:b.diagnostics.undefinedBehavior,errors:b.diagnostics.errors}}));
  for(const r of [a,b]){
   assert.equal(r.status,'completed');
   assert.equal(r.diagnostics.truncation,0);
@@ -152,4 +160,18 @@ test('The same two-lens native ray genuinely misses a finite mirror moved out of
  console.log('NATIVE_TWO_THICK_LENS_MIRROR_MISS '+JSON.stringify({
   status:r.status,actualEvents:r.trace.map(e=>e.id),
   mirrorHits:0,detectorCrossings:1}));
+});
+
+test('Default public native depth-8 policy retains genuine incomplete two-lens mirror-return evidence',()=>{
+ const r=makeScene({height:0});
+ assert.equal(r.doc.simulation.maxRayDepth,8);
+ assert.equal(r.status,'incomplete',
+   'The default budget must not incorrectly qualify this deeper return train');
+ console.log('NATIVE_TWO_LENSES_DEFAULT_DEPTH_GATING '+JSON.stringify({
+  authoredMaxRayDepth:r.doc.simulation.maxRayDepth,
+  status:r.status,actualTrace:r.trace.map(e=>({id:e.id,point:e.point})),
+  truncation:r.diagnostics.truncation,
+  undefinedBehavior:r.diagnostics.undefinedBehavior,
+  errors:r.diagnostics.errors,warnings:r.diagnostics.warnings
+ }));
 });
