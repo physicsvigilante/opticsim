@@ -10,7 +10,9 @@ import {prepareScene} from '../src/authoring.js';
 
 const core=createRequire(import.meta.url)('../dist/test-core.cjs');
 const original=JSON.parse(readFileSync(new URL('../examples/native-thick-lens-aperture-v18.json',import.meta.url),'utf8'));
-const sampleAngles=Object.freeze(Array.from({length:10},(_,i)=>-18+3.6*i));
+// Pinned AngleSource iterates in native y-DOWN; our documented readout is y-UP.
+// Thus the first emitted sample is +18°, descending by 3.6° per ray.
+const sampleAngles=Object.freeze(Array.from({length:10},(_,i)=>18-3.6*i));
 const close=(a,b,epsilon=1e-7)=>assert.ok(Number.isFinite(a)&&Math.abs(a-b)<=epsilon,a+' != '+b);
 const byId=(r,id)=>r.components.find(c=>c.id===id);
 const sourceDirection=ray=>{
@@ -177,7 +179,7 @@ test('native sampled ray counts change with density, without any continuous thro
  assert.equal(dense.event,'simulationComplete');
  assert.equal(dense.diagnostic.blockersById.A1.invalidObservations,0);
  assert.equal(dense.diagnostic.blockersById.A1.absorptions,dense.stopEvents.length);
- const angles=Array.from({length:20},(_,i)=>-18+1.8*i);
+ const angles=Array.from({length:20},(_,i)=>18-1.8*i);
  dense.emittedAngles.forEach((a,i)=>close(a,angles[i]));
  console.log('NATIVE_ANGLE_FAN_DENSITY '+JSON.stringify({
    status:dense.status,density:.4,emitted:20,
