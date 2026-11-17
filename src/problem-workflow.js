@@ -277,6 +277,12 @@ export function planProblem(input){
   const {prepared:ignored,...prep}=preparation||{};
   const unverifiedApparentDepth=physical?.format===APPARENT_DEPTH_FACTS_FORMAT&&
     request.requests.every(r=>r.kind===APPARENT_DEPTH_KIND)&&request.verifyNative===true&&!scene;
+  // The old run-problem CLI is byte-frozen by a historical transfer gate.
+  // Mark ONLY this newly registered method so the existing report/status
+  // reducer can indicate unfulfilled native verification without touching it.
+  if(unverifiedApparentDepth)for(const result of results)
+    if(result.kind===APPARENT_DEPTH_KIND&&result.status==='conditional')
+      result.nativeVerificationUnfulfilled=true;
   const native={required:needsNative,canRun,
     reason:unverifiedApparentDepth?'Reduced apparent-depth facts do not define a complete native scene; native verification requires explicit source, boundary, detector and policy.':
       !needsNative?'No registered native result or verification requested.':
@@ -291,7 +297,15 @@ export function planProblem(input){
 }
 export function resultCoverage(results){
   const available=results.filter(r=>['available','qualified','conditional'].includes(r.status));
+  // Keep conditional A mathematics as a calculated quantity, but never let
+  // the FROZEN public CLI report an explicitly requested native verification
+  // as fulfilled when no native scene/run exists. Older families are unchanged.
+  const unverifiedA=results.some(r=>r.kind===APPARENT_DEPTH_KIND&&
+    r.nativeVerificationUnfulfilled===true);
   return {requested:results.length,available:available.length,
-    status:available.length===results.length?'all-requested-quantities-available':available.length?'partially-available':'none-available',
-    meaning:'Coverage of authored requests only, never proof that the original question was faithfully interpreted or answered.'};
+    status:unverifiedA?'blocked-native-verification':
+      available.length===results.length?'all-requested-quantities-available':
+      available.length?'partially-available':'none-available',
+    ...(unverifiedA?{nativeVerification:'requested-but-no-native-scene'}:{}),
+    meaning:'Coverage of authored requests only, never proof that the original question was faithfully interpreted or answered or that explicit native verification succeeded.'};
 }
