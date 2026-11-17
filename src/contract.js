@@ -1,5 +1,6 @@
 import {compositionModels,compositionSourceModes,compositionProfile,compositionCapacity,compositionCountsMatch,validateCompositionRules} from './composition-profiles.js';
 import {validateFiniteDielectricComposition} from './finite-dielectric-composition.js';
+import {validateTwoSeparatedDielectrics} from './two-finite-dielectrics.js';
 import {PRISM_TYPE,PRISM_PARAMETERS,validatePrismGeometry} from './triangular-prism.js';
 import {POLYGON_TYPE,POLYGON_PARAMETERS,validatePolygonGeometry} from './polygon-dielectric.js';
 import {CIRCULAR_TYPE,CIRCULAR_PARAMETERS,validateCircularGeometry} from './circular-dielectric.js';
@@ -114,6 +115,7 @@ function validateVersion(doc, version) {
   // removed from the authoritative document or the native scene compiler.
   validateCompositionRules(p.components,p.model,version,{
     'finite-composition':c=>validateFiniteDielectricComposition(c,mirrorEndpoints,fail,version),
+    'two-separated-glass':c=>validateTwoSeparatedDielectrics(c,mirrorEndpoints,fail),
     'polygon-region':c=>validatePolygonGeometry(c,mirrorEndpoints,fail),
     'prism-region':c=>validatePrismGeometry(c,mirrorEndpoints,fail),
     'circular-region':c=>validateCircularGeometry(c,mirrorEndpoints,fail),
