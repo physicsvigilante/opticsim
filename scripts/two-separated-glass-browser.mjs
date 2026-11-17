@@ -136,9 +136,17 @@ try{
  assert.equal(miss.results[4].value,0);
  check('Native source direction can miss both glasses without manufactured encounters');
  await shot('two-glass-miss');
- assert.ok(report.requests.every(u=>u.startsWith(origin+'/')),'No cloud/provider requests');
+ // Chrome reports in-memory blob: download URLs as requests too. They do
+ // not contact a provider. Check actual HTTP(S) requests for external hosts,
+ // rather than falsely interpreting local qualified-file exports as telemetry.
+ const httpRequests=report.requests.filter(u=>/^https?:/i.test(u));
+ const externalHttpRequests=httpRequests.filter(u=>!u.startsWith(origin+'/'));
+ assert.deepEqual(externalHttpRequests,[],'Unexpected external HTTP(S) request');
+ report.requestSummary={localHttpRequests:httpRequests.length,
+  localBlobOrDataRequests:report.requests.filter(u=>/^(blob:|data:)/i.test(u)).length,
+  otherNonHttpRequests:report.requests.filter(u=>!/^https?:|^blob:|^data:/i.test(u))};
  assert.deepEqual(report.errors,[]);
- check('All resources are local; no model or telemetry calls; no browser exceptions');
+ check('All HTTP(S) requests stay on the local viewer origin; blob: downloads are not provider calls',{httpRequests:httpRequests.length,externalHttpRequests});
  report.status='checks-passed';
 }catch(e){report.status='checks-failed';report.error={message:e.message,stack:e.stack};process.exitCode=1;}
 finally{
