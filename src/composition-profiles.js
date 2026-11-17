@@ -9,6 +9,7 @@ const stops=['line-blocker','circle-blocker','finite-aperture'];
 const finite='finite-dielectric-composition';
 const twoFinite='two-separated-dielectrics-tracing';
 const thickTrain='native-thick-lens-tracing';
+const thickMirror='native-thick-lens-mirror-tracing';
 const range=(min,max)=>({min,max});
 const group=(types,min,max)=>({types,min,max});
 const rule=(name,excludeTypes=[])=>({name,excludeTypes});
@@ -84,6 +85,11 @@ define(14,twoFinite,{
 define(15,thickTrain,{
  [source]:range(1,4),[thick]:range(1,2),[detector]:range(0,2)
 },[],[rule('native-thick-lenses'),optical('general-optical',thick)],single);
+// New isolated v16 physical composition. Existing v1-v15 profiles are not
+// broadened; the native Mirror and SphericalLens remain independent objects.
+define(16,thickMirror,{
+ [source]:range(1,4),[thick]:range(1,1),[mirror]:range(1,1),[detector]:range(0,2)
+},[],[rule('native-thick-mirror'),optical('general-optical',thick)],single);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 
@@ -91,6 +97,7 @@ const byKey=new Map(definitions.map(p=>[p.id,p]));
 // mixtures. It identifies a candidate contract, never certifies it or retries
 // a more permissive profile after geometry/material validation fails.
 const selection=freeze([
+  {model:thickMirror,version:16,when:[group([thick],1,32),group([mirror],1,32)]},
   {model:thickTrain,version:15,when:[group([thick],1,32)]},
   {model:twoFinite,version:14,when:[group([polygon],2,32)]},
   {model:finite,version:13,when:[group([polygon,prism],1,32),group(['line-blocker'],1,32)]},
