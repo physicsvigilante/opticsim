@@ -59,11 +59,20 @@ function classify(run,doc,ids){
   const crosses=by['detector-crossings'],hits=by['detector-hit-events'];
   if(!source||!first||!crosses||!hits||
     values.some(v=>!['available','qualified'].includes(v.status))){
+    // A source aimed away may have a *measured zero* detector crossing, but
+    // without a native plane encounter that is NOT a transmitted ray missing
+    // the finite detector. Keep those distinct refusal reasons.
+    if(!first?.value||!['available','qualified'].includes(first.status))
+      return {status:'unavailable',reasonCode:'NO_TRANSMITTED_BRANCH'};
+    if(hits?.status==='unavailable')
+      return {status:'unavailable',reasonCode:
+        /No complete, count-matched/.test(hits.reason||'')?
+          'MISSING_NATIVE_HIT_CAPTURE':'AMBIGUOUS_NATIVE_HIT'};
     if(crosses?.status==='available'&&crosses.value===0&&
-       hits?.status==='available'&&Array.isArray(hits.value)&&hits.value.length===0)
+       hits?.status==='available'&&Array.isArray(hits.value)&&hits.value.length===0&&
+       first.value.outcome==='transmission')
       return {status:'unavailable',reasonCode:'FINITE_DETECTOR_MISS'};
-    if(hits?.status==='unavailable')return {status:'unavailable',reasonCode:'AMBIGUOUS_NATIVE_HIT'};
-    return {status:'unavailable',reasonCode:'NO_TRANSMITTED_BRANCH'};
+    return {status:'unavailable',reasonCode:'INCONSISTENT_NATIVE_BRANCH'};
   }
   const firstValue=first.value;
   const observations=run.nativeObservations||{};
@@ -235,9 +244,14 @@ export function verifyDetectorPairManifest(directory){
      !shaPattern.test(manifest.inputSha256)||!shaPattern.test(manifest.planFamilySha256)||
      !Array.isArray(manifest.sceneSha256)||manifest.sceneSha256.length!==2)
     throw Error('Incomplete or invalid B1a final evidence manifest');
+  // A finalized B1a two-run attempt ALWAYS has two real summaries and
+  // readouts, even when the native selection itself was unavailable/suppressed.
+  // A setup/stale/partial failure deliberately has NO final manifest.
   const known=new Set(['input.json','plan.json','scene-A.ray-optics-2d.json',
     'scene-B.ray-optics-2d.json','native-A.json','native-B.json',
     'readouts-A.json','readouts-B.json','report.json']);
+  if(manifest.files.length!==known.size||manifest.nativeAttempted!==2)
+    throw Error('Finalized B1a evidence must contain both actual run records.');
   const observed=new Set();
   for(const entry of manifest.files){
     if(!known.has(entry.path)||observed.has(entry.path)||!shaPattern.test(entry.sha256))
@@ -249,8 +263,7 @@ export function verifyDetectorPairManifest(directory){
     if(bytes.length!==entry.bytes||SHA(bytes)!==entry.sha256)
       throw Error('Tampered or inconsistent B1a evidence file');
   }
-  for(const required of ['input.json','plan.json','scene-A.ray-optics-2d.json',
-    'scene-B.ray-optics-2d.json','report.json'])
+  for(const required of known)
     if(!observed.has(required))throw Error('Missing required B1a evidence file');
   const plan=JSON.parse(readFileSync(resolve(base,'plan.json'),'utf8'));
   const report=JSON.parse(readFileSync(resolve(base,'report.json'),'utf8'));
@@ -264,7 +277,13 @@ export function verifyDetectorPairManifest(directory){
      plan.runs[1].sceneSha256!==manifest.sceneSha256[1]||
      report.nativeAttempted!==manifest.nativeAttempted||
      report.nativeCompleted!==manifest.nativeCompleted||
-     report.geometry?.value!==null)
+     report.nativeAttempted!==2||report.runs?.length!==2||
+     report.runs[0].role!=='run-A'||report.runs[1].role!=='run-B'||
+     report.runs[0].sceneSha256!==manifest.sceneSha256[0]||
+     report.runs[1].sceneSha256!==manifest.sceneSha256[1]||
+     report.runs.some(row=>row.familySha256!==manifest.planFamilySha256||
+       row.inputSha256!==manifest.inputSha256)||
+     report.geometry?.status!=='withheld'||report.geometry?.value!==null)
     throw Error('B1a final manifest and scenario identities do not agree');
   return {status:'verified-finalized-evidence',manifest,report};
 }
