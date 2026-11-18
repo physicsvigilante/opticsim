@@ -178,6 +178,13 @@ test('R3 P1 pre-review matrix: contradictory or incomplete first interface trans
   ['NaN outgoing unit',m=>{m.first.branches[0].direction.x=NaN;}],
   ['not a unit direction',m=>{m.first.branches[0].direction={x:2,y:0};}],
   ['nonfinite branch angle',m=>{m.first.branches[0].angleDeg=Infinity;}],
+  ['transmitted direction points back into source medium',m=>{
+    const dir=m.first.branches[0].direction;
+    m.first.branches[0].direction={x:-dir.x,y:dir.y};
+  }],
+  ['transmitted direction geometry contradicts angle',m=>{
+    m.first.branches[0].direction={x:1,y:0};
+  }],
   ['transmission branch angle disagrees with first',m=>{m.first.transmittedAngleDeg+=.4;}],
   ['outcome is not transmission',m=>{m.first.outcome='grazing';}],
   ['incorrect incoming medium side',m=>{m.first.from='positive';}],
@@ -207,6 +214,42 @@ test('R3 P1 pre-review matrix: contradictory or incomplete first interface trans
   syntheticCompleteRecordMutations:cases.length,
   allWithheld:true,actualNativeRerunOfMutations:false
  }));
+});
+test('R3 zero native hit cannot qualify a well-formed but analytically contradictory first event',async()=>{
+ for(const mutate of [
+  m=>{m.first.incidentAngleDeg+=.001;},
+  m=>{m.first.transmittedAngleDeg+=.001;
+    m.first.branches[0].angleDeg=m.first.transmittedAngleDeg;
+    const a=m.first.transmittedAngleDeg*Math.PI/180;
+    m.first.branches[0].direction={x:Math.cos(a),y:Math.sin(a)};},
+ ]){
+  const r=await runObserverNativeWitness({
+   requestBytes:inputBytes(witness()),outputPath:output(),
+   executeNative:tamperedNativeEvent(mutate)});
+  assert.equal(r.status,'native-evidence-unavailable');
+  assert.equal(r.exitCode,2);
+  assert.equal(r.report.actualNativeResult.reasonCode,'UNQUALIFIED_NATIVE_INTERFACE_EVIDENCE');
+  assert.equal(r.report.actualNativeResult.actualDetectorHit,null);
+ }
+});
+test('R3 full-Fresnel native reflected branch must point back toward source medium',async()=>{
+ const input=witness();input.physicalVerification.partialReflection=true;
+ const r=await runObserverNativeWitness({
+  requestBytes:inputBytes(input),outputPath:output(),
+  executeNative:(scene,requests)=>{
+   const s=syntheticZeroExecution()(scene,requests);
+   const m=s.observations.interfacesById.I1;
+   const transmitted=m.first.branches.find(b=>b.kind==='transmitted');
+   const reflected=m.first.branches.find(b=>b.kind==='reflected');
+   assert.ok(transmitted&&reflected);
+   reflected.direction={...transmitted.direction};
+   reflected.angleDeg=transmitted.angleDeg;
+   m.first.reflectedAngleDeg=reflected.angleDeg;
+   return s;
+  }});
+ assert.equal(r.status,'native-evidence-unavailable');
+ assert.equal(r.report.actualNativeResult.actualDetectorHit,null);
+ assert.equal(r.exitCode,2);
 });
 test('R3 shared integrity gate also protects a positive detector hit from forged first event',async()=>{
  for(const mutate of [
