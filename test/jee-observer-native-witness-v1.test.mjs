@@ -427,20 +427,17 @@ test('R5 first-event structural preflight: missing/null/malformed reflected dire
   statuses:'native-evidence-unavailable',noActualNativeBadReflectionClaim:true
  }));
 });
-test('R5 classification exception remains a durable fail-closed report, never a claimed hit',async()=>{
+test('R5 hostile projected-event getter fails closed and still saves the infrastructure refusal report',async()=>{
  const w=witness();w.physicalVerification.partialReflection=true;
  const dir=output();
  const r=await runObserverNativeWitness({
   requestBytes:inputBytes(w),outputPath:dir,
   executeNative:(scene,requests)=>{
    const run=structuredClone(nativeExecutor(scene,requests));
-   // Artificial hostile classifier exception; unlike the missing direction
-   // cases, this is not a JSON/native-record form, only a test of durable
-   // refusal and report persistence on an unexpected internal exception.
-   // Keep the projected first-event STRUCTURE accessible; inject an
-   // accessor fault only on the reflected direction, which the regular
-   // observables projector does not need to inspect, but the witness's
-   // post-projection integrity classifier must read.
+   // This artificial accessor is NOT a PhyDemo JSON native observation.
+   // The existing observable projection copies the event and triggers this
+   // getter BEFORE the witness classifier is invoked. The runner must still
+   // save an infrastructure-error report; no native hit may be accepted.
    const reflected=run.observations.interfacesById.I1.first.branches
      .find(x=>x.kind==='reflected');
    assert.ok(reflected);
@@ -450,19 +447,20 @@ test('R5 classification exception remains a durable fail-closed report, never a 
    });
    return run;
   }});
- assert.equal(r.status,'native-evidence-unavailable');
+ assert.equal(r.status,'native-infrastructure-error');
  assert.equal(r.exitCode,2);
- assert.equal(r.report.actualNativeResult.reasonCode,'NATIVE_RESULT_QUALIFICATION_EXCEPTION');
- assert.equal(r.report.actualNativeResult.actualDetectorHit,null);
- assert.equal(r.report.actualNativeResult.actualIncomingDirection,null);
- assert.equal(r.report.actualReadings,null);
+ assert.equal(r.report.native.status,'failed');
+ assert.match(r.report.reason,/Injected reflected-direction accessor fault/);
+ assert.equal(r.report.actualNativeResult,undefined);
  assert.ok(existsSync(resolve(dir,'analytical-result.json')));
  assert.ok(existsSync(resolve(dir,'scene.ray-optics-2d.json')));
+ assert.ok(existsSync(resolve(dir,'report.json')));
  const saved=JSON.parse(readFileSync(resolve(dir,'report.json'),'utf8'));
- assert.equal(saved.status,'native-evidence-unavailable');
- assert.equal(saved.actualReadings,null);
- assert.equal(saved.actualNativeResult.native.status,'completed');
+ assert.equal(saved.status,'native-infrastructure-error');
+ assert.equal(saved.native.status,'failed');
+ assert.equal(saved.actualNativeResult,undefined);
 });
+
 test('R2 P1: actual pinned native missed-detector controls show available zero with and without interface interaction',async()=>{
  // These are GENUINE separate native controls with deliberately changed
  // source angles. They are NOT represented as native evidence for the
