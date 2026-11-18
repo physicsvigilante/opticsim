@@ -97,7 +97,7 @@ function intersection(observations){
   if(den<1e-20)return null;
   const x=-lines.reduce((n,e)=>n+(e.m-m)*(e.b-b),0)/den,y=m*x+b;
   return {x,y,maxResidual:Math.max(...lines.map(e=>Math.abs(e.m*x+e.b-y))),count:lines.length,
-    meaning:'line concurrence from sampled native rays; not a detected physical image'};
+    meaning:'least-squares line intersection estimate; residual determines concurrence, not physical image detection'};
 }
 function evaluate(r){
   if(!r.complete)return {...r,qualifiedResearchFit:null,analysisWithheld:'incomplete-native-run'};
@@ -154,7 +154,10 @@ test('research native decentered two-lens beam: signed offsets, invariance, real
       if(c.incomplete){
         assert.equal(raw.complete,false);assert.equal(raw.stats.event,'simulationStop');
         const r=evaluate(raw);assert.equal(r.qualifiedResearchFit,null);results.push(r);
-      }else results.push(evaluate(raw));
+      }else{
+        assert.equal(raw.complete,true,'Expected complete native trace: '+c.id);
+        results.push(evaluate(raw));
+      }
       const r=results.at(-1);
       console.log('DECENTERED_NATIVE_RESEARCH '+JSON.stringify({id:r.id,complete:r.complete,
         emitted:r.emissions.length,both:r.bothLensRayIds?.length??null,fit:r.qualifiedResearchFit,
