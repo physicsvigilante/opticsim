@@ -80,6 +80,152 @@ test('mirror-symmetric true native single rays qualify separately with correct o
   assert.ok(r.report.actualNativeResult.actualIncomingDirection.y*y>0);
  }
 });
+// Deliberately SYNTHETIC complete event summaries, injected into the test
+// executor to exercise the witness's classification of genuinely *available*
+// native zeros. They are NOT independent native no-hit runs or source traces.
+function syntheticZeroExecution({noInterface=false,noEmission=false,
+  brokenHitCount=false,contradictoryFirst=false}={}){
+ return (scene,requests)=>{
+  const summary=structuredClone(nativeExecutor(scene,requests));
+  assert.equal(summary.native.status,'completed');
+  const o=summary.observations;
+  o.detectorsById.D1.crossings=0;
+  o.detectorHitEventsById.D1.observedCount=0;
+  o.detectorHitEventsById.D1.events=brokenHitCount?[
+   {pointMm:{x:100,y:40},incomingUnit:{x:1,y:0},distanceFromP1Mm:10}
+  ]:[];
+  if(noInterface){
+   o.interfacesById.I1.interactions=0;
+   o.interfacesById.I1.transmitted=0;
+   o.interfacesById.I1.reflected=0;
+   o.interfacesById.I1.totalInternalReflections=0;
+   if(!contradictoryFirst)o.interfacesById.I1.first=null;
+  }
+  if(noEmission)o.emissionsById.S1.emitted=0;
+  return summary;
+ };
+}
+test('R2 P1: complete measured zero detector crossing with one transmitted interface event is an observed negative',async()=>{
+ const r=await runObserverNativeWitness({
+  requestBytes:inputBytes(witness()),outputPath:output(),
+  executeNative:syntheticZeroExecution()});
+ assert.equal(r.status,'native-observed-no-crossing');
+ assert.equal(r.exitCode,0);
+ const observed=r.report.actualNativeResult;
+ assert.equal(observed.reasonCode,'MEASURED_ZERO_DETECTOR_CROSSINGS');
+ assert.equal(observed.method,'native-detector-zero-crossing-observation');
+ assert.equal(observed.observedEmissions,1);
+ assert.equal(observed.observedDetectorCrossings,0);
+ assert.equal(observed.observedInterfaceInteractions,1);
+ assert.equal(observed.native.status,'completed');
+ assert.equal(observed.actualDetectorHit,null);
+ assert.equal(observed.actualIncomingDirection,null);
+ assert.equal(observed.arrivalErrorMm,null);
+ assert.equal(observed.arrivalWithinDeclaredTolerance,false);
+ assert.equal(observed.nativeImageDetected,false);
+ assert.match(observed.reason,/does not prove invisibility/);
+ assert.ok(observed.warnings.some(x=>/omits Fresnel/.test(x)));
+ const by=Object.fromEntries(r.report.actualReadings.map(v=>[v.id,v]));
+ assert.equal(by.crossings.status,'qualified');
+ assert.equal(by.crossings.value,0);
+ assert.equal(by.hits.status,'qualified');
+ assert.deepEqual(by.hits.value,[]);
+ assert.equal(by.first.status,'qualified');
+ assert.equal(by.first.method,'native-observation');
+ console.log('JEE_OBSERVER_NATIVE_ZERO_CLASSIFICATION '+JSON.stringify({
+  syntheticCompleteEventSummary:true,
+  observedCrossings:0,observedInteractions:1,
+  status:r.status,nativeImageDetected:false
+ }));
+});
+test('R2 P1: no native interface encounter has no first event yet detector zero is still an observed negative',async()=>{
+ const r=await runObserverNativeWitness({
+  requestBytes:inputBytes(witness()),outputPath:output(),
+  executeNative:syntheticZeroExecution({noInterface:true})});
+ assert.equal(r.status,'native-observed-no-crossing');
+ assert.equal(r.exitCode,0);
+ assert.equal(r.report.actualNativeResult.observedInterfaceInteractions,0);
+ const by=Object.fromEntries(r.report.actualReadings.map(v=>[v.id,v]));
+ assert.equal(by.encounters.status,'qualified');
+ assert.equal(by.encounters.value,0);
+ assert.equal(by.first.status,'unavailable');
+ assert.equal(by.first.value,null);
+ assert.equal(by.crossings.value,0);
+ assert.deepEqual(by.hits.value,[]);
+ assert.equal(r.report.actualNativeResult.actualDetectorHit,null);
+});
+test('R2 P1: actual pinned native missed-detector controls show available zero with and without interface interaction',async()=>{
+ // These are GENUINE separate native controls with deliberately changed
+ // source angles. They are NOT represented as native evidence for the
+ // original analytically proposed shooting direction (hashes differ).
+ let inspected=false;
+ const r=await runObserverNativeWitness({
+  requestBytes:inputBytes(witness()),outputPath:output(),
+  executeNative:async(scene,requests)=>{
+   for(const [heading,interactions] of [[30,1],[180,0]]){
+    const away=structuredClone(scene);
+    away.physics.components.find(x=>x.id==='S1').emission.directionDeg=heading;
+    const actual=nativeExecutor(away,requests);
+    assert.equal(actual.native.status,'completed');
+    assert.equal(actual.executionPassed,true);
+    const obs=await evaluateObservables(away,requests,actual);
+    const by=Object.fromEntries(obs.results.map(x=>[x.id,x]));
+    assert.equal(by.emissions.value,1);
+    assert.equal(by.encounters.value,interactions);
+    assert.equal(by.crossings.value,0);
+    assert.deepEqual(by.hits.value,[]);
+    assert.equal(by.hits.method,'native-hit-event-observation');
+    assert.ok(['available','qualified'].includes(by.hits.status));
+    if(interactions===0){
+     assert.equal(by.first.status,'unavailable');
+     assert.equal(by.first.value,null);
+    }else{
+     assert.ok(['available','qualified'].includes(by.first.status));
+     assert.equal(by.first.value.outcome,'transmission');
+    }
+   }
+   inspected=true;
+   return nativeExecutor(scene,requests);
+  }});
+ assert.equal(inspected,true);
+ assert.equal(r.status,'verified-sampled-arrival'); // original scene unaffected
+ console.log('JEE_OBSERVER_NATIVE_REAL_ZERO_CONTROLS '+JSON.stringify({
+  separateFullNativeScenes:2,
+  cases:['transmitted-ray-misses-detector','ray-misses-interface-and-detector'],
+  zeroIsAvailable:true,
+  notSourceSceneEvidence:true
+ }));
+});
+test('R2 P1: inconsistent counts, false first event, zero emission and missing measurement never become observed negatives',async()=>{
+ for(const [label,options] of [
+  ['zero-emitted',{noEmission:true}],
+  ['hit-list-mismatch',{brokenHitCount:true}],
+  ['unphysical-first',{noInterface:true,contradictoryFirst:true}]
+ ]){
+  const r=await runObserverNativeWitness({
+   requestBytes:inputBytes(witness()),outputPath:output(),
+   executeNative:syntheticZeroExecution(options)});
+  assert.equal(r.status,'native-evidence-unavailable',label);
+  assert.equal(r.exitCode,2,label);
+  assert.equal(r.report.actualNativeResult.actualDetectorHit,null,label);
+  assert.equal(r.report.actualNativeResult.arrivalWithinDeclaredTolerance,false,label);
+ }
+});
+test('R2 N1: angle-only native first-event mismatch has a dedicated reason, not a user tolerance failure',async()=>{
+ const r=await runObserverNativeWitness({
+  requestBytes:inputBytes(witness()),outputPath:output(),
+  executeNative:(scene,requests)=>{
+   const summary=structuredClone(nativeExecutor(scene,requests));
+   summary.observations.interfacesById.I1.first.incidentAngleDeg+=.001;
+   return summary;
+  }});
+ assert.equal(r.status,'measured-miss');
+ assert.equal(r.exitCode,2);
+ assert.equal(r.report.actualNativeResult.reasonCode,'NATIVE_FIRST_EVENT_ANGLE_MISMATCH');
+ assert.equal(r.report.actualNativeResult.arrivalWithinDeclaredTolerance,true);
+ assert.equal(r.report.actualNativeResult.directionWithinDeclaredTolerance,true);
+ assert.equal(r.report.actualNativeResult.angleErrorWithinFixedTolerance,false);
+});
 test('numerically withheld incoming grazing does not author or execute a native ray',async()=>{
  const x=witness();
  Object.assign(x.analyticalQuery.interface,{normalDeg:135,sourceIndex:1,observerIndex:2});
