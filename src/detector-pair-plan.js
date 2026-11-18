@@ -170,7 +170,9 @@ function checkB1aGeometry(doc,sourceId,interfaceId,detectorId){
 }
 function familyCanonical(doc,sourceId){
   const clone=structuredClone(doc);
-  clone.physics.components.sort((a,b)=>a.id.localeCompare(b.id,'en'));
+  // Portable code-unit lexical order (not process/ICU-locale collation) is
+  // required for a stable family SHA across native CI and host environments.
+  clone.physics.components.sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
   const source=clone.physics.components.find(c=>c.id===sourceId);
   if(!source||source.type!=='point-source')throw Error('No unique source for native family comparison');
   delete source.emission.directionDeg;
