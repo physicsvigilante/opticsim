@@ -450,7 +450,9 @@ test('async request mutation cannot change frozen original bytes or the two nati
  assert.deepEqual(readFileSync(resolve(result.output,'input.json')),before);
  assert.equal(result.report.inputSha256,sha(before));
  assert.equal(result.report.nativeSelection.status,'available');
- assert.equal((await verifyDetectorPairManifest(result.output)).status,'verified-finalized-evidence');
+ const verified=await verifyDetectorPairManifest(result.output);
+ assert.equal(verified.status,'verified-finalized-evidence');
+ assert.equal(verified.authority,'test-injected-non-authoritative');
 });
 
 test('public standalone CLI performs real native execution and writes a finalized hash-linked report',async()=>{
@@ -465,6 +467,7 @@ test('public standalone CLI performs real native execution and writes a finalize
  assert.equal(response.geometry.value,null);
  const verified=await verifyDetectorPairManifest(out);
  assert.equal(verified.report.nativeSelection.status,'available');
+ assert.equal(verified.authority,'built-in-pinned-native');
  const cap=spawnSync(process.execPath,['scripts/detector-selected-pair.mjs','capabilities'],{encoding:'utf8'});
  assert.equal(cap.status,0);
  assert.equal(JSON.parse(cap.stdout).requestedResult,'native-finite-window-hits-only');
