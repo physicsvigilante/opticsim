@@ -84,7 +84,7 @@ test('real full-Fresnel native rays give two distinct finite-window crossings, n
   'scene-A.ray-optics-2d.json','scene-B.ray-optics-2d.json'].sort());
  assert.deepEqual(readFileSync(resolve(output.output,'input.json')),raw);
  const verified=await verifyDetectorPairManifest(output.output);
- assert.equal(verified).status,'verified-finalized-evidence');
+ assert.equal(verified.status,'verified-finalized-evidence');
  assert.equal(verified.report.geometry.value,null);
  const saved=JSON.parse(readFileSync(resolve(output.output,'manifest.json'),'utf8'));
  assert.equal(saved.files.length,9);assert.equal(saved.nativeAttempted,2);
