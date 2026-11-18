@@ -94,9 +94,12 @@ export function validateParallelBeamComposition(components,model,rayDensity,mirr
    // Until a bounded, separately reviewed downstream policy exists, refuse
    // an aperture beyond a forward ideal lens. This checks only authored plane
    // order, not a prescribed ray route, transmitted sample or image.
-   if(lens&&(lens.parameters.x-p.x)*direction.x>BEAM_CLEARANCE_MM&&
-      (a.x-p.x)*direction.x>BEAM_CLEARANCE_MM&&
-      (a.x-lens.parameters.x)*direction.x>BEAM_CLEARANCE_MM)
+   // Topological order uses strictly positive signed distance, NOT the
+   // clearance tolerance: the adjacent-plane validators admit equality at
+   // 0.01 mm, which must not bypass downstream refusal.
+   if(lens&&(lens.parameters.x-p.x)*direction.x>0&&
+      (a.x-p.x)*direction.x>0&&
+      (a.x-lens.parameters.x)*direction.x>0)
     fail(path,'A parallel-beam aperture downstream of a forward ideal lens is not admitted: refracted rays may hit gap/arm endpoints not checked by the initial-sample guard. Place the stop before the lens or use a separately validated arrangement.','UNSUPPORTED_SCOPE');
    const geometry=apertureGeometry(a,mirrorEndpoints);
    if(![90,-90].includes(a.orientationDeg)||
