@@ -276,6 +276,48 @@ test('native zero selection and raw warning are distinct from incomplete/stale m
  assert.equal(warning.report.geometry.value,null);
 });
 
+
+test('B1a reports no native interface encounter separately from a completed finite-detector miss',async()=>{
+ const away=q();away.apparatus.components.find(c=>c.id==='S1').emission.directionDeg=180;
+ away.secondDirectionDeg=.5;
+ const r=await run(away);
+ assert.equal(r.report.nativeAttempted,2);
+ assert.equal(r.report.nativeCompleted,2);
+ assert.equal(r.report.runs[0].selection.status,'unavailable');
+ assert.equal(r.report.runs[0].selection.reasonCode,'NO_TRANSMITTED_BRANCH');
+ assert.equal(r.report.runs[0].observableResults[2].value,0);
+ assert.equal(r.report.runs[1].selection.status,'available');
+ assert.equal(r.report.geometry.value,null);
+});
+
+test('B1a never accepts forged transmitted directions, missing hit capture or swapped scene identities',async()=>{
+ const mismatch=await run(q(),(doc,requests)=>{
+  const execution=native(doc,requests);
+  const observed=execution.summary.observations.interfacesById.I1.first;
+  observed.branches.find(b=>b.kind==='transmitted').direction.y+=.05;
+  return execution;
+ });
+ assert.equal(mismatch.report.nativeAttempted,2);
+ assert.equal(mismatch.report.nativeCompleted,2);
+ assert.equal(mismatch.report.status,'native-selection-unavailable');
+ assert.ok(mismatch.report.runs.every(r=>r.selection.reasonCode==='INCONSISTENT_NATIVE_BRANCH'));
+ assert.equal(mismatch.report.geometry.value,null);
+ const absent=await run(q(),doc=>native(doc,[]));
+ assert.equal(absent.report.nativeAttempted,2);
+ assert.equal(absent.report.status,'native-selection-unavailable');
+ assert.ok(absent.report.runs.every(r=>r.selection.reasonCode==='MISSING_NATIVE_HIT_CAPTURE'));
+ assert.ok(absent.report.runs.every(r=>r.observableResults[3].status==='unavailable'));
+ assert.equal(absent.report.geometry.value,null);
+ const swapped=await run(q(),(doc,requests)=>{
+  const changed=structuredClone(doc);
+  changed.physics.components.find(c=>c.id==='S1').emission.directionDeg+=.1;
+  return native(changed,requests);
+ });
+ assert.equal(swapped.report.nativeAttempted,1);
+ assert.equal(swapped.report.reasonCode,'STALE_EXECUTION_SHA');
+ assert.equal(swapped.report.geometry.value,null);
+});
+
 test('stale native scene hashes suppress selection and stop at the actual first attempt',async()=>{
  const r=await run(q(),(doc,requests)=>{
   const changed=structuredClone(doc);
@@ -321,6 +363,41 @@ test('manifest detects tampering and unfinished output cannot be reopened as ver
  assert.throws(()=>verifyDetectorPairManifest(r.output),/Tampered|inconsistent/);
  const fail=await run(q(),()=>{throw Error('no native');});
  assert.throws(()=>verifyDetectorPairManifest(fail.output));
+});
+
+
+test('finalized B1a manifest cannot omit a run file or have altered run associations',async()=>{
+ const r=await run(q());
+ const path=resolve(r.output,'manifest.json');
+ const original=JSON.parse(readFileSync(path,'utf8'));
+ assert.equal(original.files.length,9);
+ const withoutB=structuredClone(original);
+ withoutB.files=withoutB.files.filter(f=>f.path!=='native-B.json');
+ writeFileSync(path,JSON.stringify(withoutB,null,2)+'\n');
+ assert.throws(()=>verifyDetectorPairManifest(r.output),/both actual run records/);
+});
+
+test('async request mutation cannot change frozen original bytes or the two native runs',async()=>{
+ const input=q(),raw=bytes(input),before=Buffer.from(raw),out=fresh();
+ let entered;const inside=new Promise(resolve=>{entered=resolve;});
+ let release;const pause=new Promise(resolve=>{release=resolve;});
+ let calls=0;
+ const task=runDetectorPairEvidence({inputBytes:raw,outputPath:out,
+  execute:async (doc,requests)=>{
+   calls++;
+   if(calls===1){entered();await pause;}
+   return native(doc,requests);
+  }});
+ await inside;
+ raw.fill(0);input.apparatus.components[0].parameters.x=0;
+ release();
+ const result=await task;
+ assert.equal(result.exitCode,0);
+ assert.equal(calls,2);
+ assert.deepEqual(readFileSync(resolve(result.output,'input.json')),before);
+ assert.equal(result.report.inputSha256,sha(before));
+ assert.equal(result.report.nativeSelection.status,'available');
+ assert.equal(verifyDetectorPairManifest(result.output).status,'verified-finalized-evidence');
 });
 
 test('public standalone CLI performs real native execution and writes a finalized hash-linked report',()=>{
