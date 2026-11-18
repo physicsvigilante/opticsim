@@ -1,0 +1,50 @@
+{
+  "format": "opticsim-detector-selected-pair-request-v1",
+  "apparatus": {
+    "lengthUnit": "mm",
+    "title": "JEE one-plane finite native detector example",
+    "runPolicy": "preview-v1",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -120,
+          "y": 0,
+          "brightness": 1
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": -0.5
+        }
+      },
+      {
+        "id": "I1",
+        "type": "planar-interface",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "normalDeg": 0,
+          "negativeIndex": 1.5,
+          "positiveIndex": 1,
+          "partialReflection": true
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 40,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 5
+        }
+      }
+    ]
+  },
+  "sourceId": "S1",
+  "interfaceId": "I1",
+  "detectorId": "D1",
+  "secondDirectionDeg": 0.5,
+  "requestedResult": "native-finite-window-hits-only"
+}
