@@ -95,10 +95,17 @@ function shootingReference(f){
    return unstable('WORLD_COORDINATE_ROUNDING',
      'A local physical root exists, but the authored world crossing cannot preserve the Snell residual at this coordinate scale.',
      {v,localResidual,worldResidual});
- // A conservative RESEARCH sampling bound, not a physical critical angle:
- // an almost tangent exit is too sensitive to trust as a finite detector
- // witness without a dedicated near-grazing numerical qualification.
- if(dot(outgoing,n)<.02)
+ // Conservative TEST-ONLY admission thresholds, not Snell/TIR laws.
+ // The world Snell residual certifies the reconstructed crossing Q; it does
+ // NOT certify that an incident heading rounded into a binary64 direction
+ // can shoot over a near-tangent path and land within the finite detector's
+ // asserted 1e-5 mm observer-coordinate tolerance. Check INGRESS first.
+ const incomingNormal=dot(incoming,n),outgoingNormal=dot(outgoing,n);
+ if(!Number.isFinite(incomingNormal)||incomingNormal<.02)
+   return unstable('NEAR_GRAZING_INGRESS',
+     'The initial ray is too tangent for a reliably represented shooting heading; a real stationary path may still exist.',
+     {v,localResidual,worldResidual});
+ if(!Number.isFinite(outgoingNormal)||outgoingNormal<.02)
    return unstable('NEAR_GRAZING_EXIT',
      'The predicted transmitted ray is too grazing for this bounded native detector witness.',
      {v,localResidual,worldResidual});
