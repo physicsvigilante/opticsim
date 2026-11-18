@@ -1,0 +1,28 @@
+{
+  "format": "opticsim-observer-native-witness-v1",
+  "analyticalQuery": {
+    "format": "opticsim-planar-observer-point-query-v1",
+    "kind": "source-to-observer-transmission",
+    "lengthUnit": "mm",
+    "source": {"x": -60, "y": 0},
+    "observer": {"x": 100, "y": 40},
+    "interface": {
+      "x": 0,
+      "y": 0,
+      "normalDeg": 0,
+      "sourceIndex": 1.5,
+      "observerIndex": 1
+    }
+  },
+  "physicalVerification": {
+    "sourceBrightness": 1,
+    "partialReflection": false,
+    "runPolicy": "preview-v1",
+    "detector": {
+      "alignment": "tangent-to-interface",
+      "lengthMm": 20
+    },
+    "arrivalToleranceMm": 0.00001,
+    "directionTolerance": 0.0000001
+  }
+}
