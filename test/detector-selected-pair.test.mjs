@@ -90,6 +90,21 @@ test('real full-Fresnel native rays give two distinct finite-window crossings, n
  assert.equal(saved.files.length,9);assert.equal(saved.nativeAttempted,2);
  assert.ok(saved.files.every(f=>f.sha256.length===64));
  assert.ok(!JSON.stringify(report).includes('normalDepthMm'));
+ console.log('[b1a-native-hit-evidence] '+JSON.stringify({
+   source:'REAL_PINNED_PHYDEMO_SAMPLED_DETECTOR_EVENTS',
+   inputSha256:report.inputSha256,
+   nativeSelection:report.nativeSelection,
+   geometry:report.geometry,
+   runs:report.runs.map(row=>({
+     role:row.role,sceneSha256:row.sceneSha256,nativePin:row.nativePin,
+     nativeStatus:row.nativeStatus,qualification:row.selection.status,
+     authoredDirectionDeg:row.authoredDirectionDeg,
+     emissions:row.observableResults[0].value,
+     firstNativeInterfaceEvent:row.observableResults[1].value,
+     nativeCrossings:row.observableResults[2].value,
+     measuredFiniteDetectorHitEvents:row.observableResults[3].value
+   }))
+ }));
 });
 
 test('equal media native transmissions yield actual finite hit evidence and STILL no B1b geometry',async()=>{
@@ -188,6 +203,27 @@ test('reverse normal, source-side reversal, units and reordered component arrays
   assert.equal(r.report.geometry.value,null);
   assert.deepEqual(r.report.runs.map(v=>v.observableResults[2].value),[1,1]);
  }
+});
+
+
+test('real total internal reflection remains native evidence but never a selected receiving-side ray',async()=>{
+ const p=q();p.apparatus.components.find(c=>c.id==='S1').emission.directionDeg=-50;
+ p.secondDirectionDeg=50;
+ const r=await run(p);
+ assert.equal(r.report.nativeAttempted,2);
+ assert.equal(r.report.nativeCompleted,2);
+ assert.equal(r.report.nativeSelection.status,'unavailable');
+ assert.equal(r.report.geometry.value,null);
+ for(const row of r.report.runs){
+  assert.equal(row.nativeStatus,'completed');
+  assert.equal(row.selection.status,'unavailable');
+  assert.equal(row.selection.reasonCode,'NO_TRANSMITTED_BRANCH');
+  assert.equal(row.observableResults[0].value,1);
+  assert.equal(row.observableResults[1].value.outcome,'total-internal-reflection');
+  assert.equal(row.observableResults[2].value,0);
+  assert.deepEqual(row.observableResults[3].value,[]);
+ }
+ assert.equal(verifyDetectorPairManifest(r.output).status,'verified-finalized-evidence');
 });
 
 test('strict original-byte parser rejects identical and escaped duplicate keys across nesting',()=>{
