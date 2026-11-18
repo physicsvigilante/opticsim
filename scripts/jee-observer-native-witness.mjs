@@ -110,6 +110,58 @@ function physicalRequest(analyticalQuery,settings,analysis){
 function distance(a,b){
  return a&&b?Math.hypot(a.x-b.x,a.y-b.y):Infinity;
 }
+// Shared first-interface integrity gate for BOTH accepted native arrivals
+// and completed native measured misses. The ordinary observable projection
+// certifies presence/method, not the internal optical shape of an event.
+// Keep the native observation intact; do not recompute/fabricate its branches.
+function finiteUnit(d){
+ return isRecord(d)&&Number.isFinite(d.x)&&Number.isFinite(d.y)&&
+  Math.abs(Math.hypot(d.x,d.y)-1)<=1e-7;
+}
+const finiteAngle=x=>Number.isFinite(x)&&x>=0&&x<=90;
+function validTransmittedEvent(first,meter,analysis,settings){
+ if(!first||!['available','qualified'].includes(first.status)||
+    first.method!=='native-observation'||!isRecord(first.value)||
+    !isRecord(meter)||meter.interactions!==1||
+    meter.invalidObservations!==0||meter.totalInternalReflections!==0||
+    meter.transmitted!==1||!Number.isInteger(meter.reflected)||
+    meter.reflected<0||meter.reflected>1)return false;
+ const e=first.value;
+ if(e.from!=='negative'||e.outcome!=='transmission'||
+    e.incidentIndex!==analysis.sourceIndex||
+    e.destinationIndex!==analysis.observerIndex||
+    e.partialReflection!==settings.partialReflection||
+    e.nativeTruncation!==0||
+    !finiteAngle(e.incidentAngleDeg)||
+    !finiteAngle(e.transmittedAngleDeg)||
+    !Array.isArray(e.branches)||e.branches.length<1||
+    e.branches.length>2)return false;
+ const transmission=e.branches.filter(b=>b?.kind==='transmitted');
+ const reflection=e.branches.filter(b=>b?.kind==='reflected');
+ if(transmission.length!==1||
+    reflection.length!==meter.reflected||
+    e.branches.length!==transmission.length+reflection.length||
+    (!settings.partialReflection&&reflection.length!==0))return false;
+ const outgoing=transmission[0];
+ if(!finiteAngle(outgoing.angleDeg)||!finiteUnit(outgoing.direction)||
+    Math.abs(outgoing.angleDeg-e.transmittedAngleDeg)>1e-7||
+    !Number.isFinite(outgoing.relativePower)||
+    outgoing.relativePower<0)return false;
+ if(reflection.length){
+  const r=reflection[0];
+  if(!finiteAngle(r.angleDeg)||!finiteUnit(r.direction)||
+     !finiteAngle(e.reflectedAngleDeg)||
+     Math.abs(r.angleDeg-e.reflectedAngleDeg)>1e-7||
+     !Number.isFinite(r.relativePower)||r.relativePower<0)return false;
+ }else if(e.reflectedAngleDeg!==null)return false;
+ return true;
+}
+function validNoInterfaceEvent(first,meter){
+ return isRecord(meter)&&meter.interactions===0&&meter.transmitted===0&&
+  meter.reflected===0&&meter.totalInternalReflections===0&&
+  meter.invalidObservations===0&&meter.first===null&&
+  first?.status==='unavailable'&&first.value===null;
+}
 function evidenceResult(analysis,settings,summary,observed){
  const native={status:summary?.native?.status??'failed',
   executionPassed:summary?.executionPassed===true,
@@ -154,20 +206,19 @@ function evidenceResult(analysis,settings,summary,observed){
   return withheld('native-evidence-unavailable',
    'Native source count, detector count or complete hit list is inconsistent with this bounded one-ray witness.',
    'UNQUALIFIED_NATIVE_SAMPLE');
- const eventQualified=qualified(first)&&first.method==='native-observation'&&
-    first.value&&typeof first.value==='object';
+ const meter=summary?.observations?.interfacesById?.I1;
+ const eventQualified=validTransmittedEvent(first,meter,analysis,settings);
  if(crossings.value===0){
   // Accepted negative: ONE source emitted, exactly ZERO detector crossings,
   // complete/count-matched [] hits, and either a genuine first interaction
   // or no interface interaction (hence no first event). Never call this
   // "invisible" or assert a missing ray path.
-  if(interactions.value>1||
-     interactions.value===1&&(!eventQualified||
-       first.value.incidentIndex!==analysis.sourceIndex||
-       first.value.destinationIndex!==analysis.observerIndex)||
-     interactions.value===0&&!(first?.status==='unavailable'&&first.value===null))
+  if(!(
+    interactions.value===1&&eventQualified||
+    interactions.value===0&&validNoInterfaceEvent(first,meter)
+  ))
    return withheld('native-evidence-unavailable',
-    'The native interface event record contradicts the measured zero-crossing result.',
+    'The native interface counters, transmitted branch or first-event record contradict the measured zero-crossing result.',
     'UNQUALIFIED_NATIVE_INTERFACE_EVIDENCE');
   return {status:'native-observed-no-crossing',
    reason:'One native ray was emitted and a complete run measured zero crossings of this finite detector. This does not prove invisibility or absence of light elsewhere.',
@@ -191,13 +242,9 @@ function evidenceResult(analysis,settings,summary,observed){
    'Positive native arrival requires exactly one transmitted interface interaction and one complete detector crossing.',
    'UNQUALIFIED_NATIVE_SAMPLE');
  const event=first.value;
- if(event.outcome!=='transmission'||
-    event.incidentIndex!==analysis.sourceIndex||
-    event.destinationIndex!==analysis.observerIndex||
-    event.branches?.filter(b=>b.kind==='transmitted').length!==1)
-  return withheld('native-evidence-unavailable',
-   'The recorded native interface does not support the claimed single transmitted ray.',
-   'UNQUALIFIED_NATIVE_SAMPLE');
+ // The exact same native event-shape checks protect the positive and
+ // measured-zero branches. They admit a legitimate Fresnel reflected branch,
+ // but never missing, nonfinite or contradictory transmitted evidence.
  const eventDirection=event.branches.find(b=>b.kind==='transmitted').direction;
  const hit=hits.value[0],directionError=distance(hit?.incomingUnit,analysis.value.outgoingUnit);
  const branchError=distance(hit?.incomingUnit,eventDirection);
@@ -321,7 +368,11 @@ export async function runObserverNativeWitness({requestBytes,outputPath,
   actualNativeResult:checked,
   native:checked.native,
   actualReadings:readings.results,
-  distinction:'Predicted interface crossing and virtual-axis location are analytical; only the actual detector hit and incoming direction are qualified native observations.'});
+  distinction:checked.status==='native-observed-no-crossing'?
+   'Analytical crossing/axis are predicted. Native measured zero crossings and complete empty hit list are qualified; there is NO actual detector hit or incoming direction.':
+   checked.actualDetectorHit?
+   'Predicted interface crossing and virtual-axis location are analytical; actual detector hit and incoming direction come from qualified native observations.':
+   'Analytical predictions and native evidence remain separate. No detector hit or incoming direction is accepted in this result.'});
  writeEvidence(out.report,JSON.stringify(result,null,2)+'\n');
  return {status:checked.status,
   // A completed, qualified negative measurement is a successful observation,
