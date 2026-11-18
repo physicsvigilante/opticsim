@@ -174,7 +174,9 @@ test('closed JSON input rejects wrong medium side, unknown fields, coordinates, 
   q=>q.observer.mode='reconstruct-image'
  ];
  for(const mutate of edits){const q=base();mutate(q);assert.throws(()=>solve(q));}
- const at=base();at.source.x=-.01;at.observer.x=.01;
+ const at=base();at.source.x=-.01;at.observer.x=.01;at.observer.y=0;
+ // Inclusive exact source/observer clearance is admissible when the ray
+ // is truly axial, rather than accidentally demanding a grazing shot.
  assert.equal(solve(at).status,'conditional');
 });
 test('actual independently authored native scene confirms one single ray reaches observer; analytical query never invokes native',async()=>{
