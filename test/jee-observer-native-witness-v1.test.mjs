@@ -154,6 +154,102 @@ test('R2 P1: no native interface encounter has no first event yet detector zero 
  assert.deepEqual(by.hits.value,[]);
  assert.equal(r.report.actualNativeResult.actualDetectorHit,null);
 });
+// Adversarial event shapes are injected into an otherwise complete,
+// hash-matched test summary. They are NOT native events observed by PhyDemo.
+function tamperedNativeEvent(mutate,{zero=true}={}){
+ return (scene,requests)=>{
+  const summary=zero?syntheticZeroExecution()(scene,requests):
+    structuredClone(nativeExecutor(scene,requests));
+  const meter=summary.observations.interfacesById.I1;
+  mutate(meter);
+  return summary;
+ };
+}
+test('R3 P1 pre-review matrix: contradictory or incomplete first interface transmission never qualifies a measured zero',async()=>{
+ const cases=[
+  ['no transmitted branch',m=>{m.first.branches=[];m.transmitted=0;}],
+  ['missing transmitted branch despite counter',m=>{m.first.branches=[];}],
+  ['transmitted count contradicts first',m=>{m.transmitted=0;}],
+  ['TIR but claimed transmitted',m=>{m.first.outcome='total-internal-reflection';}],
+  ['reflected-only first event',m=>{m.first.outcome='no-transmitted-primary';}],
+  ['missing incoming angle',m=>{m.first.incidentAngleDeg=null;}],
+  ['nonfinite incoming angle',m=>{m.first.incidentAngleDeg=Infinity;}],
+  ['missing refracted angle',m=>{m.first.transmittedAngleDeg=null;}],
+  ['NaN outgoing unit',m=>{m.first.branches[0].direction.x=NaN;}],
+  ['not a unit direction',m=>{m.first.branches[0].direction={x:2,y:0};}],
+  ['nonfinite branch angle',m=>{m.first.branches[0].angleDeg=Infinity;}],
+  ['transmission branch angle disagrees with first',m=>{m.first.transmittedAngleDeg+=.4;}],
+  ['outcome is not transmission',m=>{m.first.outcome='grazing';}],
+  ['incorrect incoming medium side',m=>{m.first.from='positive';}],
+  ['Fresnel policy contradicts scene',m=>{m.first.partialReflection=true;}],
+  ['reflected branch contradicts Fresnel disabled',m=>{
+    m.first.branches.push({...structuredClone(m.first.branches[0]),
+      kind:'reflected',angleDeg:5,relativePower:.05});
+    m.reflected=1;m.first.reflectedAngleDeg=5;
+  }],
+  ['bogus reflected counter',m=>{m.reflected=1;}],
+  ['bogus TIR counter',m=>{m.totalInternalReflections=1;}],
+  ['invalid observation counter',m=>{m.invalidObservations=1;}],
+  ['native encounter truncation',m=>{m.first.nativeTruncation=1;}]
+ ];
+ for(const [name,mutate] of cases){
+  const r=await runObserverNativeWitness({
+   requestBytes:inputBytes(witness()),outputPath:output(),
+   executeNative:tamperedNativeEvent(mutate)});
+  assert.equal(r.status,'native-evidence-unavailable',name);
+  assert.equal(r.exitCode,2,name);
+  assert.equal(r.report.actualNativeResult.reasonCode,
+   'UNQUALIFIED_NATIVE_INTERFACE_EVIDENCE',name);
+  assert.equal(r.report.actualNativeResult.actualDetectorHit,null,name);
+  assert.equal(r.report.actualNativeResult.arrivalWithinDeclaredTolerance,false,name);
+ }
+ console.log('JEE_OBSERVER_NATIVE_EVENT_INTEGRITY_MATRIX '+JSON.stringify({
+  syntheticCompleteRecordMutations:cases.length,
+  allWithheld:true,actualNativeRerunOfMutations:false
+ }));
+});
+test('R3 shared integrity gate also protects a positive detector hit from forged first event',async()=>{
+ for(const mutate of [
+  m=>{m.first.branches=[];m.transmitted=0;},
+  m=>{m.first.transmittedAngleDeg=Infinity;},
+  m=>{m.first.branches[0].direction.y=NaN;}
+ ]){
+  const r=await runObserverNativeWitness({
+   requestBytes:inputBytes(witness()),outputPath:output(),
+   executeNative:tamperedNativeEvent(mutate,{zero:false})});
+  assert.equal(r.status,'native-evidence-unavailable');
+  assert.equal(r.report.actualNativeResult.actualDetectorHit,null);
+  assert.equal(r.exitCode,2);
+ }
+});
+test('R3 legitimate full native Fresnel transmission+reflection remains admitted for actual arrival and classified zero',async()=>{
+ const req=witness();req.physicalVerification.partialReflection=true;
+ const real=await runObserverNativeWitness({
+  requestBytes:inputBytes(req),outputPath:output(),
+  executeNative:nativeExecutor});
+ assert.equal(real.status,'verified-sampled-arrival');
+ assert.equal(real.exitCode,0);
+ const observed=Object.fromEntries(real.report.actualReadings.map(r=>[r.id,r]));
+ assert.equal(observed.encounters.value,1);
+ assert.equal(observed.first.value.outcome,'transmission');
+ assert.equal(observed.first.value.partialReflection,true);
+ const branches=observed.first.value.branches;
+ assert.equal(branches.filter(b=>b.kind==='transmitted').length,1);
+ assert.equal(branches.filter(b=>b.kind==='reflected').length,1);
+ assert.ok(branches.every(b=>Number.isFinite(b.angleDeg)));
+ assert.ok(real.report.actualNativeResult.arrivalWithinDeclaredTolerance);
+ const zero=await runObserverNativeWitness({
+  requestBytes:inputBytes(req),outputPath:output(),
+  executeNative:syntheticZeroExecution()});
+ assert.equal(zero.status,'native-observed-no-crossing');
+ assert.equal(zero.exitCode,0);
+ assert.equal(zero.report.actualNativeResult.observedInterfaceInteractions,1);
+ assert.equal(zero.report.actualNativeResult.actualDetectorHit,null);
+ console.log('JEE_OBSERVER_NATIVE_FRESNEL_TWO_BRANCH_CONTROL '+JSON.stringify({
+  fullFresnelNativeArrival:true,realReflectedBranches:1,
+  injectedZeroForClassificationOnly:true,nativeImageDetected:false
+ }));
+});
 test('R2 P1: actual pinned native missed-detector controls show available zero with and without interface interaction',async()=>{
  // These are GENUINE separate native controls with deliberately changed
  // source angles. They are NOT represented as native evidence for the
