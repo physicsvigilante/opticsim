@@ -1,32 +1,32 @@
-# Design D-02 — JEE detector-selected native ray-pair geometry
+# D-02 R2 — JEE finite detector-selected native evidence, staged B1a/B1b
 
-**Status:** PROPOSAL, DESIGN ONLY. Not implemented, verified as a production result, reviewed, merged or released.
-**Date:** 2026-11-18
-**Production baseline:** \`main\` \`d3509e82fb65d81aabe336666851f8f2962623f4\`.
-**Evidence:** [#134 preregistration](https://github.com/physicsvigilante/opticsim/issues/134), [#135 independent native R2 research review](https://github.com/physicsvigilante/review_sandbox/blob/main/projects/opticsim/pr-135/reviews/review-02-chat-b.md), [issue #136](https://github.com/physicsvigilante/opticsim/issues/136). #133 native-free candidate A is a separate, still-held draft. No held branch is part of this design's base.
+**State:** REVISED PROPOSED CONTRACT; design-only, not implemented, independently re-reviewed, merged or released.
+**Date:** 2026-11-18.
+**Baseline:** actual production `main` `d3509e82fb65d81aabe336666851f8f2962623f4`. No held feature branches are dependencies.
+**Review ancestry:** [Chat B PR #137 R1 — CHANGES REQUESTED](https://github.com/physicsvigilante/review_sandbox/blob/main/projects/opticsim/pr-137/reviews/review-01-chat-b.md); [PR #135 R2 — independently cleared RESEARCH ONLY](https://github.com/physicsvigilante/review_sandbox/blob/main/projects/opticsim/pr-135/reviews/review-02-chat-b.md); [design issue #136](https://github.com/physicsvigilante/opticsim/issues/136).
 
-## 1. Scope, method and non-claims
+## 1. Product decision: B1a first, B1b separately gated
 
-Propose **B1 — two native single-ray runs selected by one finite detector window, with an optional advisory 2D backward-line intersection**. Both sampled paths are decided by pinned PhyDemo; Opticsim only audits its existing read-only native measurements and, after both complete, constructs a **mathematical intersection of two backward-extended outgoing supporting lines**. This is not a native propagated virtual ray.
+**B1a (first candidate for source implementation):** return native measurements from **two distinct, independently executed** single-ray configurations selected by the **same authored finite detector segment**. Output actual sampled detector crossing counts, hit positions and unit directions, native first-interface encounter and the full qualification/provenance for each separate execution. **Every public derived backward-intersection coordinate is WITHHELD/NULL**, including the already demonstrated 5 mm reference case. Geometry is not a released B1a measurement or result. No post-native line intersection is necessary to produce B1a.
 
-**Explicitly NOT:** an eye, pupil, observer position, retina, image sensor, physical/unique stigmatic image, observed image, visual accommodation, intensity/irradiance, an observer's actual apparent point, simultaneous two-ray propagation, wave/3D optics or the textbook's final answer. A genuine detector crossing is not a universal visibility statement. A result based on two rays from **two separate native executions** says nothing about whether both rays exist together at one actual observer at the same time. An algebraic two-line intersection does not establish point-image uniqueness across a ray bundle.
+**B1b (future, not authorized):** a separate, opt-in, numerically gated *2D mathematical backward-line intersection*. Before any public coordinate is released, preregister a native numeric conditioning/stress matrix, independently validate an admitted domain and error/sensitivity policy, revise the output contract and obtain an exact-source design and implementation review. Its position may be *advisory* but the word advisory **alone is not a numerical admission criterion**.
 
-This is an engine capability rather than a problem-specific answer script: one real v5 source, one plane, one finite detector and two explicit source directions. Reuse existing native physics and measurement contracts. Do not add a second Snell solver or prescribe paths to the native engine.
+Neither B1a nor B1b simulates a human eye, pupil, accommodation, retina, camera, physical image, a unique stigmatic image, simultaneous passage of two rays into a literal observer, physical backward light propagation, continuous irradiance, wave optics or a 3D scene. Two independent native runs crossing one geometrically identical finite detector are two **independent sampled observations**, never proof of two simultaneous rays at one actual eye. The original JEE question's interpretation and textbook answer completeness remain unassessed.
 
-### What the research already establishes — and does not
+### Established evidence (research only, not product calibration)
 
-[#135 R2](https://github.com/physicsvigilante/review_sandbox/blob/main/projects/opticsim/pr-135/reviews/review-02-chat-b.md) independently verified the raw native event records and backintersections: for the one 5 mm detector at x=40 and object depth 120 mm, full-Fresnel 1.5→1 at ±0.5° gives native crossing positions (40, ±1.5708611274685678) mm and a *derived pairwise* depth 79.99619199829817 mm. With equal indices 1→1 or 1.5→1.5, actual native crossings are (40, ±1.396298846521404) mm and derived depth 120.0000000000008 mm. Shifted/shortened finite windows give real misses; source/detector orientation, units, incomplete runs, Fresnel policy and mismatch controls were exercised. **The tested line-conditioning cutoffs and synthetic perturbations remain research heuristics, not a native error/uncertainty certificate.** These data justify a design exploration, not a released image feature.
+[#135 R2](https://github.com/physicsvigilante/review_sandbox/blob/main/projects/opticsim/pr-135/reviews/review-02-chat-b.md) independently reconstructed actual PhyDemo measurements: a real 5 mm detector at (40,0) mm, source (-120,0) mm and ±0.5° separate source directions produces native y hits ±1.5708611274685678 mm for 1.5→1, and ±1.396298846521404 mm for 1→1 or 1.5→1.5. Research-only backextensions give ≈79.996192 mm and 120 mm respectively. Shifted/shortened finite detectors generate actual sampled misses; full-Fresnel and transmitted-only qualification, reverse/rotation/units, TIR and incomplete cases were tested. **Research cutoffs (line sine 1e-4, endpoint clearance 0.05 mm, 10× extension) and hypothetical perturbations were never verified native accuracy bounds.** B1a must not publish even the research pair's derived 2D coordinate.
 
-## 2. Proposed exact, LLM-authorable input (not a live API)
+## 2. Normative strict input for B1a (proposed, not live)
 
-Use a **new standalone, versioned experiment request**, not a new scene version and not an implicit extension of the SHA-frozen \`scripts/run-problem.mjs\`. Supply one apparatus and an explicit second source heading; this minimizes LLM duplication while keeping the changed physical field auditable.
+The independent two-run workflow is explicitly authored as **one existing minimal v5 apparatus plus one additional absolute source direction**, not as two arbitrary scenes or user-supplied ray observations.
 
-\`\`\`json
+```json
 {
   "format": "opticsim-detector-selected-pair-request-v1",
   "apparatus": {
     "lengthUnit": "mm",
-    "title": "Finite window over one planar boundary",
+    "title": "Single plane and real finite detector",
     "runPolicy": "preview-v1",
     "components": [
       {
@@ -52,131 +52,126 @@ Use a **new standalone, versioned experiment request**, not a new scene version 
   "interfaceId": "I1",
   "detectorId": "D1",
   "secondDirectionDeg": 0.5,
-  "requestedResult": "sampled-finite-window-line-pair"
+  "requestedResult": "native-finite-window-hits-only"
 }
-\`\`\`
+```
 
-Normative envelope: **only** these top-level keys, all required; strict existing \`prepareScene\` input contract for \`apparatus\` with \`lengthUnit\` mm/cm/m, exactly one explicitly ID-labelled component of each type and **no other components**. \`runPolicy\` must be explicitly \`preview-v1\` or \`dense-v1\`; no implicit numerical-policy override or repair. Existing \`prepareScene\` fills presentation-only camera and inactive emission-angle defaults, but may not invent physical source direction, lens, stop, glass or detector. The source emission must be \`single-ray\`, with explicitly provided first \`directionDeg\`; the second direction is explicit in this envelope, finite in [−180,180] and different from the first. A duplicated direction does **not** define two distinct paths. \`sourceId\`, \`interfaceId\` and \`detectorId\` must exactly match their uniquely typed authored components; no automatic target binding, renaming, ordering inference or natural-language fallback. \`requestedResult\` is the one literal above.
+**All seven top-level keys are mandatory; extras rejected.** `format` and `requestedResult` are exact string literals above; identifiers must be uniquely present and refer to the named existing component of the correct type. `apparatus` accepts **only** `lengthUnit`, `title`, `runPolicy` and `components`; require explicit `runPolicy` `preview-v1` or `dense-v1`, and strict nested allowlists consistent with the *existing* `inspectAuthoringRequest`/ `prepareScene` implementation. Only three components: one explicitly ID-labelled single-ray point-source (brightness, coordinates and first `directionDeg` stated), one planar-interface (normal, two indices, **explicit Fresnel boolean**), one genuinely finite ray-detector (centre, tangent orientation and length). No aperture, mirror, lens, beam, extra source/detector/plane, circle, prism, blocker or other optical model. No inferred source, media, stop, pupil or numerical mode. No `components` defaults or automatically assigned IDs. `prepareScene` may still set *presentation-only* view or inactive source-emission controls; those are not new active physics.
 
-The apparatus is a **minimal existing authoring request**, not user-supplied native hit records. Preparation must select existing canonical schema **v5**, \`physics.model='planar-media-tracing'\` and the pinned PhyDemo \`upstreamCommit\`; never generate or migrate to v20. Reject any other schema/model, plane count, additional source/optical object, wrong side, unbounded number, unknown field, missing index, or ambiguous physical geometry. Do not accept external execution summaries or object IDs as authority.
+**Bounded numeric scope (B1a only):** `lengthUnit` explicitly mm/cm/m, all checks on **canonical mm**; all positions/endpoints within current [-10000,10000] mm coordinate bounds; native index values [1,4] and source brightness [.01,1]; source and detector must lie in **strictly opposite half-planes** of the one authored interface, and source / both detector endpoints must be at least **1 mm** in absolute signed-normal separation from that plane. Detector full finite length **2 to 10 mm inclusive** (rather than advertise the brittle 1 mm edge case before stress tests); it must have physical orientation parallel to the plane tangent. Parallelism means the unoriented detector-tangent axis `orientationDeg` and `normalDeg+90°` agree modulo **180°**, with angular difference at most **1e-9°** solely for represented floating-point cardinal/rotated angles. This angular tolerance is a *preflight orientation comparison*, not a native positional error budget. The detector must not touch/cross the plane; signed distances of **both endpoints** must have the receiving-side sign. All existing stricter geometry and finite detector endpoint checks remain authoritative; equality exactly on an unsupported endpoint is never a usable hit.
 
-Proposed additional **bounded first-release scope** (must be reviewed, not yet validated as product admission): a finite detector 1–10 mm long, tangent parallel to the planar interface (orientation modulo 180°); source and detector strictly separated by the plane, both finite detector endpoints on the receiving side; source and detector each at least 1 mm normal distance from the plane, and all coordinates/endpoints within existing native bounds. These are intentionally more restrictive than the native v5 surface-clearance minimum 0.01 mm. The first research fixture has 5 mm width, 120 mm source depth and 40 mm receiver offset; extending to the proposed range requires new stress evidence before implementation release. No \`openingLength\`, pupil type or diffraction is introduced.
+**Oriented sides:** compute plane unit normal using the existing `interfaceNormal`, and signed side `s=(p-planeCentre)·normal` via `signedSide`; `s<0` means `negativeIndex` material, `s>0` means `positiveIndex`. The source's sign selects the object-medium index and the detector's opposite sign selects the receiving-medium index, even if plane normal is rotated or reversed. No fixed-global-x signs or guessed direction of view.
 
-## 3. Deterministic native orchestration — two independent real executions
+**Directions:** both first and second `directionDeg` must be finite numeric degrees in the existing native [-180,180] range. The second is an **absolute authored heading**. Compare directions modulo 360° in a canonical wrapped interval (−180°,180°]; `-180°` and `+180°` are therefore **identical** and refused. Require wrapped angular distance **>1e-9°** solely to exclude indistinguishable encoded headings; this is an *identity/representation guard*, not a claim that very close rays will be geometrically distinct or intersect robustly. Rays aimed away, tangent to a plane, totally internally reflected or missing the finite detector **may be executed as ordinary native negative controls**: if the scene is valid and no actual selected transmitted hit appears, B1a reports measured zero/empty and selection unavailable, never silently changes the heading. A source on the plane, detector crossing the plane or invalid endpoint geometry is rejected at preflight before native work.
 
-1. Validate the complete request, including all nested allowlists and physical geometry, **before any native call**. Snapshot original UTF-8 input bytes and \`inputSha256\`; reject oversize (>1 MB), malformed or nonfinite JSON, and invalid targets without apparatus repair.
-2. Use existing \`prepareScene(apparatus)\` exactly once to construct canonical **first** v5 document A. Immediately make B by \`structuredClone(A)\` and replace **only** S1's \`emission.directionDeg\` with the explicitly supplied \`secondDirectionDeg\`; rerun existing \`validate(B)\`. No other physical, presentation or numerical field may change. Do not mutate A or caller-owned apparatus.
-3. Persist both separately validated canonical serialized scenes and **distinct** SHA-256 values. Optionally derive a scene-family signature by sorting component IDs and deleting *only* the named source \`emission.directionDeg\` before stable canonical serialization; bind the same \`schemaVersion\`, adapter/native pin, full \`physics\`, numerical \`simulation\`, source, interface and detector IDs. The two **scene hashes legitimately differ**. Reject a second execution with the wrong family signature or reuse of either run's evidence.
-4. Execute PhyDemo **twice**, once per canonical scene, by the existing \`evaluateDocument\` and pinned core, explicitly requesting \`detector-hit-events\` (D1), \`detector-crossings\` (D1), \`interface-first-event\` (I1), and \`source-emissions\` (S1). Use existing \`evaluateObservables\` only on the fresh matching document/execution snapshot; **never** accept externally fabricated hits/directions or compare native callback indexes as cross-run ray IDs.
-5. Require per run: completed native status (\`completed\` or reviewed completed-with-warnings path), \`executionPassed:true\`, zero truncated/undefined rays, exactly one emission, exactly one interface interaction, exactly one **native transmitted branch** with correct object/receiver index orientation, exactly one native detector crossing and one fully qualified hit-event position/direction, one first-event record, and incoming detector direction matching that native transmitted branch. Reflected Fresnel branch may exist but cannot count as a receiving-side selected ray. Full Fresnel (\`partialReflection:true\`) is the primary profile. Explicit \`false\` is a **transmitted-only approximation** and its original warning must survive. If opt-in native parentage is later added, it is **run-local object ancestry, not a full path or stable cross-run ID** and needs separate validation.
-6. Both hits must be on the same **real authored finite segment** with recorded distance from the first endpoint, distance from the second endpoint, native trace direction, source-side/receiving-side orientation and margin. One or zero measured crossings is valid native evidence, but **not** a valid two-hit geometric intersection. A completed native miss reports measured \`0\`/empty event list, while the derived pair returns **\`unavailable\` / null**, never zero virtual depth.
-7. After capturing **both** native snapshots, decide whether the derived pair is eligible. An incomplete/stale/missing native run yields null/suppression; a wrong apparatus or wrong direction yields a typed refusal. Keep raw execution warnings and readout statuses as *separate records* attached to each run's hash even on a null/suppressed result. Early preflight-invalid requests have **no** executed evidence; do not manufacture an evidence list.
+**Strict JSON parsing:** limit original input to 1 MiB. Reject duplicate JSON object member names at **any** nesting level **before** ordinary `JSON.parse` can discard them, with a bounded parser/token validator; until that check exists, B1a cannot claim strict conflict-free source declarations. Reject JSON malformed syntax, duplicate IDs, extra fields, NaN/nonfinite typed input (where representable) and any ambiguous string-valued numeric expression. Missing explicitly required fields => `needs-information` rather than guessed values. Wrong value types, forbidden fields and conflicting duplicate keys => `invalid-input`. A valid but unsupported optical family/geometry => `unavailable` / `UNSUPPORTED_B1A_SCOPE` with zero native calls. Do not call `prepareScene` to repair invalid input.
 
-**No generic native lineage:** exactly one sampled source/emission/plane/transmission/hit per run is the reason source association is bounded. The native hit-event order is not an identity path. No pairing of unrelated scenes, multiple native rays, multiple sources, weak Fresnel branches or an implicit eye.
+## 3. Required immutable scene-family and execution identity
 
-## 4. Proposed result contract (advisory, not an image)
+1. Validate and snapshot **raw input bytes and SHA-256** before asynchronous work; first prepare one canonical complete **v5** document A with existing `prepareScene`. Demand `schemaVersion=adapterVersion=5`, `physics.model='planar-media-tracing'`, current pinned `upstreamCommit`, three authored component IDs/types and the preflight geometry above. No v20 migration or carried features from held branches.
+2. Clone A to B and modify **only** the named source's `emission.directionDeg`, assigning the explicitly authored second heading. Validate B with existing native `validate`. Other canonical fields, including presentation defaults, sampling, run policy and native pin, remain unchanged. Never modify A or a caller's object. The different directions produce **distinct scene SHA-256s** under `sceneHash`/ `serializeSave`; reject equal hashes.
+3. Mandatory **family identity**, not optional: before either native execution compute `familyKeyA` and `familyKeyB`. For each **complete validated document** (format, schemaVersion, adapterVersion, upstreamCommit, all physics, presentation and simulation), deep-clone, sort `physics.components` by unique ID using a deterministic lexical order, and remove **only** `emission.directionDeg` on the exact source ID. Do not normalize, round, delete or forgive any other physical, numerical, material, detector, presentation or source field. Compute the stable `canonicalJSON` representation and `SHA256` hash of that representation. Require exact canonical representations **and** family hashes equal. Include the family hash and each distinct full-scene SHA in the saved plan/report. A hash protects identity consistency; it is not a physics truth certificate.
+4. Bind each run role (`run-A`, `run-B`), authored heading, immutable canonical scene bytes+SHA, input SHA, family hash, schema, native pin and its own **invocation-local execution snapshot**. For each run, independently verify `evaluateDocument` returned matching `summary.canonicalSha256` and expected native pin; `evaluateObservables` snapshots the corresponding document/summary and re-hashes. Never reuse the first result for the second, swap the run roles or infer a globally stable ray ID. Run-local parentage tokens, if separately captured, are **never cross-run ray identifiers**.
+5. **Both execution records are mandatory for a completed two-run report.** Read out both separately (not zip native callbacks by array index). A retained failure or miss must preserve raw native warnings, readout warnings/reasons and scene associations from **every attempted** run, without inventing data for unattempted runs. Preflight error has **zero attempts and zero fabricated run evidence**.
+6. For B1a request the following **four already-supported native observables for each scene**: `source-emissions` (source ID), `interface-first-event` (plane ID), `detector-crossings` (detector ID), and `detector-hit-events` (same detector ID). Keep an independently labelled status, value, method, reasonCode, reason and **warning list** for **each observable**, not one global inputReadoutStatus. Opt-in hit capture remains read-only; no native onRayIncident changes.
 
-Separate native evidence from post-native extrapolation. **Do not** describe a derived point's status as a "native image available". A useful first version can return native detector selections even when no stable pairwise point is admitted.
+An actual selected transmitted hit requires exactly one observed source emission, exactly one first-interface encounter, a first-event `outcome:'transmission'`, incident/destination index values compatible with the oriented source/detector media, exactly **one** native transmitted branch and a native detector crossing count **1** with exactly one complete hit event. The detector hit's incoming unit direction must agree with native transmitted branch direction under an explicitly checked finite direction consistency tolerance. Any actual reflected Fresnel branch stays its own native event; a hit cannot be assigned to it or paired by callback order. The run's detector hit must be within the real authored finite segment and must not be tagged ambiguous/endpoint in the existing native hit-event contract. The bounded one-source/one-emission/one-interface/one-hit arrangement is the basis of this limited inference; no multi-source lineage or whole-path ledger is asserted.
 
-\`\`\`json
+## 4. B1a result state machine and versioned output
+
+**B1a never publishes a derived intersection.** For **all** responses (including fully selected rays), include `geometry:{status:'withheld',value:null,reasonCode:'B1B_NUMERICAL_GATE_NOT_RELEASED'}` unless an earlier native selection/refusal makes a more specific null code appropriate. No `pointMm`, `normalDepthMm`, image coordinate, virtual ray extension or mathematical depth may appear in a B1a **public** result. A debug-only numerical scratch artifact, if ever used for later research, must be excluded from public report/manifest and clearly labelled test-only.
+
+### Individual native run record (normative, proposed)
+
+Each attempted run entry includes: `role` (`run-A` / `run-B`), original input SHA, scene SHA, family SHA, authored directionDeg, schemaVersion, upstream native pin, `attempted:true`, native `status`, `executionPassed`, `truncation`, `undefinedBehavior`, `rawNativeWarnings[]`, `rawNativeErrors[]`, plus an array `observableResults[4]`. Each observable record retains `id`, `kind`, `componentId`, actual `status`, `value` (including **measured zero** or **empty hit list**), `method`, `warnings[]`, `reasonCode` and `reason`. Actual native hit point, incoming unit vector and distance from segment P1 appear *only* inside the `detector-hit-events` observable's value. Do not turn an unavailable hit-event list into an empty list. An unattempted run has **no** execution/hit record (but may have a planned scene in the plan).
+
+**Per-run qualification reduction (after fresh hash, native completion and scope verification):**
+- `available` only when **all four required** native observables are `available`, native completion and actual transmission/hit count/branch checks passed, with no disqualifying warning.
+- `qualified` if all four are individually `available` or `qualified` and **at least one** is `qualified`, with a known explicit transmitted-only `partialReflection:false` approximation; carry **every** source warning and per-observable caveat. No `qualified→available` promotion.
+- `unavailable` when a native run completed but a source ray missed the interface, TIR/no transmitted branch occurred, finite detector actually missed (crossing count 0, hit list []), ambiguous endpoint prevented hit-event capture, event count inconsistent, or a required observable was unavailable. Preserve measured native counts/empty lists from completed runs; never convert these to an image, continuous darkness or a zero intersection.
+- `suppressed` when native run was incomplete/stale, truncated/undefined, lacked qualified capture, or carried an unreviewed native warning. Keep whatever *real* native summary/errors/warnings exist but withhold unreliable requested hits. Native warning policy is fail-closed: deliberate Fresnel-off caveat may qualify, **unrecognized runtime warnings cannot authorize selection**.
+- `infrastructure-error` when native setup/executor failed before trustworthy results. No pretend native result, no fallback calculation.
+
+**Two-run selection aggregate:** `nativeSelection.status` is `available` if both run records are individually available; `qualified` if both eligible and any qualifies; `suppressed` if either is suppressed; otherwise `unavailable` (including one/multiple completed misses). On infrastructure error report `infrastructure-error` with actual attempt count, not a success. The only positive top-level state is `native-hits-reported` and means **sampled native detector evidence only**, NOT a derived point. For invalid/missing/unsupported preflight use `invalid-input`, `needs-information`, `unavailable` respectively with `nativeAttempted:0`. A completed-window miss gives top-level `native-selection-unavailable` with retained `0`/[] actual readings and `geometry.value:null`; incomplete/stale gives `native-suppressed`; setup failure gives `infrastructure-error`.
+
+**Explicit execution counts:** `attemptedExecutions` increments only when an actual native executor attempt begins, `completedExecutions` counts only genuinely completed native executions. Invalid preflight = 0/0 and no run results; first run fails before second begins = 1 attempted, 0 completed (or 1 completed if first completed and second failed to start, with 2 attempted if invocation began). Never report `executions:2` unless two native attempts occurred, and never `completedExecutions:2` without two verified complete native runs. A run that never began must not have an execution summary.
+
+**Illustrative shape — sample only, NOT an executed B1a implementation:**
+
+```json
 {
-  "format": "opticsim-detector-selected-pair-result-v1",
-  "status": "advisory",
-  "method": "derived-two-native-detector-lines-backward",
-  "interpretationAssessment": "not-assessed-by-engine",
-  "nativeImageDetected": false,
-  "observerModel": "finite-detector-segment-only-not-an-eye",
-  "native": {
-    "executions": 2,
-    "runs": [
-      {
-        "id": "run-1",
-        "canonicalSha256": "<scene-A-SHA256>",
-        "nativePin": "<pinned-upstream-SHA>",
-        "status": "completed",
-        "inputReadoutStatus": "available",
-        "rawWarnings": [],
-        "readoutWarnings": [],
-        "emitted": 1,
-        "detectorCrossings": 1,
-        "hit": {"pointMm": {"x": 40, "y": -1.5708611274685678},
-                "incomingUnit": {"x": 0.9999143248553549, "y": -0.013089803247560816},
-                "distanceFromP1Mm": 0.9291388725314322}
-      },
-      {"id": "run-2", "canonicalSha256": "<scene-B-SHA256>", "nativePin": "<pinned-upstream-SHA>",
-       "status": "completed", "inputReadoutStatus": "available", "rawWarnings": [],
-       "readoutWarnings": [], "emitted": 1, "detectorCrossings": 1,
-       "hit": {"pointMm": {"x": 40, "y": 1.5708611274685678},
-               "incomingUnit": {"x": 0.9999143248553549, "y": 0.013089803247560816},
-               "distanceFromP1Mm": 4.070861127468568}}
-    ]
-  },
-  "geometry": {
-    "status": "advisory",
-    "value": {
-      "pointMm": {"x": -79.99619199829817, "y": 0},
-      "normalDepthMm": 79.99619199829817,
-      "lineSine": 0.02617736355354841,
-      "backwardDistancesMm": [120.00647357027965, 120.00647357027965],
-      "endpointClearancesMm": [0.9291388725314322, 0.9291388725314322],
-      "extensionToSceneScale": 0.7500404598142478
+  "format": "opticsim-detector-selected-pair-report-v1",
+  "status": "native-hits-reported",
+  "inputSha256": "<original-request-sha256>",
+  "nativeAttempted": 2,
+  "nativeCompleted": 2,
+  "nativeSelection": {"status": "available", "reasonCode": null},
+  "runs": [
+    {
+      "role": "run-A", "sceneSha256": "<sha-A>", "familySha256": "<same-family-sha>",
+      "authoredDirectionDeg": -0.5, "nativePin": "<upstream-sha>",
+      "nativeStatus": "completed", "executionPassed": true,
+      "rawNativeWarnings": [],
+      "observableResults": [
+        {"kind": "source-emissions", "status": "available", "value": 1, "warnings": []},
+        {"kind": "interface-first-event", "status": "available", "value": {"outcome": "transmission"}, "warnings": []},
+        {"kind": "detector-crossings", "status": "available", "value": 1, "warnings": []},
+        {"kind": "detector-hit-events", "status": "available", "value": [{"pointMm": {"x": 40, "y": -1.5708611274685678}}], "warnings": []}
+      ]
     },
-    "reasonCode": null,
-    "qualification": {
-      "nativeEvidenceStatus": "available",
-      "derivedMethod": "geometric-inference-after-native",
-      "numericErrorCertified": false,
-      "physicalImage": false,
-      "warnings": ["Pairwise, conditional 2D line intersection; NOT an eye, physical image or certified native-location uncertainty."]
+    {
+      "role": "run-B", "sceneSha256": "<sha-B>", "familySha256": "<same-family-sha>",
+      "authoredDirectionDeg": 0.5, "nativePin": "<upstream-sha>",
+      "nativeStatus": "completed", "executionPassed": true,
+      "rawNativeWarnings": [],
+      "observableResults": [
+        {"kind": "source-emissions", "status": "available", "value": 1, "warnings": []},
+        {"kind": "interface-first-event", "status": "available", "value": {"outcome": "transmission"}, "warnings": []},
+        {"kind": "detector-crossings", "status": "available", "value": 1, "warnings": []},
+        {"kind": "detector-hit-events", "status": "available", "value": [{"pointMm": {"x": 40, "y": 1.5708611274685678}}], "warnings": []}
+      ]
     }
-  },
+  ],
+  "geometry": {"status": "withheld", "value": null, "reasonCode": "B1B_NUMERICAL_GATE_NOT_RELEASED"},
+  "observerAssessment": "not-assessed",
+  "imageAssessment": "not-assessed",
   "questionSupport": "not-assessed-by-engine"
 }
-\`\`\`
+```
 
-This is a **schema proposal**, and the example coordinates are **research evidence copied for illustration**, not a promise that an unimplemented API ran. In production use exact runtime bindings, not these literals. No consumer may relabel this \`advisory\` coordinate as a detected/verified image or present its normal depth without the method and qualification. A native \`qualified\` input sets \`geometry.qualification.nativeEvidenceStatus:'qualified'\`, retains *both* original warning records, and does **not** silently gain \`available\` from the later arithmetic. Completed missing ray: \`geometry:{status:'unavailable',value:null,reasonCode:'...'}\`, with measured native counts retained. Native incomplete or stale: \`geometry.status:'suppressed'\` and null, with separately recorded reasons. Unknown/unsupported inputs give \`invalid-input\`, \`needs-information\` or \`unavailable\` **before** native work and without an invented positive result. The top-level status is never \`available\` solely due to a derived point.
+**The illustrative records above are intentionally abbreviated:** an implementation MUST preserve the complete native first-event branches/directions, full hit unit vector and distanceFromP1, all four `id/componentId/method/reason` fields and run counters/normalization keys specified in the normative paragraphs. They are NOT permission to truncate native evidence or claim a computed image. Do not use booleans `nativeImageDetected:false` or `physicalImage:false` as if a physical absence had been observed. Neither visual image existence nor eye vision was tested.
 
-A future production version may offer a separately marked \`qualified\` *geometric* answer after independent numerical-admission review; this design explicitly does **not** equate the current proof-of-concept cutoffs with such review.
+## 5. B1a CLI, output artifacts, interruption and historical safety
 
-## 5. Numerical conditioning and actual safety gates — review needed before code
+Proposed standalone command: `node scripts/detector-selected-pair.mjs <request.json> --out test-artifacts/llm-authoring/<fresh-directory>`. It must remain separate from the byte-frozen `scripts/run-problem.mjs`, `scripts/author-scene.mjs` and the one-native-run `opticsim-problem-v1` dispatcher. No new saved `scene.schemaVersion`, v20 migration or alteration to pinned PhyDemo, native callbacks or old tests.
 
-**No native numerical accuracy bound exists in #135.** The logged 5 mm fixture gives \`|u1×u2|≈0.026177\`, minimum endpoint clearance ≈0.929139 mm, and backward extension/scene scale ≈0.75. The research helper used heuristic thresholds \`1e-4\`, \`0.05 mm\` and \`10×\`, with a synthetic measured-line perturbation moving its intersection ≈0.001529 mm. These numbers cannot certify ray-path accuracy, image depth or the physical scene.
+Reuse existing fresh-only guarded `reserveAuthoringOutput` (ordinary no-clobber/symlink defence, **not a hostile concurrent filesystem sandbox**). Files are exclusively written without overwrite and fully hash/integrity linked. Proposed versioned evidence manifest **`opticsim-detector-selected-pair-manifest-v1`** with: raw `input.json` and its exact SHA; validated `plan.json` including normalized family SHA, intended run roles/directions and explicit refusal decisions; `scene-A.ray-optics-2d.json` and `scene-B.ray-optics-2d.json` with each canonical byte SHA; one `native-A.json` or `native-B.json` **only when that invocation truly produced a native execution summary**; each actual run's readout status/position/direction/first-event branch and raw warnings; a final `report.json` with truthful attempt/completion counters and a **null geometry**; and a last-written `manifest.json` only for a completed, internally hash-consistent attempt. Every listed path has its own SHA-256 of the exact saved bytes. Invalid input may persist only raw input and a rejection report, **without invented scenes or native results**.
 
-Propose a **conservative, explicitly preliminary output-admission policy** only for the *advisory geometric point*, subject to separate numerical stress tests and independent review:
-- Require finite near-unit detector directions, \`|u1×u2|≥0.01\` (excludes nearly parallel **and antiparallel**), *both* backward parameters strictly negative, source-side intersection in the oriented plane-normal frame and both genuine incoming detector hits. Do not use first-line/second-line algebraic residual to certify accuracy.
-- Require each actual detector hit at least **0.5 mm from either finite endpoint**, independent of callback ordering. Require both directional scenes to use the same endpoint geometry in mm after original unit conversion.
-- Use a **plane-centred local normal/tangent basis** for double-precision backintersection, and translate the result back to world coordinates only at the end. Record local/global coordinate magnitude, max backward extension and a dimensionless extension-to-scene-scale ratio, proposed **≤2** for advisory display (research baseline ≈0.75). Refuse nonfinite/overflow or a result not strictly on the object's side of the plane.
-- The preceding \`0.01\`, \`0.5 mm\`, \`2×\` constraints are proposed **conservative product display gates**, **NOT validated accuracy bounds**. They are not inherited from the old research helper. No calibrated native hit-direction/position error distribution is claimed.
-- Record a deterministic *numerical sensitivity diagnostic* by perturbing measured 2D hit positions/directions under **explicitly disclosed hypothetical** magnitudes; never call this true native precision or a probability interval. Calibration/reproducibility and cutoff choices require independent review before any geometry is exposed in a release.
+Persist plan and two validated scenes **before** attempting native execution; persist each run's real result immediately after it completes, then perform reduction when both snapshots are available. If B fails to start or is interrupted, preserve genuine completed A evidence and record actual attempted/completed counts and explicit `infrastructure-error`/partial state where possible. A hard process crash can leave a partial directory without final manifest; **absence of valid finalized manifest means the attempt is NOT a successful result**, and it may not be resumed by silently pairing stale files. A deliberately malformed or edited manifest/file is rejected on reload. Do not fabricate a second result to force a complete report. An API setup failure and a physically completed detector miss are never conflated.
 
-**Required separate stress feasibility before implementing an admitted geometric point:** preregister and run a small native matrix across index contrasts (equal, lower/higher), reverse sides and normals ±180°, ±90°, ±37°, translations up to a documented extent, mm/cm/m units, detector widths in the proposed [1,10] mm range, axial source-detector distances, two-ray separations, Fresnel policies, both extreme finite endpoint margins, near-parallel/antiparallel, TIR/near-critical and native warning/truncation conditions. Test deliberately unstable geometry and withhold, rather than selecting a lucky pair. Compare independent Snell geometry only as a check *after* native execution, not as an input to trace. Record sensitivity for each accepted range. Until the numerical criteria are independently supported, **the implementation must return actual selected native hits but withhold any public derived coordinate** outside a narrowly verified subdomain. Review may recommend a narrower B1 release or deferring all public geometry.
+## 6. B1b — separately reviewed numerical/physical feasibility gate
 
-## 6. Integration/persistence and historical gates
+**No B1a public geometric coordinate.** After native-hit-only design/source review, separately preregister a test-only B1b numerical feasibility matrix **before** its runs. Required independent controls: n=1→1, 1.5→1, 1→1.5, 4→1 and near-equal indices; source-side reversals; normals 0,±90,±180,±37; mm/cm/m, component ordering, translations up to disclosed limits, detector widths 2/5/10 mm plus boundary-1 mm negative controls; axial and source distances, object near the plane, near-edge hits; different ray separation and near-(anti)parallel; TIR, near-critical/grazing, Fresnel true/false, truncated/undefined/warning runs, stale capture and native miss. Preserve all native hit positions/directions, hashes and warnings and compare post-execution Snell geometric reference only as an **oracle** (not a source of native rays).
 
-- **New standalone native CLI** proposed: \`node scripts/detector-selected-pair.mjs <request.json> --out test-artifacts/llm-authoring/<fresh-directory>\`. Reuse the existing guarded \`reserveAuthoringOutput\` to avoid output clobbering/symlink traversal; never change the historically frozen \`scripts/run-problem.mjs\` or \`scripts/author-scene.mjs\`. Persist original raw input bytes and hash, two validated **distinct** source scenes with hashes, run-specific native observations/warnings, frozen initial interpretations and derived calculations as **separate** artifacts. Never allow user-supplied evidence or absent native results to authorize geometry. Stale/cross-run mixes fail closed.
-- **No public \`opticsim-problem-v1\` request kind yet.** That one-scene dispatcher cannot safely represent two native executions without a separately reviewed routing change. Do not silently count an advisory point as original question answered. A future dispatcher integration must be versioned and independently reviewed.
-- **Runtime:** supported Node 24; existing pinned PhyDemo through the current build/checker. Full native, optical, CLI and real Chrome **regressions** required. No new observer browser image feature is implied. A dedicated browser UI (if useful) would require its own later release gate.
-- **Dependency:** B1 must start from current production \`main\`, not from unmerged #133 conditional A, #135 research or v14–v19. Reuse only capabilities genuinely in main. Do not claim v19 beam composer support under this v5-only method.
-- **Governance:** design-only PR → independent design review → additional numerical native feasibility on separate *test-only* tree → independently reviewed source implementation → owner release decision and issue #123 main protection. Reviewed but held #129 aperture corner correction and all other optics PRs are unaffected.
+The separate B1b model must **first** specify an exact local plane-normal/tangent coordinate algorithm, signed backward parameters (both strictly negative for an inferred backward intersection), finite vector norms, `|u1×u2|` with near-antiparallel handling, actual both-endpoint margins, a reproducible dimensionless scene scale derived from physical source/plane/detector distances, finite extension ratio, large-coordinate cancellation and roundoff sensitivity. It must preregister an admitted envelope, allowable invariance residuals and independently reviewed numerical withholding criteria **from actual evidence**, not copy an unexplained threshold. Native precision/uncertainty cannot be inferred from tiny algebraic line residuals or hypothetical perturbation alone. The previously proposed `0.01`, `0.5 mm` and `2×` display cutoffs are **withdrawn as B1a admissibility rules** and remain at most unverified candidates for B1b investigation. A broad requested source/detector/window domain must be narrowed until reliable. No arbitrary two-ray intersection is a unique eye image.
 
-## 7. Acceptance matrix for future B1
+Only after independent numerical **feasibility and design review** may B1b add `geometry.status:'advisory'` with coordinates under a separate versioned opt-in contract and its own exact-source code review. If stable numeric bounds cannot be demonstrated, keep B1a native-hit-only and withhold B1b coordinates indefinitely.
 
-| Group | Grounded controls | Required behavior |
-| --- | --- | --- |
-| P0 | Exact well-formed 5 mm window, 120 mm, 1.5→1, ±0.5°, full Fresnel | Two *real* native hits in one authored segment geometry, two different matching scene hashes, advisory derived line point **only after** geometry gate |
-| P1 | 1→1 and 1.5→1.5, ±0.5° | Native equal-index transmission, ~120 mm pairwise depth, no invented image or reflected branch |
-| P2 | Shorten/shift/offset finite segment to miss a ray | Genuine measured zero/empty hit list, derived null/unavailable; not continuous darkness |
-| P3 | Explicit Fresnel-off | Native \`qualified\` readouts; derived nativeEvidenceStatus \`qualified\`; both run-specific original warnings retained |
-| P4 | Shallow ray-depth budget, truncation, native warnings, stale/uncaptured | Suppressed/null; separate per-run evidence and raw warnings retained where invocations existed |
-| P5 | Duplicate ray direction, swapped target, extra optical body, mismatched run family | Reject before pairing, no invented path/source ID or fallback |
-| P6 | Mixed component order, inverse normal, reverse travel, translate, mm/cm/m | Normal-depth signs invariant where physically equivalent; scene SHA/family association verified |
-| P7 | Near-parallel/antiparallel, grazing/TIR, detector endpoints, huge extension, high coordinate translation | Deterministic numerical withholding; no forced intersection or claimed precision |
-| P8 | Original input mutation after asynchronous launch, native capture ON/OFF | Snapshot/scene-hash invariance, no stale hit reuse, old native meters and PhyDemo delegate unchanged |
-| P9 | Old CLI hash freeze, historical scene versions, unrelated problems, direct Chrome regressions | Original byte identities and behavior unchanged, existing full Node24/native/Chrome CI passes |
-| P10 | Original question fidelity and teaching interpretation | Method/assumptions/limits explicit; no claim of original textbook solution completeness |
+## 7. Acceptance matrix and release sequence
 
-## 8. Separate decisions and owner gate
+| Test | B1a expected public behavior |
+| --- | --- |
+| Actual v5 5 mm, n=1.5→1, ±0.5°, two distinct native runs | Two sampled hits with full positions/directions/first-event data; geometry withheld/null |
+| Actual equal n=1→1 or 1.5→1.5 | Native transmitted continuation, two real finite hits; NO 120 mm public derived location |
+| Shift, shorten, move detector, source aimed away, TIR | Completed actual count 0 or [], `nativeSelection.unavailable`, null geometry, no inferred darkness |
+| Fresnel true/false | Native `available` or `qualified` only as warranted, all warnings per run, null geometry |
+| Native invalid/incomplete/warnings/stale/capture missing | `suppressed` or `unavailable`, no invented hit; raw executed warnings and roles retained |
+| Missing/wrong IDs, mismatched sources, duplicate modulo-360° headings, extra optics | Typed preflight refusal, zero native attempts and null geometry |
+| Reverse normals/source side, translation/units, component order | Same native physical checks, correct index/sign interpretation and distinct scene/family identity |
+| Endpoint ambiguity, source/plane tangency, nearly identical directions | Explicit refusal or measured miss; no arbitrary geometric point |
+| Async input mutation, scene/summary tamper, swapped/duplicate runs | Snapshot/hash/family validation fails closed; never reuses run identity |
+| Preflight invalid, native setup error, second-run failure, hard crash | True 0/1/2 attempt/completion counts, partial files only if real; no forged finalized manifest |
+| Existing CLI freeze, historical versions, Node24/Chrome | Original files/behavior byte-identical; all existing regressions pass |
+| Original JEE question fidelity, observer/image interpretation | Not assessed; no physical image/eye/continuous irradiance assertion |
 
-**Review this document as a proposed contract, not physics implementation.** Verify that an advisory result from two independent actual rays is interpretable and useful for JEE without an image claim, and challenge the numerical thresholds, output statuses, two-run JSON/CLI design and provenance requirements. A passing design review is **not** permission to merge, implement the numerical point without stress evidence, or release the earlier research.
-
-A future production source must have its own exact-tree CI, genuine native tests, independent review, and separate owner decision. Until then Opticsim has only its existing underlying native detector measurements and the **unmerged** research and conditional-A branches. Keep issue #123 branch protection and held #129/v14–v19 dependencies separate.
+**Gates (none automatic):** this R2 **design-only** PR requires fresh independent exact-source review; B1a implementation would then require a *separate main-based draft source PR*, actual two-run native positive/negative tests, Node24/native/Chrome CI, raw evidence validation and independent source/physics review. A future B1b requires its own preregistered numerical feasibility, design and implementation reviews. All PRs remain draft/unmerged pending explicit owner decision and [main protection #123](https://github.com/physicsvigilante/opticsim/issues/123). Held #129 aperture safety and #133 candidate A remain unrelated dependencies. No completion of a B1a gate is a release of B1b or an observer/image engine.
