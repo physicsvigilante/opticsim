@@ -176,12 +176,16 @@ function validTransmittedEvent(first,meter,analysis,settings){
   // component and reverses the normal component. Checking only that the
   // reflected ray points into the negative medium, or only unsigned
   // angle-from-normal, incorrectly admits a tangent-flipped ray.
+  // Validate the shape before ANY direction dereference. A complete
+  // native run may carry an incomplete/corrupt reflected event; that MUST
+  // become withheld evidence with a saved report, never a TypeError.
+  if(!finiteUnit(r.direction))return false;
   const specularError=Math.hypot(
     r.direction.x-expectedReflected.x,
     r.direction.y-expectedReflected.y);
   const REFLECTION_VECTOR_TOL=1e-7;
   const REFLECTION_ANGLE_TOL_DEG=1e-5;
-  if(!finiteAngle(r.angleDeg)||!finiteUnit(r.direction)||
+  if(!finiteAngle(r.angleDeg)||
      normalProjection(r.direction)>=0||
      !finiteAngle(e.reflectedAngleDeg)||
      Math.abs(r.angleDeg-e.reflectedAngleDeg)>1e-7||
@@ -416,13 +420,36 @@ export async function runObserverNativeWitness({requestBytes,outputPath,
   writeEvidence(out.report,JSON.stringify(result,null,2)+'\n');
   return {status:'native-infrastructure-error',exitCode:2,report:result,reportPath:out.report};
  }
- const checked=evidenceResult(analysis,settings,run,readings);
+ // Structural native-record validation is a REFUSAL boundary. Even an
+ // unexpected malformed record/classifier exception must leave a durable
+ // report with no accepted native hit, never escape into the outer CLI catch
+ // after the original analytical/scene evidence has already been written.
+ let checked;
+ try{
+  checked=evidenceResult(analysis,settings,run,readings);
+ }catch(error){
+  checked={
+   status:'native-evidence-unavailable',
+   reasonCode:'NATIVE_RESULT_QUALIFICATION_EXCEPTION',
+   reason:'The native evidence could not be safely qualified; no sampled arrival or measured negative is certified.',
+   qualificationError:String(error?.message??error),
+   native:{status:run?.native?.status??'failed',
+    executionPassed:run?.executionPassed===true,
+    canonicalSha256:run?.canonicalSha256??null,nativeImageDetected:false},
+   actualDetectorHit:null,actualIncomingDirection:null,
+   arrivalErrorMm:null,arrivalWithinDeclaredTolerance:false,
+   directionWithinDeclaredTolerance:false,nativeImageDetected:false
+  };
+ }
  const result=report(checked.status,{
   analyticalResult:analysis,
   sceneSha256,preparation,
   actualNativeResult:checked,
   native:checked.native,
-  actualReadings:readings.results,
+  // Do not serialize a structurally malformed native payload again after
+  // the classification boundary itself failed; record its failure instead.
+  actualReadings:checked.reasonCode==='NATIVE_RESULT_QUALIFICATION_EXCEPTION'?
+   null:readings.results,
   distinction:checked.status==='native-observed-no-crossing'?
    'Analytical crossing/axis are predicted. Native measured zero crossings and complete empty hit list are qualified; there is NO actual detector hit or incoming direction.':
    checked.actualDetectorHit?
