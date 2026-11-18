@@ -1,7 +1,7 @@
 name: Planar refraction checks
 on:
   pull_request:
-    branches: [main]
+    branches: [main, 'feature/**', 'research/**', 'fix/**', 'study/**', 'integration/**', 'design/**']
   push:
     branches: [main]
 permissions:
