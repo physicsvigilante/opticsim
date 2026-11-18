@@ -270,57 +270,153 @@ export async function runDetectorPairEvidence({
   json('manifest.json',manifest); // Must be the last file written.
   return {exitCode:report.status==='native-hits-reported'?0:2,report,output:directory};
 }
-export function verifyDetectorPairManifest(directory){
-  const filename='manifest.json',base=resolve(directory),mPath=resolve(base,filename);
-  if(!lstatSync(mPath).isFile()||lstatSync(mPath).isSymbolicLink())throw Error('Invalid manifest file');
+// Verify BOTH byte-level digests and semantic association to immutable authored
+// scenes and the actual native/readout artifacts. A rewritten manifest is NOT
+// an independent signature or proof of optical truth. No native rerun occurs.
+export async function verifyDetectorPairManifest(directory){
+  const base=resolve(directory),mPath=resolve(base,'manifest.json');
+  const check=(ok,reason)=>{
+    if(!ok)throw Error('B1a evidence identity mismatch: '+reason);
+  };
+  const same=(a,b)=>canonicalJSON(a)===canonicalJSON(b);
+  const statManifest=lstatSync(mPath);
+  check(statManifest.isFile()&&!statManifest.isSymbolicLink(),'invalid final manifest path');
   const manifest=JSON.parse(readFileSync(mPath,'utf8'));
-  if(manifest.format!==PAIR_MANIFEST_FORMAT||manifest.status!=='finalized'||
-     !Array.isArray(manifest.files)||manifest.files.length<5||manifest.files.length>10||
-     !shaPattern.test(manifest.inputSha256)||!shaPattern.test(manifest.planFamilySha256)||
-     !Array.isArray(manifest.sceneSha256)||manifest.sceneSha256.length!==2)
-    throw Error('Incomplete or invalid B1a final evidence manifest');
-  // A finalized B1a two-run attempt ALWAYS has two real summaries and
-  // readouts, even when the native selection itself was unavailable/suppressed.
-  // A setup/stale/partial failure deliberately has NO final manifest.
+  check(manifest.format===PAIR_MANIFEST_FORMAT&&manifest.status==='finalized'&&
+    shaPattern.test(manifest.inputSha256)&&shaPattern.test(manifest.planFamilySha256)&&
+    Array.isArray(manifest.sceneSha256)&&manifest.sceneSha256.length===2&&
+    manifest.sceneSha256.every(v=>typeof v==='string'&&shaPattern.test(v))&&
+    manifest.sceneSha256[0]!==manifest.sceneSha256[1]&&
+    manifest.nativeAttempted===2&&Number.isInteger(manifest.nativeCompleted)&&
+    manifest.nativeCompleted>=0&&manifest.nativeCompleted<=2,
+    'invalid final two-run header');
+
+  // Finalized evidence MUST contain exactly the original request, plan, two
+  // actual independently attempted native summaries/readouts, and report.
   const known=new Set(['input.json','plan.json','scene-A.ray-optics-2d.json',
     'scene-B.ray-optics-2d.json','native-A.json','native-B.json',
     'readouts-A.json','readouts-B.json','report.json']);
-  if(manifest.files.length!==known.size||manifest.nativeAttempted!==2)
-    throw Error('Finalized B1a evidence must contain both actual run records.');
-  const observed=new Set();
+  check(Array.isArray(manifest.files)&&manifest.files.length===known.size,
+    'finalized B1a evidence must contain both actual run records');
+  const observed=new Map();
   for(const entry of manifest.files){
-    if(!known.has(entry.path)||observed.has(entry.path)||!shaPattern.test(entry.sha256))
-      throw Error('Unknown or duplicate evidence manifest path');
-    observed.add(entry.path);
+    check(entry&&known.has(entry.path)&&!observed.has(entry.path)&&
+      typeof entry.sha256==='string'&&shaPattern.test(entry.sha256)&&
+      Number.isInteger(entry.bytes)&&entry.bytes>=0,
+      'unknown or duplicate evidence manifest path');
     const fpath=resolve(base,entry.path),stat=lstatSync(fpath);
-    if(stat.isSymbolicLink()||!stat.isFile())throw Error('Evidence is not a regular file');
+    check(stat.isFile()&&!stat.isSymbolicLink(),'evidence file must be regular');
     const bytes=readFileSync(fpath);
-    if(bytes.length!==entry.bytes||SHA(bytes)!==entry.sha256)
-      throw Error('Tampered or inconsistent B1a evidence file');
+    check(bytes.length===entry.bytes&&SHA(bytes)===entry.sha256,
+      'tampered or inconsistent B1a evidence file '+entry.path);
+    observed.set(entry.path,bytes);
   }
-  for(const required of known)
-    if(!observed.has(required))throw Error('Missing required B1a evidence file');
-  const plan=JSON.parse(readFileSync(resolve(base,'plan.json'),'utf8'));
-  const report=JSON.parse(readFileSync(resolve(base,'report.json'),'utf8'));
-  const sceneA=readFileSync(resolve(base,'scene-A.ray-optics-2d.json'));
-  const sceneB=readFileSync(resolve(base,'scene-B.ray-optics-2d.json'));
-  if(SHA(readFileSync(resolve(base,'input.json')))!==manifest.inputSha256||
-     manifest.inputSha256!==plan.inputSha256||report.inputSha256!==manifest.inputSha256||
-     manifest.planFamilySha256!==plan.familySha256||report.familySha256!==plan.familySha256||
-     SHA(sceneA)!==manifest.sceneSha256[0]||SHA(sceneB)!==manifest.sceneSha256[1]||
-     plan.runs[0].sceneSha256!==manifest.sceneSha256[0]||
-     plan.runs[1].sceneSha256!==manifest.sceneSha256[1]||
-     report.nativeAttempted!==manifest.nativeAttempted||
-     report.nativeCompleted!==manifest.nativeCompleted||
-     report.nativeAttempted!==2||report.runs?.length!==2||
-     report.runs[0].role!=='run-A'||report.runs[1].role!=='run-B'||
-     report.runs[0].sceneSha256!==manifest.sceneSha256[0]||
-     report.runs[1].sceneSha256!==manifest.sceneSha256[1]||
-     report.runs.some(row=>row.familySha256!==manifest.planFamilySha256||
-       row.inputSha256!==manifest.inputSha256)||
-     report.geometry?.status!=='withheld'||report.geometry?.value!==null)
-    throw Error('B1a final manifest and scenario identities do not agree');
-  return {status:'verified-finalized-evidence',manifest,report};
+  for(const required of known)check(observed.has(required),'missing '+required);
+  const getJSON=path=>JSON.parse(observed.get(path).toString('utf8'));
+  const inputBytes=observed.get('input.json');
+  check(SHA(inputBytes)===manifest.inputSha256,'original input SHA');
+  // Re-author BOTH canonical scenes from the original unmodified request. This
+  // is planning/validation only: no PhyDemo or fake geometry is run.
+  const expected=await planDetectorSelectedPair(parsePairJSON(inputBytes));
+  const ids={sourceId:expected.sourceId,interfaceId:expected.interfaceId,
+    detectorId:expected.detectorId};
+  const plan=getJSON('plan.json'),report=getJSON('report.json');
+  const expectedPlan={format:expected.format,inputSha256:manifest.inputSha256,
+    sourceId:ids.sourceId,interfaceId:ids.interfaceId,detectorId:ids.detectorId,
+    firstDirectionDeg:expected.firstDirectionDeg,
+    secondDirectionDeg:expected.secondDirectionDeg,
+    runPolicy:expected.runPolicy,familySha256:expected.familySha256,
+    runs:expected.scenes.map(spec=>({
+      role:spec.role,sceneSha256:spec.sceneSha256,
+      nativePin:spec.scene.upstreamCommit,
+      sourceDirectionDeg:spec.scene.physics.components
+        .find(c=>c.id===ids.sourceId).emission.directionDeg
+    }))};
+  check(same(plan,expectedPlan),'plan differs from original authoring facts');
+  check(manifest.planFamilySha256===expected.familySha256&&
+    report.familySha256===expected.familySha256&&
+    manifest.inputSha256===report.inputSha256,
+    'full-scene family/input identity');
+
+  check(report.format===PAIR_REPORT_FORMAT&&report.nativeAttempted===2&&
+    Array.isArray(report.runs)&&report.runs.length===2&&
+    report.observerAssessment==='not-assessed'&&
+    report.imageAssessment==='not-assessed'&&
+    report.interpretationAssessment==='not-assessed-by-engine'&&
+    report.questionSupport==='not-assessed-by-engine'&&
+    report.geometry?.status==='withheld'&&report.geometry?.value===null,
+    'complete public two-run/non-image report');
+
+  let completed=0;
+  let provenance=null;
+  for(const [i,spec] of expected.scenes.entries()){
+    const letter=i===0?'A':'B';
+    const sceneBytes=observed.get('scene-'+letter+'.ray-optics-2d.json');
+    const native=getJSON('native-'+letter+'.json');
+    const readout=getJSON('readouts-'+letter+'.json');
+    const row=report.runs[i];
+    // These two checks disallow a rewritten digest entry for swapped scene-A
+    // even if the manifest's own hashes were recomputed.
+    check(sceneBytes.toString('utf8')===spec.serialized&&
+      SHA(sceneBytes)===spec.sceneSha256&&
+      spec.sceneSha256===manifest.sceneSha256[i],
+      'scene-'+letter+' not the independently authored immutable scene');
+    check(readout.role===spec.role&&row.role===spec.role&&
+      readout.inputSha256===manifest.inputSha256&&
+      readout.sceneSha256===spec.sceneSha256&&
+      readout.familySha256===expected.familySha256&&
+      readout.nativePin===spec.scene.upstreamCommit&&
+      readout.schemaVersion===spec.scene.schemaVersion&&
+      readout.authoredDirectionDeg===spec.scene.physics.components
+        .find(c=>c.id===ids.sourceId).emission.directionDeg&&
+      readout.attempted===true&&same(readout,row),
+      'readouts-'+letter+' do not belong to their role and source scene');
+    check(native?.sceneText===spec.serialized&&
+      native?.scenePin===spec.scene.upstreamCommit&&
+      native?.summary?.canonicalSha256===spec.sceneSha256,
+      'native-'+letter+' execution belongs to a different scene/role/pin');
+    check(same(native.summary.native,row.nativeSummary)&&
+      same(native.summary.observations,row.nativeObservations)&&
+      native.summary.executionPassed===row.executionPassed&&
+      native.summary.native.status===row.nativeStatus&&
+      same(native.summary.native.warnings||[],row.rawNativeWarnings)&&
+      same(native.summary.native.errors||[],row.rawNativeErrors)&&
+      row.sceneHashMatches===true&&row.nativePinMatches===true,
+      'native-'+letter+' raw execution disagrees with readouts and report');
+    // Re-evaluate existing read-only observable logic against SAVED native
+    // summary and its own authored v5 scene; no solver run or invented events.
+    const values=normalizeReadouts((await evaluateObservables(
+      spec.scene,REQUESTS(ids),native.summary)).results);
+    check(same(values,readout.observableResults)&&
+      same(classify(row,spec.scene,ids),row.selection),
+      'readouts-'+letter+' not derivable from this native scene observation');
+    if(row.executionPassed&&row.sceneHashMatches&&row.nativePinMatches&&
+       ['completed','completed-with-warnings'].includes(row.nativeStatus))completed++;
+    if(provenance===null)provenance=row.executorProvenance;
+    check(row.executorProvenance===provenance&&
+      ['built-in-pinned-native','test-injected-untrusted'].includes(provenance),
+      'executor trust boundary not consistently labelled');
+  }
+  const selection=aggregate(report.runs);
+  const expectedStatus=['available','qualified'].includes(selection.status)?
+    'native-hits-reported':selection.status==='suppressed'?
+      'native-suppressed':'native-selection-unavailable';
+  const expectedGeometry={status:'withheld',value:null,
+    reasonCode:expectedStatus==='native-hits-reported'?
+      'B1B_NUMERICAL_GATE_NOT_RELEASED':selection.reasonCode};
+  check(report.nativeCompleted===completed&&manifest.nativeCompleted===completed&&
+    same(report.nativeSelection,selection)&&report.status===expectedStatus&&
+    report.reasonCode===selection.reasonCode&&
+    same(report.geometry,expectedGeometry)&&
+    report.executorProvenance===provenance,
+    'native aggregate/qualification or withheld geometry inconsistent');
+  // Integrity within this directory only. Malicious full-bundle rewriting,
+  // untrusted injected test executors and native physical accuracy are NOT
+  // cryptographically authenticated by SHA-256 file bookkeeping.
+  return {status:'verified-finalized-evidence',
+    authority:provenance==='built-in-pinned-native'?
+      'built-in-pinned-native':'test-injected-non-authoritative',
+    manifest,report};
 }
 async function main(args){
   if(args.length===1&&args[0]==='capabilities'){
