@@ -1,0 +1,45 @@
+{
+  "format": "opticsim-native-decentered-beam-research-v1",
+  "researchOnly": true,
+  "productionSupportClaim": false,
+  "baselineCommit": "8b4ffee3c9deb34fcf7d657221f917fab321de4c",
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "source": {
+    "auditCommit": "6a72bd67e58e9a3fd94a6bf33d88d1f20295b4c2",
+    "case": "J19",
+    "chapter": "07_Lens_Formula",
+    "problem": "027",
+    "archive": "08_Ray_Optics_Explanations.zip",
+    "archiveSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+    "transcriptionBasis": "Prior committed direct visual source audit; this follow-up does not claim new image inspection or read Solutions.",
+    "stated": ["equal positive focal lengths f", "axial separation 3f", "second lens transverse offset d much less than f", "parallel rays from the left", "origin at first lens centre"],
+    "researchChoices": ["f=200 mm and d=2 mm", "finite source width 20 mm", "lens segment heights 80 mm", "brightness 0.08", "density 0.4", "passive detectors at travel coordinates 4f and 6f", "signed-offset, scale, translation, reverse, missing-lens, finite-miss and stop controls"]
+  },
+  "oracle": {
+    "coordinates": "y-up; travel coordinate t=sign*(x-x0), initial height a=y-y0",
+    "assumptions": "ideal thin lenses, horizontal incident rays; formulas conditional on actual interception of both lenses",
+    "afterLens1": "u1=-a/f",
+    "atLens2": "y2-y0=-2a",
+    "afterLens2": "u2=(a+d)/f",
+    "intersection": "x=x0+sign*5f, y=y0+2d",
+    "meaning": "Analytical reference, not native emission, routing, physical image detection or continuous irradiance. Native outgoing lines are fitted independently of this target."
+  },
+  "defaults": {"f":200,"d":2,"x0":0,"y0":0,"sign":1,"width":20,"density":0.4,"aperture1":80,"aperture2":80,"brightness":0.08,"include1":true,"include2":true,"processedRayLimit":10000},
+  "cases": [
+    {"id":"positive-offset","both":8},
+    {"id":"negative-offset","d":-2,"both":8},
+    {"id":"zero-offset","d":0,"both":8},
+    {"id":"double-offset","d":4,"both":8},
+    {"id":"translated","x0":123,"y0":-37,"both":8},
+    {"id":"half-scale","f":100,"d":1,"width":10,"density":0.8,"aperture1":40,"aperture2":40,"both":8},
+    {"id":"double-scale","f":400,"d":4,"width":40,"density":0.2,"aperture1":160,"aperture2":160,"both":8},
+    {"id":"reverse-propagation","sign":-1,"both":8},
+    {"id":"higher-density","density":0.8,"both":16},
+    {"id":"finite-second-lens-misses","aperture2":12,"both":3},
+    {"id":"second-lens-total-miss","d":100,"aperture2":12,"both":0},
+    {"id":"first-lens-only","include2":false,"both":0},
+    {"id":"second-lens-only","include1":false,"both":0},
+    {"id":"free-space","include1":false,"include2":false,"both":0},
+    {"id":"processed-limit-stop","processedRayLimit":1,"incomplete":true}
+  ]
+}
