@@ -446,7 +446,10 @@ export async function runObserverNativeWitness({requestBytes,outputPath,
   sceneSha256,preparation,
   actualNativeResult:checked,
   native:checked.native,
-  actualReadings:readings.results,
+  // Do not serialize a structurally malformed native payload again after
+  // the classification boundary itself failed; record its failure instead.
+  actualReadings:checked.reasonCode==='NATIVE_RESULT_QUALIFICATION_EXCEPTION'?
+   null:readings.results,
   distinction:checked.status==='native-observed-no-crossing'?
    'Analytical crossing/axis are predicted. Native measured zero crossings and complete empty hit list are qualified; there is NO actual detector hit or incoming direction.':
    checked.actualDetectorHit?
