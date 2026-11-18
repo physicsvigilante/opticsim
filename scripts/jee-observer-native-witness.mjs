@@ -420,7 +420,27 @@ export async function runObserverNativeWitness({requestBytes,outputPath,
   writeEvidence(out.report,JSON.stringify(result,null,2)+'\n');
   return {status:'native-infrastructure-error',exitCode:2,report:result,reportPath:out.report};
  }
- const checked=evidenceResult(analysis,settings,run,readings);
+ // Structural native-record validation is a REFUSAL boundary. Even an
+ // unexpected malformed record/classifier exception must leave a durable
+ // report with no accepted native hit, never escape into the outer CLI catch
+ // after the original analytical/scene evidence has already been written.
+ let checked;
+ try{
+  checked=evidenceResult(analysis,settings,run,readings);
+ }catch(error){
+  checked={
+   status:'native-evidence-unavailable',
+   reasonCode:'NATIVE_RESULT_QUALIFICATION_EXCEPTION',
+   reason:'The native evidence could not be safely qualified; no sampled arrival or measured negative is certified.',
+   qualificationError:String(error?.message??error),
+   native:{status:run?.native?.status??'failed',
+    executionPassed:run?.executionPassed===true,
+    canonicalSha256:run?.canonicalSha256??null,nativeImageDetected:false},
+   actualDetectorHit:null,actualIncomingDirection:null,
+   arrivalErrorMm:null,arrivalWithinDeclaredTolerance:false,
+   directionWithinDeclaredTolerance:false,nativeImageDetected:false
+  };
+ }
  const result=report(checked.status,{
   analyticalResult:analysis,
   sceneSha256,preparation,
