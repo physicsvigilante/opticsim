@@ -317,7 +317,7 @@ test('manifest detects tampering and unfinished output cannot be reopened as ver
  assert.equal(verifyDetectorPairManifest(r.output).status,'verified-finalized-evidence');
  const filename=resolve(r.output,'native-A.json');
  const text=readFileSync(filename,'utf8');
- writeFileSync(filename,text.replace('"emitted": 2','"emitted": 3'));
+ writeFileSync(filename,text+'\n'); // Even whitespace-only file changes break the manifest SHA.
  assert.throws(()=>verifyDetectorPairManifest(r.output),/Tampered|inconsistent/);
  const fail=await run(q(),()=>{throw Error('no native');});
  assert.throws(()=>verifyDetectorPairManifest(fail.output));
