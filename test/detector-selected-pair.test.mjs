@@ -177,6 +177,23 @@ test('full Fresnel-off provenance remains qualified, never silently available or
  assert.equal(miss.report.geometry.value,null);
 });
 
+test('stable family hash supports non-default source IDs and locale-independent component ordering',async()=>{
+ const p=q(),components=p.apparatus.components;
+ components[0].id='z_Source';components[1].id='A_Plane';components[2].id='m_Detector';
+ p.sourceId='z_Source';p.interfaceId='A_Plane';p.detectorId='m_Detector';
+ components.reverse();
+ const plan=await planDetectorSelectedPair(p);
+ assert.equal(plan.familySha256.length,64);
+ assert.notEqual(plan.scenes[0].sceneSha256,plan.scenes[1].sceneSha256);
+ assert.deepEqual(plan.scenes[0].scene.physics.components.map(c=>c.id),
+   ['m_Detector','A_Plane','z_Source']);
+ const result=await run(p);
+ assert.equal(result.report.nativeSelection.status,'available');
+ assert.equal(result.report.geometry.value,null);
+ assert.equal(result.report.runs[0].familySha256,result.report.runs[1].familySha256);
+ assert.equal(verifyDetectorPairManifest(result.output).status,'verified-finalized-evidence');
+});
+
 test('reverse normal, source-side reversal, units and reordered component arrays preserve native selection',async()=>{
  const variants=[
   p=>{p.apparatus.components.reverse();},
