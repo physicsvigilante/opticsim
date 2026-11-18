@@ -144,8 +144,13 @@ async function derivePair(records){
   const method='test-only-two-native-runs-finite-window-backprojection';
   const limitation='Derived 2D line point after separate native runs; NOT a native propagated ray, simultaneous pupil observation, physical image, visibility or eye model.';
   const details=[],init={method,limitation};
+  // Preserve the distinct run association of each native warning, including
+  // when an early failure or genuine finite-window miss withholds the point.
+  const warnings=()=>details.flatMap(e=>
+    [...new Set(e.readings.flatMap(v=>v.warnings))].map(w=>({
+      invocationLabel:e.invocationLabel,canonicalSha256:e.canonicalSha256,warning:w})));
   const fail=(reasonCode,status='unavailable')=>({...init,status,reasonCode,value:null,
-    evidence:details,warnings:details.flatMap(x=>x.readings.flatMap(v=>v.warnings))});
+    evidence:details,warnings:warnings()});
   if(records.length!==2||records[0]===records[1]||records[0]?.label===records[1]?.label)
     return fail('DISTINCT_INVOCATIONS_REQUIRED');
   if(records.some(r=>!scope(r.doc)))return fail('EXACTLY_ONE_NATIVE_PLANE_SOURCE_DETECTOR');
@@ -157,11 +162,17 @@ async function derivePair(records){
   if(records[0].execution?.summary?.canonicalSha256===
      records[1].execution?.summary?.canonicalSha256)
     return fail('DISTINCT_NATIVE_SCENE_HASHES_REQUIRED');
-  const hits=[];
+  // Audit BOTH separate executions before any path/refusal decision. This
+  // avoids silently losing the second run's qualification or hash on a miss.
+  const inspected=[];
   for(const r of records){
     const obs=r.execution?.summary?.observations;
     const values=(await evaluateObservables(r.doc,REQUESTS,r.execution?.summary)).results;
     details.push(provenance(r,values));
+    inspected.push({r,obs,values});
+  }
+  const hits=[];
+  for(const {r,obs,values} of inspected){
     if(values.some(v=>v.status==='suppressed')||
       !['completed','completed-with-warnings'].includes(r.execution?.summary?.native?.status)||
       r.execution?.summary?.executionPassed!==true)
@@ -222,7 +233,7 @@ async function derivePair(records){
       endpointClearancesMm:hits.map((h,i)=>Math.min(h.distanceFromP1Mm,
         comp(records[i].doc,'ray-detector').parameters.length-h.distanceFromP1Mm)),
       extensionToSceneScale:Math.max(...backwardDistancesMm)/sceneScale},
-    evidence:details,warnings:details.flatMap(x=>x.readings.flatMap(v=>v.warnings))};
+    evidence:details,warnings:warnings()};
 }
 function assertNativeComplete(records){
   for(const r of records){
@@ -264,6 +275,8 @@ test('B research: actual shifted/shortened finite windows produce misses, not ob
   assert.deepEqual(shifted.records.map(x=>x.readings[1].value),[0,1]);
   assert.deepEqual(shifted.records[0].readings[0].value,[]);
   assert.equal(shifted.derived.status,'unavailable');
+  assert.equal(shifted.derived.evidence.length,2,
+    'even on a first-run detector miss the second independent run is retained');
   assert.equal(shifted.derived.reasonCode,'DETECTOR_WINDOW_DOES_NOT_SELECT_ONE_TRANSMISSION');
   const short=await nativePair('shorten-window',[-.5,.5],{detectorLengthMm:2});
   assertNativeComplete(short.records);
@@ -305,13 +318,25 @@ test('B research: qualified transmitted-only native readings stay qualified in d
   assert.equal(pair.derived.evidence.length,2);
   assert.equal(pair.derived.evidence[0].readings[0].status,'qualified');
   assert.equal(pair.derived.evidence[1].readings[2].status,'qualified');
-  assert.ok(pair.derived.warnings.some(w=>/omits Fresnel/.test(w)));
+  assert.equal(pair.derived.warnings.length,2,
+    'native approximation warnings retain both separate run identities');
+  assert.ok(pair.derived.warnings.every(w=>/omits Fresnel/.test(w.warning)&&
+    w.canonicalSha256&&w.invocationLabel));
   for(const run of pair.records){
     assert.equal(run.execution.summary.observations.interfacesById.I1.reflected,0);
     assert.equal(run.execution.summary.observations.interfacesById.I1.transmitted,1);
     assert.ok(run.readings.every(x=>x.status==='qualified'));
   }
   close(pair.derived.value.normalDepthMm,reference(.5).pairDepthMm,1e-6);
+  const missed=await nativePair('qualified-miss',[-.5,.5],
+    {partialReflection:false,detectorTangentMm:2.5});
+  assertNativeComplete(missed.records);
+  assert.equal(missed.derived.status,'unavailable');
+  assert.equal(missed.derived.value,null);
+  assert.equal(missed.derived.evidence.length,2);
+  assert.equal(missed.derived.warnings.length,2);
+  assert.ok(missed.derived.evidence.every(e=>
+    e.readings.every(v=>v.status==='qualified')));
 });
 
 test('B research: provenance requires distinct invocations and same whole apparatus except emission heading',async()=>{
@@ -369,16 +394,20 @@ test('B research: native TIR, near critical, missing capture and ray-depth-budge
   const withhold=await derivePair(incomplete);
   assert.equal(withhold.status,'suppressed');
   assert.equal(withhold.value,null);
+  assert.equal(withhold.evidence.length,2);
+  assert.ok(withhold.evidence.every(e=>e.readings.every(v=>v.status==='suppressed')));
   assert.ok(shallow.derived.status==='available');
   const noCapture={label:'no-opt-in',doc:shallow.records[0].doc,
     execution:evaluateDocument(shallow.records[0].doc,core)};
   const missing=await derivePair([noCapture,shallow.records[1]]);
   assert.equal(missing.status,'unavailable');assert.equal(missing.value,null);
+  assert.equal(missing.evidence.length,2);
   const stale={...shallow.records[0],doc:structuredClone(shallow.records[0].doc)};
   comp(stale.doc,'point-source').emission.directionDeg=-.6;
   validate(stale.doc);
   const old=await derivePair([stale,shallow.records[1]]);
   assert.equal(old.status,'suppressed');assert.equal(old.value,null);
+  assert.equal(old.evidence.length,2);
 });
 
 test('B research: measured near-parallel native exits are withheld; synthetic antiparallel algebra also refused',async()=>{
