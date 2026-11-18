@@ -437,9 +437,16 @@ test('R5 classification exception remains a durable fail-closed report, never a 
    // Artificial hostile classifier exception; unlike the missing direction
    // cases, this is not a JSON/native-record form, only a test of durable
    // refusal and report persistence on an unexpected internal exception.
-   Object.defineProperty(run.observations.interfacesById.I1.first,'branches',{
+   // Keep the projected first-event STRUCTURE accessible; inject an
+   // accessor fault only on the reflected direction, which the regular
+   // observables projector does not need to inspect, but the witness's
+   // post-projection integrity classifier must read.
+   const reflected=run.observations.interfacesById.I1.first.branches
+     .find(x=>x.kind==='reflected');
+   assert.ok(reflected);
+   Object.defineProperty(reflected,'direction',{
     enumerable:true,configurable:true,
-    get(){throw Error('Injected malformed event accessor');}
+    get(){throw Error('Injected reflected-direction accessor fault');}
    });
    return run;
   }});
