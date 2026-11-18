@@ -50,7 +50,7 @@ export function nativeObserverWitnessCapabilities(){
    arrivalToleranceMm:[0.0000001,1],
    directionTolerance:[1e-9,1e-3]
   },
-  statuses:['verified-sampled-arrival','measured-miss','native-evidence-unavailable',
+  statuses:['verified-sampled-arrival','native-observed-no-crossing','measured-miss','native-evidence-unavailable',
    'native-incomplete','native-error','physical-scene-refused',
    'analysis-unqualified','rejected','native-infrastructure-error'],
   limits:['One explicit point source, one infinite planar interface, one finite observer-centered passive detector.',
@@ -58,6 +58,7 @@ export function nativeObserverWitnessCapabilities(){
    'This does not certify all nearby or unsampled trajectories, observer perception, physical image, irradiance, or future source-to-observer accuracy.',
    'The incident heading is analytically proposed and authored as an explicit SingleRay; PhyDemo independently traces the forward ray, not an inverse optical solver.',
    'Fresnel policy and numerical preset must be explicitly selected; incomplete native evidence is always suppressed.',
+   'A complete measured zero crossing is a native-observed-no-crossing, not missing evidence or proof of invisibility.',
    'No native interface crossing point is measured; an analytical interface crossing remains predicted only.']};
 }
 function validatedRequest(request){
@@ -134,23 +135,69 @@ function evidenceResult(analysis,settings,summary,observed){
  const by=Object.fromEntries((observed.results||[]).map(r=>[r.id,r]));
  const emitted=by.emissions,crossings=by.crossings,interactions=by.encounters;
  const first=by.first,hits=by.hits;
- const allPresent=[emitted,crossings,interactions,first,hits].every(x=>
-  x&&['available','qualified'].includes(x.status));
- if(!allPresent||first.method!=='native-observation'||
+ const qualified=r=>r&&['available','qualified'].includes(r.status);
+ // A complete native observation can be ZERO. First-event is correctly
+ // unavailable when the ray NEVER encountered I1, even if the native trace
+ // completed and the detector measured zero crossings.
+ if(![emitted,crossings,interactions,hits].every(qualified)||
+    emitted.method!=='native-observation'||
+    crossings.method!=='native-observation'||
+    interactions.method!=='native-observation'||
     hits.method!=='native-hit-event-observation')
   return withheld('native-evidence-unavailable',
-   'Requested complete native source/interface/hit evidence is absent or withheld.',
+   'Required complete, method-qualified native counts or detector hit evidence are absent or withheld.',
    'MISSING_QUALIFIED_NATIVE_EVIDENCE');
+ if(!Number.isInteger(emitted.value)||emitted.value!==1||
+    !Number.isInteger(crossings.value)||crossings.value<0||
+    !Number.isInteger(interactions.value)||interactions.value<0||
+    !Array.isArray(hits.value)||hits.value.length!==crossings.value)
+  return withheld('native-evidence-unavailable',
+   'Native source count, detector count or complete hit list is inconsistent with this bounded one-ray witness.',
+   'UNQUALIFIED_NATIVE_SAMPLE');
+ const eventQualified=qualified(first)&&first.method==='native-observation'&&
+    first.value&&typeof first.value==='object';
+ if(crossings.value===0){
+  // Accepted negative: ONE source emitted, exactly ZERO detector crossings,
+  // complete/count-matched [] hits, and either a genuine first interaction
+  // or no interface interaction (hence no first event). Never call this
+  // "invisible" or assert a missing ray path.
+  if(interactions.value>1||
+     interactions.value===1&&(!eventQualified||
+       first.value.incidentIndex!==analysis.sourceIndex||
+       first.value.destinationIndex!==analysis.observerIndex)||
+     interactions.value===0&&!(first?.status==='unavailable'&&first.value===null))
+   return withheld('native-evidence-unavailable',
+    'The native interface event record contradicts the measured zero-crossing result.',
+    'UNQUALIFIED_NATIVE_INTERFACE_EVIDENCE');
+  return {status:'native-observed-no-crossing',
+   reason:'One native ray was emitted and a complete run measured zero crossings of this finite detector. This does not prove invisibility or absence of light elsewhere.',
+   reasonCode:'MEASURED_ZERO_DETECTOR_CROSSINGS',
+   native,method:'native-detector-zero-crossing-observation',
+   observedEmissions:1,observedDetectorCrossings:0,
+   observedInterfaceInteractions:interactions.value,
+   actualDetectorHit:null,actualIncomingDirection:null,
+   arrivalErrorMm:null,directionError:null,branchDirectionError:null,
+   declaredArrivalToleranceMm:settings.arrivalToleranceMm,
+   declaredDirectionTolerance:settings.directionTolerance,
+   arrivalWithinDeclaredTolerance:false,directionWithinDeclaredTolerance:false,
+   nativeImageDetected:false,
+   warnings:[...(hits.warnings||[])],
+   limitations:'A measured native zero is an available detector-specific sampled observation, not a path reconstruction, an eye, physical image, continuous shadow, or proof of invisibility.'};
+ }
+ // Positive arrival is deliberately stricter than an observed miss:
+ // exactly one interaction and exactly one actual crossing in this profile.
+ if(crossings.value!==1||interactions.value!==1||!eventQualified)
+  return withheld('native-evidence-unavailable',
+   'Positive native arrival requires exactly one transmitted interface interaction and one complete detector crossing.',
+   'UNQUALIFIED_NATIVE_SAMPLE');
  const event=first.value;
- const countMatch=emitted.value===1&&interactions.value===1&&
-  crossings.value===1&&Array.isArray(hits.value)&&hits.value.length===1&&
-  event?.outcome==='transmission'&&
-  event.incidentIndex===analysis.sourceIndex&&
-  event.destinationIndex===analysis.observerIndex&&
-  event.branches?.filter(b=>b.kind==='transmitted').length===1;
- if(!countMatch)return withheld('native-evidence-unavailable',
-  'Native sample counts, medium indices or transmitted branch do not match the bounded single-ray witness.',
-  'UNQUALIFIED_NATIVE_SAMPLE');
+ if(event.outcome!=='transmission'||
+    event.incidentIndex!==analysis.sourceIndex||
+    event.destinationIndex!==analysis.observerIndex||
+    event.branches?.filter(b=>b.kind==='transmitted').length!==1)
+  return withheld('native-evidence-unavailable',
+   'The recorded native interface does not support the claimed single transmitted ray.',
+   'UNQUALIFIED_NATIVE_SAMPLE');
  const eventDirection=event.branches.find(b=>b.kind==='transmitted').direction;
  const hit=hits.value[0],directionError=distance(hit?.incomingUnit,analysis.value.outgoingUnit);
  const branchError=distance(hit?.incomingUnit,eventDirection);
@@ -172,9 +219,10 @@ function evidenceResult(analysis,settings,summary,observed){
  const success=hitWithin&&directionWithin&&anglesWithin;
  return {status:success?'verified-sampled-arrival':'measured-miss',
   reason:success?
-   'One native sampled ray reached the declared observer point within the stated positional and direction tolerances.':
-   'A real native detector crossing occurred, but the declared arrival and direction tolerances were not both met.',
-  reasonCode:success?null:'DECLARED_TOLERANCE_NOT_MET',
+   'One native sampled ray reached the declared observer point within the stated positional, directional and first-interface angular tolerances.':
+   !anglesWithin?'A native detector crossing occurred, but its measured first-interface angles disagreed with the conditional geometry.':
+   'A native detector crossing occurred, but the author-declared positional or directional tolerance was not met.',
+  reasonCode:success?null:!anglesWithin?'NATIVE_FIRST_EVENT_ANGLE_MISMATCH':'DECLARED_TOLERANCE_NOT_MET',
   native,method:'actual-native-single-ray-detector-hit',
   actualDetectorHit:structuredClone(hit.pointMm),
   actualIncomingDirection:structuredClone(hit.incomingUnit),
