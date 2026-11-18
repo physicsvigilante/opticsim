@@ -415,7 +415,8 @@ test('R5 first-event structural preflight: missing/null/malformed reflected dire
   const saved=JSON.parse(readFileSync(resolve(dir,'report.json'),'utf8'));
   assert.equal(saved.status,'native-evidence-unavailable',name);
   assert.equal(saved.actualNativeResult.actualDetectorHit,null,name);
-  assert.equal(saved.actualNativeResult.reasonCode,'UNQUALIFIED_NATIVE_SAMPLE',name);
+  assert.equal(saved.actualNativeResult.reasonCode,zero?
+   'UNQUALIFIED_NATIVE_INTERFACE_EVIDENCE':'UNQUALIFIED_NATIVE_SAMPLE',name);
   // Test-only injected native first-event corruption is not an actual
   // native optical failure or proof of an impossible ray from PhyDemo.
   refused++;
