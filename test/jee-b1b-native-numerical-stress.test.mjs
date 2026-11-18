@@ -636,7 +636,7 @@ function researchStressSummary(label,pair,expectedDepthMm,alarmMm){
   const worldDelta=Math.hypot(oldPoint.x-local.value.worldPointMm.x,
     oldPoint.y-local.value.worldPointMm.y);
   assert.ok(worldDelta<=.02,label+': world-coordinate line method mismatch '+worldDelta);
-  log('B1B_TEST_ONLY_STRESS',{label,source:'ACTUAL_PINNED_NATIVE_EXIT_HITS',
+  log('B1B_TEST_ONLY_STRESS',{caseLabel:label,source:'ACTUAL_PINNED_NATIVE_EXIT_HITS',
     expectedConditionalSnellDepthMm:expectedDepthMm,
     observedLocalDepthMm:local.value.normalDepthMm,depthVsReferenceMm:delta,
     worldLineAlgorithmDifferenceMm:worldDelta,
@@ -739,7 +739,7 @@ test('B1b prereg negative matrix: measured finite misses, TIR and near-parallel 
     assert.equal(p.derived.value,null,x.label);
     const local=localFrameIntersection(p.records);
     assert.equal(local.value,null,x.label);
-    log('B1B_TEST_ONLY_NEGATIVE',{label:x.label,reason:p.derived.reasonCode,
+    log('B1B_TEST_ONLY_NEGATIVE',{caseLabel:x.label,reason:p.derived.reasonCode,
       nativeCrossings:x.expectedCounts,
       localReason:local.reason,sceneHashes:p.records.map(r=>r.execution.summary.canonicalSha256),
       noPhysicalImageClaim:true});
@@ -788,7 +788,7 @@ test('B1b prereg post-native sensitivity: single-ray and paired-ray hypothetical
         paired.value.pointMm.y-original.value.pointMm.y));
     }
     assert.ok(Number.isFinite(maxSingle)&&Number.isFinite(maxPaired));
-    log('B1B_TEST_ONLY_SENSITIVITY',{label:x.label,
+    log('B1B_TEST_ONLY_SENSITIVITY',{caseLabel:x.label,
       hypotheticalPositionPerturbationMm:1e-4,
       hypotheticalDirectionPerturbationRad:1e-6,
       singleRayResultShiftMm:maxSingle,pairedRayResultShiftMm:maxPaired,
