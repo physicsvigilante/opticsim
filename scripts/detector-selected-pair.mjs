@@ -1,6 +1,7 @@
 // B1a JEE two-native-run finite-detector readouts. No intersections or images.
 // Standalone: NEVER change the historical single-run scripts/run-problem.mjs.
 import {readFileSync,lstatSync} from 'node:fs';
+import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {execFileSync} from 'node:child_process';
@@ -33,13 +34,25 @@ const response=(status,inputSha256,reasonCode=null,reason=null)=>({
   interpretationAssessment:'not-assessed-by-engine',questionSupport:'not-assessed-by-engine'
 });
 let testCore=null;
+function prepareNativeCore(){
+  if(testCore)return;
+  execFileSync(process.execPath,[resolve(root,'scripts/build.mjs'),'--test'],
+    {cwd:root,stdio:['ignore','pipe','pipe']});
+  testCore=createRequire(import.meta.url)(resolve(root,'dist/test-core.cjs'));
+}
 function executeNative(scene,requests){
-  if(!testCore){
-    execFileSync(process.execPath,[resolve(root,'scripts/build.mjs'),'--test'],
-      {cwd:root,stdio:['ignore','pipe','pipe']});
-    testCore=createRequire(import.meta.url)(resolve(root,'dist/test-core.cjs'));
-  }
+  if(!testCore)throw Error('Pinned native core was not prepared.');
   return evaluateDocument(scene,testCore,requests);
+}
+// Do not revise baseline evaluateObservables() outputs for historical users.
+// B1a materializes every required per-readout warning/reason field locally.
+function normalizeReadouts(results){
+  return results.map(r=>({...r,warnings:Array.isArray(r.warnings)?[...r.warnings]:[],
+    reason:r.reason??null,
+    reasonCode:r.reasonCode??(
+      r.status==='suppressed'?'NATIVE_OBSERVATION_SUPPRESSED':
+      r.status==='unavailable'?'NATIVE_OBSERVATION_UNAVAILABLE':null),
+    method:r.method??null}));
 }
 function classify(run,doc,ids){
   const values=run.observableResults;
@@ -137,7 +150,11 @@ function sanitizeRun(role,spec,execution,reads,ids){
   record.selection=classify(record,spec.scene,ids);
   return record;
 }
-export async function runDetectorPairEvidence({inputBytes,outputPath,execute=executeNative}){
+// The executor/prepare overrides are TEST INJECTION SEAMS, never accepted by
+// the public standalone CLI or a request JSON. Mark them non-authoritative.
+export async function runDetectorPairEvidence({
+  inputBytes,outputPath,execute=executeNative,prepareNative=prepareNativeCore
+}){
   if(!(inputBytes instanceof Uint8Array)||inputBytes.length>1024*1024)
     throw new PairInputError('invalid-input','INVALID_ENVELOPE','Expected at most 1 MiB request bytes.');
   // Snapshot before calling asynchronous code. Output paths are fresh/guarded.
@@ -173,8 +190,24 @@ export async function runDetectorPairEvidence({inputBytes,outputPath,execute=exe
   for(const [i,s] of planned.scenes.entries())file('scene-'+(i?'B':'A')+'.ray-optics-2d.json',s.serialized);
   const report=response('native-selection-unavailable',inputSha256);
   report.familySha256=planned.familySha256;
+  report.executorProvenance=execute===executeNative&&prepareNative===prepareNativeCore?
+    'built-in-pinned-native':'test-injected-untrusted';
   const requests=REQUESTS(ids);
   let fatal=null;
+  // Setup/build is not a native invocation. A failed build or missing core
+  // yields zero nativeAttempted, no fabricated run summary and no manifest.
+  if(execute===executeNative){
+    try{await prepareNative();}
+    catch(e){fatal={code:'NATIVE_SETUP_FAILED',message:e.message};}
+  }
+  if(fatal){
+    report.status='infrastructure-error';
+    report.reasonCode=fatal.code;report.reason=fatal.message;
+    report.nativeSelection={status:'unavailable',reasonCode:fatal.code};
+    report.geometry={status:'withheld',value:null,reasonCode:fatal.code};
+    json('report.json',report);
+    return {exitCode:2,report,output:directory};
+  }
   for(const [i,spec] of planned.scenes.entries()){
     // A real invocation is attempted only at this boundary. No detector
     // reading, scene identity or run-local token can be borrowed from its peer.
@@ -191,13 +224,15 @@ export async function runDetectorPairEvidence({inputBytes,outputPath,execute=exe
     // trusted built-in executor. Test doubles may expose a pin for checking.
     execution.scenePin=observedPin;
     let values;
-    try{values=(await evaluateObservables(spec.scene,requests,execution.summary)).results;}
+    try{values=normalizeReadouts((await evaluateObservables(spec.scene,requests,execution.summary)).results);}
     catch(e){fatal={code:'NATIVE_EXECUTOR_FAILURE',message:'Observable integrity/evaluation failed: '+e.message};break;}
     // Preserve raw native evidence even when the summary is stale or native
     // selection is unavailable. A stale hash never authorizes a hit.
     json('native-'+(i?'B':'A')+'.json',execution);
     const record=sanitizeRun(spec.role,spec,execution,values,ids);
     record.inputSha256=inputSha256;record.familySha256=planned.familySha256;
+    record.executorProvenance=report.executorProvenance;
+    record.schemaVersion=spec.scene.schemaVersion;
     json('readouts-'+(i?'B':'A')+'.json',record);
     report.runs.push(record);
     if(record.sceneHashMatches&&record.nativePinMatches&&record.executionPassed&&
