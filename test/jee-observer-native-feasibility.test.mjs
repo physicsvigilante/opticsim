@@ -43,30 +43,81 @@ function shootingReference(f){
  const s=subtract(S,P),o=subtract(O,P);
  const ds=-dot(s,n),doo=dot(o,n);
  if(!(ds>=.01&&doo>=.01))throw Error('Both source and observer must be on stated opposite sides');
- const us=dot(s,t),uo=dot(o,t);
- let low=Math.min(us,uo),high=Math.max(us,uo);
- const fprime=q=>ns*(q-us)/Math.hypot(ds,q-us)-
-   no*(uo-q)/Math.hypot(doo,uo-q);
- // Exact on-axis geometry still has one real native ray, but it cannot
- // infer virtual depth from the one ray alone.
- for(let i=0;i<110;i++){
-   const mid=(low+high)/2;
-   if(fprime(mid)>0)high=mid;else low=mid;
+ const us=dot(s,t),uo=dot(o,t),span=uo-us;
+ // R2 P1: bisect LOCAL offset v=q-u_s, not absolute world coordinate q.
+ // At world y=9000 mm and source/observer 0.02 mm from the plane, adjacent
+ // representable absolute q values can differ too much to satisfy Snell's
+ // 1e-12 residual even after 110 bisections. No native ray is repaired.
+ let low=Math.min(0,span),high=Math.max(0,span);
+ const residual=v=>ns*v/Math.hypot(ds,v)-
+   no*(span-v)/Math.hypot(doo,span-v);
+ const unstable=(reasonCode,reason,details={})=>({
+   status:'numerically-unstable',reasonCode,reason,
+   Q:null,incoming:null,outgoing:null,incidentHeading:null,
+   apparentDepth:null,apparentPoint:null,
+   diagnostics:{localRootOffsetMm:details.v??null,
+     localSnellResidual:details.localResidual??null,
+     representedWorldSnellResidual:details.worldResidual??null},
+   nativeImageDetected:false
+ });
+ let v=0;
+ if(span!==0){
+   for(let i=0;i<110;i++){
+     const mid=low+(high-low)/2;
+     // Stop at adjacent representable LOCAL values: further bisection
+     // cannot improve a root and must not be mistaken for convergence.
+     if(mid===low||mid===high)break;
+     const value=residual(mid);
+     if(value===0){low=mid;high=mid;break;}
+     if(value>0)high=mid;else low=mid;
+   }
+   v=low+(high-low)/2;
  }
- const q=(low+high)/2,Q=add(P,times(t,q));
- const incoming=norm(subtract(Q,S)),outgoing=norm(subtract(O,Q));
+ const localResidual=residual(v);
+ if(!Number.isFinite(localResidual)||Math.abs(localResidual)>1e-12)
+   return unstable('LOCAL_ROOT_UNRESOLVED',
+     'The local stationary-path root is not numerically qualified.',
+     {v,localResidual});
+ const q=us+v,Q=add(P,times(t,q));
+ // Source/destination unit vectors are assembled in the LOCAL orthonormal
+ // frame, rather than subtracting near-identical large world tangents.
+ const incoming=norm(add(times(n,ds),times(t,v)));
+ const outgoing=norm(add(times(n,doo),times(t,span-v)));
+ // Explicitly check the world-coordinate representation that PhyDemo would
+ // receive: when the crossing Q cannot retain enough tangent precision,
+ // WITHHOLD a native shooting direction instead of asserting an impossible
+ // absolute 1e-12 residual. Physical uniqueness is unaffected.
+ const representedIncoming=norm(subtract(Q,S));
+ const representedOutgoing=norm(subtract(O,Q));
+ const worldResidual=ns*dot(representedIncoming,t)-
+   no*dot(representedOutgoing,t);
+ if(!Number.isFinite(worldResidual)||Math.abs(worldResidual)>1e-12)
+   return unstable('WORLD_COORDINATE_ROUNDING',
+     'A local physical root exists, but the authored world crossing cannot preserve the Snell residual at this coordinate scale.',
+     {v,localResidual,worldResidual});
+ // A conservative RESEARCH sampling bound, not a physical critical angle:
+ // an almost tangent exit is too sensitive to trust as a finite detector
+ // witness without a dedicated near-grazing numerical qualification.
+ if(dot(outgoing,n)<.02)
+   return unstable('NEAR_GRAZING_EXIT',
+     'The predicted transmitted ray is too grazing for this bounded native detector witness.',
+     {v,localResidual,worldResidual});
  const incident=dot(incoming,t),refracted=dot(outgoing,t);
  const thetaI=Math.atan2(incident,dot(incoming,n))/RAD;
  const thetaT=Math.atan2(refracted,dot(outgoing,n))/RAD;
- const error=ns*incident-no*refracted;
- approx(error,0,1e-12);
  const incidentHeading=Math.atan2(incoming.y,incoming.x)/RAD;
  const sourceNormalFoot=add(P,times(t,us));
- const axial=Math.abs(q-us)<1e-10||Math.abs(uo-q)<1e-10;
- const apparentDepth=axial?null:(q-us)*doo/(uo-q);
+ if(span!==0&&(Math.abs(v)<1e-10||Math.abs(span-v)<1e-10))
+   return unstable('NEAR_AXIAL_INFERENCE',
+     'The single ray is nonaxial but its tangent displacement is too small for a stable depth inference.',
+     {v,localResidual,worldResidual});
+ const axial=span===0;
+ const apparentDepth=axial?null:v*doo/(span-v);
  const apparentPoint=apparentDepth===null?null:
    subtract(sourceNormalFoot,times(n,apparentDepth));
- return {Q,incoming,outgoing,ds,doo,us,uo,n,t,
+ return {status:'available',reasonCode:null,reason:null,
+   Q,incoming,outgoing,ds,doo,us,uo,n,t,localRootOffsetMm:v,
+   localSnellResidual:localResidual,representedWorldSnellResidual:worldResidual,
    incidentHeading,incidentDeg:thetaI,refractedDeg:thetaT,
    sourceNormalFoot,apparentDepth,apparentPoint};
 }
@@ -92,7 +143,9 @@ function sceneFor(f,ref){
  return prepareScene(document).document;
 }
 async function nativeWitness(f){
- const ref=shootingReference(f),d=sceneFor(f,ref);
+ const ref=shootingReference(f);
+ assert.equal(ref.status,'available','No unqualified reference may be authored as a native test ray: '+ref.reasonCode);
+ const d=sceneFor(f,ref);
  assert.equal(d.schemaVersion,5);
  const e=evaluateDocument(d,core,requests).summary;
  const measured=(await evaluateObservables(d,requests,e));
@@ -100,6 +153,7 @@ async function nativeWitness(f){
 }
 function confirmNativeHit(f,run){
  const {ref,e,by,measured}=run;
+ assert.equal(ref.status,'available');
  assert.equal(e.native.status,'completed');
  assert.equal(e.executionPassed,true);
  assert.equal(e.native.truncation,0);
@@ -199,6 +253,48 @@ test('invalid observer ordering is refused by reference; no ray is silently reve
   fixture({source:{x:-0.009,y:0}}),
   fixture({observer:{x:0.009,y:40}})
  ])assert.throws(()=>shootingReference(f),/opposite sides/);
+});
+test('R2 P1: large world tangent offsets retain local physical root but withhold an unrepresentable native reference',()=>{
+ // Independent Chat B R1 counterexample. All coordinates are bounded,
+ // source/observer are 0.02 mm away from the interface on opposite sides.
+ // Absolute-coordinate bisection formerly stagnated near world y=9000 and
+ // then asserted a residual >1e-12; this must NOT throw invalid geometry.
+ const local=fixture({source:{x:-.02,y:0},observer:{x:.02,y:.01}});
+ const shifted=fixture({source:{x:-.02,y:9000},observer:{x:.02,y:9000.01}});
+ const baseline=shootingReference(local),unstable=shootingReference(shifted);
+ assert.equal(baseline.status,'available');
+ assert.equal(unstable.status,'numerically-unstable');
+ assert.equal(unstable.reasonCode,'WORLD_COORDINATE_ROUNDING');
+ assert.equal(unstable.Q,null);
+ assert.equal(unstable.incidentHeading,null);
+ assert.equal(unstable.apparentPoint,null);
+ assert.equal(unstable.nativeImageDetected,false);
+ assert.ok(Math.abs(unstable.diagnostics.localSnellResidual)<=1e-12);
+ assert.ok(Math.abs(unstable.diagnostics.representedWorldSnellResidual)>1e-12);
+ approx(unstable.diagnostics.localRootOffsetMm,baseline.localRootOffsetMm,1e-10);
+ console.log('JEE_OBSERVER_LOCAL_ROOT_WITHHELD '+JSON.stringify({
+  status:unstable.status,reasonCode:unstable.reasonCode,
+  localResidual:unstable.diagnostics.localSnellResidual,
+  worldResidual:unstable.diagnostics.representedWorldSnellResidual,
+  nativeRayAuthored:false
+ }));
+});
+test('R2 P1: near-critical observer grazing and near-axial nonzero offsets produce explicit numerical uncertainty',()=>{
+ // Chat B R1 N1 sample: real stationary solution is close to critical
+ // incidence, and the outgoing ray is nearly tangent to the boundary.
+ const grazing=shootingReference(fixture({observer:{x:100,y:9000}}));
+ assert.equal(grazing.status,'numerically-unstable');
+ assert.equal(grazing.reasonCode,'NEAR_GRAZING_EXIT');
+ assert.equal(grazing.Q,null);
+ assert.equal(grazing.incidentHeading,null);
+ assert.ok(Math.abs(grazing.diagnostics.localSnellResidual)<=1e-12);
+ const nearAxial=shootingReference(fixture({observer:{x:100,y:1e-11}}));
+ assert.equal(nearAxial.status,'numerically-unstable');
+ assert.equal(nearAxial.reasonCode,'NEAR_AXIAL_INFERENCE');
+ assert.equal(nearAxial.apparentDepth,null);
+ const axial=shootingReference(fixture({observer:{x:100,y:0}}));
+ assert.equal(axial.status,'available');
+ assert.equal(axial.apparentDepth,null);
 });
 test('stale scene or incomplete native run never supplies an observer detector hit',async()=>{
  const f=fixture(),ref=shootingReference(f),d=sceneFor(f,ref);
