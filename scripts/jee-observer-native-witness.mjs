@@ -157,11 +157,38 @@ function validTransmittedEvent(first,meter,analysis,settings){
     outgoing.relativePower<0)return false;
  if(reflection.length){
   const r=reflection[0];
+  // This narrowly supported scene has ONE native SingleRay and no optical
+  // component before PlaneGlass. Its explicitly authored initial heading
+  // therefore gives the independently expected incoming unit direction.
+  // It is an AUTHORED reference, NOT a separately measured native incoming
+  // vector, nor permission to force/repair native reflection.
+  const heading=analysis.value?.predictedInitialDirectionDeg;
+  if(!Number.isFinite(heading))return false;
+  const rad=heading*Math.PI/180;
+  const incident={x:Math.cos(rad),y:Math.sin(rad)};
+  const projected=normalProjection(incident);
+  if(!finiteUnit(incident)||projected<=0)return false;
+  const expectedReflected={
+    x:incident.x-2*projected*normal.x,
+    y:incident.y-2*projected*normal.y
+  };
+  // The law of specular reflection preserves the SIGNED tangential
+  // component and reverses the normal component. Checking only that the
+  // reflected ray points into the negative medium, or only unsigned
+  // angle-from-normal, incorrectly admits a tangent-flipped ray.
+  const specularError=Math.hypot(
+    r.direction.x-expectedReflected.x,
+    r.direction.y-expectedReflected.y);
+  const REFLECTION_VECTOR_TOL=1e-7;
+  const REFLECTION_ANGLE_TOL_DEG=1e-5;
   if(!finiteAngle(r.angleDeg)||!finiteUnit(r.direction)||
      normalProjection(r.direction)>=0||
      !finiteAngle(e.reflectedAngleDeg)||
      Math.abs(r.angleDeg-e.reflectedAngleDeg)>1e-7||
      Math.abs(measuredAngle(r.direction)-r.angleDeg)>1e-7||
+     Math.abs(e.reflectedAngleDeg-e.incidentAngleDeg)>REFLECTION_ANGLE_TOL_DEG||
+     Math.abs(e.incidentAngleDeg-measuredAngle(incident))>REFLECTION_ANGLE_TOL_DEG||
+     !Number.isFinite(specularError)||specularError>REFLECTION_VECTOR_TOL||
      !Number.isFinite(r.relativePower)||r.relativePower<0)return false;
  }else if(e.reflectedAngleDeg!==null)return false;
  return true;

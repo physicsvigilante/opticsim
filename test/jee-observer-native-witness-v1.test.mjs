@@ -293,6 +293,90 @@ test('R3 legitimate full native Fresnel transmission+reflection remains admitted
   injectedZeroForClassificationOnly:true,nativeImageDetected:false
  }));
 });
+test('R4 specular reflection preflight: tangent flips and coherent wrong-angle branches refuse for five normals and both tangent signs',async()=>{
+ // Reviewer's two attack classes each keep a negative normal projection,
+ // finite unit norm, native-looking method labels and unsigned self-consistent
+ // reflection angles. BOTH must fail, on positive and measured-zero paths.
+ // These are deliberately tampered native summaries, NOT actual native rays.
+ const orientations=[0,90,-90,180,37];
+ const rotate=(p,angle)=>{
+  const a=angle*Math.PI/180,c=Math.cos(a),s=Math.sin(a);
+  return {x:p.x*c-p.y*s,y:p.x*s+p.y*c};
+ };
+ const dot=(a,b)=>a.x*b.x+a.y*b.y;
+ const angleFromNormal=(d,n)=>{
+  const t={x:-n.y,y:n.x};
+  return Math.atan2(Math.abs(dot(d,t)),Math.abs(dot(d,n)))*180/Math.PI;
+ };
+ let rejected=0,realAdmitted=0;
+ for(const normalDeg of orientations)for(const sign of [-1,1]){
+  const w=witness();
+  w.physicalVerification.partialReflection=true;
+  w.analyticalQuery.interface.normalDeg=normalDeg;
+  w.analyticalQuery.source=rotate({x:-60,y:0},normalDeg);
+  w.analyticalQuery.observer=rotate({x:100,y:40*sign},normalDeg);
+  const label='normal '+normalDeg+', tangent '+sign;
+  // Genuine pinned native Fresnel transmission+reflection is a positive
+  // control for the new specular condition in every tested coordinate frame.
+  const real=await runObserverNativeWitness({
+   requestBytes:inputBytes(w),outputPath:output(),executeNative:nativeExecutor});
+  assert.equal(real.status,'verified-sampled-arrival',label);
+  assert.equal(real.report.native.status,'completed',label);
+  const actual=Object.fromEntries(real.report.actualReadings.map(x=>[x.id,x]));
+  assert.equal(actual.first.value.branches.filter(b=>b.kind==='reflected').length,1,label);
+  realAdmitted++;
+  for(const mode of ['flip-tangent','wrong-coherent-angle'])
+   for(const zero of [false,true]){
+    const result=await runObserverNativeWitness({
+     requestBytes:inputBytes(w),outputPath:output(),
+     executeNative:(scene,requests)=>{
+      const s=zero?syntheticZeroExecution()(scene,requests):
+       structuredClone(nativeExecutor(scene,requests));
+      const m=s.observations.interfacesById.I1;
+      const r=m.first.branches.find(b=>b.kind==='reflected');
+      assert.ok(r,label);
+      const a=normalDeg*Math.PI/180;
+      const n={x:Math.cos(a),y:Math.sin(a)};
+      const t={x:-n.y,y:n.x};
+      const rn=dot(r.direction,n),rt=dot(r.direction,t);
+      assert.ok(rn<0&&Math.abs(rt)>.05,label);
+      if(mode==='flip-tangent'){
+       r.direction={x:rn*n.x-rt*t.x,y:rn*n.y-rt*t.y};
+      }else{
+       const wrong=5*Math.PI/180,side=Math.sign(rt);
+       r.direction={
+        x:-Math.cos(wrong)*n.x+side*Math.sin(wrong)*t.x,
+        y:-Math.cos(wrong)*n.y+side*Math.sin(wrong)*t.y};
+       r.angleDeg=5;
+       m.first.reflectedAngleDeg=5;
+      }
+      // Ensure the corruption is subtle: backward medium sign, finite
+      // unit vector and internally self-consistent unsigned branch angle.
+      assert.ok(dot(r.direction,n)<0,label);
+      assert.ok(Math.abs(Math.hypot(r.direction.x,r.direction.y)-1)<1e-10,label);
+      assert.ok(Math.abs(angleFromNormal(r.direction,n)-r.angleDeg)<1e-8,label);
+      assert.ok(Math.abs(r.angleDeg-m.first.reflectedAngleDeg)<1e-8,label);
+      return s;
+     }});
+    assert.equal(result.status,'native-evidence-unavailable',
+     label+', '+mode+', zero='+zero);
+    assert.equal(result.exitCode,2,label);
+    assert.equal(result.report.actualNativeResult.actualDetectorHit,null,label);
+    assert.equal(result.report.actualNativeResult.actualIncomingDirection,null,label);
+    assert.equal(result.report.actualNativeResult.arrivalWithinDeclaredTolerance,false,label);
+    rejected++;
+   }
+ }
+ assert.equal(realAdmitted,10);
+ assert.equal(rejected,40);
+ console.log('JEE_OBSERVER_SPECULAR_REFLECTION_ADVERSARIAL '+JSON.stringify({
+  normals:orientations,tangentSigns:[-1,1],realNativeFullFresnelAdmitted:realAdmitted,
+  syntheticContradictoryEventsRefused:rejected,
+  testedResultPaths:['native-hit','complete-measured-zero'],
+  controls:'signed tangential reflection and incident-angle consistency',
+  nativeImageDetected:false
+ }));
+});
 test('R2 P1: actual pinned native missed-detector controls show available zero with and without interface interaction',async()=>{
  // These are GENUINE separate native controls with deliberately changed
  // source angles. They are NOT represented as native evidence for the
