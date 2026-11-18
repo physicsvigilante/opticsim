@@ -141,6 +141,25 @@ Each attempted run entry includes: `role` (`run-A` / `run-B`), original input SH
 
 **The illustrative records above are intentionally abbreviated:** an implementation MUST preserve the complete native first-event branches/directions, full hit unit vector and distanceFromP1, all four `id/componentId/method/reason` fields and run counters/normalization keys specified in the normative paragraphs. They are NOT permission to truncate native evidence or claim a computed image. Do not use booleans `nativeImageDetected:false` or `physicalImage:false` as if a physical absence had been observed. Neither visual image existence nor eye vision was tested.
 
+### Normative refusal and reduction precedence
+
+The reduction runs only after both input validation and any actually attempted native executions. **Preflight validation is first** (no attempted native calls), followed by execution/integrity errors, native incompleteness/warnings, actual native branch and finite-hit selection, then the hard B1b geometry-withholding rule. Do not allow a mathematically computable position, a valid hit from only one run, or an available count of zero to override a higher-priority withheld condition.
+
+| Stable B1a reasonCode | Trigger / interpretation | Top-level and public geometry |
+| --- | --- | --- |
+| `MISSING_REQUIRED_FACT` | Required top-level or physical input absent | `needs-information`, 0 attempts; geometry null |
+| `INVALID_ENVELOPE`, `DUPLICATE_JSON_KEY`, `IDENTICAL_SOURCE_HEADINGS` | Wrong type/field, conflicting duplicate JSON key, or modulo-equivalent directions | `invalid-input`, 0 attempts; geometry null |
+| `UNSUPPORTED_B1A_SCOPE` | Structurally valid but unsupported components, side/orientation/width/physical geometry | `unavailable`, 0 attempts; geometry null |
+| `SCENE_FAMILY_MISMATCH`, `STALE_EXECUTION_SHA` | Validated exact-scene/family/hash/pin identity violated | `native-suppressed`, no usable crossing |
+| `NATIVE_EXECUTION_INCOMPLETE`, `UNQUALIFIED_NATIVE_WARNING` | Incomplete/truncated/undefined native, unexpected native warning or missing capture | `native-suppressed`; null geometry |
+| `NO_TRANSMITTED_BRANCH`, `FINITE_DETECTOR_MISS`, `AMBIGUOUS_NATIVE_HIT`, `INCONSISTENT_NATIVE_BRANCH` | Actually completed native no-transmission, measured zero, endpoint ambiguity, or inconsistent counts/branch/direction | `native-selection-unavailable`; preserve trustworthy native zero/[] and null geometry |
+| `NATIVE_EXECUTOR_FAILURE`, `INCOMPLETE_EVIDENCE_MANIFEST` | Setup/runtime/storage failure or interrupted/nonfinalized evidence | `infrastructure-error`, actual attempt counts only; no finalized positive report |
+| `B1B_NUMERICAL_GATE_NOT_RELEASED` | **Even when both** independent native transmissions and detector hits are fully accepted | `native-hits-reported`, all genuine native evidence; `geometry:{status:'withheld',value:null,...}` |
+
+For a physically completed first run with a valid **miss**, **still execute** the second prepared scene to report both independent native outcomes; likewise complete both when the first returns an ordinary incomplete result but no infrastructure exception, retaining two truthful statuses. If the first run fails to start, has an unrecoverable executor/storage error, or integrity is already compromised, stop; the second run is **not attempted**. An exception starting the second invocation must be counted as an attempted executor call but never counted as completed native output. This staging is intended to avoid cherry-picking one successful ray or conflating setup failure with a physical miss.
+
+The `native-hits-reported` status is a **sampled-evidence classification**, not an image or geometric-position result; a result consumer must present the actual source/detector IDs, scene directions and run qualification next to every native hit. Never silently expose an internal test-only backprojection coordinate through JSON, logs intended for users, previews or an old image-specific formatter.
+
 ## 5. B1a CLI, output artifacts, interruption and historical safety
 
 Proposed standalone command: `node scripts/detector-selected-pair.mjs <request.json> --out test-artifacts/llm-authoring/<fresh-directory>`. It must remain separate from the byte-frozen `scripts/run-problem.mjs`, `scripts/author-scene.mjs` and the one-native-run `opticsim-problem-v1` dispatcher. No new saved `scene.schemaVersion`, v20 migration or alteration to pinned PhyDemo, native callbacks or old tests.
