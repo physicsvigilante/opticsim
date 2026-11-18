@@ -43,30 +43,81 @@ function shootingReference(f){
  const s=subtract(S,P),o=subtract(O,P);
  const ds=-dot(s,n),doo=dot(o,n);
  if(!(ds>=.01&&doo>=.01))throw Error('Both source and observer must be on stated opposite sides');
- const us=dot(s,t),uo=dot(o,t);
- let low=Math.min(us,uo),high=Math.max(us,uo);
- const fprime=q=>ns*(q-us)/Math.hypot(ds,q-us)-
-   no*(uo-q)/Math.hypot(doo,uo-q);
- // Exact on-axis geometry still has one real native ray, but it cannot
- // infer virtual depth from the one ray alone.
- for(let i=0;i<110;i++){
-   const mid=(low+high)/2;
-   if(fprime(mid)>0)high=mid;else low=mid;
+ const us=dot(s,t),uo=dot(o,t),span=uo-us;
+ // R2 P1: bisect LOCAL offset v=q-u_s, not absolute world coordinate q.
+ // At world y=9000 mm and source/observer 0.02 mm from the plane, adjacent
+ // representable absolute q values can differ too much to satisfy Snell's
+ // 1e-12 residual even after 110 bisections. No native ray is repaired.
+ let low=Math.min(0,span),high=Math.max(0,span);
+ const residual=v=>ns*v/Math.hypot(ds,v)-
+   no*(span-v)/Math.hypot(doo,span-v);
+ const unstable=(reasonCode,reason,details={})=>({
+   status:'numerically-unstable',reasonCode,reason,
+   Q:null,incoming:null,outgoing:null,incidentHeading:null,
+   apparentDepth:null,apparentPoint:null,
+   diagnostics:{localRootOffsetMm:details.v??null,
+     localSnellResidual:details.localResidual??null,
+     representedWorldSnellResidual:details.worldResidual??null},
+   nativeImageDetected:false
+ });
+ let v=0;
+ if(span!==0){
+   for(let i=0;i<110;i++){
+     const mid=low+(high-low)/2;
+     // Stop at adjacent representable LOCAL values: further bisection
+     // cannot improve a root and must not be mistaken for convergence.
+     if(mid===low||mid===high)break;
+     const value=residual(mid);
+     if(value===0){low=mid;high=mid;break;}
+     if(value>0)high=mid;else low=mid;
+   }
+   v=low+(high-low)/2;
  }
- const q=(low+high)/2,Q=add(P,times(t,q));
- const incoming=norm(subtract(Q,S)),outgoing=norm(subtract(O,Q));
+ const localResidual=residual(v);
+ if(!Number.isFinite(localResidual)||Math.abs(localResidual)>1e-12)
+   return unstable('LOCAL_ROOT_UNRESOLVED',
+     'The local stationary-path root is not numerically qualified.',
+     {v,localResidual});
+ const q=us+v,Q=add(P,times(t,q));
+ // Source/destination unit vectors are assembled in the LOCAL orthonormal
+ // frame, rather than subtracting near-identical large world tangents.
+ const incoming=norm(add(times(n,ds),times(t,v)));
+ const outgoing=norm(add(times(n,doo),times(t,span-v)));
+ // Explicitly check the world-coordinate representation that PhyDemo would
+ // receive: when the crossing Q cannot retain enough tangent precision,
+ // WITHHOLD a native shooting direction instead of asserting an impossible
+ // absolute 1e-12 residual. Physical uniqueness is unaffected.
+ const representedIncoming=norm(subtract(Q,S));
+ const representedOutgoing=norm(subtract(O,Q));
+ const worldResidual=ns*dot(representedIncoming,t)-
+   no*dot(representedOutgoing,t);
+ if(!Number.isFinite(worldResidual)||Math.abs(worldResidual)>1e-12)
+   return unstable('WORLD_COORDINATE_ROUNDING',
+     'A local physical root exists, but the authored world crossing cannot preserve the Snell residual at this coordinate scale.',
+     {v,localResidual,worldResidual});
+ // A conservative RESEARCH sampling bound, not a physical critical angle:
+ // an almost tangent exit is too sensitive to trust as a finite detector
+ // witness without a dedicated near-grazing numerical qualification.
+ if(dot(outgoing,n)<.02)
+   return unstable('NEAR_GRAZING_EXIT',
+     'The predicted transmitted ray is too grazing for this bounded native detector witness.',
+     {v,localResidual,worldResidual});
  const incident=dot(incoming,t),refracted=dot(outgoing,t);
  const thetaI=Math.atan2(incident,dot(incoming,n))/RAD;
  const thetaT=Math.atan2(refracted,dot(outgoing,n))/RAD;
- const error=ns*incident-no*refracted;
- approx(error,0,1e-12);
  const incidentHeading=Math.atan2(incoming.y,incoming.x)/RAD;
  const sourceNormalFoot=add(P,times(t,us));
- const axial=Math.abs(q-us)<1e-10||Math.abs(uo-q)<1e-10;
- const apparentDepth=axial?null:(q-us)*doo/(uo-q);
+ if(span!==0&&(Math.abs(v)<1e-10||Math.abs(span-v)<1e-10))
+   return unstable('NEAR_AXIAL_INFERENCE',
+     'The single ray is nonaxial but its tangent displacement is too small for a stable depth inference.',
+     {v,localResidual,worldResidual});
+ const axial=span===0;
+ const apparentDepth=axial?null:v*doo/(span-v);
  const apparentPoint=apparentDepth===null?null:
    subtract(sourceNormalFoot,times(n,apparentDepth));
- return {Q,incoming,outgoing,ds,doo,us,uo,n,t,
+ return {status:'available',reasonCode:null,reason:null,
+   Q,incoming,outgoing,ds,doo,us,uo,n,t,localRootOffsetMm:v,
+   localSnellResidual:localResidual,representedWorldSnellResidual:worldResidual,
    incidentHeading,incidentDeg:thetaI,refractedDeg:thetaT,
    sourceNormalFoot,apparentDepth,apparentPoint};
 }
