@@ -155,15 +155,21 @@ function evidenceResult(analysis,settings,summary,observed){
  const hit=hits.value[0],directionError=distance(hit?.incomingUnit,analysis.value.outgoingUnit);
  const branchError=distance(hit?.incomingUnit,eventDirection);
  const arrivalError=distance(hit?.pointMm,analysis.value.observerMm);
+ const incidenceErrorDeg=Math.abs(event.incidentAngleDeg-Math.abs(analysis.value.incidentAngleDeg));
+ const refractedErrorDeg=Math.abs(event.transmittedAngleDeg-Math.abs(analysis.value.refractedAngleDeg));
+ // These are actual first-native-interaction angles, not a calculated
+ // prediction relabelled as a native event.
  if(!Number.isFinite(arrivalError)||!Number.isFinite(directionError)||
-    !Number.isFinite(branchError))
+    !Number.isFinite(branchError)||!Number.isFinite(incidenceErrorDeg)||
+    !Number.isFinite(refractedErrorDeg))
   return withheld('native-evidence-unavailable',
    'Measured native hit or direction is nonfinite.',
    'NONFINITE_NATIVE_HIT');
  const hitWithin=arrivalError<=settings.arrivalToleranceMm;
  const directionWithin=directionError<=settings.directionTolerance&&
   branchError<=settings.directionTolerance;
- const success=hitWithin&&directionWithin;
+ const anglesWithin=incidenceErrorDeg<=1e-5&&refractedErrorDeg<=1e-5;
+ const success=hitWithin&&directionWithin&&anglesWithin;
  return {status:success?'verified-sampled-arrival':'measured-miss',
   reason:success?
    'One native sampled ray reached the declared observer point within the stated positional and direction tolerances.':
@@ -175,6 +181,10 @@ function evidenceResult(analysis,settings,summary,observed){
   arrivalErrorMm:arrivalError,directionError,branchDirectionError:branchError,
   declaredArrivalToleranceMm:settings.arrivalToleranceMm,
   declaredDirectionTolerance:settings.directionTolerance,
+  incidentAngleErrorDeg:incidenceErrorDeg,
+  refractedAngleErrorDeg:refractedErrorDeg,
+  angleErrorWithinFixedTolerance:anglesWithin,
+  fixedAngularToleranceDeg:1e-5,
   arrivalWithinDeclaredTolerance:hitWithin,
   directionWithinDeclaredTolerance:directionWithin,
   nativeImageDetected:false,
