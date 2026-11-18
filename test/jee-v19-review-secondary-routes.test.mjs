@@ -151,23 +151,28 @@ test('R2 P1: boundary-close forward lens and downstream stop cannot evade the to
  for(const directionDeg of [0,180,-180]){
   const sign=directionDeg===0?1:-1;
   const p=postLensStop(17.5035);
-  Object.assign(component(p,'B1').parameters,{x:0,directionDeg});
-  component(p,'L1').parameters.x=sign*0.01;
-  component(p,'A1').parameters.x=sign*50;
-  component(p,'D1').parameters.x=sign*100;
+  // A translated reverse source avoids sin(±π)*halfWidth endpoint jitter
+  // when applying the separate inclusive 0.01-mm source-plane clearance.
+  // x=64 and lens x=63.99 also exercise the old comparison's rounding
+  // boundary: (64-63.99) is slightly below 0.01 in binary64.
+  const sourceX=sign===1?0:64;
+  Object.assign(component(p,'B1').parameters,{x:sourceX,directionDeg});
+  component(p,'L1').parameters.x=sourceX+sign*0.01;
+  component(p,'A1').parameters.x=sourceX+sign*50;
+  component(p,'D1').parameters.x=sourceX+sign*100;
   assert.throws(()=>prepareScene(p),/downstream of a forward ideal lens/,
     'source-to-lens at 0.01 mm, direction '+directionDeg);
   for(const distance of [0.009,0.011]){
-   component(p,'L1').parameters.x=sign*distance;
+   component(p,'L1').parameters.x=sourceX+sign*distance;
    assert.throws(()=>prepareScene(p),/UNSUPPORTED_SCOPE|downstream of a forward ideal lens|at least 0.01 mm/,
     'source-to-lens near boundary '+distance+' deg '+directionDeg);
   }
   // Re-establish a source safely upstream and place the stop exactly at
   // and to either side of the lens-stop clearance boundary.
-  component(p,'B1').parameters.x=-sign*100;
-  component(p,'L1').parameters.x=0;
+  component(p,'B1').parameters.x=sourceX-sign*100;
+  component(p,'L1').parameters.x=sourceX;
   for(const distance of [0.009,0.01,0.011]){
-   component(p,'A1').parameters.x=sign*distance;
+   component(p,'A1').parameters.x=sourceX+sign*distance;
    assert.throws(()=>prepareScene(p),/downstream of a forward ideal lens/,
     'lens-to-stop gap '+distance+' deg '+directionDeg);
   }
