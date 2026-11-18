@@ -9,6 +9,7 @@ import {POLYGON_TYPE,polygonVertices} from './polygon-dielectric.js';
 import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
 import {CIRCLE_BLOCKER_TYPE,circleBlockerExtents} from './opaque-circle-blocker.js';
 import {FINITE_APERTURE_TYPE} from './finite-aperture.js';
+import {PARALLEL_BEAM_TYPE,PARALLEL_BEAM_VERSION,PARALLEL_LENS_MODEL,PARALLEL_PLANAR_MODEL,parallelBeamGeometry} from './parallel-beam.js';
 import {isCurved,curvedPoints} from './curved-mirrors.js';
 import {validate,UPSTREAM,SAMPLING_PRESETS,COMPONENT_TYPES,componentParameterNames,
   GENERAL_SCOPE,MAX_AUTHORING_COMPONENTS,COMPONENT_BOUNDS,LENGTH_PARAMETERS,mirrorEndpoints} from './contract.js';
@@ -19,7 +20,7 @@ const policies=Object.freeze({
   'dense-v1':Object.freeze({rayDensity:SAMPLING_PRESETS.dense,maxRayDepth:8,processedRayLimit:10000})
 });
 const prefixes=Object.freeze({
-  'point-source':'source','ideal-lens':'lens','plane-mirror':'mirror','line-blocker':'blocker',[CIRCLE_BLOCKER_TYPE]:'circle-blocker',[FINITE_APERTURE_TYPE]:'aperture','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism',[POLYGON_TYPE]:'glass'
+  'point-source':'source',[PARALLEL_BEAM_TYPE]:'beam','ideal-lens':'lens','plane-mirror':'mirror','line-blocker':'blocker',[CIRCLE_BLOCKER_TYPE]:'circle-blocker',[FINITE_APERTURE_TYPE]:'aperture','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism',[POLYGON_TYPE]:'glass'
 });
 const lengthKeys=new Set(LENGTH_PARAMETERS);
 const own=(value,key)=>Object.prototype.hasOwnProperty.call(value,key);
@@ -62,6 +63,12 @@ export function capabilities() {
     composition:compositionCapabilities(),
     opaqueLineBlockers:{model:'general-component-tracing',nativeType:'Blocker',max:2,combinedStopMax:2,scope:'Up to two finite fully opaque line absorbers, sharing the combined two-stop limit with circles. Native sampled absorption counts; no shadow visibility or image inference.'},
     opaqueCircularBlockers:{model:'general-component-tracing',nativeType:'CircleBlocker',max:2,combinedStopMax:2,geometry:'Explicit 2D centre (x,y) and positive radius >=1 mm; entire disk within coordinate bounds; disjoint from sources, finite surfaces, detectors and other opaque circles',scope:'Fully opaque native circle boundaries with no wavelength filter; measured absorbed sampled rays only, not continuous shadow, 3D sphere, image, or visibility.'},
+    nativeParallelBeam:{schemaVersion:PARALLEL_BEAM_VERSION,models:[PARALLEL_LENS_MODEL,PARALLEL_PLANAR_MODEL],
+      source:'Exactly one finite native Beam with explicit centre x/y, perpendicular width 10–100 mm, directionDeg and brightness. No point-source replacement, randomization or divergence.',
+      scope:'Optional one ideal thin lens and/or vertical finite aperture, OR one or two parallel refractive planes; 0–2 passive detectors. No other optics or mixed lens/medium models.',
+      geometry:'Entire emission segment lies within coordinate bounds, outside every surface/medium boundary and detector supporting line. First emitted samples near finite stop/lens endpoints are refused. Beam starting medium must be uniform.',
+      execution:'Native pinned Beam emits all deterministic samples; density is numerical not a continuous source property. Brightness exceeding ray density is refused to prevent native saturation.',
+      limitations:'No image reconstruction, PSF, diffraction, radiometric power, arbitrary composite optics or source-to-detector ancestry.'},
     finiteApertures:{model:'general-component-tracing',nativeType:'Aperture',max:2,combinedStopMax:2,geometry:'Explicit centre x,y, tangent orientationDeg, full length and central openingLength; both opaque arms at least 1 mm; 0.01 mm clearance from other finite surfaces',scope:'Native planar segment with transparent gap; native absorber counts only, not continuous transmission, irradiance, diffraction or detected image.'},
     finiteBlockerComposition:finiteBlockerCompositionPolicy(),
     finiteShapeComposition:finiteShapeCompositionPolicy(),
@@ -99,6 +106,7 @@ export function capabilities() {
       ...(type==='line-blocker'?{nativeType:'Blocker',geometry:'Opaque finite line segment; centre, tangent orientation, and length are explicit; absorbs each actual native ray incident'}:{}),
       ...(type===CIRCLE_BLOCKER_TYPE?{nativeType:'CircleBlocker',geometry:'Opaque 2D circular boundary with explicit centre and positive radius; absorbs actual native ray incidents; not a 3D body'}:{}),
       ...(type===FINITE_APERTURE_TYPE?{nativeType:'Aperture',geometry:'Opaque 2D line with an explicitly transparent centred opening; no wave diffraction'}:{}),
+      ...(type===PARALLEL_BEAM_TYPE?{nativeType:'Beam',geometry:'Entire finite emitting segment, deterministic parallel rays and shared starting medium. Width is perpendicular to propagation.',sampling:'Global numeric ray density, not a physical continuous-ray distribution; no random, Lambertian or divergence variants.'}:{}),
       counts:{...GENERAL_SCOPE[type]},
       ...(isCurved(type)?{nativeType:type==='ideal-curved-mirror'?'IdealMirror':'ArcMirror',model:type==='ideal-curved-mirror'?'ideal Gaussian mapping':'native circular local-normal reflection; analytical image is paraxial'}:{}),
       ...(type==='point-source'?{emission:{mode:['full-circle','directional'],curvedSceneModes:['full-circle','directional','single-ray'],
@@ -150,7 +158,7 @@ export function inspectAuthoringRequest(request){
       ['negativeIndex','positiveIndex','insideIndex','outsideIndex'].includes(key)?b.refractiveIndex:
       key==='normalDeg'?b.orientationDeg:key==='orientationDeg'?b.orientationDeg:key==='directionDeg'?b.directionDeg:
       key==='angleDeg'?b.openingAngleDeg:
-      ['length','openingLength','apertureHeight'].includes(key)?b.positiveLengthMm:b.coordinateMm;
+      ['length','openingLength','apertureHeight'].includes(key)?b.positiveLengthMm:key==='width'?[10,100]:b.coordinateMm;
     if(!Number.isFinite(n)||n<bounds[0]||n>bounds[1]||
       (key==='focalLength'&&Math.abs(n)<b.minimumAbsFocalLengthMm)||
       (key==='radius'&&(type===CIRCULAR_TYPE?n<2:type===CIRCLE_BLOCKER_TYPE?n<1:Math.abs(n)<2)))
@@ -197,7 +205,8 @@ function camera(components) {
   const vertices=[];
   for(const c of components) {
     const p=c.parameters;
-    if(c.type==='point-source')vertices.push({x:p.x,y:p.y});
+    if(c.type===PARALLEL_BEAM_TYPE){const g=parallelBeamGeometry(p);vertices.push(g.p1,g.p2);}
+    else if(c.type==='point-source')vertices.push({x:p.x,y:p.y});
     else if(c.type===CIRCULAR_TYPE)vertices.push(...circularExtents(p));
     else if(c.type===CIRCLE_BLOCKER_TYPE)vertices.push(...circleBlockerExtents(p));
     else if(c.type===PRISM_TYPE)vertices.push(...prismVertices(p));

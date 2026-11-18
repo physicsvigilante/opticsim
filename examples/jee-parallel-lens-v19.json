@@ -1,0 +1,88 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "JEE-style native parallel beam, finite aperture and ideal lens",
+    "runPolicy": "preview-v1",
+    "components": [
+      {
+        "id": "B1",
+        "type": "parallel-beam",
+        "parameters": {
+          "x": -100,
+          "y": 0,
+          "width": 40,
+          "directionDeg": 0,
+          "brightness": 0.08
+        }
+      },
+      {
+        "id": "A1",
+        "type": "finite-aperture",
+        "parameters": {
+          "x": -50,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 100,
+          "openingLength": 12
+        }
+      },
+      {
+        "id": "L1",
+        "type": "ideal-lens",
+        "parameters": {
+          "x": 0,
+          "focalLength": 100,
+          "apertureHeight": 100
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 100,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 200
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "emitted",
+      "kind": "source-emissions",
+      "componentId": "B1"
+    },
+    {
+      "id": "absorbed",
+      "kind": "blocker-absorptions",
+      "componentId": "A1"
+    },
+    {
+      "id": "detected",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "hits",
+      "kind": "detector-hit-events",
+      "componentId": "D1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Simulate native parallel illumination and observed crossing/absorption events for a fully specified synthetic JEE-style optical apparatus.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "Finite parallel beam with zero divergence is a synthetic fully specified control, not an inferred original JEE source.",
+      "The native ideal lens uses its declared geometric focal length. An aperture transmits through its empty gap but blocks on its arms.",
+      "Source brightness .08 at density .2 avoids native per-ray saturation."
+    ],
+    "unknowns": [
+      "Sampled focal-plane crossings are not a physical point-spread function, image reconstruction, continuous flux or diffraction pattern."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}
