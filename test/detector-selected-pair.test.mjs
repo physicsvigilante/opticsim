@@ -83,8 +83,8 @@ test('real full-Fresnel native rays give two distinct finite-window crossings, n
   'readouts-A.json','readouts-B.json','report.json',
   'scene-A.ray-optics-2d.json','scene-B.ray-optics-2d.json'].sort());
  assert.deepEqual(readFileSync(resolve(output.output,'input.json')),raw);
- const verified=verifyDetectorPairManifest(output.output);
- assert.equal(verified.status,'verified-finalized-evidence');
+ const verified=await verifyDetectorPairManifest(output.output);
+ assert.equal(verified).status,'verified-finalized-evidence');
  assert.equal(verified.report.geometry.value,null);
  const saved=JSON.parse(readFileSync(resolve(output.output,'manifest.json'),'utf8'));
  assert.equal(saved.files.length,9);assert.equal(saved.nativeAttempted,2);
@@ -141,7 +141,7 @@ test('2mm and 10mm physical detector-window boundaries report genuine native mis
    assert.deepEqual(r.report.runs.map(x=>x.observableResults[2].value),[1,1]);
    assert.ok(r.report.runs.every(x=>x.observableResults[3].value.length===1));
   }
-  assert.equal(verifyDetectorPairManifest(r.output).status,'verified-finalized-evidence');
+  assert.equal((await verifyDetectorPairManifest(r.output)).status,'verified-finalized-evidence');
  }
 });
 
@@ -154,7 +154,7 @@ test('an actually shifted finite detector records a measured miss while retainin
  assert.deepEqual(r.report.runs[0].observableResults[3].value,[]);
  assert.deepEqual(sum(r.report.runs),['unavailable','available']);
  assert.equal(r.report.geometry.value,null);
- assert.equal(verifyDetectorPairManifest(r.output).status,'verified-finalized-evidence');
+ assert.equal((await verifyDetectorPairManifest(r.output)).status,'verified-finalized-evidence');
 });
 
 test('full Fresnel-off provenance remains qualified, never silently available or an image',async()=>{
@@ -191,7 +191,7 @@ test('stable family hash supports non-default source IDs and locale-independent 
  assert.equal(result.report.nativeSelection.status,'available');
  assert.equal(result.report.geometry.value,null);
  assert.equal(result.report.runs[0].familySha256,result.report.runs[1].familySha256);
- assert.equal(verifyDetectorPairManifest(result.output).status,'verified-finalized-evidence');
+ assert.equal((await verifyDetectorPairManifest(result.output)).status,'verified-finalized-evidence');
 });
 
 test('reverse normal, source-side reversal, units and reordered component arrays preserve native selection',async()=>{
@@ -240,7 +240,7 @@ test('real total internal reflection remains native evidence but never a selecte
   assert.equal(row.observableResults[2].value,0);
   assert.deepEqual(row.observableResults[3].value,[]);
  }
- assert.equal(verifyDetectorPairManifest(r.output).status,'verified-finalized-evidence');
+ assert.equal((await verifyDetectorPairManifest(r.output)).status,'verified-finalized-evidence');
 });
 
 test('strict original-byte parser rejects identical and escaped duplicate keys across nesting',()=>{
@@ -318,7 +318,7 @@ test('native zero selection and raw warning are distinct from incomplete/stale m
  assert.equal(incomplete.report.nativeAttempted,2);
  assert.equal(incomplete.report.nativeCompleted,0);
  assert.equal(incomplete.report.geometry.value,null);
- assert.equal(verifyDetectorPairManifest(incomplete.output).status,'verified-finalized-evidence');
+ assert.equal((await verifyDetectorPairManifest(incomplete.output)).status,'verified-finalized-evidence');
  const warning=await run(q(),(doc,requests)=>{
   const data=native(doc,requests);data.summary.native.warnings=['SYNTHETIC_WARNING_FOR_METADATA_ONLY'];
   return data;
@@ -409,13 +409,13 @@ test('first and second executor failures retain genuine 0/1 completed results wi
 
 test('manifest detects tampering and unfinished output cannot be reopened as verified',async()=>{
  const r=await run(q());
- assert.equal(verifyDetectorPairManifest(r.output).status,'verified-finalized-evidence');
+ assert.equal((await verifyDetectorPairManifest(r.output)).status,'verified-finalized-evidence');
  const filename=resolve(r.output,'native-A.json');
  const text=readFileSync(filename,'utf8');
  writeFileSync(filename,text+'\n'); // Even whitespace-only file changes break the manifest SHA.
- assert.throws(()=>verifyDetectorPairManifest(r.output),/Tampered|inconsistent/);
+ await assert.rejects(()=>verifyDetectorPairManifest(r.output),/tampered|inconsistent|mismatch/i);
  const fail=await run(q(),()=>{throw Error('no native');});
- assert.throws(()=>verifyDetectorPairManifest(fail.output));
+ await assert.rejects(()=>verifyDetectorPairManifest(fail.output));
 });
 
 
@@ -427,7 +427,7 @@ test('finalized B1a manifest cannot omit a run file or have altered run associat
  const withoutB=structuredClone(original);
  withoutB.files=withoutB.files.filter(f=>f.path!=='native-B.json');
  writeFileSync(path,JSON.stringify(withoutB,null,2)+'\n');
- assert.throws(()=>verifyDetectorPairManifest(r.output),/both actual run records/);
+ await assert.rejects(()=>verifyDetectorPairManifest(r.output),/both actual run records/);
 });
 
 test('async request mutation cannot change frozen original bytes or the two native runs',async()=>{
@@ -450,10 +450,10 @@ test('async request mutation cannot change frozen original bytes or the two nati
  assert.deepEqual(readFileSync(resolve(result.output,'input.json')),before);
  assert.equal(result.report.inputSha256,sha(before));
  assert.equal(result.report.nativeSelection.status,'available');
- assert.equal(verifyDetectorPairManifest(result.output).status,'verified-finalized-evidence');
+ assert.equal((await verifyDetectorPairManifest(result.output)).status,'verified-finalized-evidence');
 });
 
-test('public standalone CLI performs real native execution and writes a finalized hash-linked report',()=>{
+test('public standalone CLI performs real native execution and writes a finalized hash-linked report',async()=>{
  const file=setupInput(q()),out=fresh();
  let r;
  try{r=spawnSync(process.execPath,['scripts/detector-selected-pair.mjs',file,'--out',out],{encoding:'utf8',timeout:90000});}
@@ -463,7 +463,7 @@ test('public standalone CLI performs real native execution and writes a finalize
  assert.equal(response.status,'native-hits-reported');
  assert.equal(response.nativeAttempted,2);assert.equal(response.nativeCompleted,2);
  assert.equal(response.geometry.value,null);
- const verified=verifyDetectorPairManifest(out);
+ const verified=await verifyDetectorPairManifest(out);
  assert.equal(verified.report.nativeSelection.status,'available');
  const cap=spawnSync(process.execPath,['scripts/detector-selected-pair.mjs','capabilities'],{encoding:'utf8'});
  assert.equal(cap.status,0);
