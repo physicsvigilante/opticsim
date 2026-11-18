@@ -176,12 +176,16 @@ function validTransmittedEvent(first,meter,analysis,settings){
   // component and reverses the normal component. Checking only that the
   // reflected ray points into the negative medium, or only unsigned
   // angle-from-normal, incorrectly admits a tangent-flipped ray.
+  // Validate the shape before ANY direction dereference. A complete
+  // native run may carry an incomplete/corrupt reflected event; that MUST
+  // become withheld evidence with a saved report, never a TypeError.
+  if(!finiteUnit(r.direction))return false;
   const specularError=Math.hypot(
     r.direction.x-expectedReflected.x,
     r.direction.y-expectedReflected.y);
   const REFLECTION_VECTOR_TOL=1e-7;
   const REFLECTION_ANGLE_TOL_DEG=1e-5;
-  if(!finiteAngle(r.angleDeg)||!finiteUnit(r.direction)||
+  if(!finiteAngle(r.angleDeg)||
      normalProjection(r.direction)>=0||
      !finiteAngle(e.reflectedAngleDeg)||
      Math.abs(r.angleDeg-e.reflectedAngleDeg)>1e-7||
