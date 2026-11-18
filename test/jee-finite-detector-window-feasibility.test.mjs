@@ -136,6 +136,9 @@ function linesMeet(a,b){
 function provenance(r,values){
   return {invocationLabel:r.label,canonicalSha256:r.execution?.summary?.canonicalSha256??null,
     nativePin:r.doc?.upstreamCommit??null,nativeStatus:r.execution?.summary?.native?.status??null,
+    // Incomplete/stale native reads can be suppressed before per-observable
+    // warnings are attached. Retain the raw invocation warnings separately.
+    rawNativeWarnings:[...(r.execution?.summary?.native?.warnings||[])],
     authoredDirectionDeg:comp(r.doc,'point-source')?.emission?.directionDeg??null,
     readings:values.map(v=>({kind:v.kind,status:v.status,warnings:[...(v.warnings||[])],
       reason:v.reason??null,reasonCode:v.reasonCode??null}))};
@@ -147,7 +150,7 @@ async function derivePair(records){
   // Preserve the distinct run association of each native warning, including
   // when an early failure or genuine finite-window miss withholds the point.
   const warnings=()=>details.flatMap(e=>
-    [...new Set(e.readings.flatMap(v=>v.warnings))].map(w=>({
+    [...new Set([...e.rawNativeWarnings,...e.readings.flatMap(v=>v.warnings)])].map(w=>({
       invocationLabel:e.invocationLabel,canonicalSha256:e.canonicalSha256,warning:w})));
   const fail=(reasonCode,status='unavailable')=>({...init,status,reasonCode,value:null,
     evidence:details,warnings:warnings()});
@@ -269,6 +272,54 @@ test('B research: two real native rays each cross the SAME 5 mm finite receiving
   assert.ok(derived.value.extensionToSceneScale<1);
 });
 
+
+test('B research: equal-index native continuation selects finite hits and reconstructs real depth',async()=>{
+  // Required by preregistration #134, specifically flagged P1 in Chat B R1.
+  // Observe PhyDemo interface behavior; never manufacture a reflected branch.
+  for(const n of [1,1.5]){
+    const {records,derived}=await nativePair('equal-index-'+n,[-.5,.5],
+      {objectIndex:n,receivingIndex:n});
+    assertNativeComplete(records);
+    assert.equal(derived.value!==null,true,'equal-index native selection must yield geometry');
+    assert.equal(derived.evidence.length,2);
+    assert.ok(['available','qualified'].includes(derived.status));
+    const expectedY=160*Math.tan(.5*RAD);
+    for(const [i,run] of records.entries()){
+      const sign=[-1,1][i],event=run.execution.summary.observations.interfacesById.I1.first;
+      const meter=run.execution.summary.observations.interfacesById.I1;
+      assert.equal(run.execution.summary.observations.emissionsById.S1.emitted,1);
+      assert.equal(meter.interactions,1);
+      assert.equal(meter.transmitted,1);
+      assert.equal(event.outcome,'transmission');
+      assert.equal(event.incidentIndex,n);
+      assert.equal(event.destinationIndex,n);
+      assert.equal(run.readings[1].value,1);
+      assert.equal(run.readings[0].value.length,1);
+      assert.ok(run.readings.every(x=>['available','qualified'].includes(x.status)));
+      const h=run.readings[0].value[0];
+      close(h.pointMm.x,40);
+      close(h.pointMm.y,sign*expectedY,1e-6);
+      close(h.pointMm.y,reference(sign*.5,120,n,n).hitTangentMm,1e-6);
+      close(h.incomingUnit.x,Math.cos(.5*RAD),1e-8);
+      close(h.incomingUnit.y,sign*Math.sin(.5*RAD),1e-8);
+      close(h.incomingUnit.x,event.branches.find(b=>b.kind==='transmitted').direction.x,1e-8);
+      close(h.incomingUnit.y,event.branches.find(b=>b.kind==='transmitted').direction.y,1e-8);
+      assert.ok(derived.value.endpointClearancesMm[i]>1,
+        'actual same-medium detector crossing must be clear of either endpoint');
+    }
+    close(derived.value.normalDepthMm,120,1e-6);
+    close(derived.value.pointMm.x,-120,1e-6);
+    close(derived.value.pointMm.y,0,1e-6);
+    assert.ok(derived.value.backwardDistancesMm.every(d=>d>0));
+    assert.equal(derived.status,
+      derived.evidence.some(e=>e.readings.some(v=>v.status==='qualified'))?'qualified':'available');
+    log('equal-index-native-control',{index:n,measuredY:records.map(r=>r.readings[0].value[0].pointMm.y),
+      derivedDepthMm:derived.value.normalDepthMm,
+      nativeReflections:records.map(r=>r.execution.summary.observations.interfacesById.I1.reflected),
+      status:derived.status});
+  }
+});
+
 test('B research: actual shifted/shortened finite windows produce misses, not observer claims',async()=>{
   const shifted=await nativePair('shift-window',[-.5,.5],{detectorTangentMm:2.5});
   assertNativeComplete(shifted.records);
@@ -309,6 +360,25 @@ test('B research: reverse travel, rotated planes, translated window, units and i
     close(p.derived.value.pointMm.y,origin.y+side*normal.y*reference(.5).pairDepthMm,1e-6);
     assert.ok(p.derived.value.endpointClearancesMm.every(x=>x>.9));
   }
+});
+
+
+test('B research: cross-run component ordering may differ while every physical field is identical',async()=>{
+  const first=await nativeRun('mixed-order-first',-.5);
+  const second=await nativeRun('mixed-order-second',.5,{reverseOrder:true});
+  assertNativeComplete([first,second]);
+  assert.deepEqual(first.doc.physics.components.map(c=>c.id),['S1','I1','D1']);
+  assert.deepEqual(second.doc.physics.components.map(c=>c.id),['D1','I1','S1']);
+  assert.equal(family(first.doc),family(second.doc),
+    'only explicit emission heading and serialization ordering may differ');
+  assert.notEqual(first.execution.summary.canonicalSha256,second.execution.summary.canonicalSha256);
+  const derived=await derivePair([first,second]);
+  assert.equal(derived.status,'available');
+  assert.equal(derived.evidence.length,2);
+  assert.ok(derived.value.endpointClearancesMm.every(d=>d>.9));
+  close(derived.value.normalDepthMm,reference(.5).pairDepthMm,1e-6);
+  close(derived.value.pointMm.x,-reference(.5).pairDepthMm,1e-6);
+  close(derived.value.pointMm.y,0,1e-6);
 });
 
 test('B research: qualified transmitted-only native readings stay qualified in derived geometry',async()=>{
@@ -408,6 +478,33 @@ test('B research: native TIR, near critical, missing capture and ray-depth-budge
   const old=await derivePair([stale,shallow.records[1]]);
   assert.equal(old.status,'suppressed');assert.equal(old.value,null);
   assert.equal(old.evidence.length,2);
+});
+
+
+test('B research: a suppressed run retains its original native warning identity',async()=>{
+  const failed=await nativeRun('suppressed-original',-.5,{},d=>{d.simulation.maxRayDepth=0;});
+  const second=await nativeRun('complete-other',.5,{},d=>{d.simulation.maxRayDepth=0;});
+  assert.equal(failed.execution.summary.native.status,'incomplete');
+  // Artificial source-warning injection tests the evidence pipeline only;
+  // it is NEVER claimed to be a native warning actually emitted by PhyDemo.
+  const injected=structuredClone(failed);
+  injected.label='suppressed-with-synthetic-warning';
+  injected.execution.summary.native.warnings=[
+    ...(failed.execution.summary.native.warnings||[]),
+    'SYNTHETIC_RESEARCH_WARNING_PROVENANCE_CONTROL'
+  ];
+  const output=await derivePair([injected,second]);
+  assert.equal(output.status,'suppressed');
+  assert.equal(output.value,null);
+  assert.equal(output.evidence.length,2);
+  assert.deepEqual(output.evidence[0].rawNativeWarnings,
+    injected.execution.summary.native.warnings);
+  assert.ok(output.evidence.every(e=>e.readings.every(v=>v.status==='suppressed')));
+  assert.ok(output.warnings.some(w=>w.invocationLabel===injected.label&&
+    w.canonicalSha256===injected.execution.summary.canonicalSha256&&
+    w.warning==='SYNTHETIC_RESEARCH_WARNING_PROVENANCE_CONTROL'));
+  assert.ok(!output.warnings.some(w=>w.invocationLabel===second.label&&
+    w.warning==='SYNTHETIC_RESEARCH_WARNING_PROVENANCE_CONTROL'));
 });
 
 test('B research: measured near-parallel native exits are withheld; synthetic antiparallel algebra also refused',async()=>{
