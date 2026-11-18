@@ -143,7 +143,9 @@ function sceneFor(f,ref){
  return prepareScene(document).document;
 }
 async function nativeWitness(f){
- const ref=shootingReference(f),d=sceneFor(f,ref);
+ const ref=shootingReference(f);
+ assert.equal(ref.status,'available','No unqualified reference may be authored as a native test ray: '+ref.reasonCode);
+ const d=sceneFor(f,ref);
  assert.equal(d.schemaVersion,5);
  const e=evaluateDocument(d,core,requests).summary;
  const measured=(await evaluateObservables(d,requests,e));
@@ -151,6 +153,7 @@ async function nativeWitness(f){
 }
 function confirmNativeHit(f,run){
  const {ref,e,by,measured}=run;
+ assert.equal(ref.status,'available');
  assert.equal(e.native.status,'completed');
  assert.equal(e.executionPassed,true);
  assert.equal(e.native.truncation,0);
@@ -250,6 +253,48 @@ test('invalid observer ordering is refused by reference; no ray is silently reve
   fixture({source:{x:-0.009,y:0}}),
   fixture({observer:{x:0.009,y:40}})
  ])assert.throws(()=>shootingReference(f),/opposite sides/);
+});
+test('R2 P1: large world tangent offsets retain local physical root but withhold an unrepresentable native reference',()=>{
+ // Independent Chat B R1 counterexample. All coordinates are bounded,
+ // source/observer are 0.02 mm away from the interface on opposite sides.
+ // Absolute-coordinate bisection formerly stagnated near world y=9000 and
+ // then asserted a residual >1e-12; this must NOT throw invalid geometry.
+ const local=fixture({source:{x:-.02,y:0},observer:{x:.02,y:.01}});
+ const shifted=fixture({source:{x:-.02,y:9000},observer:{x:.02,y:9000.01}});
+ const baseline=shootingReference(local),unstable=shootingReference(shifted);
+ assert.equal(baseline.status,'available');
+ assert.equal(unstable.status,'numerically-unstable');
+ assert.equal(unstable.reasonCode,'WORLD_COORDINATE_ROUNDING');
+ assert.equal(unstable.Q,null);
+ assert.equal(unstable.incidentHeading,null);
+ assert.equal(unstable.apparentPoint,null);
+ assert.equal(unstable.nativeImageDetected,false);
+ assert.ok(Math.abs(unstable.diagnostics.localSnellResidual)<=1e-12);
+ assert.ok(Math.abs(unstable.diagnostics.representedWorldSnellResidual)>1e-12);
+ approx(unstable.diagnostics.localRootOffsetMm,baseline.localRootOffsetMm,1e-10);
+ console.log('JEE_OBSERVER_LOCAL_ROOT_WITHHELD '+JSON.stringify({
+  status:unstable.status,reasonCode:unstable.reasonCode,
+  localResidual:unstable.diagnostics.localSnellResidual,
+  worldResidual:unstable.diagnostics.representedWorldSnellResidual,
+  nativeRayAuthored:false
+ }));
+});
+test('R2 P1: near-critical observer grazing and near-axial nonzero offsets produce explicit numerical uncertainty',()=>{
+ // Chat B R1 N1 sample: real stationary solution is close to critical
+ // incidence, and the outgoing ray is nearly tangent to the boundary.
+ const grazing=shootingReference(fixture({observer:{x:100,y:9000}}));
+ assert.equal(grazing.status,'numerically-unstable');
+ assert.equal(grazing.reasonCode,'NEAR_GRAZING_EXIT');
+ assert.equal(grazing.Q,null);
+ assert.equal(grazing.incidentHeading,null);
+ assert.ok(Math.abs(grazing.diagnostics.localSnellResidual)<=1e-12);
+ const nearAxial=shootingReference(fixture({observer:{x:100,y:1e-11}}));
+ assert.equal(nearAxial.status,'numerically-unstable');
+ assert.equal(nearAxial.reasonCode,'NEAR_AXIAL_INFERENCE');
+ assert.equal(nearAxial.apparentDepth,null);
+ const axial=shootingReference(fixture({observer:{x:100,y:0}}));
+ assert.equal(axial.status,'available');
+ assert.equal(axial.apparentDepth,null);
 });
 test('stale scene or incomplete native run never supplies an observer detector hit',async()=>{
  const f=fixture(),ref=shootingReference(f),d=sceneFor(f,ref);
