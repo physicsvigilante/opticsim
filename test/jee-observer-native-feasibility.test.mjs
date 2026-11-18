@@ -286,6 +286,52 @@ test('R2 P1: large world tangent offsets retain local physical root but withhold
   nativeRayAuthored:false
  }));
 });
+test('R3 P1: grazing ingress at 135 degrees cannot certify a rounded native shooting heading',()=>{
+ // Exact independent Chat B R2 counterexample, all finite world coordinates
+ // within ±10000 mm and correct 0.01 mm source/observer plane clearances.
+ // The old R2 guard saw a perfectly good local/world Snell residual and
+ // outgoing normal cosine ~0.866, yet INCOMING normal cosine ~3.7e-7:
+ // rounding its authored angle can miss the observer's position tolerance.
+ const original=fixture({
+   normalDeg:135,plane:{x:0,y:0},ns:1,no:2,
+   source:{x:9758.080722152847,y:9758.066438595866},
+   observer:{x:-9616.652224137046,y:-9475.230867899736}
+ });
+ const n=interfaceNormal({normalDeg:135});
+ const dp=(p)=>p.x*n.x+p.y*n.y;
+ const t={x:-n.y,y:n.x};
+ assert.ok(-dp(original.source)>=.01&&dp(original.observer)>=.01);
+ assert.ok([original.source,original.observer].every(p=>
+    Math.abs(p.x)<=10000&&Math.abs(p.y)<=10000));
+ const mirrored=p=>subtract(times(n,2*dp(p)),p);
+ // Mirror through the plane normal without reversing its source/observer
+ // medium sides. This creates the negative signed tangent-span twin.
+ const reverse=fixture({...original,
+   source:mirrored(original.source),observer:mirrored(original.observer)});
+ const projection=p=>p.x*t.x+p.y*t.y;
+ const span=f=>projection(f.observer)-projection(f.source);
+ assert.ok(span(original)>0&&span(reverse)<0);
+ for(const [name,f] of [['forward-tangent',original],['reversed-tangent',reverse]]){
+   const ref=shootingReference(f);
+   assert.equal(ref.status,'numerically-unstable',name);
+   assert.equal(ref.reasonCode,'NEAR_GRAZING_INGRESS',name);
+   assert.equal(ref.Q,null,name);
+   assert.equal(ref.incoming,null,name);
+   assert.equal(ref.incidentHeading,null,name);
+   assert.equal(ref.apparentPoint,null,name);
+   assert.equal(ref.nativeImageDetected,false,name);
+   assert.ok(Number.isFinite(ref.diagnostics.localSnellResidual));
+   assert.ok(Number.isFinite(ref.diagnostics.representedWorldSnellResidual));
+   assert.ok(Math.abs(ref.diagnostics.localSnellResidual)<1e-12,name);
+   assert.ok(Math.abs(ref.diagnostics.representedWorldSnellResidual)<1e-12,name);
+ }
+ console.log('JEE_OBSERVER_GRAZING_INGRESS_WITHHELD '+JSON.stringify({
+   normalDeg:135,positiveTangentSpanMm:span(original),
+   negativeTangentSpanMm:span(reverse),
+   reasonCode:'NEAR_GRAZING_INGRESS',nativeRayAuthored:false,
+   nativeImageDetected:false
+ }));
+});
 test('R2 P1: near-critical observer grazing and near-axial nonzero offsets produce explicit numerical uncertainty',()=>{
  // Chat B R1 N1 sample: real stationary solution is close to critical
  // incidence, and the outgoing ray is nearly tangent to the boundary.
