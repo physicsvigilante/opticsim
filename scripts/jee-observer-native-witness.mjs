@@ -324,7 +324,9 @@ export async function runObserverNativeWitness({requestBytes,outputPath,
   distinction:'Predicted interface crossing and virtual-axis location are analytical; only the actual detector hit and incoming direction are qualified native observations.'});
  writeEvidence(out.report,JSON.stringify(result,null,2)+'\n');
  return {status:checked.status,
-  exitCode:checked.status==='verified-sampled-arrival'?0:2,
+  // A completed, qualified negative measurement is a successful observation,
+  // NOT a native infrastructure failure or a verified positive arrival.
+  exitCode:['verified-sampled-arrival','native-observed-no-crossing'].includes(checked.status)?0:2,
   report:result,reportPath:out.report};
 }
 function usage(){
