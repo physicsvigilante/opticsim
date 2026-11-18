@@ -182,9 +182,9 @@ test('reverse normal, source-side reversal, units and reordered component arrays
  ];
  for(const edit of variants){
   const p=q();edit(p);const r=await run(p);
-  assert.equal(r.report.nativeAttempted,2);
-  assert.equal(r.report.nativeCompleted,2);
-  assert.equal(r.report.nativeSelection.status,'available',JSON.stringify(p));
+  assert.equal(r.report.nativeAttempted,2,JSON.stringify({request:p,report:r.report}));
+  assert.equal(r.report.nativeCompleted,2,JSON.stringify({request:p,report:r.report}));
+  assert.equal(r.report.nativeSelection.status,'available',JSON.stringify({request:p,report:r.report}));
   assert.equal(r.report.geometry.value,null);
   assert.deepEqual(r.report.runs.map(v=>v.observableResults[2].value),[1,1]);
  }
