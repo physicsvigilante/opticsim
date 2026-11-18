@@ -11,6 +11,7 @@ import {execFileSync} from 'node:child_process';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {analyzeObserverPointQuery} from '../src/planar-observer-point-query.js';
+import {interfaceNormal} from '../src/planar-media.js';
 import {prepareScene} from '../src/authoring.js';
 import {serializeSave} from '../src/contract.js';
 import {evaluateObservables} from '../src/observables.js';
@@ -142,16 +143,25 @@ function validTransmittedEvent(first,meter,analysis,settings){
     reflection.length!==meter.reflected||
     e.branches.length!==transmission.length+reflection.length||
     (!settings.partialReflection&&reflection.length!==0))return false;
+ const normal=interfaceNormal({normalDeg:analysis.normalDeg});
+ const normalProjection=d=>d.x*normal.x+d.y*normal.y;
+ const measuredAngle=d=>Math.atan2(
+  Math.abs(d.x*normal.y-d.y*normal.x),
+  Math.abs(normalProjection(d)))*180/Math.PI;
  const outgoing=transmission[0];
  if(!finiteAngle(outgoing.angleDeg)||!finiteUnit(outgoing.direction)||
+    normalProjection(outgoing.direction)<=0||
     Math.abs(outgoing.angleDeg-e.transmittedAngleDeg)>1e-7||
+    Math.abs(measuredAngle(outgoing.direction)-outgoing.angleDeg)>1e-7||
     !Number.isFinite(outgoing.relativePower)||
     outgoing.relativePower<0)return false;
  if(reflection.length){
   const r=reflection[0];
   if(!finiteAngle(r.angleDeg)||!finiteUnit(r.direction)||
+     normalProjection(r.direction)>=0||
      !finiteAngle(e.reflectedAngleDeg)||
      Math.abs(r.angleDeg-e.reflectedAngleDeg)>1e-7||
+     Math.abs(measuredAngle(r.direction)-r.angleDeg)>1e-7||
      !Number.isFinite(r.relativePower)||r.relativePower<0)return false;
  }else if(e.reflectedAngleDeg!==null)return false;
  return true;
@@ -220,6 +230,24 @@ function evidenceResult(analysis,settings,summary,observed){
    return withheld('native-evidence-unavailable',
     'The native interface counters, transmitted branch or first-event record contradict the measured zero-crossing result.',
     'UNQUALIFIED_NATIVE_INTERFACE_EVIDENCE');
+  if(interactions.value===1){
+   const event=first.value;
+   const transmitted=event.branches.find(b=>b.kind==='transmitted');
+   // A detector-zero count is measured evidence, but this particular
+   // observer-directed *witness* can be qualified only when the native first
+   // transmission agrees with the declared analytical one-ray apparatus.
+   // Withhold contradictory native event assertions without erasing the
+   // separately visible measured counters.
+   const anglesOk=Math.abs(event.incidentAngleDeg-
+      Math.abs(analysis.value.incidentAngleDeg))<=1e-5&&
+     Math.abs(event.transmittedAngleDeg-
+      Math.abs(analysis.value.refractedAngleDeg))<=1e-5;
+   if(!anglesOk||distance(transmitted.direction,analysis.value.outgoingUnit)>
+      settings.directionTolerance)
+    return withheld('native-evidence-unavailable',
+     'The first native transmitted ray disagrees with the authored single-ray geometry, although this detector measured zero crossings.',
+     'UNQUALIFIED_NATIVE_INTERFACE_EVIDENCE');
+  }
   return {status:'native-observed-no-crossing',
    reason:'One native ray was emitted and a complete run measured zero crossings of this finite detector. This does not prove invisibility or absence of light elsewhere.',
    reasonCode:'MEASURED_ZERO_DETECTOR_CROSSINGS',
