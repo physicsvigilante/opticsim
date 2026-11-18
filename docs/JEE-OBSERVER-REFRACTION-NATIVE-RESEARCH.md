@@ -62,3 +62,19 @@ A near-critical observer case O=(100,9000) mm (same S=(-60,0), indices 1.5→1) 
 No native encounter path or observed detector point is modified to satisfy the mathematical oracle. All existing positive native cases still need actual emission, transmission, finite detector hit, complete status, matched hash and explicit Fresnel-off warning. The new unstable cases must **withhold** a native shooting direction and therefore make no claim of an independent native attempt at those geometries.
 
 This narrowly corrects the R1 blocker on a **child research branch**, not the frozen reviewed PR #145 HEAD. New exact-head CI and another independent targeted review are required; neither PR is release-approved.
+
+## R2 independent boundary finding — grazing INGRESS (child R3 correction)
+
+[Chat B's independent PR #146 R2 review](https://github.com/physicsvigilante/review_sandbox/blob/main/projects/opticsim/pr-146/reviews/review-01-chat-b.md) found that the local-bisection correction genuinely resolves the original large-world-coordinate P1, but **world Snell residual alone does not certify arrival at a particular observer point after the initial heading has been rounded for authoring**. A nearly tangent *incoming* ray may have excellent local and world residuals while its rounded native `directionDeg` produces a substantial miss at an observer-side detector.
+
+The independently calculated R2 counterexample has plane normal 135°, source index 1 and observer index 2:
+- Source `(9758.080722152847, 9758.066438595866)` mm.
+- Observer `(-9616.652224137046, -9475.230867899736)` mm.
+- Both source and observer are on explicitly opposite sides of the interface, the minimum source clearance is satisfied (`d_s≈0.0101` mm), and all coordinates are within the declared ±10000 mm bounds.
+- The computed incoming normal cosine is approximately `3.70747e−7`, **despite** a non-grazing outgoing normal cosine ≈`0.8660` and both mathematical Snell residuals below `1e−12`. A rounded authored direction can miss the observer even while the mathematical root exists.
+
+This child study adds `NEAR_GRAZING_INGRESS` **before** permitting an authored native shooting direction whenever the predicted incoming normal cosine is under `0.02`. The preexisting `NEAR_GRAZING_EXIT` rule for outgoing cosine under `0.02` remains. Both are **test-only, deliberately conservative numerical-admission thresholds**, NOT Snell critical angles, universal floating-point guarantees or claims of physical nonexistence. In an excluded configuration, the result is explicitly `numerically-unstable` with null `Q`, initial direction and apparent point, and **no native ray or native-image claim**.
+
+A direct regression uses the exact R2 counterexample and its reflection across the oriented normal (opposite signed tangent span while preserving source/observer medium sides). It requires each to withhold even though local and represented-world Snell residuals remain small. The previously verified moderate-angle native arrival remains an independent positive control, and the R1 y≈9000 rounding example remains separately withheld.
+
+**R2 verdict remains frozen at CHANGES REQUESTED for PR #146.** This correction is on a new child source commit and requires fresh exact-head builder CI and independent review; it does not retroactively clear #145 or #146, authorize a merge, or change the pinned native PhyDemo solver.
