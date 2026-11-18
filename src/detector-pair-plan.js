@@ -101,7 +101,7 @@ function inspectFacts(raw){
                 if(k==='partialReflection')primitive(pa,k,where+'.parameters','boolean');
                 else primitive(pa,k,where+'.parameters','number',{
                   min:['negativeIndex','positiveIndex'].includes(k)?1:k==='brightness'?.01:
-                    ['normalDeg','orientationDeg'].includes(k)?-180:k==='length'?1:-10000,
+                    ['normalDeg','orientationDeg'].includes(k)?-180:k==='length'?Number.MIN_VALUE:-10000,
                   max:['negativeIndex','positiveIndex'].includes(k)?4:k==='brightness'?1:
                     ['normalDeg','orientationDeg'].includes(k)?180:10000
                 });
