@@ -5,8 +5,8 @@
   "originalV18AppGitBlob": "cfbea455df3f7ea7a30002d0139730c25b235d32",
   "mainBeforeIntegration": "59b485d14ac28ca4ee97acc754a4cd207a7d33f1",
   "integrationBranch": "integration/native-thick-v14-v18-on-main",
-  "reconciledAppGitBlob": "c3ab6af22b92792ef026b41399e6f2ed7434e4c4",
+  "reconciledAppGitBlob": "9b06ae0e21225b95604d3a515096a58d8d375957",
   "classification": "New post-review UI integration fingerprint, not original blinded or independently re-reviewed v18 evidence. Preserves original manifests unchanged.",
   "pending": "Full current-main CI and independent integration review; do not merge.",
-  "integrity": "Main-based model-label/depth disclosure is a new post-review browser integration; previous v18 source SHA remains frozen and unchanged."
+  "integrity": "Post-review integrated browser exact Git blob including v18-only native outgoing-ray numerical aperture-corner qualification, without changing historical v18 app SHA or old postfreeze manifest."
 }
