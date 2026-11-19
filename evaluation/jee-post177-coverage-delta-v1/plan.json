@@ -1,0 +1,56 @@
+{
+  "format": "opticsim-jee-post177-coverage-delta-v1",
+  "engineBaseline": "6295695483241620e17de1fd8df5e45abb80876d",
+  "engineTree": "df49aa4114479ac2462bfa67682b4c9b6ef3e37b",
+  "priorTrial": {
+    "pullRequest": 165,
+    "commit": "6a72bd67e58e9a3fd94a6bf33d88d1f20295b4c2",
+    "sourceReviewPath": "evaluation/jee-post164-coverage-v1/source-review.json",
+    "sourceReviewBlob": "0a51f3bcdc708612b4846013e9c195f04c9150f0",
+    "firstRequestsBlob": "803bf05ddf337382044ec3ccd5de2da8cedca97e",
+    "firstRequestsSha256": "c710e199e62d908bab418512423a546c673225a656cc96a84caa225cda31fa49",
+    "modified": false
+  },
+  "protocol": {
+    "type": "same-assistant developmental delta replay, not independent evaluation",
+    "sourceBasis": "The previously frozen source-review record, not a fresh image interpretation. No new Problems or Solutions images are opened by this replay.",
+    "executionSelection": ["J12", "J15", "J16", "J19"],
+    "selectionReason": "These four frozen cases motivate capabilities added since the first trial. Other cases are retained below, not counted as freshly rerun.",
+    "originalQuestionSuccessRate": null,
+    "nativeIllustrationCountsAsOriginalQuestionSuccess": false,
+    "nativeImageDetectionClaim": false,
+    "educationalUsefulness": "plausible builder rationale only; no new teacher/student evaluation",
+    "axes": ["interpretation fidelity", "physical/numerical correctness", "simulation coverage", "educational usefulness", "optional textbook-answer completeness"]
+  },
+  "cases": [
+    {"id":"J01","delta":"not-replayed","retainedLimit":"No direction-pair single-mirror inverse was added in these milestones."},
+    {"id":"J02","delta":"not-replayed","retainedLimit":"Native reflection counts do not enumerate all virtual images."},
+    {"id":"J03","delta":"historical-conditional-result-not-rerun","retainedLimit":"Prior two-mirror angular result is historical evidence, not a fresh result here."},
+    {"id":"J04","delta":"historical-conditional-result-not-rerun","retainedLimit":"Prior normalized paraxial mirror-height result is historical evidence."},
+    {"id":"J05","delta":"historical-subset-not-rerun","retainedLimit":"Three normalized phase checks are not a full symbolic-motion solution."},
+    {"id":"J06","delta":"historical-conditional-result-not-rerun","retainedLimit":"Prior instantaneous Gaussian image velocity is not native motion measurement."},
+    {"id":"J07","delta":"not-replayed","retainedLimit":"Numerical water and air indices remain unstated in the frozen source record."},
+    {"id":"J08","delta":"not-replayed","retainedLimit":"A native plate/mirror illustration needs explicit exterior index and geometry."},
+    {"id":"J09","delta":"not-replayed","retainedLimit":"No continuous-gradient-index public model was added."},
+    {"id":"J10","delta":"historical-conditional-result-not-rerun","retainedLimit":"Prior critical-input angular result is not native grazing-emergence certification."},
+    {"id":"J11","delta":"not-replayed","retainedLimit":"No all-direction 3D disc-visibility claim follows from 2D sampled rays."},
+    {"id":"J12","delta":"new-public-native-illustration","retainedLimit":"v21 represents the correct flat-plus-curved section; missing radius, exterior index and illumination extent still require declared choices. Sampled TIR is not the complete no-TIR condition."},
+    {"id":"J13","delta":"not-replayed","retainedLimit":"v22 native prism tracing is not the stated reflected-prism inverse; slightly above critical must not be changed into equality."},
+    {"id":"J14","delta":"not-replayed","retainedLimit":"v22 transmitted-only Beam cannot certify the requested partial-reflection return branch or joint inverse."},
+    {"id":"J15","delta":"new-source-derived-conditional-analysis","retainedLimit":"Explicit single-interface paraxial approximation; no native focal/image detection and no invented second surface."},
+    {"id":"J16","delta":"new-conditional-illustration-original-still-incomplete","retainedLimit":"Curved conjugate is now available after an explicitly added exterior index and paraxial model. No original numerical result or physiological/3D image certification."},
+    {"id":"J17","delta":"not-replayed","retainedLimit":"Forward lenses and multiple sources do not themselves solve coincidence placement."},
+    {"id":"J18","delta":"historical-conditional-result-not-rerun","retainedLimit":"Prior reduced two-lens result and separate teaching-native illustration remain historical evidence."},
+    {"id":"J19","delta":"new-public-native-illustration","retainedLimit":"v20 preserves a nonzero lens displacement with native parallel input. f, d, widths and apertures are declared numerical teaching choices; no general symbolic or detected-image claim."},
+    {"id":"J20","delta":"not-replayed","retainedLimit":"No reduced-eye or physiological accommodation model was added."}
+  ],
+  "nativeReplays": [
+    {"caseId":"J12","path":"examples/jee-semicircular-beam-v21.json","gitBlob":"f733e5c69226ffe8d173a220b34234a7db39b0ee","schemaVersion":21,"expectedEmissions":4,"expectedCrossings":{"crossings":4},"preservedFacts":["45-degree parallel incidence onto the flat face","glass index sqrt(2)","semicircular cross-section"],"extraChoices":["radius 100 mm","outside index 1","finite beam location/width and brightness","finite detector geometry","explicit Fresnel-off policy","preview sampling"]},
+    {"caseId":"J19","path":"examples/jee-parallel-two-lens-v20.json","gitBlob":"ecbc2c78907b4d91f5512a0a13c52413d5daeb03","schemaVersion":20,"expectedEmissions":8,"expectedCrossings":{"near-count":8,"far-count":8},"preservedFacts":["two equal-focal ideal thin lenses separated by 3f","nonzero transverse second-lens centre","parallel input from the left"],"extraChoices":["f=200 mm and d=2 mm","finite beam location/width and brightness","finite lens apertures","two passive detector planes","preview sampling"]}
+  ],
+  "analyticalReplays": [
+    {"id":"J15","origin":"source-derived with declared paraxial model","extraMaterialValues":[],"query":{"format":"opticsim-spherical-interface-paraxial-query-v1","kind":"surface-power","signConvention":"positive-along-incident-light","lengthUnit":"cm","incidentIndex":1,"transmittedIndex":1.3333333333333333,"signedRadius":10}},
+    {"id":"J16-missing-exterior","origin":"incomplete source-derived input; deliberate refusal control","extraMaterialValues":[],"query":{"format":"opticsim-spherical-interface-paraxial-query-v1","kind":"real-object-conjugate","signConvention":"positive-along-incident-light","lengthUnit":"cm","incidentIndex":1.5,"signedRadius":-15,"signedObjectDistance":-10}},
+    {"id":"J16-illustration","origin":"conditional illustration, not original-source completion","extraMaterialValues":["transmitted/exterior index explicitly chosen as 1"],"addedModelAssumptions":["paraxial axial apparent-position interpretation; no physical eye or finite observation cone"],"query":{"format":"opticsim-spherical-interface-paraxial-query-v1","kind":"real-object-conjugate","signConvention":"positive-along-incident-light","lengthUnit":"cm","incidentIndex":1.5,"transmittedIndex":1,"signedRadius":-15,"signedObjectDistance":-10}}
+  ]
+}
