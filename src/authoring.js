@@ -14,6 +14,7 @@ import {CIRCLE_BLOCKER_TYPE,circleBlockerExtents} from './opaque-circle-blocker.
 import {FINITE_APERTURE_TYPE} from './finite-aperture.js';
 import {PARALLEL_BEAM_TYPE,PARALLEL_BEAM_VERSION,PARALLEL_LENS_MODEL,PARALLEL_PLANAR_MODEL,parallelBeamGeometry} from './parallel-beam.js';
 import {DECENTERED_BEAM_VERSION,DECENTERED_BEAM_MODEL} from './decentered-two-lens-beam.js';
+import {curvedEntryCapabilities} from './native-curved-entry-observation.js';
 import {isCurved,curvedPoints} from './curved-mirrors.js';
 import {validate,UPSTREAM,SAMPLING_PRESETS,COMPONENT_TYPES,componentParameterNames,
   GENERAL_SCOPE,MAX_AUTHORING_COMPONENTS,COMPONENT_BOUNDS,LENGTH_PARAMETERS,mirrorEndpoints} from './contract.js';
@@ -93,6 +94,7 @@ export function capabilities() {
       execution:'Unmodified pinned native Beam and Glass choose all actual multiple face encounters, TIR, reflections, transmissions, misses and detector counts. Real native callback ambiguity, truncation or undefined behaviour suppress qualified readings.',
       limits:'Only numerical sampled finite 2D paths; no continuous irradiance, physical image, general triangular beam prism family, symbolic inverse or solved original JEE J13/J14 claim.',
       vertexClearanceMm:PRISM_BEAM_VERTEX_CLEARANCE_MM},
+    nativeCurvedEntryObservation:curvedEntryCapabilities(),
     nativeSemicircularBeam:{schemaVersion:SEMICIRCULAR_VERSION,model:SEMICIRCULAR_MODEL,
       shape:'Native finite right semicircle: a flat vertical diameter and one exact circular arc, with explicit x/y centre, radius and two absolute refractive indices.',
       beam:'One deterministic native finite Beam, -60 to +60 degrees; each initial emitted sample must cross the flat segment at least 0.1 mm from its endpoints.',
@@ -145,7 +147,7 @@ export function capabilities() {
       counts:{...GENERAL_SCOPE[type]},
       ...(isCurved(type)?{nativeType:type==='ideal-curved-mirror'?'IdealMirror':'ArcMirror',model:type==='ideal-curved-mirror'?'ideal Gaussian mapping':'native circular local-normal reflection; analytical image is paraxial'}:{}),
       ...(type==='point-source'?{emission:{mode:['full-circle','directional'],curvedSceneModes:['full-circle','directional','single-ray'],
-        directionalFields:['directionDeg','angleDeg'],planarOnlyMode:'single-ray',circularOnlyMode:'single-ray',prismOnlyMode:'single-ray',polygonOnlyMode:'single-ray',singleRayFields:['directionDeg']}}:{})
+        directionalFields:['directionDeg','angleDeg'],planarOnlyMode:'single-ray',circularOnlyMode:'single-ray',prismOnlyMode:'single-ray',polygonOnlyMode:'single-ray',curvedEntryOnlyMode:'single-ray',singleRayFields:['directionDeg']}}:{})
     }])),
     bounds:COMPONENT_BOUNDS,
     runPolicies:Object.fromEntries(Object.entries(policies).map(([id,value])=>[id,{...value}])),
