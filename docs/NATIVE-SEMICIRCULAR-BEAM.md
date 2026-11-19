@@ -6,7 +6,7 @@ A reusable, **authorable** 2D curved-refraction composition motivated by the fro
 
 ## Strict physical contract
 
-One native deterministic finite PhyDemo `Beam`, one stationary right-facing `semicircular-dielectric`, and **zero to two** downstream passive vertical native `Detector` segments. Versioned schema/adapter/model: `21/21/native-parallel-semicircular-tracing`. v20 remains reserved for unmerged PR #167. No migration of older saves or fallback to loose general tracing.
+One native deterministic finite PhyDemo `Beam`, one stationary right-facing `semicircular-dielectric`, and **zero to two** downstream passive vertical native `Detector` segments. Versioned schema/adapter/model: `21/21/native-parallel-semicircular-tracing`. v20 is separately present in the held combined integration PR #170 (originating in unmerged PR #167), while this v21 model retains its independent whole-system profile. No migration of older saves or fallback to loose general tracing.
 
 Required medium fields (all explicit): `x`, `y` (centre of flat diameter); `radius >= 5 mm`; `insideIndex`, `outsideIndex` between 1 and 4 with inside > outside; and `partialReflection=false`. Only one unrotated right semicircle with its flat face at x and curved half extending toward x+radius. Physical vertices must be within +/-10,000 mm.
 
@@ -32,4 +32,4 @@ Authorable results: finite sampled Beam emissions, total native interface intera
 
 `test/jee-semicircular-beam-v21.test.mjs` checks actual pinned-native flat/arc Snell events, signed 45° illumination, material variation, translation, TIR, seam guards, old-model isolation, stable edits, save/reopen, low-budget/stale suppression, event overflow and refused essential inputs. `scripts/jee-semicircular-beam-acceptance.mjs` exercises a fixed public-source-to-native-qualified protocol; `scripts/jee-semicircular-beam-browser.mjs` exercises real Chrome physical edits, native retracing, qualified export/reopen and invalid-scene/stale suppression. CI stores raw executed evidence.
 
-Research PR #168 stays unmerged. **Draft PR #169 must pass all current CI and one coherent independent physics/integration review of the final exact source tree before merging.** PR #167 keeps its separate unreviewed hold; neither draft is merged automatically. New tests do not amend frozen J12 original assessments or source material.
+Research PR #168 stays unmerged. **The consolidated draft PR #170 requires one coherent independent physics/integration review of its final exact source tree before any merge decision.** Its v20 and v21 changes are being reviewed together to avoid duplicate review requests without weakening the physics gate. The original PRs #167 and #169 remain unmerged development records. New tests do not amend frozen J12 original assessments or source material.
