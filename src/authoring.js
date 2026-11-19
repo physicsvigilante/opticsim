@@ -7,6 +7,7 @@ import {NATIVE_OBSERVATION_KEYS} from './native-observations.js';
 import {PRISM_TYPE,prismVertices} from './triangular-prism.js';
 import {POLYGON_TYPE,polygonVertices} from './polygon-dielectric.js';
 import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
+import {CIRCLE_BEAM_VERSION,CIRCLE_BEAM_MODEL,CIRCLE_BEAM_INITIAL_TRANSVERSE_FRACTION,CIRCLE_BEAM_NATIVE_RADIAL_TOLERANCE_MM,CIRCLE_BEAM_CRITICAL_MARGIN} from './native-circle-beam.js';
 import {SEMICIRCULAR_TYPE,SEMICIRCULAR_VERSION,SEMICIRCULAR_MODEL,SEMICIRCULAR_PARAMETERS,semicircularExtents} from './semicircular-dielectric.js';
 import {CIRCLE_BLOCKER_TYPE,circleBlockerExtents} from './opaque-circle-blocker.js';
 import {FINITE_APERTURE_TYPE} from './finite-aperture.js';
@@ -77,6 +78,13 @@ export function capabilities() {
       geometry:'Both lenses ahead of the Beam, distinct x planes, finite endpoints and post-first-lens sample rim clearances; native chooses each interaction.',
       components:'One Beam, two vertical ideal lenses, 0–2 downstream passive vertical detectors. No stops, tilt, prisms or material lenses.',
       limitations:'Conservative high-angle guard; native misses remain misses. No image reconstruction or continuous irradiance.'},
+    nativeCircleBeam:{schemaVersion:CIRCLE_BEAM_VERSION,model:CIRCLE_BEAM_MODEL,
+      scope:'One deterministic native finite parallel Beam, one full finite native CircleGlass, and 0–2 external downstream vertical detectors. No other optics, inside emitter, nested media or Fresnel weak branches.',
+      beam:'Explicit finite x/y and perpendicular width 10–100 mm; horizontal forward/reverse 0/±180 degrees. Full source within the central 90% transverse circle strip and at least 0.01 mm before the near circular boundary.',
+      media:'Required explicit insideIndex and outsideIndex 1–4 in either order, radius >=20 mm and entire circle within +/-10000 mm; partialReflection=false is explicit Fresnel approximation but pinned native TIR remains.',
+      safety:'All actual native circular incidents with radial residual over 1e-5 mm, near-tangent cosine under 1e-4, or critical Snell residual within 1e-5 are disqualified; incomplete/stale native runs withhold all measurements. Higher-to-lower-index first entries at/above the critical condition are refused.',
+      numerical:{maxSamples:100,transverseFraction:CIRCLE_BEAM_INITIAL_TRANSVERSE_FRACTION,radialToleranceMm:CIRCLE_BEAM_NATIVE_RADIAL_TOLERANCE_MM,criticalMargin:CIRCLE_BEAM_CRITICAL_MARGIN},
+      limitations:'Two refracting circle boundaries, not one spherical surface, a 3D sphere, physical image, continuous irradiance, symbolic J15/J16 answer, or general multi-optic apparatus.'},
     nativeSemicircularBeam:{schemaVersion:SEMICIRCULAR_VERSION,model:SEMICIRCULAR_MODEL,
       shape:'Native finite right semicircle: a flat vertical diameter and one exact circular arc, with explicit x/y centre, radius and two absolute refractive indices.',
       beam:'One deterministic native finite Beam, -60 to +60 degrees; each initial emitted sample must cross the flat segment at least 0.1 mm from its endpoints.',

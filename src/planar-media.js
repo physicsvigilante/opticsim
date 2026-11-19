@@ -4,6 +4,7 @@ import {compositionCountWithin} from './composition-profiles.js';
 import {PRISM_TYPE,prismFaces,prismEncounter} from './triangular-prism.js';
 import {POLYGON_TYPE,polygonFaces,polygonEncounter} from './polygon-dielectric.js';
 import {CIRCULAR_TYPE,circularEncounter} from './circular-dielectric.js';
+import {circleBeamNativeEncounter} from './native-circle-beam.js';
 import {SEMICIRCULAR_TYPE,semicircularEncounter,semicircularFaces} from './semicircular-dielectric.js';
 export const PLANAR_TYPE='planar-interface';
 export const PLANAR_PARAMETERS=Object.freeze(['x','y','normalDeg','negativeIndex','positiveIndex','partialReflection']);
@@ -69,7 +70,9 @@ export function observeInterfaceSet(doc,scene,idMap,{parentage=null,finiteDiagno
       }
       const incoming=direction(args[0]),beforePower=power(args[0]);
       const encounter=prism?prismEncounter(component,args[2],incoming):polygon?polygonEncounter(component,args[2],incoming):
-        semicircle?semicircularEncounter(component,args[2],incoming):circular?circularEncounter(component,args[2],incoming):null;
+        semicircle?semicircularEncounter(component,args[2],incoming):circular?
+          (doc.schemaVersion===23?circleBeamNativeEncounter(component,args[2],incoming):
+            circularEncounter(component,args[2],incoming)):null;
       const n=encounter?.normal||interfaceNormal(component.parameters);
       const incomingSign=incoming?Math.sign(incoming.x*n.x+incoming.y*n.y):0;
       if((circular||faceEvents)&&(!incoming||encounter?.invalid||![n.x,n.y,encounter.point.x,encounter.point.y].every(Number.isFinite)||
