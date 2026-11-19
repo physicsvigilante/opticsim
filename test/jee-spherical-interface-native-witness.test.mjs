@@ -41,6 +41,11 @@ function archive(label,payload){
   upstreamCommit:PIN,rawNativeInputSha256:hash(inputBytes),...rest
  },null,2)+'\n');
 }
+function saveComparison(name,series,extra={}){
+ const data={researchOnly:true,nativeImageDetected:false,series,...extra};
+ writeFileSync(resolve(output,name+'.json'),JSON.stringify(data,null,2)+'\n');
+ console.log(name+' '+JSON.stringify(data));
+}
 function fixture({kind='entry',height=1,angleDeg=0,radius=100,n1=1,n2=4/3,
  sourceX=null,sourceY=null,closureX=600,stopX=60,blocker=true,
  partialReflection=false,maxRayDepth=8,reverse=false,shiftX=0,shiftY=0}={}){
@@ -112,8 +117,9 @@ function execute(f,{processedRayLimit=10000}={}){
  // This gate is deliberately narrower than native completion and is TEST ONLY.
  // Extra later crossings, Fresnel branches, missing screens or partial runs
  // cannot be described as a complete single-crossing transmission witness.
- const usable=status==='completed'&&diagnostics.errors.length===0&&
-  diagnostics.warnings.length===0&&emissions.length===1&&surface.length===1&&
+ const usable=terminal==='simulationComplete'&&status==='completed'&&
+  diagnostics.errors.length===0&&diagnostics.warnings.length===0&&
+  emissions.length===1&&surface.length===1&&
   detectors.length===2&&detectors[0].objectIndex===2&&detectors[1].objectIndex===3&&
   absorptions.length===1&&events.every(e=>e.secondaryRays===0)&&
   events.map(e=>e.objectIndex).join(',')==='1,2,3,4';
@@ -126,7 +132,7 @@ function execute(f,{processedRayLimit=10000}={}){
    axisInterceptStatus:dy===0?'not-identifiable':'conditional',
    detectorPointsMm:[a,b]};
  }
- const report={inputBytes,spec:f.spec,status,terminal,diagnostics,
+ const report={inputBytes,spec:f.spec,processedRayLimit,status,terminal,diagnostics,
   emissions,rawDiagnosticEvents:events,singleCrossingWitnessUsable:usable,derived};
  archive(f.spec.kind+'-'+status,report);
  return report;
@@ -151,6 +157,15 @@ function complete(r){
  }
  return r.derived.signedAxisInterceptMm;
 }
+function exactParallelEntryIntercept(R,n1,n2,h){
+ // Independent scalar geometry + exact Snell reference for one curved entry.
+ // Used after native propagation only; never supplied to a native callback.
+ // Rationalized sag avoids subtracting nearly equal radius coordinates.
+ const sag=h*h/(R+Math.sqrt(R*R-h*h));
+ const normalAngle=-Math.asin(h/R);
+ const outgoingAngle=normalAngle+Math.asin((n1/n2)*(h/R));
+ return sag-h/Math.tan(outgoingAngle);
+}
 function query(n1,n2,R,u=null){return {format:SPHERICAL_INTERFACE_QUERY_FORMAT,
  kind:u===null?'surface-power':'real-object-conjugate',
  signConvention:'positive-along-incident-light',lengthUnit:'mm',
@@ -165,17 +180,23 @@ test('native entry arc has exactly one material encounter, two detector hits and
  const analytical=analyzeSphericalInterface(query(1,4/3,100));
  near(analytical.value.signedImageSpaceFocalDistanceMm,400);
  const series=[];
- for(const height of [8,4,2,1,.5]){
+ for(const height of [8,4,2,1,.5,.25]){
   const r=execute(fixture({height})),intercept=complete(r);
   assert.equal(r.rawDiagnosticEvents[0].nativeType,'Glass');
-  series.push({heightMm:height,interceptMm:intercept,errorMm:Math.abs(intercept-400)});
+  const exact=exactParallelEntryIntercept(100,1,4/3,height);
+  near(intercept,exact,1e-7);
+  series.push({heightMm:height,interceptMm:intercept,exactSnellInterceptMm:exact,
+   nativeExactErrorMm:Math.abs(intercept-exact),errorMm:Math.abs(intercept-400)});
  }
  decreasing(series.map(x=>x.errorMm));
  assert.ok(series.at(-1).errorMm<.002);
  assert.ok(series[0].errorMm>.1,'Finite-height exact refraction is not the paraxial result');
+ // Retain the initially over-tight 0.5 mm-height case as an explicit physical
+ // discrepancy, not a broken native ray or a dropped regression.
+ assert.ok(series.find(x=>x.heightMm===.5).errorMm>.002);
  assert.equal(analytical.native.status,'not-run');
- console.log('SPHERICAL_NATIVE_ENTRY '+JSON.stringify({series,analyticalNative:'not-run',
-  measuredImage:false,evidenceDirectory:output}));
+ saveComparison('SPHERICAL_NATIVE_ENTRY',series,{analyticalNative:'not-run',
+  paraxialLimitMm:400,evidenceDirectory:output});
 });
 test('native inside-source circle exits once and converges to the curved virtual conjugate',()=>{
  const a=analyzeSphericalInterface(query(1.5,1,-150,-100));
@@ -190,8 +211,8 @@ test('native inside-source circle exits once and converges to the curved virtual
  decreasing(series.map(x=>x.errorMm));assert.ok(series.at(-1).errorMm<.001);
  assert.ok(Math.abs(series.at(-1).interceptMm-(-100/1.5))>10);
  assert.equal(a.native.status,'not-run');
- console.log('SPHERICAL_NATIVE_EXIT '+JSON.stringify({series,analyticalNative:'not-run',
-  exteriorIndexIsAddedAssumption:true,measuredImage:false}));
+ saveComparison('SPHERICAL_NATIVE_EXIT',series,{analyticalNative:'not-run',
+  paraxialLimitMm:target,exteriorIndexIsAddedAssumption:true});
 });
 test('native signed-height, propagation reversal, translation and remote closure controls preserve local evidence',()=>{
  const ref=complete(execute(fixture({height:2})));
@@ -200,9 +221,19 @@ test('native signed-height, propagation reversal, translation and remote closure
   const value=complete(execute(fixture({height:2,...change})));
   near(value,ref,1e-6);
  }
- const neg=execute(fixture({height:1,n1:1.5,n2:1}));
- const value=complete(neg),prediction=analyzeSphericalInterface(query(1.5,1,100));
- assert.ok(value<0);near(value,prediction.value.signedImageSpaceFocalDistanceMm,.02);
+ const prediction=analyzeSphericalInterface(query(1.5,1,100));
+ const target=prediction.value.signedImageSpaceFocalDistanceMm,series=[];
+ near(target,-200);
+ for(const height of [1,.5,.25]){
+  const value=complete(execute(fixture({height,n1:1.5,n2:1})));
+  const exact=exactParallelEntryIntercept(100,1.5,1,height);
+  assert.ok(value<0);near(value,exact,1e-7);
+  series.push({heightMm:height,interceptMm:value,exactSnellInterceptMm:exact,
+   nativeExactErrorMm:Math.abs(value-exact),errorMm:Math.abs(value-target)});
+ }
+ decreasing(series.map(x=>x.errorMm));assert.ok(series.at(-1).errorMm<.002);
+ assert.ok(series[0].errorMm>.02,'Retain finite-height deviation from Gaussian optics');
+ saveComparison('SPHERICAL_NATIVE_LOWER_INDEX',series,{paraxialLimitMm:target});
 });
 test('finite real-object native entry converges to the paraxial conjugate without authoring a focal hit',()=>{
  const a=analyzeSphericalInterface(query(1,1.5,100,-300));
@@ -283,5 +314,6 @@ test('spherical-query unit enum does not accept arrays, boxed strings or coercio
 test('native witness is additive research and keeps the pinned upstream unchanged',()=>{
  const pin=JSON.parse(readFileSync(new URL('../upstream-pin.json',import.meta.url)));
  assert.equal(pin.commit,PIN);
+ assert.throws(()=>core.compile(fixture().native),'Raw research scene is not canonical authoring');
  assert.equal(analyzeSphericalInterface(query(1,4/3,100)).native.status,'not-run');
 });
