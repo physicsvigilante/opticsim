@@ -26,6 +26,8 @@ jobs:
         run: node scripts/opaque-circle-blocker-acceptance.mjs
       - name: Native finite aperture and immutable opening-width sweep
         run: node scripts/finite-aperture-acceptance.mjs
+      - name: Native v18 two thick lenses mirror and finite aperture public problem acceptance
+        run: node scripts/native-thick-lens-aperture-acceptance.mjs
       - name: JEE-first v19 parallel beam native public problem workflow
         run: node scripts/jee-parallel-beam-acceptance.mjs
       - name: JEE-first v19 native parallel Beam real-Chrome edits and qualified reopen
@@ -74,6 +76,8 @@ jobs:
             test-artifacts/llm-authoring/opaque-line-blocker/
             test-artifacts/browser-opaque-line-blocker/
             test-artifacts/llm-authoring/finite-aperture/
+            test-artifacts/llm-authoring/native-thick-lens-aperture-v18/
+            test-artifacts/research-v18-secondary-corner/
             test-artifacts/llm-authoring/jee-parallel-beam-v19/
             test-artifacts/browser-jee-parallel-beam-v19/
             test-artifacts/llm-authoring/jee-parallel-two-lens-v20/
