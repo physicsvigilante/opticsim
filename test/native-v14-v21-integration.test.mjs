@@ -28,7 +28,7 @@ const prepare=path=>prepareScene(load(path).physical).document;
 
 test('separate v14–v21 apparatuses choose only their declared schema and original native object set',()=>{
  const catalogue=capabilities().composition;
- assert.equal(catalogue.profiles.length,27);
+ assert.equal(catalogue.profiles.length,30,'Preserved 25 old profiles plus five restored native families');
  for(const [version,path,model,types] of examples){
   const f=load(path),before=JSON.stringify(f),d=prepareScene(f.physical).document;
   assert.equal(JSON.stringify(f),before,path+' authoring changed input');
