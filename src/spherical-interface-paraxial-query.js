@@ -96,7 +96,8 @@ export function analyzeSphericalInterface(query){
   reject('UNSUPPORTED_QUERY','Use surface-power or real-object-conjugate explicitly');
  if(query.signConvention!=='positive-along-incident-light')
   reject('UNSUPPORTED_SCOPE','The explicit positive-along-incident-light convention is required');
- if(!own(SCALES,query.lengthUnit))reject('UNSUPPORTED_UNIT','Specify mm, cm, or m');
+ if(typeof query.lengthUnit!=='string'||!own(SCALES,query.lengthUnit))
+  reject('UNSUPPORTED_UNIT','Specify mm, cm, or m as a JSON string');
  const scale=SCALES[query.lengthUnit];
  const n1=materialIndex(query.incidentIndex,'incidentIndex');
  const n2=materialIndex(query.transmittedIndex,'transmittedIndex');
