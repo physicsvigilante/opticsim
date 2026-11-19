@@ -2,6 +2,7 @@ import {compilePrism,PRISM_TYPE} from './triangular-prism.js';
 import {PARALLEL_BEAM_TYPE,compileParallelBeam} from './parallel-beam.js';
 import {compilePolygon,POLYGON_TYPE} from './polygon-dielectric.js';
 import {compileCircular} from './circular-dielectric.js';
+import {SEMICIRCULAR_TYPE,compileSemicircular} from './semicircular-dielectric.js';
 import {CIRCLE_BLOCKER_TYPE,compileCircleBlocker} from './opaque-circle-blocker.js';
 import {FINITE_APERTURE_TYPE,compileFiniteAperture} from './finite-aperture.js';
 import {compileCurved,isCurved} from './curved-mirrors.js';
@@ -15,7 +16,7 @@ import {compileInterface,observeInterfaceSet} from './planar-media.js';
 export {observeInterfaceSet};
 const compilers = {
   [PARALLEL_BEAM_TYPE]:compileParallelBeam,
-  'circular-dielectric':compileCircular,[PRISM_TYPE]:compilePrism,[POLYGON_TYPE]:compilePolygon,
+  'circular-dielectric':compileCircular,[SEMICIRCULAR_TYPE]:compileSemicircular,[PRISM_TYPE]:compilePrism,[POLYGON_TYPE]:compilePolygon,
   [CIRCLE_BLOCKER_TYPE]:compileCircleBlocker,
   [FINITE_APERTURE_TYPE]:c=>compileFiniteAperture(c,mirrorEndpoints),
   'ideal-curved-mirror':compileCurved,'circular-arc-mirror':compileCurved,
@@ -29,8 +30,10 @@ const compilers = {
       p2: { x: x + 20 * Math.cos(theta), y: -y - 20 * Math.sin(theta) },
       brightness, emisAngle: c.emission.angleDeg, symmetric: true };
   },
-  'ideal-lens': c => ({ type: 'IdealLens', p1: { x: c.parameters.x, y: -c.parameters.apertureHeight / 2 },
-    p2: { x: c.parameters.x, y: c.parameters.apertureHeight / 2 }, focalLength: c.parameters.focalLength }),
+  'ideal-lens': c => ({ type: 'IdealLens',
+    p1: { x: c.parameters.x, y: -(c.parameters.y ?? 0) - c.parameters.apertureHeight / 2 },
+    p2: { x: c.parameters.x, y: -(c.parameters.y ?? 0) + c.parameters.apertureHeight / 2 },
+    focalLength: c.parameters.focalLength }),
   'line-blocker': c => {
     const [a,b]=mirrorEndpoints(c.parameters);
     return {type:'Blocker',p1:{x:a.x,y:-a.y},p2:{x:b.x,y:-b.y},filter:false};

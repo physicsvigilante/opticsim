@@ -7,9 +7,11 @@ import {NATIVE_OBSERVATION_KEYS} from './native-observations.js';
 import {PRISM_TYPE,prismVertices} from './triangular-prism.js';
 import {POLYGON_TYPE,polygonVertices} from './polygon-dielectric.js';
 import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
+import {SEMICIRCULAR_TYPE,SEMICIRCULAR_VERSION,SEMICIRCULAR_MODEL,SEMICIRCULAR_PARAMETERS,semicircularExtents} from './semicircular-dielectric.js';
 import {CIRCLE_BLOCKER_TYPE,circleBlockerExtents} from './opaque-circle-blocker.js';
 import {FINITE_APERTURE_TYPE} from './finite-aperture.js';
 import {PARALLEL_BEAM_TYPE,PARALLEL_BEAM_VERSION,PARALLEL_LENS_MODEL,PARALLEL_PLANAR_MODEL,parallelBeamGeometry} from './parallel-beam.js';
+import {DECENTERED_BEAM_VERSION,DECENTERED_BEAM_MODEL} from './decentered-two-lens-beam.js';
 import {isCurved,curvedPoints} from './curved-mirrors.js';
 import {validate,UPSTREAM,SAMPLING_PRESETS,COMPONENT_TYPES,componentParameterNames,
   GENERAL_SCOPE,MAX_AUTHORING_COMPONENTS,COMPONENT_BOUNDS,LENGTH_PARAMETERS,mirrorEndpoints} from './contract.js';
@@ -20,7 +22,7 @@ const policies=Object.freeze({
   'dense-v1':Object.freeze({rayDensity:SAMPLING_PRESETS.dense,maxRayDepth:8,processedRayLimit:10000})
 });
 const prefixes=Object.freeze({
-  'point-source':'source',[PARALLEL_BEAM_TYPE]:'beam','ideal-lens':'lens','plane-mirror':'mirror','line-blocker':'blocker',[CIRCLE_BLOCKER_TYPE]:'circle-blocker',[FINITE_APERTURE_TYPE]:'aperture','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism',[POLYGON_TYPE]:'glass'
+  'point-source':'source',[PARALLEL_BEAM_TYPE]:'beam',[SEMICIRCULAR_TYPE]:'semicircle','ideal-lens':'lens','plane-mirror':'mirror','line-blocker':'blocker',[CIRCLE_BLOCKER_TYPE]:'circle-blocker',[FINITE_APERTURE_TYPE]:'aperture','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism',[POLYGON_TYPE]:'glass'
 });
 const lengthKeys=new Set(LENGTH_PARAMETERS);
 const own=(value,key)=>Object.prototype.hasOwnProperty.call(value,key);
@@ -69,6 +71,19 @@ export function capabilities() {
       geometry:'Entire emission segment lies within coordinate bounds, outside every surface/medium boundary and detector supporting line. First emitted samples near finite stop/lens endpoints are refused. Beam starting medium must be uniform.',
       execution:'Native pinned Beam emits all deterministic samples; density is numerical not a continuous source property. Brightness exceeding ray density is refused to prevent native saturation.',
       limitations:'No image reconstruction, PSF, diffraction, radiometric power, arbitrary composite optics or source-to-detector ancestry.'},
+    nativeTwoLensBeam:{schemaVersion:DECENTERED_BEAM_VERSION,model:DECENTERED_BEAM_MODEL,
+      lenses:{count:2,parameters:['x','y','focalLength','apertureHeight'],orientation:'vertical with explicit transverse centres'},
+      source:'One native finite deterministic horizontal parallel Beam; direction exactly 0, +180 or -180 degrees.',
+      geometry:'Both lenses ahead of the Beam, distinct x planes, finite endpoints and post-first-lens sample rim clearances; native chooses each interaction.',
+      components:'One Beam, two vertical ideal lenses, 0–2 downstream passive vertical detectors. No stops, tilt, prisms or material lenses.',
+      limitations:'Conservative high-angle guard; native misses remain misses. No image reconstruction or continuous irradiance.'},
+    nativeSemicircularBeam:{schemaVersion:SEMICIRCULAR_VERSION,model:SEMICIRCULAR_MODEL,
+      shape:'Native finite right semicircle: a flat vertical diameter and one exact circular arc, with explicit x/y centre, radius and two absolute refractive indices.',
+      beam:'One deterministic native finite Beam, -60 to +60 degrees; each initial emitted sample must cross the flat segment at least 0.1 mm from its endpoints.',
+      scope:'Exactly one Beam, one Glass semicircle, and 0-2 downstream vertical passive detectors. No other sources, optics, nested regions or Fresnel branching.',
+      approximation:'partialReflection=false required explicitly; native total internal reflection remains enabled.',
+      safety:'Any real native callback at or within 0.1 mm of a flat/arc seam, or indeterminate/tangential encounter, invalidates all qualified measurements even when the native callback says completed.',
+      limits:'This is a 2D sectional simulation, not an original J12 answer, a general half-cylinder theory, diffraction, continuous irradiance or image detection.'},
     finiteApertures:{model:'general-component-tracing',nativeType:'Aperture',max:2,combinedStopMax:2,geometry:'Explicit centre x,y, tangent orientationDeg, full length and central openingLength; both opaque arms at least 1 mm; 0.01 mm clearance from other finite surfaces',scope:'Native planar segment with transparent gap; native absorber counts only, not continuous transmission, irradiance, diffraction or detected image.'},
     finiteBlockerComposition:finiteBlockerCompositionPolicy(),
     finiteShapeComposition:finiteShapeCompositionPolicy(),
@@ -80,6 +95,9 @@ export function capabilities() {
     polygonDielectrics:{schemaVersion:9,model:'polygon-dielectric-tracing',scope:'One strictly convex four-vertex dielectric, 1–4 exact rays and 0–2 external detectors; no other optics or nested media',geometry:'Four explicit vertices; edges and altitudes >=1 mm; all four faces are finite'},
     triangularPrisms:{schemaVersion:8,model:'triangular-prism-tracing',scope:'One stationary triangle; 1–4 explicit single rays; 0–2 external detectors; no other optics',geometry:'Three explicit vertices in either winding; edges and altitudes >=1 mm; initial corner rays excluded; no face route supplied'},
     interfaceVersion:1,canonicalFormat:'ray-optics-2d',schemaVersion:4,maxComponents:MAX_AUTHORING_COMPONENTS,
+    semicircularDielectric:{schemaVersion:SEMICIRCULAR_VERSION,model:SEMICIRCULAR_MODEL,
+      parameters:[...SEMICIRCULAR_PARAMETERS],nativeType:'Glass',faces:['face-flat','face-arc'],
+      geometry:'Right semicircle bounded by a flat vertical diameter and one true native circular arc, not a polygon or complete CircleGlass.'},
     circularDielectric:{schemaVersion:7,model:'circular-dielectric-tracing',scope:'Exactly one stationary circular region; 1–4 explicit single rays inside or outside; 0–2 external detectors; no other optics or nested regions',indices:'Required inside/outside absolute indices [1,4]; native ratio inside/outside',radius:'Positive radius >=2 mm; complete circle within coordinate bounds',partialReflection:'Required boolean; false explicitly omits Fresnel partial reflections, not TIR',clearance:'0.01 mm source/boundary and detector/circle separation; initial forward near-tangent rays within 0.01 mm are unsupported'},
     curvedMirrors:{schemaVersion:6,model:'curved-mirror-tracing',scope:'1–2 ideal/circular-arc mirrors; 1–4 sources; 0–2 plane mirrors and detectors; disjoint aperture disks; no lenses or refraction',normal:'Front-facing normal; f>0 or radius>0 means concave toward front; all dimensions explicit'},
     planarMedia:{schemaVersion:5,model:'planar-media-tracing',interfaces:'1–4 parallel consistently oriented planes; matching adjacent indices',sources:'1–4 single-ray emitters',lenses:'unsupported',indices:'absolute positive indices [1,4], normalized as native ratios',partialReflection:'required boolean; false explicitly neglects Fresnel partial reflection, not TIR'},
@@ -100,6 +118,7 @@ export function capabilities() {
     componentTypes:Object.fromEntries(COMPONENT_TYPES.map(type=>[type,{
       parameters:componentParameterNames(type),
       ...(type==='planar-interface'?{booleanParameters:['partialReflection'],nativeType:'PlaneGlass',normal:'negative to positive side; degrees CCW in y-up'}:{}),
+      ...(type===SEMICIRCULAR_TYPE?{booleanParameters:['partialReflection'],nativeType:'Glass',faceIds:['face-flat','face-arc'],geometry:'Native Glass with right-half circular boundary and vertical flat closing segment.'}:{}),
       ...(type===CIRCULAR_TYPE?{booleanParameters:['partialReflection'],nativeType:'CircleGlass',indices:['insideIndex','outsideIndex'],geometry:'Finite 2D circle, not an ideal thin lens or a truncated sphere'}:{}),
       ...(type===PRISM_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-31'],geometry:'Three physical vertices; vertex order defines face labels, not a ray route'}:{}),
       ...(type===POLYGON_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-34','face-41'],geometry:'One strictly convex four-vertex finite region, never a ray route'}:{}),
@@ -115,8 +134,9 @@ export function capabilities() {
     bounds:COMPONENT_BOUNDS,
     runPolicies:Object.fromEntries(Object.entries(policies).map(([id,value])=>[id,{...value}])),
     requiredInput:['lengthUnit','components'],optionalInput:['title','runPolicy'],
+    lensParameterVariants:{legacy:{versions:'1–19',parameters:['x','focalLength','apertureHeight'],centreY:0},decentered:{version:DECENTERED_BEAM_VERSION,parameters:['x','y','focalLength','apertureHeight'],centreY:'required explicit mm'}},
     physicalPolicy:'All physical parameter values are required. Full-circle inactive angles are explicitly filled, not measured. No optical component or missing physical information is invented.',
-    opticalGeometry:'Thin ideal lenses are vertical and centred at y=0. Mirror, detector and aperture orientationDeg is the tangent in y-up coordinates. Native opaque arms and other finite surfaces must not intersect or overlap.',
+    opticalGeometry:'Historical thin lenses are vertical and centred at y=0; v20 two-lens Beam lenses have explicit independent y; v21 semicircular Glass has a flat diameter and true curved arc. Mirror, detector and aperture orientationDeg is the tangent in y-up coordinates. Native opaque arms and other finite surfaces must not intersect or overlap.',
     observations:[...NATIVE_OBSERVATION_KEYS],
     limitations:['native finite-ray sampling','signed relative detector power is not watts',
       'no image prediction for unconstrained general tracing','no source-specific detector provenance']
@@ -161,10 +181,12 @@ export function inspectAuthoringRequest(request){
       ['length','openingLength','apertureHeight'].includes(key)?b.positiveLengthMm:key==='width'?[10,100]:b.coordinateMm;
     if(!Number.isFinite(n)||n<bounds[0]||n>bounds[1]||
       (key==='focalLength'&&Math.abs(n)<b.minimumAbsFocalLengthMm)||
-      (key==='radius'&&(type===CIRCULAR_TYPE?n<2:type===CIRCLE_BLOCKER_TYPE?n<1:Math.abs(n)<2)))
+      (key==='radius'&&(type===CIRCULAR_TYPE?n<2:type===SEMICIRCULAR_TYPE?n<5:type===CIRCLE_BLOCKER_TYPE?n<1:Math.abs(n)<2)))
       issues.push(issue(path,'INVALID_INPUT','Value is outside the live contract bounds'+
         (lengthKeys.has(key)?' after conversion to mm':'')));
   };
+  const selected=request.components.every(c=>isObject(c)&&typeof c.type==='string')
+    ?selectAuthoringComposition(request.components):null;
   const ids=new Set();
   for(const [i,c] of request.components.entries()){
     const path='$.components['+i+']';
@@ -179,7 +201,7 @@ export function inspectAuthoringRequest(request){
     if(!COMPONENT_TYPES.includes(c.type)){
       issues.push(issue(path+'.type','UNSUPPORTED_COMPONENT','Not a supported PhyDemo-backed component'));continue;
     }
-    const required=componentParameterNames(c.type);
+    const required=componentParameterNames(c.type,selected?.schemaVersion);
     if(own(c,'parameters')&&object(c.parameters,path+'.parameters',required,required))
       for(const key of required)if(own(c.parameters,key))number(key,c.parameters[key],path+'.parameters.'+key,c.type);
     if(c.type!=='point-source'){
@@ -208,12 +230,13 @@ function camera(components) {
     if(c.type===PARALLEL_BEAM_TYPE){const g=parallelBeamGeometry(p);vertices.push(g.p1,g.p2);}
     else if(c.type==='point-source')vertices.push({x:p.x,y:p.y});
     else if(c.type===CIRCULAR_TYPE)vertices.push(...circularExtents(p));
+    else if(c.type===SEMICIRCULAR_TYPE)vertices.push(...semicircularExtents(p));
     else if(c.type===CIRCLE_BLOCKER_TYPE)vertices.push(...circleBlockerExtents(p));
     else if(c.type===PRISM_TYPE)vertices.push(...prismVertices(p));
     else if(c.type===POLYGON_TYPE)vertices.push(...polygonVertices(p));
     else if(isCurved(c.type))vertices.push(...curvedPoints(c));
-    else if(c.type==='ideal-lens')vertices.push({x:p.x,y:-p.apertureHeight/2},
-      {x:p.x,y:p.apertureHeight/2});
+    else if(c.type==='ideal-lens')vertices.push({x:p.x,y:(p.y??0)-p.apertureHeight/2},
+      {x:p.x,y:(p.y??0)+p.apertureHeight/2});
     else if(c.type==='planar-interface')vertices.push({x:p.x,y:p.y});
     else vertices.push(...mirrorEndpoints(p));
   }
@@ -229,10 +252,11 @@ export function prepareScene(request) {
   const scale=units(request.lengthUnit,'$.lengthUnit');
   const policyName=own(request,'runPolicy')?request.runPolicy:'preview-v1';
   const title=own(request,'title')?request.title:'LLM-authored optical scene';
+  const selectedComposition=selectAuthoringComposition(request.components);
   const knownIds=new Set(request.components.filter(c=>own(c,'id')).map(c=>c.id)),assignedIds=[];
   const components=request.components.map((component,i)=>{
     const path='$.components['+i+']';
-    const required=componentParameterNames(component.type);
+    const required=componentParameterNames(component.type,selectedComposition.schemaVersion);
     let id=component.id;
     if(!id) {
       let index=1,prefix=prefixes[component.type];
@@ -249,7 +273,7 @@ export function prepareScene(request) {
     }
     return result;
   });
-  const {schemaVersion,adapterVersion,model}=selectAuthoringComposition(components);
+  const {schemaVersion,adapterVersion,model}=selectedComposition;
   const doc={
     format:'ray-optics-2d',schemaVersion,adapterVersion,upstreamCommit:UPSTREAM,
     physics:{lengthUnit:'mm',coordinates:'x-right-y-up',model,components},
@@ -382,7 +406,7 @@ export function reviseComponents(document,patch){
     touched.add(author.id);
     if(!COMPONENT_TYPES.includes(author.type))
       fail([issue(cp+'.type','UNSUPPORTED_COMPONENT','Not a registered physical component type')]);
-    const required=componentParameterNames(author.type);
+    const required=componentParameterNames(author.type,document.schemaVersion);
     checkObject(author.parameters,cp+'.parameters',required,required);
     const parameters=Object.fromEntries(required.map(key=>[key,canonicalValue(
       key,author.parameters[key],scale,cp+'.parameters.'+key)]));

@@ -3,7 +3,7 @@
 // A profile is an admission contract, NOT a prescribed optical encounter order.
 const source='point-source',beam='parallel-beam',mirror='plane-mirror',detector='ray-detector';
 const lens='ideal-lens',prism='triangular-prism',polygon='polygon-dielectric';
-const circle='circular-dielectric',plane='planar-interface';
+const circle='circular-dielectric',semicircle='semicircular-dielectric',plane='planar-interface';
 const curves=['ideal-curved-mirror','circular-arc-mirror'];
 const stops=['line-blocker','circle-blocker','finite-aperture'];
 const finite='finite-dielectric-composition';
@@ -80,6 +80,14 @@ define(19,'native-parallel-lens-tracing',{
 define(19,'native-parallel-planar-tracing',{
   [beam]:range(1,1),[plane]:range(1,2),[detector]:range(0,2)
 },[],[rule('native-parallel-beam')],[]);
+// Independently validated v20 offset lenses and v21 semicircle, without
+// changing the meaning of v19 or any historical saved composition.
+define(20,'native-parallel-two-lens-tracing',{
+  [beam]:range(1,1),[lens]:range(2,2),[detector]:range(0,2)
+},[],[rule('native-decentered-two-lens')],[]);
+define(21,'native-parallel-semicircular-tracing',{
+  [beam]:range(1,1),[semicircle]:range(1,1),[detector]:range(0,2)
+},[],[rule('native-semicircular-beam')],[]);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 
@@ -87,7 +95,9 @@ const byKey=new Map(definitions.map(p=>[p.id,p]));
 // mixtures. It identifies a candidate contract, never certifies it or retries
 // a more permissive profile after geometry/material validation fails.
 const selection=freeze([
+  {model:'native-parallel-semicircular-tracing',version:21,when:[group([semicircle],1,32)]},
   {model:'native-parallel-planar-tracing',version:19,when:[group([beam],1,32),group([plane],1,32)]},
+  {model:'native-parallel-two-lens-tracing',version:20,when:[group([beam],1,32),group([lens],2,32)]},
   {model:'native-parallel-lens-tracing',version:19,when:[group([beam],1,32)]},
   {model:finite,version:13,when:[group([polygon,prism],1,32),group(['line-blocker'],1,32)]},
   {model:finite,version:12,when:[group([prism],1,32),group([mirror],1,32)]},

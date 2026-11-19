@@ -30,6 +30,14 @@ jobs:
         run: node scripts/jee-parallel-beam-acceptance.mjs
       - name: JEE-first v19 native parallel Beam real-Chrome edits and qualified reopen
         run: node scripts/jee-parallel-beam-browser.mjs
+      - name: v20 JEE native two-offset-lens public qualified authoring
+        run: node scripts/jee-parallel-two-lens-acceptance.mjs
+      - name: v20 JEE native two-offset-lens real Chrome physical edit and qualified reopen
+        run: node scripts/jee-parallel-two-lens-browser.mjs
+      - name: v21 JEE native semicircular Glass public qualified authoring
+        run: node scripts/jee-semicircular-beam-acceptance.mjs
+      - name: v21 JEE semicircular Glass real Chrome physical edit and qualified reopen
+        run: node scripts/jee-semicircular-beam-browser.mjs
       - name: Opaque blocker browser edits, detector readings and qualified exports
         run: node scripts/opaque-line-blocker-browser.mjs
       - name: LLM authoring CLI with real native execution and revision guards
@@ -68,6 +76,10 @@ jobs:
             test-artifacts/llm-authoring/finite-aperture/
             test-artifacts/llm-authoring/jee-parallel-beam-v19/
             test-artifacts/browser-jee-parallel-beam-v19/
+            test-artifacts/llm-authoring/jee-parallel-two-lens-v20/
+            test-artifacts/browser-jee-parallel-two-lens-v20/
+            test-artifacts/llm-authoring/jee-semicircular-beam-v21/
+            test-artifacts/browser-jee-semicircular-beam-v21/
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
