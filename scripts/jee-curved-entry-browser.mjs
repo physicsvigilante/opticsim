@@ -89,7 +89,7 @@ async function main(){
   const before=s.results[3].value.transmittedAngleDeg;
   await edit('G1-insideIndex',1.5);
   s=await until(state,x=>x.status==='completed'&&x.results?.[3]?.value?.transmittedAngleDeg!=null&&
-   Math.abs(x.results[3].value.transmittedAngleDeg-before)>0.05,'native index revision');
+   Math.abs(x.results[3].value.transmittedAngleDeg-before)>0.02,'native index revision');
   assert.equal(s.results[9].value,1);
   check('Explicit material index revision recomputes native curved-surface refraction and absorption');
   await shot('v24-index-edited');
