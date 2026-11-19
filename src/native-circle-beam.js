@@ -22,7 +22,17 @@ const dot=(a,b)=>a.x*b.x+a.y*b.y;
 // rays. Unlike v7, v23 explicitly refuses bad-circle-position callbacks,
 // numerically grazing interfaces and exit-side critical ambiguity.
 export function circleBeamNativeEncounter(component,nativePoint,incoming){
- const e=circularEncounter(component,nativePoint,incoming);
+ // Instrumentation cannot prevent the pinned native method from receiving
+ // the SAME arguments exactly once, even under deliberately corrupted
+ // observer inputs. Return invalid coordinates that existing diagnostics
+ // suppress; do not create a surrogate hit or outgoing ray.
+ const unavailable=()=>({normal:{x:NaN,y:NaN},point:{x:NaN,y:NaN},
+   from:null,incidentIndex:null,destinationIndex:null,invalid:true,
+   radialResidualMm:NaN,nearCritical:false});
+ if(!nativePoint||!finite(nativePoint.x)||!finite(nativePoint.y))return unavailable();
+ let e;
+ try{e=circularEncounter(component,nativePoint,incoming);}
+ catch{return unavailable();}
  const p=component.parameters,point=e.point,n=e.normal;
  const radial=Math.hypot(point.x-p.x,point.y-p.y);
  const incomingValid=incoming&&finite(incoming.x)&&finite(incoming.y);
