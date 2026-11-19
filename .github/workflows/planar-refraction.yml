@@ -42,6 +42,16 @@ jobs:
         run: node scripts/polygon-dielectric-acceptance.mjs
       - name: Polygon viewer physical edits, real TIR and qualified exports
         run: node scripts/polygon-dielectric-browser.mjs
+      - name: Two separate native finite glass regions, real Chrome edits and qualified reopen
+        run: node scripts/two-separated-glass-browser.mjs
+      - name: Native spherical thick lens train, real Chrome edits and qualified reopen
+        run: node scripts/native-thick-lenses-browser.mjs
+      - name: Native spherical thick lens with finite mirror, real Chrome native return
+        run: node scripts/native-thick-lens-mirror-browser.mjs
+      - name: Two thick native lenses with mirror and versioned depth in real Chrome
+        run: node scripts/native-two-thick-lens-mirror-browser.mjs
+      - name: v18 two thick lenses mirror and native finite aperture, qualified Chrome
+        run: node scripts/native-thick-lens-aperture-browser.mjs
       - name: Native finite glass and external mirror composition, rejection and sweep
         run: node scripts/finite-composition-acceptance.mjs
       - name: Composition browser edits, misses, incomplete results and qualified exports
@@ -74,6 +84,11 @@ jobs:
             test-artifacts/browser-triangular-prism/
             test-artifacts/llm-authoring/polygon-dielectric/
             test-artifacts/browser-polygon-dielectric/
+            test-artifacts/browser-two-separated-glass/
+            test-artifacts/browser-native-thick-lenses/
+            test-artifacts/browser-native-thick-lens-mirror/
+            test-artifacts/browser-native-two-thick-lens-mirror/
+            test-artifacts/browser-native-thick-lens-aperture-v18/
             test-artifacts/llm-authoring/finite-composition/
             test-artifacts/browser-finite-composition/
             test-artifacts/llm-authoring/two-mirror-composition/
