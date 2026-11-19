@@ -66,7 +66,7 @@ function nativeCase(c){
    orientationDeg:90,length:seed.detector.length}};
  const physical={lengthUnit:'mm',title:'Research only: finite native prism Beam',
   runPolicy:'preview-v1',components:[
-  {id:'S1',type:'point-source',parameters:{x:seed.beam.x+shift.x,y:seed.beam.y+shift.y,
+  {id:'S1',type:'point-source',parameters:{x:seed.beam.x+shift.x,y:seed.beam.y+20+shift.y,
     brightness:pin.brightness},
    emission:{mode:'single-ray',directionDeg:seed.beam.directionDeg}},
   glass,detector]};
