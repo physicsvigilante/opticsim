@@ -96,6 +96,12 @@ define(22,'native-parallel-prism-tracing',{
 define(23,'native-parallel-circle-tracing',{
   [beam]:range(1,1),[circle]:range(1,1),[detector]:range(0,2)
 },[],[rule('native-circle-beam')],[]);
+// v24 adds a NEW versioned right-half-Glass internal-observation family;
+// it does not widen v21 beam semantics or admit an open surface.
+define(24,'native-curved-entry-observation-tracing',{
+  [source]:range(1,1),[semicircle]:range(1,1),
+  'line-blocker':range(1,1),[detector]:range(2,2)
+},[],[rule('native-curved-entry')],single);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 
@@ -103,6 +109,7 @@ const byKey=new Map(definitions.map(p=>[p.id,p]));
 // mixtures. It identifies a candidate contract, never certifies it or retries
 // a more permissive profile after geometry/material validation fails.
 const selection=freeze([
+  {model:'native-curved-entry-observation-tracing',version:24,when:[group([semicircle],1,32),group(['line-blocker'],1,32)]},
   {model:'native-parallel-semicircular-tracing',version:21,when:[group([semicircle],1,32)]},
   {model:'native-parallel-prism-tracing',version:22,when:[group([beam],1,32),group([prism],1,32)]},
   {model:'native-parallel-circle-tracing',version:23,when:[group([beam],1,32),group([circle],1,32)]},
