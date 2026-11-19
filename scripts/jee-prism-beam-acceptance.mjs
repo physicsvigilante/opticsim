@@ -20,7 +20,7 @@ const record={format:'opticsim-jee-prism-beam-v22-public-acceptance-v1',
  cases:[],sourceProblemsRead:0,sourceSolutionsRead:0,externalModelCalls:0,
  independentPhysicsCertification:false,originalTextbookProblemSolved:false,status:'running'};
 async function run(name,edit=()=>{}){
- const input=structuredClone(seed);input.physical.title+=' · '+name;edit(input);
+ const input=structuredClone(seed);input.physical.title='JEE prism Beam v22 · '+name;edit(input);
  const bytes=Buffer.from(JSON.stringify(input,null,2)+'\n');
  let actualNativeCalls=0;
  const data=await runProblemEvidence({inputBytes:bytes,
