@@ -19,6 +19,7 @@ import {PRISM_BEAM_VERSION,validateNativePrismBeam} from './native-prism-beam.js
 import {CIRCLE_BEAM_VERSION,validateCircleBeam} from './native-circle-beam.js';
 import {DECENTERED_BEAM_VERSION,validateDecenteredTwoLensBeam} from './decentered-two-lens-beam.js';
 import {CURVED_ENTRY_VERSION,validateCurvedEntryObservation} from './native-curved-entry-observation.js';
+import {GRIN_V25_TYPE,GRIN_V25_VERSION,GRIN_V25_PARAMETERS,GRIN_V25_POLICY,validateGrinV25} from './native-grin-v25.js';
 export const UPSTREAM = '811f508d2b070898c241a568b0c167dcb8645251';
 export const SAMPLING_PRESETS = Object.freeze({ sparse: 0.048, medium: 0.2, dense: 1 });
 export function samplingPreset(density) { return Object.keys(SAMPLING_PRESETS).find(key => SAMPLING_PRESETS[key] === density) || 'custom'; }
@@ -42,11 +43,11 @@ const parameters = { [PARALLEL_BEAM_TYPE]:[...PARALLEL_BEAM_PARAMETERS], 'point-
   [CIRCLE_BLOCKER_TYPE]: ['x', 'y', 'radius'],
   [FINITE_APERTURE_TYPE]: ['x', 'y', 'orientationDeg', 'length', 'openingLength'],
   'ray-detector': ['x', 'y', 'orientationDeg', 'length'],
-  [PLANAR_TYPE]: [...PLANAR_PARAMETERS], [CIRCULAR_TYPE]: [...CIRCULAR_PARAMETERS], [SEMICIRCULAR_TYPE]: [...SEMICIRCULAR_PARAMETERS], [PRISM_TYPE]: [...PRISM_PARAMETERS], [POLYGON_TYPE]: [...POLYGON_PARAMETERS], [SPHERICAL_LENS_TYPE]: [...SPHERICAL_PARAMETERS], ...CURVED_PARAMETERS };
+  [PLANAR_TYPE]: [...PLANAR_PARAMETERS], [CIRCULAR_TYPE]: [...CIRCULAR_PARAMETERS], [SEMICIRCULAR_TYPE]: [...SEMICIRCULAR_PARAMETERS], [PRISM_TYPE]: [...PRISM_PARAMETERS], [POLYGON_TYPE]: [...POLYGON_PARAMETERS], [SPHERICAL_LENS_TYPE]: [...SPHERICAL_PARAMETERS], [GRIN_V25_TYPE]:[...GRIN_V25_PARAMETERS], ...CURVED_PARAMETERS };
 // Shared authoring/validator definitions. General composition relaxes mandatory
 // apparatus types; it does not relax numerical, geometric or runtime limits.
 export const COMPONENT_TYPES = Object.freeze(Object.keys(parameters));
-export const LENGTH_PARAMETERS = Object.freeze(['x','y','x1','y1','x2','y2','x3','y3','x4','y4','width','focalLength','apertureHeight','centerThickness','frontRadius','backRadius','length','openingLength','radius']);
+export const LENGTH_PARAMETERS = Object.freeze(['x','y','x1','y1','x2','y2','x3','y3','x4','y4','width','focalLength','apertureHeight','centerThickness','frontRadius','backRadius','leftX','axisY','spanX','upHeight','downHeight','gradientLength','length','openingLength','radius']);
 // Compatibility envelope for legacy clients; whole-system profiles determine
 // admission. These per-type maxima must never be summed across optical families.
 export const GENERAL_SCOPE = Object.freeze(Object.fromEntries(
@@ -98,7 +99,7 @@ function validateVersion(doc, version) {
     object(c, ['id', 'type', 'parameters', ...(version >= 2 && c?.type === 'point-source' ? ['emission'] : [])], path);
     if (typeof c.id !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(c.id) || ids.has(c.id)) fail(`${path}.id`, 'expected a unique stable ID (letters, digits, underscores, hyphens)');
     ids.add(c.id);
-    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(t!==SPHERICAL_LENS_TYPE||[15,16,17,18].includes(version))&&(version===4||([13,CURVED_ENTRY_VERSION].includes(version)&&t==='line-blocker')||(version===THICK_APERTURE_VERSION&&t===FINITE_APERTURE_TYPE)||(version===PARALLEL_BEAM_VERSION&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||[PARALLEL_BEAM_VERSION,DECENTERED_BEAM_VERSION,SEMICIRCULAR_VERSION,PRISM_BEAM_VERSION,CIRCLE_BEAM_VERSION].includes(version))&&(t!==SEMICIRCULAR_TYPE||[SEMICIRCULAR_VERSION,CURVED_ENTRY_VERSION].includes(version))) :
+    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(t!==SPHERICAL_LENS_TYPE||[15,16,17,18].includes(version))&&(t!==GRIN_V25_TYPE||version===GRIN_V25_VERSION)&&(version===4||([13,CURVED_ENTRY_VERSION].includes(version)&&t==='line-blocker')||(version===THICK_APERTURE_VERSION&&t===FINITE_APERTURE_TYPE)||(version===PARALLEL_BEAM_VERSION&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||[PARALLEL_BEAM_VERSION,DECENTERED_BEAM_VERSION,SEMICIRCULAR_VERSION,PRISM_BEAM_VERSION,CIRCLE_BEAM_VERSION].includes(version))&&(t!==SEMICIRCULAR_TYPE||[SEMICIRCULAR_VERSION,CURVED_ENTRY_VERSION].includes(version))) :
       version >= 3 ? ['point-source', 'ideal-lens', 'plane-mirror'] :
       ['point-source', 'ideal-lens'], `${path}.type`);
     object(c.parameters, componentParameterNames(c.type,version), `${path}.parameters`);
@@ -140,6 +141,7 @@ function validateVersion(doc, version) {
     'native-prism-beam':c=>validateNativePrismBeam(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'native-circle-beam':c=>validateCircleBeam(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'native-curved-entry':c=>validateCurvedEntryObservation(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
+    'native-grin-v25':c=>validateGrinV25(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'polygon-region':c=>validatePolygonGeometry(c,mirrorEndpoints,fail),
     'prism-region':c=>validatePrismGeometry(c,mirrorEndpoints,fail),
     'circular-region':c=>validateCircularGeometry(c,mirrorEndpoints,fail),
@@ -169,10 +171,15 @@ function validateVersion(doc, version) {
   // v19-v21 remain bounded at their independently reviewed depth <=8.
   number(doc.simulation.maxRayDepth,0,
     version===TWO_THICK_MIRROR_VERSION?TWO_THICK_MIRROR_NATIVE_DEPTH:
-    version===THICK_APERTURE_VERSION?THICK_APERTURE_NATIVE_DEPTH:8,
+    version===THICK_APERTURE_VERSION?THICK_APERTURE_NATIVE_DEPTH:
+    version===GRIN_V25_VERSION?GRIN_V25_POLICY.maxRayDepth:8,
     '$.simulation.maxRayDepth');
   number(doc.simulation.processedRayLimit, 1, 10000, '$.simulation.processedRayLimit');
   for (const key of ['maxRayDepth', 'processedRayLimit']) if (!Number.isInteger(doc.simulation[key])) fail(`$.simulation.${key}`, 'expected integer');
+  if(version===GRIN_V25_VERSION&&(doc.simulation.maxRayDepth!==GRIN_V25_POLICY.maxRayDepth||
+    doc.simulation.processedRayLimit!==GRIN_V25_POLICY.processedRayLimit||
+    doc.simulation.rayDensity!==GRIN_V25_POLICY.rayDensity))
+    fail('$.simulation','v25 requires its exact isolated numerical run policy','UNSUPPORTED_SCOPE');
   return doc;
 }
 export function benchComponents(doc) {

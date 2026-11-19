@@ -2,6 +2,7 @@
 import {PRISM_TYPE,prismVertices} from './triangular-prism.js';
 import {POLYGON_TYPE,polygonVertices} from './polygon-dielectric.js';
 import {SPHERICAL_LENS_TYPE,thickLensExtents} from './spherical-lens.js';
+import {GRIN_V25_TYPE,grinV25Extents} from './native-grin-v25.js';
 import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
 import {SEMICIRCULAR_TYPE,semicircularExtents} from './semicircular-dielectric.js';
 import {CIRCLE_BLOCKER_TYPE,circleBlockerExtents} from './opaque-circle-blocker.js';
@@ -75,6 +76,7 @@ export function apparatusPoints(doc){
     if(c.type===CIRCULAR_TYPE)return circularExtents(p);
     if(c.type===SEMICIRCULAR_TYPE)return semicircularExtents(p);
     if(c.type===SPHERICAL_LENS_TYPE)return thickLensExtents(p);
+    if(c.type===GRIN_V25_TYPE)return grinV25Extents(p);
     if(c.type===CIRCLE_BLOCKER_TYPE)return circleBlockerExtents(p);
     if(isCurved(c.type))return curvedPoints(c);
     if(c.type==='ideal-lens')return [{x:p.x,y:(p.y??0)-p.apertureHeight/2},{x:p.x,y:(p.y??0)+p.apertureHeight/2}];

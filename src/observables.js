@@ -79,7 +79,7 @@ export async function evaluateObservables(doc,requests,execution){
   const fresh=execution?.canonicalSha256===canonicalSha256;
   const complete=fresh&&execution.executionPassed===true&&
     ['completed','completed-with-warnings'].includes(execution.native?.status);
-  const warnings=[...(execution?.native?.warnings||[]),...doc.physics.components.filter(c=>['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','spherical-lens'].includes(c.type)&&!c.parameters.partialReflection)
+  const warnings=[...(execution?.native?.warnings||[]),...doc.physics.components.filter(c=>['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','spherical-lens','graded-index-rectangle'].includes(c.type)&&!c.parameters.partialReflection)
     .map(c=>c.id+': explicit transmitted-only approximation omits Fresnel partial reflections; native TIR remains active.')];
   const results=requests.map(r=>{
     const base={...r,status:'unavailable',value:null,method:null,unit:null,reason:null};

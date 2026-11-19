@@ -3,7 +3,7 @@
 // A profile is an admission contract, NOT a prescribed optical encounter order.
 const source='point-source',beam='parallel-beam',mirror='plane-mirror',detector='ray-detector';
 const lens='ideal-lens',prism='triangular-prism',polygon='polygon-dielectric';
-const circle='circular-dielectric',semicircle='semicircular-dielectric',plane='planar-interface',thick='spherical-lens';
+const circle='circular-dielectric',semicircle='semicircular-dielectric',plane='planar-interface',thick='spherical-lens',grin='graded-index-rectangle';
 const curves=['ideal-curved-mirror','circular-arc-mirror'];
 const stops=['line-blocker','circle-blocker','finite-aperture'];
 const finite='finite-dielectric-composition';
@@ -125,6 +125,10 @@ define(24,'native-curved-entry-observation-tracing',{
   [source]:range(1,1),[semicircle]:range(1,1),
   'line-blocker':range(1,1),[detector]:range(2,2)
 },[],[rule('native-curved-entry')],single);
+// v25 admits exactly one numerically qualified square-root GRIN rectangle.
+define(25,'native-bounded-grin-tracing',{
+  [source]:range(1,1),[grin]:range(1,1),[detector]:range(1,1)
+},[],[rule('native-grin-v25')],single);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 
@@ -132,6 +136,7 @@ const byKey=new Map(definitions.map(p=>[p.id,p]));
 // mixtures. It identifies a candidate contract, never certifies it or retries
 // a more permissive profile after geometry/material validation fails.
 const selection=freeze([
+  {model:'native-bounded-grin-tracing',version:25,when:[group([grin],1,32)]},
   {model:'native-curved-entry-observation-tracing',version:24,when:[group([semicircle],1,32),group(['line-blocker'],1,32)]},
   {model:thickAperture,version:18,when:[group([thick],2,32),group([mirror],1,32),group(['finite-aperture'],1,32)]},
   {model:twoThickMirror,version:17,when:[group([thick],2,32),group([mirror],1,32)]},
