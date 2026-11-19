@@ -1,11 +1,11 @@
 {
   "format": "opticsim-v25-browser-app-integration-provenance-v1",
-  "classification": "New pre-review v25 browser fingerprint with presentation-only GRIN close-up; older v18/v24 reviewed application hashes remain untouched.",
+  "classification": "Final pre-review v25 browser code with true display-only 80x close-up and precise 0.01 zoom input; historic v18/v24 app hashes remain untouched.",
   "productionBase": "dcdaf6361a1aea151b15cde925d27ea9fe39ad9e",
   "reviewedPR183Merge": "29a576e345bbf8683ce77f7e0cd3acb295a17cf3",
   "sourceReviewedV24AppGitBlob": "ac8ee9e3bf448c4280342d9049052bbbce1691b0",
   "originalV18AppGitBlob": "cfbea455df3f7ea7a30002d0139730c25b235d32",
-  "newV25AppGitBlob": "31a1ec936ecfce28fc84bbc4c6b43a8c45b19d88",
+  "newV25AppGitBlob": "33b97e2ad5d9f32c917420ec165eb5a27a983b63",
   "reviewStatus": "pending",
   "claims": [
     "New GRIN native v25 controls and strict numerical-status text only",

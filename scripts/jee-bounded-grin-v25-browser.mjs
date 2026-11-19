@@ -86,9 +86,10 @@ async function main(){
   const controls=await js('({source:!!document.getElementById("S1-mode-single-ray"),noFullCircle:!document.getElementById("S1-mode-full-circle"),glass:!!document.getElementById("G1-indexSquaredAtAxis"),gradient:!!document.getElementById("G1-gradientLength"),detector:!!document.getElementById("D1-x"),sourceX:!!document.getElementById("S1-x")})');
   assert.ok(Object.values(controls).every(Boolean),JSON.stringify(controls));
   check('v25 exposes one exact source and scalar GRIN parameters, but no arbitrary equation editor');
-  const cam=await js('({zoom:Number(document.getElementById("zoom").value),max:Number(document.getElementById("zoom").max),fitDisabled:document.getElementById("fit-results").disabled})');
+  const cam=await js('({zoom:Number(document.getElementById("zoom").value),max:Number(document.getElementById("zoom").max),step:Number(document.getElementById("zoom").step),fitDisabled:document.getElementById("fit-results").disabled})');
   assert.equal(cam.zoom,80,'GRIN body needs a native mm-scale close-up');
   assert.equal(cam.max,100,'Only v25 exposes extended presentation zoom');
+  assert.equal(cam.step,.01,'The slider must represent the exact current visual zoom without silent snapping');
   assert.equal(cam.fitDisabled,false);
   check('v25 camera begins at a legible 80 pixels/mm without changing physical inputs');
   const beforeFit=JSON.stringify(s.results[2].value);

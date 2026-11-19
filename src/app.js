@@ -342,7 +342,7 @@ function controls() {
   // Only v25 receives magnification suitable for 1mm-scale physical GRIN
   // geometry. Restoring an older scene restores its original slider range.
   $('zoom').max=graded?'100':'2';
-  $('zoom').step=graded?'1':'0.01';
+  $('zoom').step='0.01';
   $('zoom').value = session.document.presentation.view.zoom;
   syncSampling();
 }

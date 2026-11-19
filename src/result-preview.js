@@ -90,7 +90,7 @@ function cameraFor(points,width,height,padding,version=4){
   const clamp=(x,[lo,hi])=>Math.max(lo,Math.min(hi,x));
   // Preserve all historical camera semantics. v25 alone can magnify a real
   // 1mm GRIN region while still fitting the true passive detector endpoints.
-  const grin=version===25,zoomCap=grin?100:2,minSpan=grin?.1:1;
+  const grin=version===25,zoomCap=grin?100:2,minSpan=grin?0.1:1;
   const view={x:clamp((minX+maxX)/2,CAMERA_BOUNDS.centerMm),
     y:clamp((minY+maxY)/2,CAMERA_BOUNDS.centerMm),
     zoom:clamp(Math.min(zoomCap,(width-2*padding)/Math.max(minSpan,maxX-minX),
