@@ -137,7 +137,8 @@ test('frozen protocol and strictly bounded preflight reject unsupported GRIN uni
  assert.equal(plan.baseline,'d3c535d9fe1bc5e2a27e414a9224084a3ae7bc3f');
  assert.equal(plan.pinnedPhyDemo,'811f508d2b070898c241a568b0c167dcb8645251');
  assert.equal(plan.model.nativeYDownLatex,NATIVE_LATEX);
- assert.equal(plan.predeclaredAnalyticalControl.analyticalNativeDetectorYmm,analyticNativeY());
+ assert.ok(Math.abs(plan.predeclaredAnalyticalControl.analyticalNativeDetectorYmm-analyticNativeY())<1e-12,
+  'frozen first-integral reference must match within binary64 representation tolerance');
  const allowed=validateResearchFacts(template());
  assert.ok(allowed.minIndex>1&&allowed.maxIndex<4);
  const variants=[
