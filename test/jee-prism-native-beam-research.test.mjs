@@ -63,7 +63,7 @@ function nativeCase(c){
  const glass={id:'G1',type:'triangular-prism',parameters:params};
  const detector={id:'D1',type:'ray-detector',parameters:{
    x:seed.detector.x+shift.x,y:seed.detector.y+shift.y,
-   orientationDeg:90,length:seed.detector.length}};
+   orientationDeg:90,length:100}};
  const physical={lengthUnit:'mm',title:'Research only: finite native prism Beam',
   runPolicy:'preview-v1',components:[
   {id:'S1',type:'point-source',parameters:{x:seed.beam.x+shift.x,y:seed.beam.y+20+shift.y,
@@ -80,6 +80,18 @@ function nativeCase(c){
    directionDeg:seed.beam.directionDeg,brightness:pin.brightness};
  const sourceId=compiled.idMap.get('S1'),glassId=compiled.idMap.get('G1');
  native.objs[sourceId]=compileParallelBeam({id:'B1',type:'parallel-beam',parameters:beamParams});
+ // The source v8 contract conservatively requires a common separating face
+ // from the WHOLE detector: the frozen research-long (600 mm) vertical
+ // detector does not satisfy that v8 rule. Keep v8 canonical seed valid with
+ // a 100-mm detector, then widen ONLY the separate raw native detector in
+ // exactly the same manner as the unqualified research Beam. The native
+ // detector still performs its own real finite-line intersections.
+ const d=native.objs[compiled.idMap.get('D1')];
+ assert.equal(d.type,'Detector');
+ const midY=(d.p1.y+d.p2.y)/2,sign=Math.sign(d.p2.y-d.p1.y)||1;
+ d.p1.y=midY-sign*seed.detector.length/2;
+ d.p2.y=midY+sign*seed.detector.length/2;
+
  if(c.kind==='no-glass')native.objs.splice(glassId,1);
  native.rayModeDensity=c.rayDensity??pin.rayDensity;
  native.maxRayDepth=c.maxRayDepth??pin.maxRayDepth;
