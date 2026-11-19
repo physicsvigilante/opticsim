@@ -32,7 +32,7 @@ test('strict public v21 admits exact right half-circle native Glass and preserve
  assert.equal(shape.refIndex,Math.SQRT2);
  assert.equal(shape.partialReflect,false);
  assert.deepEqual(shape.path,[
-  {x:0,y:-100,arc:false},{x:100,y:0,arc:true},{x:0,y:100,arc:false}]);
+  {x:0,y:-100,arc:false},{x:100,y:-0,arc:true},{x:0,y:100,arc:false}]);
  assert.deepEqual(parseSave(serializeSave(d)),d);
  const s=capabilities();
  assert.equal(s.nativeSemicircularBeam.schemaVersion,21);
