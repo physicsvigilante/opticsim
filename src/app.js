@@ -1,7 +1,7 @@
 import {ExplorationUI} from './exploration-ui.js';
 import {isCurved} from './curved-mirrors.js';
 import {QualifiedUI} from './qualified-ui.js';
-import { loadDocument, Simulator, diagnostics, nativeExport, observeSourceSet, observeMirrorSet, observeDetectorSet, observeInterfaceSet, observeBlockerSet } from './adapter.js';
+import { loadDocument, Simulator, diagnostics, nativeExport, observeSourceSet, observeMirrorSet, observeDetectorSet, observeInterfaceSet, observeBlockerSet, observeNativeV18ApertureCorner } from './adapter.js';
 import {createNativeRayParentage} from './native-ray-parentage.js';
 import {createNativeFiniteHitDiagnostic} from './native-finite-hit-diagnostic.js';
 import { parseSave, serializeSave, SAMPLING_PRESETS, samplingPreset, setSourceMode } from './contract.js';
@@ -34,13 +34,14 @@ const session = new Session(doc => {
   const detectorMeter = observeDetectorSet(doc, scene, idMap,{captureHitEvents,parentage,finiteDiagnostic});
   const interfaceMeter = observeInterfaceSet(doc, scene, idMap,{parentage,finiteDiagnostic});
   const blockerMeter = observeBlockerSet(doc, scene, idMap);
+  const apertureCornerGuard=observeNativeV18ApertureCorner(doc,scene,idMap);
   const sim = new Simulator(scene, ...canvases.map(c => c.getContext('2d')), null, true, doc.simulation.processedRayLimit);
   const cancel = () => {
     if (sim.simulationTimerId !== -1) clearTimeout(sim.simulationTimerId);
     sim.simulationTimerId = -1; sim.shouldSimulatorStop = true;
   };
   return { scene, cancel, run: notify => {
-    for (const event of ['simulationComplete', 'simulationStop']) sim.on(event, () => notify(event, diagnostics(scene, sim, meter, mirrorMeter, detectorMeter, interfaceMeter, blockerMeter,{detectorHitEvents:captureHitEvents,nativeEvent:event,parentage,finiteDiagnostic})));
+    for (const event of ['simulationComplete', 'simulationStop']) sim.on(event, () => notify(event, diagnostics(scene, sim, meter, mirrorMeter, detectorMeter, interfaceMeter, blockerMeter,{detectorHitEvents:captureHitEvents,nativeEvent:event,parentage,finiteDiagnostic,apertureCornerGuard})));
     sim.updateSimulation(false, false);
   } };
 }, update);
