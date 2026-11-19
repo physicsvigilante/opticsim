@@ -5,9 +5,7 @@
 // claim that a native "completed" callback certifies near-corner accuracy.
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync,mkdirSync,writeFileSync} from 'node:fs';
-import {mkdtempSync} from 'node:fs';
-import {tmpdir} from 'node:os';
+import {readFileSync,mkdirSync,writeFileSync,mkdtempSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
@@ -61,8 +59,8 @@ test('native-refracted v18 rays near an aperture gap joint: research observation
    countedStopAbsorptions:actual.summary.observations.blockersById?.A1?.absorptions??null,
    apertureX:50,observedNativeReferenceY:nativeY,
    nativeRefractedSampleSource:'v17 actual D1 native hit event',rayPathSynthesized:false};
-  const input=JSON.stringify(doc,null,2)+'\\n';
-  const summary=JSON.stringify(actual.summary,null,2)+'\\n';
+  const input=JSON.stringify(doc,null,2)+'\n';
+  const summary=JSON.stringify(actual.summary,null,2)+'\n';
   const name='delta-'+(delta<0?'minus':delta>0?'plus':'zero')+'-'+Math.round(Math.abs(delta)*1000)+'um';
   writeFileSync(resolve(evidence,name+'-input.json'),input,{flag:'wx'});
   writeFileSync(resolve(evidence,name+'-native-report.json'),summary,{flag:'wx'});
@@ -78,7 +76,7 @@ test('native-refracted v18 rays near an aperture gap joint: research observation
    'Raw native completed status and an absorption count do not certify the correct near-corner arm/gap classification.',
    'The beam can hit the aperture on the reflected RETURN even when it entered through the gap, so count alone does not identify first encounter order.'
   ],rayPathSynthesized:false};
-  writeFileSync(resolve(evidence,'manifest.json'),JSON.stringify(record,null,2)+'\\n',{flag:'wx'});
+  writeFileSync(resolve(evidence,'manifest.json'),JSON.stringify(record,null,2)+'\n',{flag:'wx'});
   console.log('NATIVE_V18_SECONDARY_CORNER_PROBE '+JSON.stringify(record));
  assert.equal(controls.length,5);
 });
