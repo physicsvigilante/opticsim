@@ -6,6 +6,9 @@ import {FINITE_COMPOSITION_MODEL,FINITE_COMPOSITION_VERSION,extendedFiniteCompos
 import {NATIVE_OBSERVATION_KEYS} from './native-observations.js';
 import {PRISM_TYPE,prismVertices} from './triangular-prism.js';
 import {POLYGON_TYPE,polygonVertices} from './polygon-dielectric.js';
+import {SPHERICAL_LENS_TYPE,thickLensExtents} from './spherical-lens.js';
+import {TWO_THICK_MIRROR_MODEL,TWO_THICK_MIRROR_VERSION,TWO_THICK_MIRROR_NATIVE_DEPTH} from './two-thick-lens-mirror-composition.js';
+import {THICK_APERTURE_MODEL,THICK_APERTURE_VERSION,THICK_APERTURE_NATIVE_DEPTH} from './thick-lens-aperture-composition.js';
 import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
 import {SEMICIRCULAR_TYPE,SEMICIRCULAR_VERSION,SEMICIRCULAR_MODEL,SEMICIRCULAR_PARAMETERS,semicircularExtents} from './semicircular-dielectric.js';
 import {CIRCLE_BLOCKER_TYPE,circleBlockerExtents} from './opaque-circle-blocker.js';
@@ -19,10 +22,13 @@ import {validate,UPSTREAM,SAMPLING_PRESETS,COMPONENT_TYPES,componentParameterNam
 const lengthScales=Object.freeze({mm:1,cm:10,m:1000});
 const policies=Object.freeze({
   'preview-v1':Object.freeze({rayDensity:SAMPLING_PRESETS.medium,maxRayDepth:8,processedRayLimit:10000}),
-  'dense-v1':Object.freeze({rayDensity:SAMPLING_PRESETS.dense,maxRayDepth:8,processedRayLimit:10000})
+  'dense-v1':Object.freeze({rayDensity:SAMPLING_PRESETS.dense,maxRayDepth:8,processedRayLimit:10000}),
+  // The deeper native limit is restricted to these two older sealed profiles.
+  'native-deep-v17':Object.freeze({rayDensity:SAMPLING_PRESETS.medium,maxRayDepth:TWO_THICK_MIRROR_NATIVE_DEPTH,processedRayLimit:10000}),
+  'native-deep-v18':Object.freeze({rayDensity:SAMPLING_PRESETS.medium,maxRayDepth:THICK_APERTURE_NATIVE_DEPTH,processedRayLimit:10000})
 });
 const prefixes=Object.freeze({
-  'point-source':'source',[PARALLEL_BEAM_TYPE]:'beam',[SEMICIRCULAR_TYPE]:'semicircle','ideal-lens':'lens','plane-mirror':'mirror','line-blocker':'blocker',[CIRCLE_BLOCKER_TYPE]:'circle-blocker',[FINITE_APERTURE_TYPE]:'aperture','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism',[POLYGON_TYPE]:'glass'
+  'point-source':'source',[PARALLEL_BEAM_TYPE]:'beam',[SEMICIRCULAR_TYPE]:'semicircle','ideal-lens':'lens','plane-mirror':'mirror','line-blocker':'blocker',[CIRCLE_BLOCKER_TYPE]:'circle-blocker',[FINITE_APERTURE_TYPE]:'aperture','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism',[POLYGON_TYPE]:'glass',[SPHERICAL_LENS_TYPE]:'thick-lens'
 });
 const lengthKeys=new Set(LENGTH_PARAMETERS);
 const own=(value,key)=>Object.prototype.hasOwnProperty.call(value,key);
@@ -71,6 +77,10 @@ export function capabilities() {
       geometry:'Entire emission segment lies within coordinate bounds, outside every surface/medium boundary and detector supporting line. First emitted samples near finite stop/lens endpoints are refused. Beam starting medium must be uniform.',
       execution:'Native pinned Beam emits all deterministic samples; density is numerical not a continuous source property. Brightness exceeding ray density is refused to prevent native saturation.',
       limitations:'No image reconstruction, PSF, diffraction, radiometric power, arbitrary composite optics or source-to-detector ancestry.'},
+    nativeThickLensAperture:{schemaVersion:THICK_APERTURE_VERSION,model:THICK_APERTURE_MODEL,scope:'Exactly two independent finite native biconvex thick lenses, one plane mirror, one centred-gap native aperture, 1–4 exact single rays and 0–2 passive detectors',geometry:'Reuses v17 native lens/mirror/material, finite segment and source guards; entire stop x-plane strictly separated by >=0.01 mm from each lens envelope and other segments',execution:'native-deep-v18 only, depth at most 16; incomplete runs suppress results',limits:'No arbitrary optical mixing, predicted return route, wave/diffraction, reconstructed image or unrestricted corner qualification'},
+    nativeTwoThickLensMirror:{schemaVersion:TWO_THICK_MIRROR_VERSION,model:TWO_THICK_MIRROR_MODEL,scope:'Two finite native biconvex lenses and one finite mirror, exact single rays and 0–2 detectors; separate v17 deep native policy',geometry:'Disjoint lens bodies, shared outside material index, mirror outside both thick lens x envelopes',execution:'native-deep-v17 only, depth at most 16; incomplete reads withheld',limits:'No arbitrary path, image solver or continuous power'},
+    nativeThickLensMirror:{schemaVersion:16,model:'native-thick-lens-mirror-tracing',scope:'One finite native spherical thick lens plus one independent finite mirror, 1–4 explicit native single rays and two passive detectors',geometry:'Mirror x-plane strictly outside full lens body, finite optical clearances',limits:'Native chooses every true hit and miss, no inferred return or image'},
+    nativeThickLensTrain:{schemaVersion:15,model:'native-thick-lens-tracing',scope:'One or two biconvex spherical native thick lenses with explicit aperture, thickness, front/back radii and glass/exterior indices',geometry:'Positive curvatures, strict edge thickness and separated x extents',limits:'No meniscus/tilted lenses, image reconstruction, or full Fresnel power'},
     nativeTwoLensBeam:{schemaVersion:DECENTERED_BEAM_VERSION,model:DECENTERED_BEAM_MODEL,
       lenses:{count:2,parameters:['x','y','focalLength','apertureHeight'],orientation:'vertical with explicit transverse centres'},
       source:'One native finite deterministic horizontal parallel Beam; direction exactly 0, +180 or -180 degrees.',
@@ -122,6 +132,7 @@ export function capabilities() {
       ...(type===CIRCULAR_TYPE?{booleanParameters:['partialReflection'],nativeType:'CircleGlass',indices:['insideIndex','outsideIndex'],geometry:'Finite 2D circle, not an ideal thin lens or a truncated sphere'}:{}),
       ...(type===PRISM_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-31'],geometry:'Three physical vertices; vertex order defines face labels, not a ray route'}:{}),
       ...(type===POLYGON_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-34','face-41'],geometry:'One strictly convex four-vertex finite region, never a ray route'}:{}),
+      ...(type===SPHERICAL_LENS_TYPE?{nativeType:'SphericalLens',booleanParameters:['partialReflection'],faceIds:['front-arc','back-arc','top-rim','bottom-rim'],geometry:'Native finite 2D biconvex lens. Both radii are positive lengths, not a thin-lens focal length; back-face native curvature sign is reversed'}:{}),
       ...(type==='line-blocker'?{nativeType:'Blocker',geometry:'Opaque finite line segment; centre, tangent orientation, and length are explicit; absorbs each actual native ray incident'}:{}),
       ...(type===CIRCLE_BLOCKER_TYPE?{nativeType:'CircleBlocker',geometry:'Opaque 2D circular boundary with explicit centre and positive radius; absorbs actual native ray incidents; not a 3D body'}:{}),
       ...(type===FINITE_APERTURE_TYPE?{nativeType:'Aperture',geometry:'Opaque 2D line with an explicitly transparent centred opening; no wave diffraction'}:{}),
@@ -178,7 +189,7 @@ export function inspectAuthoringRequest(request){
       ['negativeIndex','positiveIndex','insideIndex','outsideIndex'].includes(key)?b.refractiveIndex:
       key==='normalDeg'?b.orientationDeg:key==='orientationDeg'?b.orientationDeg:key==='directionDeg'?b.directionDeg:
       key==='angleDeg'?b.openingAngleDeg:
-      ['length','openingLength','apertureHeight'].includes(key)?b.positiveLengthMm:key==='width'?[10,100]:b.coordinateMm;
+      ['length','openingLength','apertureHeight','centerThickness','frontRadius','backRadius'].includes(key)?b.positiveLengthMm:key==='width'?[10,100]:b.coordinateMm;
     if(!Number.isFinite(n)||n<bounds[0]||n>bounds[1]||
       (key==='focalLength'&&Math.abs(n)<b.minimumAbsFocalLengthMm)||
       (key==='radius'&&(type===CIRCULAR_TYPE?n<2:type===SEMICIRCULAR_TYPE?n<5:type===CIRCLE_BLOCKER_TYPE?n<1:Math.abs(n)<2)))
@@ -234,6 +245,7 @@ function camera(components) {
     else if(c.type===CIRCLE_BLOCKER_TYPE)vertices.push(...circleBlockerExtents(p));
     else if(c.type===PRISM_TYPE)vertices.push(...prismVertices(p));
     else if(c.type===POLYGON_TYPE)vertices.push(...polygonVertices(p));
+    else if(c.type===SPHERICAL_LENS_TYPE)vertices.push(...thickLensExtents(p));
     else if(isCurved(c.type))vertices.push(...curvedPoints(c));
     else if(c.type==='ideal-lens')vertices.push({x:p.x,y:(p.y??0)-p.apertureHeight/2},
       {x:p.x,y:(p.y??0)+p.apertureHeight/2});
@@ -250,7 +262,7 @@ export function prepareScene(request) {
   const issues=inspectAuthoringRequest(request);
   if(issues.length)fail(issues);
   const scale=units(request.lengthUnit,'$.lengthUnit');
-  const policyName=own(request,'runPolicy')?request.runPolicy:'preview-v1';
+  const requestedPolicy=own(request,'runPolicy')?request.runPolicy:null;
   const title=own(request,'title')?request.title:'LLM-authored optical scene';
   const selectedComposition=selectAuthoringComposition(request.components);
   const knownIds=new Set(request.components.filter(c=>own(c,'id')).map(c=>c.id)),assignedIds=[];
@@ -274,6 +286,11 @@ export function prepareScene(request) {
     return result;
   });
   const {schemaVersion,adapterVersion,model}=selectedComposition;
+  const policyName=requestedPolicy??(schemaVersion===TWO_THICK_MIRROR_VERSION?
+    'native-deep-v17':schemaVersion===THICK_APERTURE_VERSION?'native-deep-v18':'preview-v1');
+  if((policyName==='native-deep-v17'&&schemaVersion!==TWO_THICK_MIRROR_VERSION)||
+     (policyName==='native-deep-v18'&&schemaVersion!==THICK_APERTURE_VERSION))
+    fail([issue('$.runPolicy','UNSUPPORTED_POLICY','A deeper native ray budget is admitted only for its exact v17 or v18 profile')]);
   const doc={
     format:'ray-optics-2d',schemaVersion,adapterVersion,upstreamCommit:UPSTREAM,
     physics:{lengthUnit:'mm',coordinates:'x-right-y-up',model,components},
