@@ -77,6 +77,7 @@ jobs:
             test-artifacts/browser-opaque-line-blocker/
             test-artifacts/llm-authoring/finite-aperture/
             test-artifacts/llm-authoring/native-thick-lens-aperture-v18/
+            test-artifacts/research-v18-secondary-corner/
             test-artifacts/llm-authoring/jee-parallel-beam-v19/
             test-artifacts/browser-jee-parallel-beam-v19/
             test-artifacts/llm-authoring/jee-parallel-two-lens-v20/
