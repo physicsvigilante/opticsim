@@ -66,6 +66,10 @@ jobs:
         run: node scripts/jee-curved-entry-acceptance.mjs
       - name: v24 curved-entry real Chrome qualified import, physical edit, suppression and reopen
         run: node scripts/jee-curved-entry-browser.mjs
+      - name: v25 GRIN strict square-root fixed-field native evidence and refusal cases
+        run: node scripts/jee-bounded-grin-v25-acceptance.mjs
+      - name: v25 GRIN real Chrome native numerical guard, physical edits, refusal and reopen
+        run: node scripts/jee-bounded-grin-v25-browser.mjs
       - name: Opaque blocker browser edits, detector readings and qualified exports
         run: node scripts/opaque-line-blocker-browser.mjs
       - name: LLM authoring CLI with real native execution and revision guards
@@ -116,6 +120,8 @@ jobs:
             test-artifacts/browser-jee-circle-beam-v23/
             test-artifacts/llm-authoring/jee-curved-entry-v24/
             test-artifacts/browser-jee-curved-entry-v24/
+            test-artifacts/llm-authoring/jee-bounded-grin-v25/
+            test-artifacts/browser-jee-bounded-grin-v25/
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
