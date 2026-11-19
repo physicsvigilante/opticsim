@@ -9,6 +9,7 @@ import {componentParameterNames,parseSave,serializeSave,validate} from '../src/c
 import {compositionModels,selectAuthoringComposition} from '../src/composition-profiles.js';
 import {evaluateDocument} from '../scripts/author-scene.mjs';
 import {evaluateObservables} from '../src/observables.js';
+import {apparatusPoints,fitRequestedView} from '../src/result-preview.js';
 const core=createRequire(import.meta.url)('../dist/test-core.cjs');
 const load=f=>JSON.parse(readFileSync(new URL('../examples/'+f,import.meta.url),'utf8'));
 const two=load('jee-parallel-two-lens-v20.json');
@@ -73,4 +74,49 @@ test('hash mismatch across two independently completed native apparatuses suppre
  assert.ok(mismatchA.every(x=>x.status==='suppressed'&&x.value===null));
  assert.ok(mismatchB.every(x=>x.status==='suppressed'&&x.value===null));
  assert.notEqual(nativeA.summary.canonicalSha256,nativeB.summary.canonicalSha256);
+});
+
+test('v20 Fit Results includes both full native offset-lens segments, not imaginary y=0 endpoints',async()=>{
+ const r=fresh(two);
+ const part=id=>r.components.find(c=>c.id===id).parameters;
+ // Deliberately large, oppositely signed independent y displacements: the
+ // second lens may be missed by the beam, but remains real apparatus to fit.
+ part('B1').y=720;
+ part('L1').y=720;
+ part('L2').y=-650;
+ const d=prepareScene(r).document;
+ assert.equal(d.schemaVersion,20);
+ const snapshot=JSON.stringify(d);
+ const real=core.compile(d).native.objs.filter(obj=>obj.type==='IdealLens');
+ assert.equal(real.length,2);
+ const actualEndpoints=real.flatMap(obj=>[obj.p1,obj.p2].map(p=>({x:p.x,y:-p.y})));
+ const listed=apparatusPoints(d);
+ for(const endpoint of actualEndpoints)assert.ok(listed.some(p=>p.x===endpoint.x&&
+   Math.abs(p.y-endpoint.y)<1e-10),'apparatusPoints omits actual offset lens endpoint '+JSON.stringify(endpoint));
+ const width=1000,height=700;
+ const fit=await fitRequestedView(d,null,width,height);
+ assert.equal(fit.apparatusFits,true,'both lenses and remaining apparatus must fit within viewport policy');
+ assert.deepEqual(fit.included,[],'native detector readings are not conditional image points');
+ assert.deepEqual(fit.excluded,[]);
+ const view=fit.document.presentation.view;
+ const limitX=width/2-fit.padding,limitY=height/2-fit.padding;
+ for(const p of actualEndpoints){
+   assert.ok(Math.abs((p.x-view.x)*view.zoom)<=limitX+1e-7,
+     'native lens endpoint is horizontally out of the Fit Results view');
+   assert.ok(Math.abs((p.y-view.y)*view.zoom)<=limitY+1e-7,
+     'native lens endpoint is vertically out of the Fit Results view: '+JSON.stringify(p));
+ }
+ assert.deepEqual(fit.document.physics,d.physics);
+ assert.deepEqual(fit.document.simulation,d.simulation);
+ assert.equal(JSON.stringify(d),snapshot,'fitting must never modify the physical input');
+ // Keep a historical v19 lens exactly centred: the v20 correction must not
+ // inject a y parameter into old canonical data or its preview.
+ const legacy=load('jee-parallel-lens-v19.json'),old=prepareScene(legacy.physical).document;
+ const oldLens=old.physics.components.find(c=>c.type==='ideal-lens').parameters;
+ assert.equal(oldLens.y,undefined);
+ assert.deepEqual(apparatusPoints(old).filter(p=>p.x===oldLens.x&&
+   Math.abs(p.y)<=oldLens.apertureHeight/2),[
+   {x:oldLens.x,y:-oldLens.apertureHeight/2},
+   {x:oldLens.x,y:oldLens.apertureHeight/2}
+ ]);
 });
