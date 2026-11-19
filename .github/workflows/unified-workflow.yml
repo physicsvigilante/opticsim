@@ -8,7 +8,9 @@ permissions:
   contents: read
 jobs:
   unified:
-    runs-on: ubuntu-latest
+    # Explicit image: Ubuntu 26.04 rollout sometimes lacks a Chrome/Chromium executable.
+    # All real-browser evidence remains mandatory; never turn missing Chrome into a pass.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
