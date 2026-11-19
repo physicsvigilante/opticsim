@@ -86,3 +86,87 @@ test('native-refracted v18 rays near an aperture gap joint: research observation
   console.log('NATIVE_V18_SECONDARY_CORNER_PROBE '+JSON.stringify(record));
  assert.equal(controls.length,5);
 });
+
+
+test('translated and reversed native v18 aperture-corner samples retain raw orientation and near-world evidence',async()=>{
+ // This is a separate stress matrix, NOT a universal precision proof.
+ // Every reference ray is observed by the pinned native v17 detector in a
+ // completed scene, before the v18 aperture is separately authored.
+ const variants=[
+  {id:'reverse-minus90',shiftX:0,shiftY:0,orientationDeg:-90},
+  {id:'positive-world-9500',shiftX:9500,shiftY:9000,orientationDeg:90},
+  {id:'negative-world-9500-minus90',shiftX:-9500,shiftY:-9000,orientationDeg:-90}
+ ];
+ const folder=attempt(),saved=[];
+ const translate=(scope,dx,dy)=>{
+  for(const c of scope.components){
+   if(Object.hasOwn(c.parameters,'x'))c.parameters.x+=dx;
+   if(Object.hasOwn(c.parameters,'y'))c.parameters.y+=dy;
+  }
+ };
+ const persist=(name,doc,summary)=>{
+  const input=JSON.stringify(doc,null,2)+'\n',output=JSON.stringify(summary,null,2)+'\n';
+  writeFileSync(resolve(folder,name+'-input.json'),input,{flag:'wx'});
+  writeFileSync(resolve(folder,name+'-native-report.json'),output,{flag:'wx'});
+  return {inputFile:name+'-input.json',nativeReportFile:name+'-native-report.json',
+    inputSha256:sha(input),nativeReportSha256:sha(output)};
+ };
+ for(const v of variants){
+  const v17=structuredClone(fixture('native-two-thick-lens-mirror-v17.json').physical);
+  translate(v17,v.shiftX,v.shiftY);
+  by(v17,'S1').y+=10;
+  by(v17,'D1').x=v.shiftX+50;
+  by(v17,'D1').y=v.shiftY;
+  by(v17,'D1').length=240;
+  const ref=prepareScene(v17).document;
+  const observed=evaluateDocument(ref,core,requests);
+  assert.equal(observed.summary.native.status,'completed',v.id+' needs a real completed native reference');
+  const result=(await evaluateObservables(ref,requests,observed.summary)).results[0];
+  assert.ok(Array.isArray(result.value),v.id+' missing genuine native hit positions');
+  const crossing=result.value.find(h=>h.incomingUnit.x>0);
+  assert.ok(crossing,v.id+' missing genuine right-going refracted event');
+  assert.ok(Number.isFinite(crossing.pointMm.y));
+  assert.ok(Math.abs(crossing.pointMm.y-(v.shiftY+10))>.2,'reference must have actually refracted');
+  const sample={variant:v,baseline:{
+   nativeStatus:observed.summary.native.status,
+   pointMm:crossing.pointMm,incomingUnit:crossing.incomingUnit,
+   ...persist(v.id+'-v17',ref,observed.summary)},
+   controls:[]};
+  for(const delta of [-.005,0,.005]){
+   const v18=structuredClone(fixture('native-thick-lens-aperture-v18.json').physical);
+   translate(v18,v.shiftX,v.shiftY);
+   by(v18,'S1').y+=10;
+   by(v18,'A1').x=v.shiftX+50;
+   by(v18,'A1').orientationDeg=v.orientationDeg;
+   by(v18,'A1').y=crossing.pointMm.y-10+delta;
+   const doc=prepareScene(v18).document;
+   assert.equal(doc.schemaVersion,18);
+   const native=evaluateDocument(doc,core,fixture('native-thick-lens-aperture-v18.json').requests);
+   const observations=native.summary.observations;
+   const label=v.id+'-v18-'+(delta<0?'minus5':delta>0?'plus5':'zero');
+   sample.controls.push({deltaMm:delta,apertureOrientationDeg:v.orientationDeg,
+    nativeStatus:native.summary.native.status,
+    processed:native.summary.native.processed,
+    truncation:native.summary.native.truncation,
+    undefinedBehavior:native.summary.native.undefinedBehavior,
+    errorCount:native.summary.native.errors?.length??null,
+    lens1Incidents:observations.interfacesById?.L1?.interactions??null,
+    lens2Incidents:observations.interfacesById?.L2?.interactions??null,
+    mirrorReflections:observations.reflectionsById?.M1??null,
+    apertureNativeAbsorptions:observations.blockersById?.A1?.absorptions??null,
+    ...persist(label,doc,native.summary)});
+  }
+  saved.push(sample);
+ }
+ const report={format:'opticsim-v18-orientation-translation-corner-native-v1',
+  status:'observed-not-certified',variants:saved,
+  limits:['Distinct physically authored native v17 reference scene for every translated setup.',
+   'Detector hit position is a real sampled event; no ray-route itinerary or downstream hit fabricated.',
+   'Near-endpoint native completion does not independently certify numerical precision or a physical image.'],
+  independentNativeReplay:false};
+ writeFileSync(resolve(folder,'orientation-translation-manifest.json'),
+  JSON.stringify(report,null,2)+'\n',{flag:'wx'});
+ console.log('NATIVE_V18_ORIENTATION_TRANSLATION_CORNER '+JSON.stringify(report));
+ assert.equal(saved.length,3);
+ assert.equal(saved.reduce((s,x)=>s+x.controls.length,0),9);
+});
