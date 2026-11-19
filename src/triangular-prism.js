@@ -46,7 +46,9 @@ export function validatePrismGeometry(components,endpoints,fail){
 }
 // Identify the face only at a hit ALREADY returned by native Glass. Ambiguous
 // corner events invalidate measured evidence but never alter the native ray.
-export function prismEncounter(component,nativePoint,incoming){
+export function prismEncounter(component,nativePoint,incoming,vertexClearance=PRISM_CLEARANCE_MM){
+ // Only v22 requests the larger, inclusive native hit-zone guard.
+ // Historical v8 retains its exact 0.01 mm strict-< observer contract.
  return finiteGlassEncounter(component.parameters,prismVertices(component.parameters),
-  nativePoint,incoming,PRISM_CLEARANCE_MM);
+  nativePoint,incoming,vertexClearance,vertexClearance>PRISM_CLEARANCE_MM);
 }
