@@ -1,0 +1,23 @@
+# v23 finite native parallel Beam + full CircleGlass — bounded candidate
+
+**Unmerged production candidate** from production main `59b485d14ac28ca4ee97acc754a4cd207a7d33f1`, with unchanged PhyDemo pin `811f508d2b070898c241a568b0c167dcb8645251`. This version is distinct from independently cleared but still unmerged v22 prism PR #173. No historical v1–v21 saved-scene schema is widened or migrated, and v22 is explicitly reserved for that separate branch. **Do not individually merge this on top of v22 without a combined-tree integration audit.**
+
+## Model scope
+
+New explicit `native-parallel-circle-tracing` schema **23**: exactly one deterministic native `Beam` emitter, one true pinned `CircleGlass` finite region and 0–2 external downstream native passive vertical `Detector` segments. All component parameters including x/y/radius, both absolute refractive indices and `partialReflection=false` are user-authored. The actual native CircleGlass uses the ratio `insideIndex/outsideIndex` and traces **both curved interfaces**; the initial Beam is finite and travels horizontally at 0, +180 or −180 degrees. It is initially external, with the *whole emitting segment* at least 0.01 mm before the near tangent plane, and strictly within 90% of the circle radius transverse to propagation. The circle radius must be ≥20 mm with its full extents within the world. At most 100 actual deterministic emissions, Beam width 10–100 mm, numerical density .048–1, brightness ≤ density. The optional passive detectors are downstream of the far tangent plane by ≥0.01 mm, finite and distinct. Native rays may miss a detector; a true count of zero remains data, not absence of evidence.
+
+Inside and outside indices are explicitly 1–4 **in either order**. When the outside is higher index, each initial emitted sample must be below the first-entry critical condition by a dimensionless 1e−5 margin; uncertain entry TIR is refused rather than falsely labelled transmission. Internal TIR is **not disabled**, although trapped internal sources are outside this first public family. Fresnel partial reflection remains an explicitly omitted approximation, not a measurement of all optical power.
+
+## Real callback and qualification
+
+After each **real pinned native CircleGlass callback**, the v23-only observer checks the actual y-up hit position and radial normal against the authored radius (within 1e−5 mm), disqualifies near-grazing `|incoming·normal|<1e−4`, and disqualifies near-critical `|n_in |sin(theta)| − n_out|<=1e−5` for n_in>n_out. The old v7 observer does **not** use these new checks; all old native rays remain unchanged. The observer delegates to the original native method exactly once and never guesses or steers a transmitted/reflected path.
+
+Stopped/truncated/undefined/native error, observer numerical uncertainty, stale digest and unmatched event counts suppress requested measurements; above 32 observed detector crossings, the true sampled count may remain available but the entire list of precise positions must be withheld. There is **no automatic detected image**, continuous irradiance, PSF, apparent depth, bubble inverse or source-to-detector path inference.
+
+## JEE provenance, research and future integration gate
+
+The full circular dielectric with two optical boundaries is relevant to JEE J16 sphere/bubble ray illustrations **but is not J15's single spherical refracting surface**, nor a 3D physiological or apparent-image solution. The example's radius, source geometry, index pair and detector are explicitly synthetic teaching controls, not supplied original source facts.
+
+Raw-native [research PR #174](https://github.com/physicsvigilante/opticsim/pull/174) froze 17 cases: 13 native-complete, four incomplete and 11 event-consistent outside intentionally unsafe tangencies/Fresnel/depth. The protocol, actual raw inputs/incident events and all SHA-256 evidence are separately archived; research itself is not public or independently physics-certified.
+
+The final main-based v23 capability requires Node24 tests, real native positive/refusal/stale/overflow controls, public source→qualified native export, real-Chrome field edits/invalid/reopen and exact Git-tree CI. **Do not request a new independent review now while reviewed v22 PR #173 is still held**; after owner-authorized v22 installation, recompose v23 on the then-actual main, run combined complete CI, and request **one focused independent v22/v23 integration + v23 physics review at that final exact commit**, rather than reviewing v23 twice on different bases. Do not merge or deploy the research or candidate branches without their gates.

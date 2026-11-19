@@ -1,0 +1,92 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "Synthetic native finite Beam through complete circular Glass",
+    "runPolicy": "preview-v1",
+    "components": [
+      {
+        "id": "B1",
+        "type": "parallel-beam",
+        "parameters": {
+          "x": -160,
+          "y": 0,
+          "width": 20,
+          "directionDeg": 0,
+          "brightness": 0.08
+        }
+      },
+      {
+        "id": "G1",
+        "type": "circular-dielectric",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "radius": 100,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 260,
+          "y": 0,
+          "length": 200,
+          "orientationDeg": 90
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "emitted",
+      "kind": "source-emissions",
+      "componentId": "B1"
+    },
+    {
+      "id": "interfaces",
+      "kind": "interface-interactions",
+      "componentId": "G1"
+    },
+    {
+      "id": "first",
+      "kind": "interface-first-event",
+      "componentId": "G1"
+    },
+    {
+      "id": "tir",
+      "kind": "interface-tir-count",
+      "componentId": "G1"
+    },
+    {
+      "id": "crossings",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "hits",
+      "kind": "detector-hit-events",
+      "componentId": "D1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Observe genuine finite parallel native rays refracting through both boundaries of an explicitly authored homogeneous circular region, with sampled downstream detector crossings.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "The 2D finite circular region (radius 100 mm) with refractive indices 1 outside and 1.5 inside is an explicit synthetic teaching control, not an extracted JEE material or radius.",
+      "The parallel native Beam is explicitly authored at x=-160 mm, y=0 mm, width 20 mm, brightness 0.08, and rightward horizontal propagation.",
+      "The passive finite detector is explicitly authored at x=260 mm, centre y=0 mm, length 200 mm.",
+      "Fresnel partial reflection is explicitly disabled; native total internal reflection remains enabled."
+    ],
+    "unknowns": [
+      "The original JEE J16 or J15 problem's sphere/bubble and single-surface facts do not determine this complete circular apparatus.",
+      "2D sampled detector crossings do not establish 3D apparent position, a physical image, continuous irradiance, or textbook-answer completeness."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}
