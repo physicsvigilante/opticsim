@@ -31,8 +31,8 @@ function nativeProbe({stepSize=.02,indexFunction=gradientFn,sourceX=.1}={}){
  };
  const detector=structuredClone(reference.native.objs[2]);
  detector.p1={x:1.2,y:-1};detector.p2={x:1.2,y:1};
- const native={...reference.native,objs:[source,grin,detector],maxRayDepth:4096,
-  processedRayLimit:10000};
+ const native={...reference.native,objs:[source,grin,detector],maxRayDepth:4096};
+ // Processed-ray cap belongs to core.Simulator below, not native Scene data.
  const scene=core.loadNative(native);
  assert.deepEqual(scene.objs.map(o=>o.constructor.type),['SingleRay','GrinGlass','Detector']);
  const body=scene.objs[1],target=scene.objs[2];
