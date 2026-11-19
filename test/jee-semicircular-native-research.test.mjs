@@ -158,7 +158,7 @@ function run(c){
     emitted:emitted.length,glassIncidents:incidents.length,detectorHits:detected.length};
   const validNative=event==='simulationComplete'&&!error&&!diagnostics.sceneError&&
     diagnostics.totalTruncation===0&&diagnostics.totalUndefinedBehavior===0;
-  const trustworthy=validNative&&!incidents.some(e=>['joint-or-near-joint','unclassified'].includes(e.geometry.face)||
+  const trustworthy=validNative&&c.family!=='seam-risk'&&!incidents.some(e=>['joint-or-near-joint','unclassified'].includes(e.geometry.face)||
     e.physics.kind==='unverified'||e.physics.deviation>1e-5);
   const observed={flat:incidents.filter(e=>e.geometry.face==='flat').length,
     curved:incidents.filter(e=>e.geometry.face==='curved').length,
@@ -227,6 +227,7 @@ test('pinned native Beam + half-disk Glass feasibility preserves actual event or
     }else if(c.id==='depth-zero'){
       assert.equal(r.validNative,false,'Depth-exhausted rays must not be reported complete');
     }else if(c.family==='seam-risk'){
+      assert.equal(r.trustworthy,false,'Seam-edge cases are research-caution even if native completes');
       // Existing public scopes have no proven arc/diameter join clearance.
       // Preserve raw evidence and do not certify the outcome by mere completion.
       assert.ok(r.diagnostics.event||r.diagnostics.error);
@@ -235,7 +236,9 @@ test('pinned native Beam + half-disk Glass feasibility preserves actual event or
   output.status='executed-native-research';
   output.counts={planned:frozen.cases.length,executed:output.cases.length,
     nativeCompleted:output.cases.filter(c=>c.validNative).length,
-    incompleteOrError:output.cases.filter(c=>!c.validNative).length};
+    incompleteOrError:output.cases.filter(c=>!c.validNative).length,
+    eventConsistentOutsideSeam:output.cases.filter(c=>c.trustworthy).length,
+    seamRiskUncertified:output.cases.filter(c=>c.family==='seam-risk').length};
   assert.equal(output.cases.length,frozen.cases.length);
   stored('report.json',JSON.stringify(output,null,2)+'\n');
 });
