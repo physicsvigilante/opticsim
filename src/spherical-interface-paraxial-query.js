@@ -119,7 +119,7 @@ export function analyzeSphericalInterface(query){
   return indeterminate(common,'NEAR_EQUAL_INDICES',
    'Index contrast is too small relative to the declared binary64 indices to certify a curved-surface prediction.');
  }
- const p=delta/R; // first-order paraxial reduced power in inverse mm
+ const p=delta===0?0:delta/R; // canonical +0 for zero contrast, even if R<0
  const powerDiopters=p*1000;
  const focalRaw=delta===0?null:{object:-n1/p,image:n2/p};
  if(focalRaw&&(!Number.isFinite(focalRaw.object)||!Number.isFinite(focalRaw.image)||
