@@ -50,17 +50,20 @@ test('native-refracted v18 rays near an aperture gap joint: research observation
   by(scope18,'A1').y=nativeY-10+delta;
   const doc=prepareScene(scope18).document;
   const actual=evaluateDocument(doc,core,fixture('native-thick-lens-aperture-v18.json').requests);
+  const nativeDiagnostics=actual.report.native.diagnostics||{};
   assert.ok(['completed','completed-with-warnings','incomplete','stopped','failed'].includes(actual.summary.native.status));
   const row={deltaMm:delta,nativeStatus:actual.summary.native.status,
    processedRayCount:actual.summary.native.processed,
-   nativeL1FaceIncidents:actual.summary.observations.interfacesById?.L1?.interactions??null,
-   nativeL2FaceIncidents:actual.summary.observations.interfacesById?.L2?.interactions??null,
-   nativeMirrorReflections:actual.summary.observations.reflectionsById?.M1??null,
-   nativeDetectorCrossings:actual.summary.observations.detectorsById?.D1?.crossings??null,
+   nativeL1FaceIncidents:nativeDiagnostics.interfacesById?.L1?.interactions??null,
+   nativeL2FaceIncidents:nativeDiagnostics.interfacesById?.L2?.interactions??null,
+   nativeMirrorReflections:nativeDiagnostics.reflectionsById?.M1??null,
+   nativeDetectorCrossings:nativeDiagnostics.detectorsById?.D1?.crossings??null,
+   cornerGuard:nativeDiagnostics.apertureCornerGuard??null,
+   qualifiedObservationsExposed:actual.summary.observations!==null,
    errors:actual.summary.native.errors?.length??null,
    truncation:actual.summary.native.truncation,
    undefinedBehavior:actual.summary.native.undefinedBehavior,
-   countedStopAbsorptions:actual.summary.observations.blockersById?.A1?.absorptions??null,
+   countedStopAbsorptions:nativeDiagnostics.blockersById?.A1?.absorptions??null,
    apertureX:50,observedNativeReferenceY:nativeY,
    nativeRefractedSampleSource:'v17 actual D1 native hit event',rayPathSynthesized:false};
   const input=JSON.stringify(doc,null,2)+'\n';
@@ -142,7 +145,7 @@ test('translated and reversed native v18 aperture-corner samples retain raw orie
    const doc=prepareScene(v18).document;
    assert.equal(doc.schemaVersion,18);
    const native=evaluateDocument(doc,core,fixture('native-thick-lens-aperture-v18.json').requests);
-   const observations=native.summary.observations;
+   const observations=native.report.native.diagnostics||{};
    const label=v.id+'-v18-'+(delta<0?'minus5':delta>0?'plus5':'zero');
    sample.controls.push({deltaMm:delta,apertureOrientationDeg:v.orientationDeg,
     nativeStatus:native.summary.native.status,
@@ -154,6 +157,8 @@ test('translated and reversed native v18 aperture-corner samples retain raw orie
     lens2Incidents:observations.interfacesById?.L2?.interactions??null,
     mirrorReflections:observations.reflectionsById?.M1??null,
     apertureNativeAbsorptions:observations.blockersById?.A1?.absorptions??null,
+    cornerGuard:observations.apertureCornerGuard??null,
+    qualifiedObservationsExposed:native.summary.observations!==null,
     ...persist(label,doc,native.summary)});
   }
   saved.push(sample);
