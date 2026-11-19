@@ -65,6 +65,7 @@ function nativeProbe({stepSize=.02,indexFunction=gradientFn,sourceX=.1}={}){
   publicAuthoringSupported:false,pinnedPhyDemo:PIN};
 }
 function qualifiedResearch(r,label){
+ if(r.nativeStatus!=='completed')console.log('JEE_GRIN_NATIVE_UNQUALIFIED '+JSON.stringify({label,terminal:r.terminal,status:r.nativeStatus,errors:r.diagnostics.errors,warnings:r.diagnostics.warnings,truncation:r.diagnostics.truncation,undefinedBehavior:r.diagnostics.undefinedBehavior,processed:r.diagnostics.processed,internalCallbacks:r.internal.length,first:r.internal.slice(0,2),last:r.internal.slice(-2),detector:r.hits,stepSize:r.stepSize,indexFunction:r.indexFunction}));
  assert.equal(r.terminal,'simulationComplete',label+' terminal callback');
  assert.equal(r.nativeStatus,'completed',label+' qualified run status');
  assert.equal(r.diagnostics.errors.length,0,label+' native runtime errors');
