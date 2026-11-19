@@ -30,8 +30,10 @@ const compilers = {
       p2: { x: x + 20 * Math.cos(theta), y: -y - 20 * Math.sin(theta) },
       brightness, emisAngle: c.emission.angleDeg, symmetric: true };
   },
-  'ideal-lens': c => ({ type: 'IdealLens', p1: { x: c.parameters.x, y: -c.parameters.apertureHeight / 2 },
-    p2: { x: c.parameters.x, y: c.parameters.apertureHeight / 2 }, focalLength: c.parameters.focalLength }),
+  'ideal-lens': c => ({ type: 'IdealLens',
+    p1: { x: c.parameters.x, y: -(c.parameters.y ?? 0) - c.parameters.apertureHeight / 2 },
+    p2: { x: c.parameters.x, y: -(c.parameters.y ?? 0) + c.parameters.apertureHeight / 2 },
+    focalLength: c.parameters.focalLength }),
   'line-blocker': c => {
     const [a,b]=mirrorEndpoints(c.parameters);
     return {type:'Blocker',p1:{x:a.x,y:-a.y},p2:{x:b.x,y:-b.y},filter:false};
