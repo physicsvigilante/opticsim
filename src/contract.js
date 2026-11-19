@@ -3,6 +3,7 @@ import {validateFiniteDielectricComposition} from './finite-dielectric-compositi
 import {PRISM_TYPE,PRISM_PARAMETERS,validatePrismGeometry} from './triangular-prism.js';
 import {POLYGON_TYPE,POLYGON_PARAMETERS,validatePolygonGeometry} from './polygon-dielectric.js';
 import {CIRCULAR_TYPE,CIRCULAR_PARAMETERS,validateCircularGeometry} from './circular-dielectric.js';
+import {SEMICIRCULAR_TYPE,SEMICIRCULAR_VERSION,SEMICIRCULAR_PARAMETERS,validateSemicircularBeam} from './semicircular-dielectric.js';
 import {CURVED_PARAMETERS,isCurved,validateCurvedGeometry} from './curved-mirrors.js';
 import {PLANAR_TYPE,PLANAR_PARAMETERS,validatePlanarGeometry} from './planar-media.js';
 import {CIRCLE_BLOCKER_TYPE,validateCircleBlockerGeometry} from './opaque-circle-blocker.js';
@@ -32,7 +33,7 @@ const parameters = { [PARALLEL_BEAM_TYPE]:[...PARALLEL_BEAM_PARAMETERS], 'point-
   [CIRCLE_BLOCKER_TYPE]: ['x', 'y', 'radius'],
   [FINITE_APERTURE_TYPE]: ['x', 'y', 'orientationDeg', 'length', 'openingLength'],
   'ray-detector': ['x', 'y', 'orientationDeg', 'length'],
-  [PLANAR_TYPE]: [...PLANAR_PARAMETERS], [CIRCULAR_TYPE]: [...CIRCULAR_PARAMETERS], [PRISM_TYPE]: [...PRISM_PARAMETERS], [POLYGON_TYPE]: [...POLYGON_PARAMETERS], ...CURVED_PARAMETERS };
+  [PLANAR_TYPE]: [...PLANAR_PARAMETERS], [CIRCULAR_TYPE]: [...CIRCULAR_PARAMETERS], [SEMICIRCULAR_TYPE]: [...SEMICIRCULAR_PARAMETERS], [PRISM_TYPE]: [...PRISM_PARAMETERS], [POLYGON_TYPE]: [...POLYGON_PARAMETERS], ...CURVED_PARAMETERS };
 // Shared authoring/validator definitions. General composition relaxes mandatory
 // apparatus types; it does not relax numerical, geometric or runtime limits.
 export const COMPONENT_TYPES = Object.freeze(Object.keys(parameters));
@@ -86,7 +87,7 @@ function validateVersion(doc, version) {
     object(c, ['id', 'type', 'parameters', ...(version >= 2 && c?.type === 'point-source' ? ['emission'] : [])], path);
     if (typeof c.id !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(c.id) || ids.has(c.id)) fail(`${path}.id`, 'expected a unique stable ID (letters, digits, underscores, hyphens)');
     ids.add(c.id);
-    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(version===4||(version===13&&t==='line-blocker')||(version===PARALLEL_BEAM_VERSION&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||version===PARALLEL_BEAM_VERSION)) :
+    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(version===4||(version===13&&t==='line-blocker')||(version===PARALLEL_BEAM_VERSION&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||[PARALLEL_BEAM_VERSION,SEMICIRCULAR_VERSION].includes(version))&&(t!==SEMICIRCULAR_TYPE||version===SEMICIRCULAR_VERSION)) :
       version >= 3 ? ['point-source', 'ideal-lens', 'plane-mirror'] :
       ['point-source', 'ideal-lens'], `${path}.type`);
     object(c.parameters, componentParameterNames(c.type,version), `${path}.parameters`);
@@ -96,7 +97,7 @@ function validateVersion(doc, version) {
       if(key==='normalDeg')number(value,-180,180,`${path}.parameters.${key}`);
       number(value, -10000, 10000, `${path}.parameters.${key}`);
       if (key === 'apertureHeight' && value < 1) fail(`${path}.parameters.${key}`, 'must be at least 1 mm');
-      if (key === 'radius' && (c.type===CIRCULAR_TYPE?value<2:c.type===CIRCLE_BLOCKER_TYPE?value<1:Math.abs(value)<2)) fail(`${path}.parameters.${key}`, c.type===CIRCLE_BLOCKER_TYPE?'opaque circle radius must be at least 1 mm':'radius magnitude must be at least 2 mm');
+      if (key === 'radius' && (c.type===CIRCULAR_TYPE?value<2:c.type===SEMICIRCULAR_TYPE?value<5:c.type===CIRCLE_BLOCKER_TYPE?value<1:Math.abs(value)<2)) fail(`${path}.parameters.${key}`, c.type===CIRCLE_BLOCKER_TYPE?'opaque circle radius must be at least 1 mm':'radius magnitude must be at least 2 mm');
       if (key === 'focalLength' && Math.abs(value) < 1) fail(`${path}.parameters.${key}`, 'magnitude must be at least 1 mm');
       if (key === 'brightness') number(value, 0.01, 1, `${path}.parameters.brightness`);
       if (key === 'width') number(value, 10, 100, `${path}.parameters.width`);
@@ -118,6 +119,7 @@ function validateVersion(doc, version) {
   validateCompositionRules(p.components,p.model,version,{
     'finite-composition':c=>validateFiniteDielectricComposition(c,mirrorEndpoints,fail,version),
     'native-parallel-beam':c=>validateParallelBeamComposition(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
+    'native-semicircular-beam':c=>validateSemicircularBeam(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'polygon-region':c=>validatePolygonGeometry(c,mirrorEndpoints,fail),
     'prism-region':c=>validatePrismGeometry(c,mirrorEndpoints,fail),
     'circular-region':c=>validateCircularGeometry(c,mirrorEndpoints,fail),

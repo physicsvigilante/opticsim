@@ -1,0 +1,96 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "Synthetic JEE-style parallel illumination through a semicircular glass section",
+    "runPolicy": "preview-v1",
+    "components": [
+      {
+        "id": "B1",
+        "type": "parallel-beam",
+        "parameters": {
+          "x": -150,
+          "y": -150,
+          "width": 20,
+          "directionDeg": 45,
+          "brightness": 0.08
+        }
+      },
+      {
+        "id": "G1",
+        "type": "semicircular-dielectric",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "radius": 100,
+          "insideIndex": 1.4142135623730951,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 250,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 1200
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "emitted",
+      "kind": "source-emissions",
+      "componentId": "B1"
+    },
+    {
+      "id": "interfaces",
+      "kind": "interface-interactions",
+      "componentId": "G1"
+    },
+    {
+      "id": "faces",
+      "kind": "interface-face-events",
+      "componentId": "G1"
+    },
+    {
+      "id": "first",
+      "kind": "interface-first-event",
+      "componentId": "G1"
+    },
+    {
+      "id": "tir",
+      "kind": "interface-tir-count",
+      "componentId": "G1"
+    },
+    {
+      "id": "crossings",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "hits",
+      "kind": "detector-hit-events",
+      "componentId": "D1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Observe native sampled parallel rays refracting at an explicitly finite flat diameter and circular arc, with independent Snell checks, TIR and passive detector readings.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "The fully specified synthetic 2D apparatus is motivated by the JEE J12 flat/curved glass geometry, but its radius, outside index, finite beam sampling and detector are teaching controls, not facts extracted from the original question.",
+      "The native Glass is a right-hand half-disk with diameter x=0, radius 100 mm and explicit inside/outside indices sqrt(2)/1.",
+      "Disabling Fresnel partial reflections omits non-TIR partial branches, but native total internal reflection remains enabled."
+    ],
+    "unknowns": [
+      "The original question's absolute scale, exterior optical model and continuous incident-beam extent are not given.",
+      "Sampled crossings and native interface event counts do not establish a complete 3D half-cylinder, detected image, full ray field, irradiance or original JEE numerical answer."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}
