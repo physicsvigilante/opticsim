@@ -9,6 +9,7 @@ import {validate,parseSave,serializeSave} from '../src/contract.js';
 import {evaluateDocument} from '../scripts/author-scene.mjs';
 import {evaluateObservables} from '../src/observables.js';
 import {predict} from '../src/analysis.js';
+import {formatRequestedResult} from '../src/result-preview.js';
 import {semicircularEncounter,SEMICIRCULAR_TYPE,SEMICIRCULAR_MODEL,SEMICIRCULAR_VERSION} from '../src/semicircular-dielectric.js';
 const core=createRequire(import.meta.url)('../dist/test-core.cjs');
 const fixture=JSON.parse(readFileSync(new URL('../examples/jee-semicircular-beam-v21.json',import.meta.url),'utf8'));
@@ -236,4 +237,45 @@ test('two-detector plane clearance, radial bounds and native density policy rema
  const density=structuredClone(d);
  density.simulation.rayDensity=.048;
  assert.throws(()=>validate(density),'beam would be overbright relative to density');
+});
+
+test('v21 native detector endpoint at a transmitted ray withholds hit positions but retains sampled count',async()=>{
+ // Use one REAL completed PhyDemo trace to locate a transmitted detector
+ // crossing. Then author a second, independent physical scene with a detector
+ // endpoint at that observed y. This is test design, not synthetic ray routing.
+ const baseline=await run(fresh());
+ assert.equal(baseline.native.summary.native.status,'completed');
+ const originalHits=baseline.results[6].value;
+ assert.equal(originalHits.length,4);
+ const bottom=Math.min(...originalHits.map(h=>h.pointMm.y));
+ const request=fresh(),detector=by(request,'D1');
+ detector.y=bottom+detector.length/2;
+ const doc=prepare(request);
+ const loaded=core.compile(doc).native.objs.find(o=>o.type==='Detector');
+ assert.ok(loaded,'canonical v21 produces an actual native Detector');
+ near(-loaded.p1.y,bottom,1e-8);
+ const execution=evaluateDocument(doc,core,fixture.requests);
+ assert.equal(execution.summary.native.status,'completed');
+ assert.equal(execution.summary.native.truncation,0);
+ assert.equal(execution.summary.native.undefinedBehavior,0);
+ const observed=execution.summary.observations;
+ assert.equal(observed.detectorsById.D1.crossings,4,
+   'native counts remain sampled detector crossings even with an endpoint encounter');
+ assert.equal(observed.detectorHitEventsById.D1.status,'unavailable');
+ assert.equal(observed.detectorHitEventsById.D1.reasonCode,'AMBIGUOUS_DETECTOR_HIT');
+ assert.equal(observed.detectorHitEventsById.D1.events,null,'never return a clipped or partial event list');
+ const results=(await evaluateObservables(doc,fixture.requests,execution.summary)).results;
+ assert.equal(results[5].kind,'detector-crossings');
+ assert.equal(results[5].status,'qualified');
+ assert.equal(results[5].value,4,'the native aggregate count remains usable');
+ assert.equal(results[6].kind,'detector-hit-events');
+ assert.equal(results[6].status,'unavailable');
+ assert.equal(results[6].value,null);
+ assert.match(results[6].reason,/native hit.*detector endpoint|geometrically\/numerically ambiguous/i);
+ const label=formatRequestedResult(results[6]);
+ assert.match(label,/No current value/);
+ assert.match(label,/endpoint/);
+ console.log('JEE_V21_ENDPOINT_NATIVE '+JSON.stringify({
+  event:'simulationComplete',nativeCrossings:4,positions:'withheld',
+  reasonCode:'AMBIGUOUS_DETECTOR_HIT',physicalImageClaim:false}));
 });
