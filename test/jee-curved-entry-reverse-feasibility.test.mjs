@@ -112,6 +112,8 @@ test('second boundary, missing screen and stopped rays do not qualify as one-cro
 test('on-axis two-hit ray does not identify a mathematical focus',()=>{
  const r=run({height:0});
  assert.equal(r.usable,true);
- assert.equal(r.events[1].point.y,r.events[2].point.y);
+ // sin(pi) is not exact zero in binary64; the two observed heights are
+ // indistinguishable at this scale. Do not form 1/(near-zero slope) or claim a focus.
+ near(r.events[1].point.y-r.events[2].point.y,0,1e-10);
  assert.equal(r.events[0].type,'Glass');
 });
