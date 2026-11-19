@@ -214,7 +214,8 @@ test('v18 browser provenance is append-only relative to reviewed v17 code, never
   assert.equal(p.newV18AppGitBlob,'cfbea455df3f7ea7a30002d0139730c25b235d32');
   const reconciliation=JSON.parse(readFileSync(new URL('./fixtures/native-v14-v21-app-integration-v1.json',import.meta.url),'utf8'));
   assert.equal(reconciliation.originalV18AppGitBlob,p.newV18AppGitBlob);
-  assert.equal(reconciliation.mainBeforeIntegration,'59b485d14ac28ca4ee97acc754a4cd207a7d33f1');
+  assert.equal(reconciliation.originalV21IntegrationBase,'59b485d14ac28ca4ee97acc754a4cd207a7d33f1');
+  assert.equal(reconciliation.mainBeforeIntegration,'487314dcb7e74e7f16f5b711f950090e16400780');
   assert.equal(reconciliation.reconciledAppGitBlob,sha);
   assert.notEqual(sha,p.newV18AppGitBlob,'Do not claim new UI matches old reviewed v18 byte identity');
   assert.equal(p.originalV17AppGitBlob,'9d447af4c8fc59ec1e8fdcfbcec0c4d739fc477f');
