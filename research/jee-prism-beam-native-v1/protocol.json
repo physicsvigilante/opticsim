@@ -1,0 +1,133 @@
+{
+  "format": "opticsim-jee-native-prism-beam-feasibility-v1",
+  "status": "pre-execution-frozen-protocol",
+  "baseline": "59b485d14ac28ca4ee97acc754a4cd207a7d33f1",
+  "pinnedUpstream": "811f508d2b070898c241a568b0c167dcb8645251",
+  "source": "Synthetic finite triangular prism control motivated by JEE J13/J14; no textbook numeric scale, prism index, beam width or exterior index inferred.",
+  "nativePolicy": {
+    "rayDensity": 0.2,
+    "brightness": 0.08,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000,
+    "maxEvidenceEvents": 256
+  },
+  "geometry": {
+    "triangularGlassPathYUp": [
+      {
+        "x": 0,
+        "y": -70
+      },
+      {
+        "x": 0,
+        "y": 70
+      },
+      {
+        "x": 100,
+        "y": 0
+      }
+    ],
+    "insideIndex": 1.5,
+    "outsideIndex": 1,
+    "partialReflect": false,
+    "beam": {
+      "x": -100,
+      "y": 0,
+      "width": 20,
+      "directionDeg": 0
+    },
+    "detector": {
+      "x": 200,
+      "y": 0,
+      "length": 600,
+      "orientationDeg": 90
+    }
+  },
+  "cases": [
+    {
+      "id": "normal-forward",
+      "kind": "direct",
+      "expect": "finite native flat-face entry, downstream finite sloping-face refraction"
+    },
+    {
+      "id": "reverse-vertex-winding",
+      "kind": "winding",
+      "expect": "same optical material and actual outgoing directions"
+    },
+    {
+      "id": "translated-system",
+      "kind": "translation",
+      "offset": {
+        "x": 120,
+        "y": 80
+      },
+      "expect": "same native relative geometry"
+    },
+    {
+      "id": "index-1point3",
+      "kind": "index",
+      "insideIndex": 1.3,
+      "expect": "Snell changes without custom ray steering"
+    },
+    {
+      "id": "index-1point8",
+      "kind": "index",
+      "insideIndex": 1.8,
+      "expect": "Snell changes without custom ray steering"
+    },
+    {
+      "id": "dense-emitter",
+      "kind": "density",
+      "rayDensity": 0.4,
+      "expect": "native sample count changes deterministically"
+    },
+    {
+      "id": "outside-miss",
+      "kind": "miss",
+      "beamY": 150,
+      "expect": "native Glass no-hit while rays continue"
+    },
+    {
+      "id": "wide-beam",
+      "kind": "wide",
+      "beamWidth": 80,
+      "expect": "native physical width sampled, no clipping by authored prism"
+    },
+    {
+      "id": "vertex-near",
+      "kind": "risk",
+      "beamY": 60,
+      "expect": "vertex-adjacent events must not be declared trusted"
+    },
+    {
+      "id": "vertex-exact",
+      "kind": "risk",
+      "beamY": 70,
+      "beamWidth": 10,
+      "rayDensity": 0.1,
+      "expect": "vertex or near-vertex native event cannot establish qualified evidence"
+    },
+    {
+      "id": "fresnel-on",
+      "kind": "fresnel",
+      "partialReflect": true,
+      "expect": "native branching/status recorded, not assumed complete"
+    },
+    {
+      "id": "depth-zero",
+      "kind": "limit",
+      "maxRayDepth": 0,
+      "expect": "native depth exhaustion not accepted"
+    },
+    {
+      "id": "processed-stop",
+      "kind": "limit",
+      "processedRayLimit": 1,
+      "expect": "native simulationStop not accepted"
+    },
+    {
+      "id": "no-glass",
+      "kind": "no-glass",
+      "expect": "native Beam and Detector positive free space control"
+    }
+  ]
+}
