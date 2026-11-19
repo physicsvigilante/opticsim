@@ -191,3 +191,49 @@ test('partial, stopped, stale and over-capacity detector evidence never become q
  assert.equal(testDense.results[6].value,null,'unclipped hit event list is withheld');
  assert.equal(testDense.results[6].status,'unavailable');
 });
+
+test('adversarial synthetic seam callback delegates exactly once and fails native qualification',()=>{
+ // Fault injection tests an observer error path, not a native optical ray.
+ // No simulation result is claimed from these deliberately fabricated inputs.
+ const d=prepare(fresh()),loaded=core.loadDocument(d),optic=loaded.scene.objs[loaded.idMap.get('G1')];
+ let delegations=0;
+ optic.onRayIncident=function(...args){
+  delegations++;
+  return {isAbsorbed:true,isUndefinedBehavior:true};
+ };
+ const observer=core.observeInterfaceSet(d,loaded.scene,loaded.idMap);
+ const ray={p1:{x:-1,y:-100},p2:{x:1,y:-100},brightness_s:.04,brightness_p:.04};
+ const nativePoint={x:0,y:-100};
+ const originalRay=structuredClone(ray),originalPoint=structuredClone(nativePoint);
+ const returned=optic.onRayIncident(ray,0,nativePoint,[]);
+ assert.equal(delegations,1,'recording cannot replace or double-invoke the native delegate');
+ assert.deepEqual(returned,{isAbsorbed:true,isUndefinedBehavior:true});
+ assert.deepEqual(ray,originalRay);
+ assert.deepEqual(nativePoint,originalPoint);
+ const report=observer.byId.G1;
+ assert.equal(report.interactions,1);
+ assert.equal(report.invalidObservations,1);
+ assert.equal(report.faces['face-flat'].interactions,0);
+ assert.equal(report.faces['face-arc'].interactions,0);
+ assert.equal(observer.errors.length,1);
+ assert.equal(core.classifyRun('simulationComplete',{
+   errors:observer.errors,warnings:[],truncation:0,undefinedBehavior:0
+ }), 'failed','a completion callback never overrides invalid seam observation');
+});
+test('two-detector plane clearance, radial bounds and native density policy remain strict',()=>{
+ const r=fresh();
+ r.components.push({id:'D2',type:'ray-detector',parameters:{x:300,y:0,orientationDeg:90,length:1200}});
+ const d=prepare(r);
+ assert.equal(d.schemaVersion,21);
+ assert.equal(core.compile(d).native.objs.length,4);
+ assert.deepEqual(parseSave(serializeSave(d)),d);
+ const tooClose=structuredClone(r);
+ by(tooClose,'D2').x=250.005;
+ assert.throws(()=>prepare(tooClose),'nearly coincident passive detector planes');
+ const outOfWorld=structuredClone(r);
+ by(outOfWorld,'G1').x=9999;
+ assert.throws(()=>prepare(outOfWorld),'complete arc must lie within world bounds');
+ const density=structuredClone(d);
+ density.simulation.rayDensity=.048;
+ assert.throws(()=>validate(density),'beam would be overbright relative to density');
+});
