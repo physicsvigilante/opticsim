@@ -1,0 +1,103 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "Two offset ideal lenses with native parallel rays",
+    "runPolicy": "preview-v1",
+    "components": [
+      {
+        "id": "B1",
+        "type": "parallel-beam",
+        "parameters": {
+          "x": -200,
+          "y": 0,
+          "width": 40,
+          "directionDeg": 0,
+          "brightness": 0.08
+        }
+      },
+      {
+        "id": "L1",
+        "type": "ideal-lens",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "focalLength": 200,
+          "apertureHeight": 100
+        }
+      },
+      {
+        "id": "L2",
+        "type": "ideal-lens",
+        "parameters": {
+          "x": 600,
+          "y": 2,
+          "focalLength": 200,
+          "apertureHeight": 100
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 900,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 100
+        }
+      },
+      {
+        "id": "D2",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 1100,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 100
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "emitted",
+      "kind": "source-emissions",
+      "componentId": "B1"
+    },
+    {
+      "id": "near-count",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "far-count",
+      "kind": "detector-crossings",
+      "componentId": "D2"
+    },
+    {
+      "id": "near-hits",
+      "kind": "detector-hit-events",
+      "componentId": "D1"
+    },
+    {
+      "id": "far-hits",
+      "kind": "detector-hit-events",
+      "componentId": "D2"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Explore actual native sampled beam paths through two ideal thin lenses with transverse centres and verify detector hit positions without claiming physical image detection.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "This is an explicitly authored synthetic two-lens teaching apparatus, not a numerical transcription of J19.",
+      "All distances, finite lens apertures and detector planes are chosen teaching controls.",
+      "Native Beam is finite and deterministic; each ideal lens is a vertical finite PhyDemo IdealLens object."
+    ],
+    "unknowns": [
+      "Sampled ray concurrence is not a measured image, PSF, irradiance, diffraction or a proof of the textbook original question's simulation fidelity."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}

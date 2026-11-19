@@ -14,7 +14,7 @@ export function finiteSurfaceGeometry(component,endpoints){
   if(!['ideal-lens','plane-mirror','line-blocker','ray-detector',FINITE_APERTURE_TYPE].includes(component.type))
     throw new TypeError('Finite segment geometry is not defined for '+component.type);
   const line=component.type==='ideal-lens'
-    ? [{x:p.x,y:-p.apertureHeight/2},{x:p.x,y:p.apertureHeight/2}]
+    ? [{x:p.x,y:(p.y??0)-p.apertureHeight/2},{x:p.x,y:(p.y??0)+p.apertureHeight/2}]
     : endpoints(p);
   return {line,segments:aperture?apertureGeometry(p,endpoints).arms:[line],aperture};
 }
