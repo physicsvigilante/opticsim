@@ -12,6 +12,7 @@ export function predict(doc) {
     case 'triangular-prism-tracing': return {kind:'unavailable',reason:'Finite prism exposes native face observations, not an image solver.'};
     case 'native-parallel-two-lens-tracing': return {kind:'unavailable',reason:'Finite decentered native ideal lenses do not establish a physical image or justify a coaxial lens-train prediction.'};
     case 'native-parallel-prism-tracing': return {kind:'unavailable',reason:'Sampled native finite triangle Beam refraction and TIR do not constitute a general prism inverse, detected image or 3D optics prediction.'};
+    case 'native-parallel-circle-tracing': return {kind:'unavailable',reason:'Finite parallel Beam through the complete circular dielectric is a 2D native trace through two surfaces, not a single-spherical-interface image solver, 3D sphere or original JEE inverse.'};
     case 'native-parallel-semicircular-tracing': return {kind:'unavailable',reason:'Native flat-and-arc semicircular glass measures sampled refraction and TIR, not an image or a general 3D half-cylinder solution.'};
     case 'circular-dielectric-tracing': return {kind:'unavailable',reason:'Finite circular dielectric exposes native boundary observations, not an image solver or a 3D sphere model.'};
     case 'planar-media-tracing': return {kind:'unavailable',reason:'Planar media expose native interface angles and branches, not an analytical image solver.'};
