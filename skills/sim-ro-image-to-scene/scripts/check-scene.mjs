@@ -41,12 +41,13 @@ export function checkCandidate(text, core,{captureDetectorHits=false,captureRayP
     const detectors = core.observeDetectorSet(candidate, loaded.scene, loaded.idMap,{captureHitEvents:captureDetectorHits,parentage,finiteDiagnostic});
     const interfaces = core.observeInterfaceSet?.(candidate, loaded.scene, loaded.idMap,{parentage,finiteDiagnostic});
     const blockers = core.observeBlockerSet?.(candidate, loaded.scene, loaded.idMap);
+    const apertureCornerGuard=core.observeNativeV18ApertureCorner?.(candidate,loaded.scene,loaded.idMap);
     const simulator = new core.Simulator(loaded.scene, null, null, null, null, null, false, candidate.simulation.processedRayLimit);
     return {
       cancel() { simulator.shouldSimulatorStop = true; },
       run(notify) {
         for (const event of ['simulationComplete', 'simulationStop']) simulator.on(event, () => notify(event, core.diagnostics(loaded.scene, simulator, emission, reflections, detectors, interfaces, blockers,
-          {detectorHitEvents:captureDetectorHits,nativeEvent:event,parentage,finiteDiagnostic})));
+          {detectorHitEvents:captureDetectorHits,nativeEvent:event,parentage,finiteDiagnostic,apertureCornerGuard})));
         simulator.updateSimulation();
       }
     };

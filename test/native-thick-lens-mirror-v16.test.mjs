@@ -1,0 +1,288 @@
+// v16 prospective physical composition. All ray paths come from the pinned
+// native PhyDemo scene. Expected sequences are post-execution checks only.
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
+import {prepareScene,reviseScene,reviseComponents,capabilities} from '../src/authoring.js';
+import {validate,parseSave,serializeSave} from '../src/contract.js';
+import {inspectNative} from './helpers/native-composition-inspection.mjs';
+import {evaluateDocument} from '../scripts/author-scene.mjs';
+import {evaluateObservables} from '../src/observables.js';
+import {initialQualification,recordQualifiedEdit,createQualifiedBundle,parseQualifiedBundle} from '../src/qualification.js';
+
+const core=createRequire(import.meta.url)('../dist/test-core.cjs');
+const fixture=JSON.parse(readFileSync(new URL('../examples/native-thick-lens-mirror-v16.json',import.meta.url),'utf8'));
+const fresh=()=>structuredClone(fixture.physical);
+const comp=(r,id)=>r.components.find(c=>c.id===id);
+const prep=r=>prepareScene(r).document;
+const exec=(doc,requests=fixture.requests)=>evaluateDocument(doc,core,requests);
+const close=(a,b,epsilon=1e-6)=>assert.ok(Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)<=epsilon,`${a} != ${b}`);
+const cross=(a,b)=>a.x*b.y-a.y*b.x;
+const dot=(a,b)=>a.x*b.x+a.y*b.y;
+const snell=(e,p)=>{
+ const left=p.x-p.centerThickness/2,right=p.x+p.centerThickness/2,front=e.point.x<p.x;
+ const R=front?p.frontRadius:p.backRadius,cx=front?left+R:right-R;
+ const n={x:(e.point.x-cx)/R,y:(e.point.y-p.y)/R};
+ close(Math.hypot(e.point.x-cx,e.point.y-p.y),R,1e-5);
+ const leaving=dot(e.incoming,n)>0;
+ const ni=leaving?p.insideIndex:p.outsideIndex,nt=leaving?p.outsideIndex:p.insideIndex;
+ assert.equal(e.outgoing.length,1);
+ assert.ok(dot(e.outgoing[0],n)*dot(e.incoming,n)>0);
+ close(ni*cross(e.incoming,n),nt*cross(e.outgoing[0],n),1e-7);
+ return {face:front?'front-arc':'back-arc',from:leaving?'inside':'outside',
+  point:e.point,incidentIndex:ni,destinationIndex:nt};
+};
+test('v16 accepts exactly one finite native spherical lens + one native mirror and traces actual return',async()=>{
+ const r=fresh(),before=JSON.stringify(r),d=prep(r);
+ assert.equal(JSON.stringify(r),before,'All physical facts preserved exactly');
+ assert.equal(d.schemaVersion,16);assert.equal(d.adapterVersion,16);
+ assert.equal(d.physics.model,'native-thick-lens-mirror-tracing');
+ assert.deepEqual(parseSave(serializeSave(d)),d);
+ assert.deepEqual(core.compile(d).native.objs.map(o=>o.type),['SingleRay','SphericalLens','Mirror','Detector']);
+ const observed=inspectNative(d),ids=observed.trace.map(x=>x.id);
+ assert.deepEqual(ids,['D1','L1','L1','M1','L1','L1','D1']);
+ const faces=observed.trace.filter(e=>e.id==='L1').map(e=>snell(e,comp(r,'L1').parameters));
+ assert.deepEqual(faces.map(f=>f.face),['front-arc','back-arc','back-arc','front-arc']);
+ assert.deepEqual(faces.map(f=>f.from),['outside','inside','outside','inside']);
+ const mirror=observed.trace.find(e=>e.id==='M1');
+ assert.equal(mirror.outgoing.length,1);
+ close(mirror.point.x,130);
+ close(mirror.outgoing[0].x,-mirror.incoming.x);
+ close(mirror.outgoing[0].y,mirror.incoming.y);
+ assert.equal(observed.diagnostic.reflectionsById.M1,1);
+ assert.equal(observed.diagnostic.interfacesById.L1.interactions,4);
+ assert.equal(observed.diagnostic.interfacesById.L1.faces['front-arc'].interactions,2);
+ assert.equal(observed.diagnostic.interfacesById.L1.faces['back-arc'].interactions,2);
+ assert.equal(observed.diagnostic.detectorsById.D1.crossings,2);
+ const run=exec(d),read=await evaluateObservables(d,fixture.requests,run.summary);
+ assert.equal(run.summary.native.status,'completed');
+ assert.equal(run.summary.executionPassed,true);
+ assert.deepEqual(read.results.map(x=>x.status),Array(fixture.requests.length).fill('qualified'));
+ assert.deepEqual(read.results.map(x=>x.value).filter(x=>typeof x==='number'),[4,1,2]);
+ assert.ok(read.results.every(x=>x.warnings.some(w=>w.includes('approximation'))));
+ const image=(await evaluateObservables(d,[{id:'image',kind:'ideal-image',componentId:'S1'}],run.summary)).results[0];
+ assert.equal(image.status,'unavailable');assert.equal(image.value,null);
+ console.log('V16_NATIVE_RETURN '+JSON.stringify({
+  status:run.summary.native.status,ids,faces,mirror:mirror.point,
+  nativeDetectorCrossings:observed.diagnostic.detectorsById.D1.crossings}));
+});
+test('v16 authentic missed mirror does not imply a prescribed return route',async()=>{
+ const r=fresh();comp(r,'M1').parameters.y=500;
+ const d=prep(r),obs=inspectNative(d),ids=obs.trace.map(e=>e.id);
+ assert.deepEqual(ids,['D1','L1','L1']);
+ assert.equal(obs.diagnostic.reflectionsById.M1,0);
+ assert.equal(obs.diagnostic.detectorsById.D1.crossings,1);
+ const sum=exec(d).summary,read=await evaluateObservables(d,fixture.requests,sum);
+ assert.equal(sum.native.status,'completed');
+ assert.deepEqual(read.results.map(x=>x.value).filter(x=>typeof x==='number'),[2,0,1]);
+ const changed=fresh();
+ comp(changed,'M1').parameters.x=130;
+ comp(changed,'M1').parameters.y=500;
+ assert.deepEqual(changed,r);
+ console.log('V16_NATIVE_MISS '+JSON.stringify({ids,status:sum.native.status,
+  mirrorReflections:obs.diagnostic.reflectionsById.M1}));
+});
+test('v16 validates whole mirror segment, lens geometry, detector/source and model isolation',()=>{
+ const baseline=fresh();
+ const negative=[
+  r=>comp(r,'M1').parameters.x=15,
+  r=>comp(r,'M1').parameters.x=15.009,
+  r=>{comp(r,'M1').parameters.x=40;comp(r,'M1').parameters.length=150;comp(r,'M1').parameters.orientationDeg=30;},
+  r=>{comp(r,'M1').parameters.x=9999;comp(r,'M1').parameters.orientationDeg=0;},
+  r=>comp(r,'L1').parameters.centerThickness=20,
+  r=>comp(r,'L1').parameters.frontRadius=49,
+  r=>comp(r,'L1').parameters.apertureHeight=1,
+  r=>comp(r,'D1').parameters.x=0,
+  r=>comp(r,'S1').parameters.x=0,
+  r=>{comp(r,'M1').parameters.x=-200;comp(r,'M1').parameters.y=10;},
+  r=>comp(r,'S1').emission.mode='full-circle',
+
+  r=>r.components.push({id:'B1',type:'line-blocker',parameters:{x:80,y:0,orientationDeg:90,length:100}}),
+  r=>r.components.push({id:'C1',type:'circular-dielectric',parameters:{x:300,y:0,radius:10,insideIndex:1.4,outsideIndex:1,partialReflection:false}})
+ ];
+ for(const [i,edit] of negative.entries()){
+  const r=structuredClone(baseline);edit(r);
+  assert.throws(()=>prep(r),undefined,'Invalid v16 case '+i+' must not be repaired');
+ }
+ // Fresh authoring can choose v17 when a SECOND physical lens is supplied;
+ // saved v16 scenes cannot add one without explicitly creating a new scene.
+ const twoLenses=structuredClone(baseline);
+ twoLenses.components.push({...structuredClone(comp(twoLenses,'L1')),id:'L2',
+  parameters:{...comp(twoLenses,'L1').parameters,x:75}});
+ assert.equal(prep(twoLenses).schemaVersion,17);
+ const forged=prep(baseline);
+ forged.physics.components.push(structuredClone(twoLenses.components.at(-1)));
+ assert.throws(()=>validate(forged),
+  'A saved v16 one-lens mirror model cannot silently become a two-lens model');
+ const positive=structuredClone(baseline);
+ comp(positive,'M1').parameters.x=15.011;
+ comp(positive,'S1').parameters.y=0;
+ const accepted=prep(positive);
+ assert.equal(accepted.schemaVersion,16);
+ assert.deepEqual(accepted.physics.components.find(c=>c.id==='M1').parameters,comp(positive,'M1').parameters);
+ const v15=structuredClone(accepted);v15.schemaVersion=v15.adapterVersion=15;
+ v15.physics.model='native-thick-lens-tracing';
+ assert.throws(()=>validate(v15),'Historical v15 must refuse mixed components');
+ const v14=structuredClone(accepted);v14.schemaVersion=v14.adapterVersion=14;
+ v14.physics.model='two-separated-dielectrics-tracing';
+ assert.throws(()=>validate(v14),'Historical v14 must refuse mixed components');
+ const existing=JSON.parse(readFileSync(new URL('../examples/native-thick-lens-train.json',import.meta.url),'utf8'));
+ assert.equal(prep(existing.physical).schemaVersion,15);
+ const noMirror=structuredClone(baseline);noMirror.components=noMirror.components.filter(x=>x.id!=='M1');
+ assert.equal(prep(noMirror).schemaVersion,15,'New authoring selection remains backwards-compatible');
+ const structural=prep(baseline);
+ assert.throws(()=>reviseComponents(structural,{format:'opticsim-component-revision-v1',
+  operations:[{op:'remove',id:'M1'}]}),'No implicit downgrade to v15 via structural edit');
+ assert.ok(capabilities().composition.profiles.some(p=>p.schemaVersion===16));
+});
+test('qualified mirror/lens physical revisions preserve native evidence integrity and source identity',async()=>{
+ const original=prep(fresh()),q=initialQualification(original,null,{inputSha256:'c'.repeat(64)});
+ const evidence=exec(original).summary;
+ const revised=reviseScene(original,{changes:[{id:'M1',section:'parameters',key:'y',value:500}]}).document;
+ assert.equal(revised.schemaVersion,16);
+ const stale=await evaluateObservables(revised,fixture.requests,evidence);
+ assert.ok(stale.results.every(x=>x.status==='suppressed'&&x.value===null));
+ const current=exec(revised);
+ assert.equal(current.summary.native.status,'completed');
+ const read=await evaluateObservables(revised,fixture.requests,current.summary);
+ assert.deepEqual(read.results.map(x=>x.status),Array(fixture.requests.length).fill('qualified'));
+ const q2=recordQualifiedEdit(original,revised,q);
+ const reopened=await parseQualifiedBundle(JSON.stringify(await createQualifiedBundle(revised,q2,fixture.requests)));
+ assert.deepEqual(reopened.scene,revised);
+ assert.equal(reopened.scene.physics.components.find(c=>c.id==='M1').parameters.y,500);
+ assert.equal(reopened.scene.physics.components.find(c=>c.id==='L1').parameters.insideIndex,1.5);
+ assert.throws(()=>reviseScene(original,{changes:[{id:'M1',section:'parameters',key:'x',value:0}]}));
+});
+test('incomplete thick-lens and mirror native runs suppress all measurements without inventing a route',async()=>{
+ const doc=prep(fresh()),limited=structuredClone(doc);
+ limited.simulation.maxRayDepth=2;validate(limited);
+ const run=exec(limited);
+ assert.equal(run.summary.native.status,'incomplete');
+ assert.equal(run.summary.executionPassed,false);
+ assert.ok((await evaluateObservables(limited,fixture.requests,run.summary)).results.every(x=>x.status==='suppressed'&&x.value===null));
+ const fresnel=structuredClone(doc);
+ comp({components:fresnel.physics.components},'L1').parameters.partialReflection=true;
+ const complete=exec(fresnel);
+ assert.ok(['completed','completed-with-warnings','incomplete'].includes(complete.summary.native.status));
+ const values=(await evaluateObservables(fresnel,fixture.requests,complete.summary)).results;
+ if(complete.summary.native.status==='incomplete')
+  assert.ok(values.every(x=>x.status==='suppressed'&&x.value===null));
+ console.log('V16_NATIVE_FRESNEL '+JSON.stringify({status:complete.summary.native.status,
+  truncation:complete.summary.native.truncation,requested:values.map(x=>x.status)}));
+});
+
+test('v16 right-to-left illumination uses actual reverse curved faces and mirror return',()=>{
+ const r=fresh();
+ Object.assign(comp(r,'S1').parameters,{x:200,y:10});
+ comp(r,'S1').emission.directionDeg=180;
+ Object.assign(comp(r,'M1').parameters,{x:-130,y:0});
+ Object.assign(comp(r,'D1').parameters,{x:100,y:0});
+ const doc=prep(r),obs=inspectNative(doc);
+ assert.deepEqual(obs.trace.map(e=>e.id),['D1','L1','L1','M1','L1','L1','D1']);
+ const faces=obs.trace.filter(e=>e.id==='L1').map(e=>snell(e,comp(r,'L1').parameters));
+ assert.deepEqual(faces.map(x=>x.face),['back-arc','front-arc','front-arc','back-arc']);
+ assert.deepEqual(faces.map(x=>x.from),['outside','inside','outside','inside']);
+ const mirror=obs.trace.find(e=>e.id==='M1');
+ assert.ok(mirror.incoming.x<0);
+ close(mirror.outgoing[0].x,-mirror.incoming.x,1e-8);
+ close(mirror.outgoing[0].y,mirror.incoming.y,1e-8);
+ assert.equal(obs.diagnostic.reflectionsById.M1,1);
+ assert.equal(obs.diagnostic.detectorsById.D1.crossings,2);
+ console.log('V16_NATIVE_REVERSE_RETURN '+JSON.stringify({
+  ids:obs.trace.map(e=>e.id),faces,mirror:mirror.point}));
+});
+
+test('v16 mirror angle and explicit material changes do not impose an encounter route',()=>{
+ const variants=[
+  {label:'mirror 89 degrees',index:1.5,ambient:1,orientation:89},
+  {label:'mirror 91 degrees',index:1.5,ambient:1,orientation:91},
+  {label:'nonair exterior',index:1.5,ambient:1.2,orientation:90},
+  {label:'higher-index lens',index:1.8,ambient:1,orientation:90},
+  {label:'asymmetric biconvex',index:1.5,ambient:1,orientation:90,backRadius:120}
+ ];
+ for(const v of variants){
+  const r=fresh(),p=comp(r,'L1').parameters;
+  p.insideIndex=v.index;p.outsideIndex=v.ambient;
+  if(v.backRadius)p.backRadius=v.backRadius;
+  comp(r,'M1').parameters.orientationDeg=v.orientation;
+  const doc=prep(r),raw=inspectNative(doc);
+  const mirror=raw.trace.find(e=>e.id==='M1');
+  assert.ok(mirror&&mirror.outgoing.length===1,'Native mirror really receives the ray in '+v.label);
+  const a=v.orientation*Math.PI/180,n={x:-Math.sin(a),y:Math.cos(a)},k=dot(mirror.incoming,n);
+  close(mirror.outgoing[0].x,mirror.incoming.x-2*k*n.x,1e-7);
+  close(mirror.outgoing[0].y,mirror.incoming.y-2*k*n.y,1e-7);
+  const surfaceEvents=raw.trace.filter(e=>e.id==='L1');
+  assert.ok(surfaceEvents.length>=2,'Native physically enters and exits lens before mirror');
+  for(const e of surfaceEvents)snell(e,p);
+  assert.equal(raw.diagnostic.reflectionsById.M1,1);
+  console.log('V16_NATIVE_OBLIQUE_CONTROL '+JSON.stringify({
+   variant:v,actualRoute:raw.trace.map(e=>e.id),
+   nativeLensEvents:surfaceEvents.length,mirrorPoint:mirror.point
+  }));
+ }
+});
+
+test('v16 closest admitted 0.011 mm whole-body mirror gap still traces true axial return',()=>{
+ const r=fresh();
+ comp(r,'S1').parameters.y=0;
+ comp(r,'M1').parameters.x=15.011;
+ const doc=prep(r),raw=inspectNative(doc);
+ assert.deepEqual(raw.trace.map(e=>e.id),['D1','L1','L1','M1','L1','L1','D1']);
+ const meter=raw.diagnostic.interfacesById.L1;
+ assert.equal(meter.interactions,4);
+ assert.equal(raw.diagnostic.reflectionsById.M1,1);
+ assert.equal(raw.diagnostic.detectorsById.D1.crossings,2);
+ const mirror=raw.trace.find(e=>e.id==='M1');
+ close(mirror.point.x,15.011,1e-8);
+ for(const e of raw.trace.filter(e=>e.id==='L1'))snell(e,comp(r,'L1').parameters);
+ const rejected=fresh();
+ comp(rejected,'M1').parameters.x=15.009;
+ assert.throws(()=>prep(rejected),'No native trace with <0.01 mm certified body clearance');
+ console.log('V16_NATIVE_CLOSE_MIRROR '+JSON.stringify({
+  gap:0.011,status:'completed',ids:raw.trace.map(e=>e.id),
+  mirrorPoint:mirror.point
+ }));
+});
+
+test('v16 two independently authored rays share native lens and mirror without source-route inference',async()=>{
+ const r=fresh(),second=structuredClone(comp(r,'S1'));
+ second.id='S2';second.parameters.y=-10;
+ r.components.push(second);
+ const doc=prep(r),native=inspectNative(doc),diag=native.diagnostic;
+ assert.equal(doc.schemaVersion,16);
+ assert.equal(diag.emissionsById.S1.emitted,1);
+ assert.equal(diag.emissionsById.S2.emitted,1);
+ assert.equal(diag.interfacesById.L1.interactions,8);
+ assert.equal(diag.interfacesById.L1.faces['front-arc'].interactions,4);
+ assert.equal(diag.interfacesById.L1.faces['back-arc'].interactions,4);
+ assert.equal(diag.reflectionsById.M1,2);
+ assert.equal(diag.detectorsById.D1.crossings,4);
+ const requests=[{id:'a',kind:'source-emissions',componentId:'S1'},
+  {id:'b',kind:'source-emissions',componentId:'S2'},
+  {id:'lens',kind:'interface-interactions',componentId:'L1'},
+  {id:'mirror',kind:'mirror-reflections',componentId:'M1'},
+  {id:'detector',kind:'detector-crossings',componentId:'D1'}];
+ const result=exec(doc,requests),read=await evaluateObservables(doc,requests,result.summary);
+ assert.equal(result.summary.native.status,'completed');
+ assert.deepEqual(read.results.map(e=>e.status),Array(5).fill('qualified'));
+ assert.deepEqual(read.results.map(e=>e.value),[1,1,8,2,4]);
+ assert.ok(native.trace.filter(e=>e.id==='L1').every(e=>{snell(e,comp(r,'L1').parameters);return true;}));
+ console.log('V16_NATIVE_TWO_SOURCES '+JSON.stringify({
+  emissions:diag.emissionsById,lens:diag.interfacesById.L1.interactions,
+  mirror:diag.reflectionsById.M1,detector:diag.detectorsById.D1.crossings,
+  statuses:read.results.map(e=>e.status)
+ }));
+});
+test('v16 explicit cm input converts only length fields and preserves exact physical scene',()=>{
+ const mm=fresh(),cm=structuredClone(mm);
+ cm.lengthUnit='cm';
+ const lengthKeys=new Set(['x','y','apertureHeight','centerThickness','frontRadius','backRadius','length']);
+ for(const component of cm.components)for(const [key,value] of Object.entries(component.parameters))
+  if(lengthKeys.has(key))component.parameters[key]=value/10;
+ assert.deepEqual(prep(cm),prep(mm));
+ const missing=structuredClone(mm);delete comp(missing,'L1').parameters.backRadius;
+ assert.throws(()=>prep(missing),'Missing physical curvature never inferred');
+ const noOrientation=structuredClone(mm);delete comp(noOrientation,'M1').parameters.orientationDeg;
+ assert.throws(()=>prep(noOrientation),'Mirror orientation never guessed');
+});

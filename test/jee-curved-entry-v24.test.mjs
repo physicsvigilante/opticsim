@@ -34,7 +34,8 @@ test('public v24 compiles EXACT existing native curved Glass and real internal d
  assert.equal(caps.nativeCurvedEntryObservation.schemaVersion,24);
  assert.equal(caps.nativeCurvedEntryObservation.model,CURVED_ENTRY_MODEL);
  assert.deepEqual(compositionModels(24),[CURVED_ENTRY_MODEL]);
- assert.equal(compositionCapabilities().profiles.filter(x=>x.schemaVersion<=23).length,24);
+ assert.equal(compositionCapabilities().profiles.filter(x=>x.schemaVersion<=23&&![14,15,16,17,18].includes(x.schemaVersion)).length,24,
+  'The original pre-v24 profile set is unchanged by isolated historic v14–v18 integration');
  assert.equal(curvedEntryCapabilities().radiusMm[0],50);
  const native=core.compile(d).native;
  assert.deepEqual(native.objs.map(x=>x.type),['SingleRay','Glass','Detector','Detector','Blocker']);

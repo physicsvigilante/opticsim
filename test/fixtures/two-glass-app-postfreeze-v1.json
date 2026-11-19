@@ -1,0 +1,12 @@
+{
+  "format": "opticsim-two-separated-glass-app-postfreeze-v1",
+  "historicalFreezeFile": "test/fixtures/detector-hit-transfer-freeze.json",
+  "originalFrozenSha256": "aad952e4c0b90a6812c21cd5f4ac92f35b52caf59f733d814deef3d32f43faf4",
+  "productionBaseMain": "d3509e82fb65d81aabe336666851f8f2962623f4",
+  "baselineBeforeTwoGlassSha256": "a99b718f5b3cede585b9aac94d2e5720dead827368f9924ce2d4ff382ee68d19",
+  "candidateTwoGlassSha256": "2d9a4bc6cd9f41e6f75688505a60ae672c818cfc166ad02aa775735eb42e391c",
+  "target": "src/app.js",
+  "classification": "Separate later post-exposure v14 viewer compatibility addition; original reserved physics R1 transfer remains historical, not newly blind.",
+  "changes": "Permit v14 native SingleRay in source picker and label truthful two-region composition; no native optics/observer, detector or numerical policy changes. Existing sampling explanation explicitly says one exact ray and cannot suggest widening a cone.",
+  "release": "R2 draft HOLD for real Chat B independent physical review and exact-head CI."
+}

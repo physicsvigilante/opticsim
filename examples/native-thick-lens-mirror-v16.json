@@ -1,0 +1,100 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "Native thick lens with independently authored finite plane mirror",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -200,
+          "y": 10,
+          "brightness": 0.5
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 0
+        }
+      },
+      {
+        "id": "L1",
+        "type": "spherical-lens",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "apertureHeight": 100,
+          "centerThickness": 30,
+          "frontRadius": 100,
+          "backRadius": 100,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "M1",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": 130,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 200
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": -100,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 240
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "lens-hits",
+      "kind": "interface-interactions",
+      "componentId": "L1"
+    },
+    {
+      "id": "lens-faces",
+      "kind": "interface-face-events",
+      "componentId": "L1"
+    },
+    {
+      "id": "mirror-hits",
+      "kind": "mirror-reflections",
+      "componentId": "M1"
+    },
+    {
+      "id": "detector-crossings",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "first-lens-event",
+      "kind": "interface-first-event",
+      "componentId": "L1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Trace a real native light ray through a finite spherical thick lens and plane mirror, counting actual encounters and any return pass.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "Synthetic, explicitly authored test apparatus; not a textbook problem interpretation.",
+      "The finite native mirror is permitted to be missed; no return path is prescribed.",
+      "The homogeneous thick lens has explicit front/back spherical radii, aperture, central thickness and physical indices.",
+      "Fresnel-off is an explicit transmitted-only approximation; native TIR still applies."
+    ],
+    "unknowns": [
+      "No claimed focal image, source-attributed ray lineage, continuous beam power or original textbook answer."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}

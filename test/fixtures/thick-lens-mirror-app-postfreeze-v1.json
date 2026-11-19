@@ -1,0 +1,13 @@
+{
+  "format": "opticsim-native-thick-mirror-app-postfreeze-v1",
+  "historicalFreezeFile": "test/fixtures/detector-hit-transfer-freeze.json",
+  "priorPostfreezeFile": "test/fixtures/thick-lens-app-postfreeze-v1.json",
+  "target": "src/app.js",
+  "originalFrozenSha256": "aad952e4c0b90a6812c21cd5f4ac92f35b52caf59f733d814deef3d32f43faf4",
+  "priorReviewedThickLensSha256": "d34a9a0dadeda8c8356b93adbd0f55246e24f6527fa7e5caf3b8ff36db38fda9",
+  "candidateThickMirrorSha256": "0df07545040ca490f7cb62a54fa92d5158c9b96f4fc24fd3390bc8ee311737e3",
+  "sourceBaseV15": "80fec0bb05200ad6034bf55a00c6e522740b27e1",
+  "classification": "Additive post-exposure v16 physical editor compatibility; original frozen reserve and reviewed v15 app bytes remain independently pinned, never renamed as blind evaluation.",
+  "changes": "Add truthful v16 native single-ray source mode, lens+mirror descriptive model and physical geometry guidance. No PhyDemo core, source emission, measurement, numerical threshold or line-ray route change.",
+  "release": "DRAFT R2, no main merge before independent physics review and owner authorization."
+}
