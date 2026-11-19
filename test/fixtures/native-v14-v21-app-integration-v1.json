@@ -5,7 +5,8 @@
   "originalV18AppGitBlob": "cfbea455df3f7ea7a30002d0139730c25b235d32",
   "mainBeforeIntegration": "59b485d14ac28ca4ee97acc754a4cd207a7d33f1",
   "integrationBranch": "integration/native-thick-v14-v18-on-main",
-  "reconciledAppGitBlob": "4ff3480766a9252445c25771cab664f7099de831",
+  "reconciledAppGitBlob": "51c3724044d0122c785439ebd16d930e55fb6174",
   "classification": "New post-review UI integration fingerprint, not original blinded or independently re-reviewed v18 evidence. Preserves original manifests unchanged.",
-  "pending": "Full current-main CI and independent integration review; do not merge."
+  "pending": "Full current-main CI and independent integration review; do not merge.",
+  "integrity": "Reconciled source fingerprint amended on this still-draft integration branch after accurate v14-v18 browser model names; original v18 historical blob and baseline remain unchanged."
 }
