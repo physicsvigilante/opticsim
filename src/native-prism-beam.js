@@ -4,10 +4,11 @@
 import {compositionCountsMatch} from './composition-profiles.js';
 import {parallelBeamGeometry,parallelBeamSamples,BEAM_CLEARANCE_MM} from './parallel-beam.js';
 import {prismFaces,prismVertices} from './triangular-prism.js';
+import {PRISM_BEAM_VERTEX_CLEARANCE_MM,PRISM_BEAM_CRITICAL_SIN_MARGIN} from './prism-beam-qualification.js';
+export {PRISM_BEAM_VERTEX_CLEARANCE_MM,PRISM_BEAM_CRITICAL_SIN_MARGIN};
 
 export const PRISM_BEAM_VERSION=22;
 export const PRISM_BEAM_MODEL='native-parallel-prism-tracing';
-export const PRISM_BEAM_VERTEX_CLEARANCE_MM=.1;
 const world=p=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&
   Math.abs(p.x)<=10000&&Math.abs(p.y)<=10000;
 const refuse=(fail,path,message)=>fail(path,message,'UNSUPPORTED_SCOPE');
@@ -52,7 +53,9 @@ export function validateNativePrismBeam(components,model,rayDensity,mirrorEndpoi
  // Only the ORIGINAL straight sample paths are screened. We do NOT
  // calculate outgoing Snell, TIR, or a prescribed route in admission.
  // Subsequent actual onRayIncident vertex ambiguity is rejected by the
- // existing native Prism observer using finiteGlassEncounter.
+ // v22-only 0.1-mm native Prism callback guard (historical v8 remains 0.01 mm).
+ // Native critical-angle risk within dimensionless 1e-5 is independently
+ // withheld at each actual Glass encounter; no alternate Snell ray is traced.
  if(samples.some(v=>vertices.some(q=>q.x>=v.x&&
     Math.abs(v.y-q.y)<=PRISM_BEAM_VERTEX_CLEARANCE_MM)))
    refuse(fail,path,'A deterministic initial ray can strike a triangle vertex within 0.1 mm (including the forward apex); shift/resize the explicit Beam.');
