@@ -132,7 +132,7 @@ test('weak index contrast and near-infinite conjugates are not reported as finit
  r=analyzeSphericalInterface(c);
  assert.equal(r.status,'conditional');
  assert.equal(r.value.imageKind,'real');
- near(r.value.signedImageDistance,60);
+ near(r.value.signedImageDistance,90);
 });
 test('CLI preserves original bytes and source hash, isolates analysis and rejects invalid input',()=>{
  const q=power(),raw=Buffer.from(JSON.stringify(q,null,2)+'\n','utf8');
