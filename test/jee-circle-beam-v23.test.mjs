@@ -136,7 +136,7 @@ test('v23 refuses tangent, uncertain first entry, source inside, Fresnel, mixed 
   ['missing outside index',p=>delete by(p,'G1').outsideIndex],
   ['missing Fresnel choice',p=>delete by(p,'G1').partialReflection],
   ['saturation',p=>by(p,'B1').brightness=.9],
-  ['too wide for 90 percent circle',p=>by(p,'B1').width=100;],
+  ['too wide for 90 percent circle',p=>{by(p,'G1').radius=30;by(p,'B1').width=100;}],
   ['detector intersecting circle',p=>by(p,'D1').x=90],
   ['second detector same plane',p=>p.components.push({
     id:'D2',type:'ray-detector',parameters:{x:260,y:0,length:200,orientationDeg:90}})],
