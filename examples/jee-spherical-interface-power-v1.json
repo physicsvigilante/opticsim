@@ -1,0 +1,9 @@
+{
+  "format": "opticsim-spherical-interface-paraxial-query-v1",
+  "kind": "surface-power",
+  "signConvention": "positive-along-incident-light",
+  "lengthUnit": "cm",
+  "incidentIndex": 1,
+  "transmittedIndex": 1.3333333333333333,
+  "signedRadius": 10
+}
