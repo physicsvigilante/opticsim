@@ -137,7 +137,7 @@ const selection=freeze([
   {model:twoThickMirror,version:17,when:[group([thick],2,32),group([mirror],1,32)]},
   {model:thickMirror,version:16,when:[group([thick],1,32),group([mirror],1,32)]},
   {model:thickTrain,version:15,when:[group([thick],1,32)]},
-  {model:twoFinite,version:14,when:[group([polygon],2,32)]}
+  {model:twoFinite,version:14,when:[group([polygon],2,32)]},
   {model:'native-parallel-semicircular-tracing',version:21,when:[group([semicircle],1,32)]},
   {model:'native-parallel-prism-tracing',version:22,when:[group([beam],1,32),group([prism],1,32)]},
   {model:'native-parallel-circle-tracing',version:23,when:[group([beam],1,32),group([circle],1,32)]},
