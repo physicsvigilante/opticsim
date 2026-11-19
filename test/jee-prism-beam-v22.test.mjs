@@ -59,6 +59,7 @@ test('real multi-face native prism shows genuine sampled detector zero, not an a
  near(first.transmittedAngleDeg,0);
  assert.equal(first.incidentIndex,1);
  assert.equal(first.destinationIndex,1.5);
+ assert.equal(r.results[4].value,4,'four actual native internal total reflections, not inferred path turns');
  assert.equal(r.results[5].value,0);
  assert.deepEqual(r.results[6].value,[]);
  assert.equal(r.results[6].status,'qualified');
@@ -74,6 +75,7 @@ test('different finite apex width produces real downstream refracted crossings r
  assert.equal(r.native.summary.native.status,'completed');
  assert.equal(r.results[0].value,4);
  assert.equal(r.results[2].value['face-12'].interactions,4);
+ assert.equal(r.results[4].value,0,'short prism genuinely transmits without native TIR in this control');
  assert.ok(r.results[5].value>0,'real native refracted rays reach downstream detector');
  assert.equal(r.results[5].value,r.results[6].value.length);
  assert.ok(r.results[6].value.every(x=>Math.abs(x.pointMm.x-200)<1e-6));
@@ -191,4 +193,27 @@ test('test-only true native vertex callback ambiguity cannot qualify normal/coun
  assert.equal(meter.errors.length,1);
  assert.equal(core.classifyRun('simulationComplete',{errors:meter.errors,warnings:[],
    truncation:0,undefinedBehavior:0}),'failed');
+});
+
+test('v22 dense native detector overflow retains counted crossings but withholds entire position list',async()=>{
+ const physical=fresh();by(physical,'G1').x3=20;by(physical,'B1').width=80;
+ const doc=prepared(physical);
+ doc.simulation.rayDensity=.8;
+ validate(doc);
+ const native=evaluateDocument(doc,core,fixture.requests);
+ assert.equal(native.summary.native.status,'completed');
+ assert.equal(native.summary.native.truncation,0);
+ assert.equal(native.summary.native.undefinedBehavior,0);
+ const results=(await evaluateObservables(doc,fixture.requests,native.summary)).results;
+ assert.equal(results[0].value,64);
+ assert.equal(results[5].value,64,'all counted native downstream detector events remain observed');
+ assert.equal(results[6].status,'unavailable','never clip 64 native positions to a pseudo-complete 32');
+ assert.equal(results[6].value,null);
+ assert.match(results[6].reason,/More than 32 actual detector hits/);
+ const ledger=native.summary.observations.detectorHitEventsById.D1;
+ assert.equal(ledger.observedCount,64);
+ assert.equal(ledger.status,'unavailable');
+ assert.equal(ledger.reasonCode,'HIT_EVENT_LIMIT_EXCEEDED');
+ console.log('JEE_V22_OVERFLOW_NATIVE '+JSON.stringify({
+  emitted:64,crossings:64,hitPositions:'withheld',continuousIrradianceClaim:false}));
 });
