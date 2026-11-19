@@ -239,43 +239,72 @@ test('two-detector plane clearance, radial bounds and native density policy rema
  assert.throws(()=>validate(density),'beam would be overbright relative to density');
 });
 
-test('v21 native detector endpoint at a transmitted ray withholds hit positions but retains sampled count',async()=>{
- // Use one REAL completed PhyDemo trace to locate a transmitted detector
- // crossing. Then author a second, independent physical scene with a detector
- // endpoint at that observed y. This is test design, not synthetic ray routing.
+test('v21 genuine native detector endpoint and near-endpoint have distinct qualified meanings',async()=>{
+ // First run: real pinned PhyDemo output determines a transmitted crossing
+ // position; no ray trajectory is fabricated or prescribed. Then construct
+ // separate, fully authored detector geometries around that measured location.
  const baseline=await run(fresh());
  assert.equal(baseline.native.summary.native.status,'completed');
  const originalHits=baseline.results[6].value;
  assert.equal(originalHits.length,4);
  const bottom=Math.min(...originalHits.map(h=>h.pointMm.y));
- const request=fresh(),detector=by(request,'D1');
- detector.y=bottom+detector.length/2;
- const doc=prepare(request);
- const loaded=core.compile(doc).native.objs.find(o=>o.type==='Detector');
- assert.ok(loaded,'canonical v21 produces an actual native Detector');
- near(-loaded.p1.y,bottom,1e-8);
- const execution=evaluateDocument(doc,core,fixture.requests);
+ const oriented=(distanceInsideMm)=>{
+  const request=fresh(),detector=by(request,'D1');
+  // p1 is at centreY - length/2 for the vertical y-up segment.
+  detector.y=bottom-distanceInsideMm+detector.length/2;
+  const doc=prepare(request),native=core.compile(doc).native.objs.find(o=>o.type==='Detector');
+  assert.ok(native);
+  near(-native.p1.y,bottom-distanceInsideMm,1e-8);
+  return doc;
+ };
+ // Exactly on the endpoint: this pinned native finite-segment test misses one
+ // nominal mathematical boundary crossing in the observed configuration.
+ // Do not invent a fourth native event or suppress valid remaining samples.
+ const exactDoc=oriented(0);
+ const exact=evaluateDocument(exactDoc,core,fixture.requests);
+ assert.equal(exact.summary.native.status,'completed');
+ assert.equal(exact.summary.native.truncation,0);
+ assert.equal(exact.summary.native.undefinedBehavior,0);
+ const exactObs=exact.summary.observations;
+ const exactCount=exactObs.detectorsById.D1.crossings;
+ assert.ok(exactCount===3||exactCount===4,'native endpoint classification is not a continuous-geometry guarantee');
+ const exactRead=(await evaluateObservables(exactDoc,fixture.requests,exact.summary)).results;
+ assert.equal(exactRead[5].value,exactCount,'never invent an endpoint crossing');
+ if(exactCount===3){
+  assert.equal(exactObs.detectorHitEventsById.D1.status,'complete');
+  assert.equal(exactRead[6].value.length,3);
+ }else{
+  assert.equal(exactObs.detectorHitEventsById.D1.status,'unavailable');
+  assert.equal(exactObs.detectorHitEventsById.D1.reasonCode,'AMBIGUOUS_DETECTOR_HIT');
+  assert.equal(exactRead[6].value,null);
+ }
+ // Slightly INSIDE the segment, but within 0.01 mm of its endpoint:
+ // a native crossing is real and counted, but publishing all four precise
+ // hit positions would overstate geometric reliability.
+ const nearDoc=oriented(.005);
+ const execution=evaluateDocument(nearDoc,core,fixture.requests);
  assert.equal(execution.summary.native.status,'completed');
  assert.equal(execution.summary.native.truncation,0);
  assert.equal(execution.summary.native.undefinedBehavior,0);
  const observed=execution.summary.observations;
  assert.equal(observed.detectorsById.D1.crossings,4,
-   'native counts remain sampled detector crossings even with an endpoint encounter');
+   'a genuine native near-endpoint crossing remains in the sampled total');
  assert.equal(observed.detectorHitEventsById.D1.status,'unavailable');
  assert.equal(observed.detectorHitEventsById.D1.reasonCode,'AMBIGUOUS_DETECTOR_HIT');
- assert.equal(observed.detectorHitEventsById.D1.events,null,'never return a clipped or partial event list');
- const results=(await evaluateObservables(doc,fixture.requests,execution.summary)).results;
+ assert.equal(observed.detectorHitEventsById.D1.events,null,'do not clip or return partial position lists');
+ const results=(await evaluateObservables(nearDoc,fixture.requests,execution.summary)).results;
  assert.equal(results[5].kind,'detector-crossings');
  assert.equal(results[5].status,'qualified');
- assert.equal(results[5].value,4,'the native aggregate count remains usable');
+ assert.equal(results[5].value,4);
  assert.equal(results[6].kind,'detector-hit-events');
  assert.equal(results[6].status,'unavailable');
  assert.equal(results[6].value,null);
- assert.match(results[6].reason,/native hit.*detector endpoint|geometrically\/numerically ambiguous/i);
+ assert.match(results[6].reason,/endpoint|geometrically\/numerically ambiguous/i);
  const label=formatRequestedResult(results[6]);
  assert.match(label,/No current value/);
  assert.match(label,/endpoint/);
  console.log('JEE_V21_ENDPOINT_NATIVE '+JSON.stringify({
-  event:'simulationComplete',nativeCrossings:4,positions:'withheld',
-  reasonCode:'AMBIGUOUS_DETECTOR_HIT',physicalImageClaim:false}));
+  exactlyOnEndpointCount:exactCount,nearEndpointNativeCrossings:4,
+  nearEndpointPositions:'withheld',reasonCode:'AMBIGUOUS_DETECTOR_HIT',
+  nativeImageDetected:false,sourceQuestionSolved:false}));
 });
