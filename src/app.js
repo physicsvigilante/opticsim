@@ -403,7 +403,7 @@ function apply(doc, rebuild = false, imported = undefined) {
   catch (error) { session.invalidate(error); return false; }
   const priorCapture = captureRequestedDetectorHits,priorParentageIds=captureRequestedParentageIds,
     priorFiniteDiagnostic=captureRequestedFiniteHitDiagnostic;
-  captureRequestedDetectorHits = tracked.requests.some(request => request.kind === 'detector-hit-events');
+  captureRequestedDetectorHits = tracked.requests.some(request => request.kind === 'detector-hit-events'||request.kind === 'detector-directional-footprint');
   captureRequestedParentageIds=tracked.requests.filter(request=>request.kind==='detector-ray-provenance').map(request=>request.componentId);
   captureRequestedFiniteHitDiagnostic=tracked.requests.some(request=>request.kind==='finite-hit-numerical-diagnostic');
   const accepted = session.apply(doc);

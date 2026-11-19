@@ -6,6 +6,7 @@ import {SEMICIRCULAR_TYPE,semicircularExtents} from './semicircular-dielectric.j
 import {CIRCLE_BLOCKER_TYPE,circleBlockerExtents} from './opaque-circle-blocker.js';
 import {isCurved,curvedPoints} from './curved-mirrors.js';
 import {validate,mirrorEndpoints} from './contract.js';
+import {DIRECTIONAL_FOOTPRINT_METHOD} from './detector-directional-footprint.js';
 import {sceneHash} from './qualified-utils.js';
 // Presentation limits match the existing canonical validator; the fitted document
 // is validated below. These do not expand its accepted camera range.
@@ -14,7 +15,7 @@ const finite=Number.isFinite;
 const number=n=>finite(n)?Number(n.toPrecision(8)).toString():'unavailable';
 export function formatRequestedResult(r){
   const label=r.kind==='finite-hit-numerical-diagnostic'?'ADVISORY ONLY — NOT A VERIFIED OPTICAL MEASUREMENT':
-    ['native-observation','native-hit-event-observation','native-observed-object-parentage'].includes(r.method)?'Native sampled observation':
+    ['native-observation','native-hit-event-observation','native-observed-object-parentage',DIRECTIONAL_FOOTPRINT_METHOD].includes(r.method)?'Native sampled observation':
     r.status==='conditional'?'Conditional analytical prediction':'No current value';
   let value=r.reason||'';
   if(r.value!==null&&r.value!==undefined){
@@ -41,6 +42,20 @@ export function formatRequestedResult(r){
       value=Object.entries(r.value).map(([id,f])=>id+': '+f.interactions+' native hits; '+(f.first?
         f.first.from+' → '+f.first.outcome+'; incidence '+number(f.first.incidentAngleDeg)+'°; transmission '+number(f.first.transmittedAngleDeg)+'°; '+
         f.first.branches.map(b=>b.kind+' heading '+number(Math.atan2(b.direction.y,b.direction.x)*180/Math.PI)+'°').join(', '):'no encounter')).join('\n');
+    }else if(r.kind==='detector-directional-footprint'){
+      const p=r.value,summary=(label,group)=>
+        label+': '+group.count+' sampled crossing(s). '+
+        (group.count===0?'No centroid or spread (no samples).':
+          'Mean along detector p1→p2: '+number(group.meanDistanceFromP1Mm)+' mm; '+
+          'RMS sampled spread: '+number(group.rmsSpreadMm)+' mm; '+
+          'span: '+number(group.spanMm)+' mm; '+
+          'minimum/maximum: '+number(group.minDistanceFromP1Mm)+' / '+number(group.maxDistanceFromP1Mm)+' mm.');
+      value='Observed native crossings: '+p.observedCount+
+        '; physical detector length: '+number(p.detectorLengthMm)+' mm.\n'+
+        'Positive normal (left of detector p1→p2): ('+
+          number(p.detectorNormalUnit.x)+', '+number(p.detectorNormalUnit.y)+').\n'+
+        summary('Toward positive normal',p.towardPositiveNormal)+'\n'+
+        summary('Toward negative normal',p.towardNegativeNormal);
     }else if(r.kind==='detector-hit-events'){
       value=!r.value.length?'No sampled detector hits.':r.value.map((e,i)=>
         `Hit ${i+1} (native callback order): x=${number(e.pointMm.x)}, y=${number(e.pointMm.y)} mm; `+
