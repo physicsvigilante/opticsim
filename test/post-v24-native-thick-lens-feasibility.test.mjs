@@ -71,8 +71,8 @@ test('changed material and actual finite aperture miss remain native outcomes',(
  const base=run(),index=run({secondIndex:1.45}),miss=run({sourceHeight:80});
  assert.equal(base.state,'completed');assert.equal(index.state,'completed');
  assert.deepEqual(index.events.map(e=>e.id),base.events.map(e=>e.id));
- assert.ok(Math.abs(base.events[2].hit.y-index.events[2].hit.y)>1e-5,
-  'changing second index should change native refraction before the second lens');
+ assert.ok(Math.abs(base.events[3].hit.y-index.events[3].hit.y)>1e-5,
+  'changing second index must move the native back-surface exit point');
  assert.equal(miss.state,'completed');
  assert.deepEqual(miss.events,[]);
  assert.equal(miss.diag.detectorsById.D1.crossings,1);
