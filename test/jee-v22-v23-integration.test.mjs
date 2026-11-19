@@ -29,7 +29,8 @@ test('one combined registry preserves distinct native v22 prism and v23 circle c
  assert.deepEqual(compositionModels(21),['native-parallel-semicircular-tracing']);
  assert.deepEqual(compositionModels(22),['native-parallel-prism-tracing']);
  assert.deepEqual(compositionModels(23),['native-parallel-circle-tracing']);
- assert.equal(caps.composition.profiles.length,24);
+ assert.equal(caps.composition.profiles.filter(p=>p.schemaVersion<=23).length,24,
+  'The v22/v23 integration still owns exactly its historical 24 profiles');
  assert.equal(caps.nativePrismBeam.schemaVersion,22);
  assert.equal(caps.nativeCircleBeam.schemaVersion,23);
  assert.equal(CIRCLE_BEAM_VERSION,23);

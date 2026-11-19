@@ -26,7 +26,10 @@ const types=(...values)=>values.map(type=>({type}));
 const componentPatch=operations=>({format:'opticsim-component-revision-v1',operations});
 
 test('one composition catalog preserves all 17 reviewed saved model/version contracts',()=>{
- const c=compositionCapabilities();assert.equal(c.profiles.length,24);
+ const c=compositionCapabilities();
+ assert.equal(c.profiles.filter(p=>p.schemaVersion<=23).length,24,
+  'All historical pre-v24 composition profiles must remain present');
+ assert.equal(c.profiles.length,25,'The only new profile is the v24 native curved-entry contract');
  c.profiles=c.profiles.filter(p=>p.schemaVersion<=12);assert.equal(c.profiles.length,17);
  assert.equal(new Set(c.profiles.map(p=>p.id)).size,17);
  assert.deepEqual(compositionModels(1),['ideal-thin-lens-geometric']);

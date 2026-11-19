@@ -1,0 +1,133 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "JEE teaching: one curved arc encounter, inside measurement and native absorption",
+    "runPolicy": "preview-v1",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": 200,
+          "y": 1,
+          "brightness": 0.08
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 180
+        }
+      },
+      {
+        "id": "G1",
+        "type": "semicircular-dielectric",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "radius": 100,
+          "insideIndex": 1.3333333333333333,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 80,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 100
+        }
+      },
+      {
+        "id": "D2",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 60,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 100
+        }
+      },
+      {
+        "id": "A1",
+        "type": "line-blocker",
+        "parameters": {
+          "x": 40,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 100
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "emitted",
+      "kind": "source-emissions",
+      "componentId": "S1"
+    },
+    {
+      "id": "interfaces",
+      "kind": "interface-interactions",
+      "componentId": "G1"
+    },
+    {
+      "id": "faces",
+      "kind": "interface-face-events",
+      "componentId": "G1"
+    },
+    {
+      "id": "first",
+      "kind": "interface-first-event",
+      "componentId": "G1"
+    },
+    {
+      "id": "tir",
+      "kind": "interface-tir-count",
+      "componentId": "G1"
+    },
+    {
+      "id": "near-count",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "near-hits",
+      "kind": "detector-hit-events",
+      "componentId": "D1"
+    },
+    {
+      "id": "far-count",
+      "kind": "detector-crossings",
+      "componentId": "D2"
+    },
+    {
+      "id": "far-hits",
+      "kind": "detector-hit-events",
+      "componentId": "D2"
+    },
+    {
+      "id": "absorptions",
+      "kind": "blocker-absorptions",
+      "componentId": "A1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Observe one native ray refraction at a real convex curved glass entrance, two actual internal detector crossings and real native absorption before the still-present flat closure; never infer an image from the detector positions.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "The selected 100 mm right semicircular Glass profile retains its flat diameter at x=0 and true circular arc to x=+100.",
+      "The ray starts at (200,+1) mm in exterior n=1 and travels left toward denser n=4/3, with explicitly chosen brightness 0.08.",
+      "Both detectors and the opaque absorbing screen are entirely inside the actual dielectric and lie before its flat back boundary.",
+      "The transmitted-only partialReflection=false policy neglects partial Fresnel reflection but does not override native TIR.",
+      "All numerical apparatus and measurement choices are illustrative. A textbook single-surface power question has no source-stated internal blocker or detectors."
+    ],
+    "unknowns": [
+      "The original JEE question does not supply these finite source/screen/detector settings; the numerical ray is not a simulation of its complete apparatus.",
+      "No native detected image, focal-plane hit, full 3D sphere, continuous irradiance, ray-path inference or solved-original-question claim is supported."
+    ]
+  }
+}
