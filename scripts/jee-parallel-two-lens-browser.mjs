@@ -5,9 +5,11 @@ import {spawn,spawnSync} from 'node:child_process';
 import {createServer} from 'node:net';
 import {mkdir,mkdtemp,readFile,readdir,writeFile,rm} from 'node:fs/promises';
 import {join} from 'node:path';
+import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {parseQualifiedBundle} from '../src/qualification.js';
 const root=fileURLToPath(new URL('../',import.meta.url)),base=join(root,'test-artifacts/browser-jee-parallel-two-lens-v20');
+const core=createRequire(import.meta.url)('../dist/test-core.cjs');
 await mkdir(base,{recursive:true});
 const out=await mkdtemp(join(base,'attempt-')),downloads=join(out,'downloads');
 const sleep=ms=>new Promise(ok=>setTimeout(ok,ms)),timeout=20000;
@@ -123,6 +125,42 @@ async function main(){
   assert.ok(Math.abs(mean(s.results[3].value)-firstMean)>1);
   check('Reopened qualified v20 scene retraces edited native optics instead of inheriting stale evidence');
   await shot('two-lens-reopened');
+  // Reviewer F-01: Fit Results must include both REAL native offset segments,
+  // even when native rays miss one lens completely. Test the viewer's actual
+  // saved camera, not a repeat of apparatusPoints' own predicted endpoints.
+  await upload(pkg('strong-offset-fit'));
+  s=await until(state,x=>x.status==='completed'&&x.results?.[0]?.value===8&&
+    x.results?.[1]?.value===0&&x.results?.[2]?.value===0&&!x.fitDisabled,
+    'independently displaced native lenses');
+  assert.equal(s.saveDisabled,false);
+  await evalJS('document.getElementById("fit-results").click()');
+  const fitNote=await until(()=>evalJS('document.getElementById("fit-note").textContent'),
+    x=>x.includes('Fit includes apparatus'),'actual Fit Results button');
+  assert.doesNotMatch(fitNote,/Apparatus exceeds/);
+  const viewport=await evalJS('({width:document.getElementById("light").width,height:document.getElementById("light").height})');
+  await until(state,x=>x.status==='completed'&&!x.fitDisabled,'completed fitted v20 viewer');
+  const previousDownloads=new Set(await readdir(downloads));
+  await evalJS('document.getElementById("save-qualified").click()');
+  const fittedName=await until(async()=>(await readdir(downloads))
+    .find(n=>n.endsWith('.json')&&!previousDownloads.has(n)),Boolean,'fitted qualified download');
+  const fittedBundle=await parseQualifiedBundle(await readFile(join(downloads,fittedName),'utf8'));
+  assert.equal(fittedBundle.scene.schemaVersion,20);
+  const centred=id=>fittedBundle.scene.physics.components.find(c=>c.id===id).parameters.y;
+  assert.equal(centred('L1'),720);
+  assert.equal(centred('L2'),-650);
+  const actual=core.compile(fittedBundle.scene).native.objs.filter(c=>c.type==='IdealLens');
+  assert.equal(actual.length,2);
+  const camera=fittedBundle.scene.presentation.view;
+  const padding=Math.min(48,viewport.width*.12,viewport.height*.12);
+  for(const lens of actual)for(const tip of [lens.p1,lens.p2]){
+    const x=(tip.x-camera.x)*camera.zoom,y=(-tip.y-camera.y)*camera.zoom;
+    assert.ok(Math.abs(x)<=viewport.width/2-padding+1e-7,'fitted native lens endpoint out of horizontal viewport');
+    assert.ok(Math.abs(y)<=viewport.height/2-padding+1e-7,
+      'fitted native offset endpoint out of vertical viewport: '+JSON.stringify({tip,camera,viewport}));
+  }
+  assert.equal(Object.hasOwn(fittedBundle,'results'),false);
+  check('Real Chrome Fit Results includes both strongly offset native finite lenses with a truthful saved viewport');
+  await shot('two-lens-strongly-offset-fit');
   assert.deepEqual(report.runtimeErrors,[]);
   const external=report.network.filter(u=>/^https?:/i.test(u)&&!u.startsWith(origin+'/'));
   assert.deepEqual(external,[]);
