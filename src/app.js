@@ -1,4 +1,5 @@
 import {ExplorationUI} from './exploration-ui.js';
+import {installGrinV25DisplayScale} from './grin-v25-display.js';
 import {isCurved} from './curved-mirrors.js';
 import {QualifiedUI} from './qualified-ui.js';
 import { loadDocument, Simulator, diagnostics, nativeExport, observeSourceSet, observeMirrorSet, observeDetectorSet, observeInterfaceSet, observeBlockerSet, observeNativeV18ApertureCorner, observeNativeGrinV25 } from './adapter.js';
@@ -37,6 +38,8 @@ const session = new Session(doc => {
   const apertureCornerGuard=observeNativeV18ApertureCorner(doc,scene,idMap);
   const grinNumericalGuard=observeNativeGrinV25(doc,scene,idMap);
   const sim = new Simulator(scene, ...canvases.map(c => c.getContext('2d')), null, true, doc.simulation.processedRayLimit);
+  // v25-only native display pen sizing; never touch scene.lengthScale or rays.
+  installGrinV25DisplayScale(doc,scene,sim);
   const cancel = () => {
     if (sim.simulationTimerId !== -1) clearTimeout(sim.simulationTimerId);
     sim.simulationTimerId = -1; sim.shouldSimulatorStop = true;

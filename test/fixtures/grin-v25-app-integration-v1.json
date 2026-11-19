@@ -1,15 +1,16 @@
 {
   "format": "opticsim-v25-browser-app-integration-provenance-v1",
-  "classification": "Final pre-review v25 browser code with true display-only 80x close-up and precise 0.01 zoom input; historic v18/v24 app hashes remain untouched.",
+  "classification": "New v25 pre-review app: native render pen-scale correction only, with immutable original reviewed v18/v24 app hashes.",
   "productionBase": "dcdaf6361a1aea151b15cde925d27ea9fe39ad9e",
   "reviewedPR183Merge": "29a576e345bbf8683ce77f7e0cd3acb295a17cf3",
   "sourceReviewedV24AppGitBlob": "ac8ee9e3bf448c4280342d9049052bbbce1691b0",
   "originalV18AppGitBlob": "cfbea455df3f7ea7a30002d0139730c25b235d32",
-  "newV25AppGitBlob": "33b97e2ad5d9f32c917420ec165eb5a27a983b63",
+  "newV25AppGitBlob": "553c71a1393be89a30f326d366a7caae388c595e",
   "reviewStatus": "pending",
   "claims": [
     "New GRIN native v25 controls and strict numerical-status text only",
     "No reinterpretation of original v14-v18/v24 browser review",
     "Physical scenes and v18 aperture-corner fatal guard remain preserved"
-  ]
+  ],
+  "presentationOnlyRendererMethod": "v25-visual-canvas-marker-scale-only-v1"
 }

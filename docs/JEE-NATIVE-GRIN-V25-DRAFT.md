@@ -30,3 +30,9 @@ A missing or ambiguous callback, unexpected second ray, position outside the bou
 ## Presentation-only optics visibility
 
 The native region is about 1 mm wide; historical default 2× rendering was only two screen pixels. **Only schema v25** may default to 80 CSS pixels/mm and accept a camera zoom of up to 100 while retaining the unchanged physics and fixed Euler step. The live Fit control uses the actual stage dimensions to show the full real GRIN rectangle and detector endpoints. Older schemas retain their original zoom bounds, auto-fit and pan behavior. These are purely presentation transformations: no ray resampling, altered refractive index or newly certified measurement can follow from zooming. Real Chrome checks must show the magnified physical region and unchanged source-bound native hit evidence.
+
+## Physical rendering versus numerical optics (v25 only)
+
+The pinned native `CanvasRenderer.lengthScale` controls **pen and source marker width** as well as appearance. At 80–100 CSS pixels per millimetre, leaving it at one millimetre made source direction glyphs and ray strokes giant blocks obscuring the actual graded material. The new `src/grin-v25-display.js` adjusts only the **current Simulator instance's CanvasRenderer lengthScale**, to `1 / (scene.scale × dpr)`, during each ordinary native draw callback. It delegates the original native draw **once** and does not replace its geometry or paths.
+
+**The numerical `Scene.lengthScale` is never changed**, as it governs physical ray-intersection tolerances. Every pinned `onRayIncident` and `onSimulationStart` callback remains unchanged. The adapter is absent from every historical schema and from the headless native/CLI physical calculation. Real Chrome screenshots, detector-hit equality under Fit, and instance-local display regression tests are required before independent review. No path is painted from a non-native prediction.
