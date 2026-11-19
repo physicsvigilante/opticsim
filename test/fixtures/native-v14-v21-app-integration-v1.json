@@ -3,10 +3,10 @@
   "originalV18CandidateHead": "1c566103842cc6c4841aa97360cc893b0ed710c4",
   "originalV18Manifest": "test/fixtures/thick-lens-aperture-app-postfreeze-v1.json",
   "originalV18AppGitBlob": "cfbea455df3f7ea7a30002d0139730c25b235d32",
-  "mainBeforeIntegration": "59b485d14ac28ca4ee97acc754a4cd207a7d33f1",
-  "integrationBranch": "integration/native-thick-v14-v18-on-main",
-  "reconciledAppGitBlob": "9b06ae0e21225b95604d3a515096a58d8d375957",
-  "classification": "New post-review UI integration fingerprint, not original blinded or independently re-reviewed v18 evidence. Preserves original manifests unchanged.",
-  "pending": "Full current-main CI and independent integration review; do not merge.",
-  "integrity": "Post-review integrated browser exact Git blob including v18-only native outgoing-ray numerical aperture-corner qualification, without changing historical v18 app SHA or old postfreeze manifest."
+  "mainBeforeIntegration": "487314dcb7e74e7f16f5b711f950090e16400780",
+  "integrationBranch": "integration/native-v14-v18-on-v24-main",
+  "reconciledAppGitBlob": "2a8bcd843d2cc9ba99c914432381ff7b577bb83e",
+  "classification": "New post-v24 integration-only browser Git blob; original reviewed v18 browser fingerprint and immutable manifest unchanged.",
+  "pending": "Final combined Node/native/Chrome CI and one exact-source independent v14–v24 physics/integration review; not yet released.",
+  "integrity": "Preserves v24 single-ray authoring and existing controls with a v18-only native outgoing-ray aperture endpoint uncertainty guard; never repairs or steers a native ray."
 }
