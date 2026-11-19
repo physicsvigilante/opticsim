@@ -25,8 +25,15 @@ const finite='finite-dielectric-composition',general='general-component-tracing'
 const types=(...values)=>values.map(type=>({type}));
 const componentPatch=operations=>({format:'opticsim-component-revision-v1',operations});
 
-test('one composition catalog preserves all 17 reviewed saved model/version contracts',()=>{
- const c=compositionCapabilities();assert.equal(c.profiles.length,22);
+test('one composition catalog preserves sealed v1-v21 model/version contracts',()=>{
+ const c=compositionCapabilities();assert.equal(c.profiles.length,27);
+  assert.equal(c.profiles.filter(p=>p.schemaVersion<=13).length,18);
+  for(const [version,model] of [[14,'two-separated-dielectrics-tracing'],
+    [15,'native-thick-lens-tracing'],[16,'native-thick-lens-mirror-tracing'],
+    [17,'native-two-thick-lens-mirror-tracing'],[18,'native-two-thick-lens-mirror-aperture-tracing']]){
+    assert.deepEqual(compositionModels(version),[model]);
+    assert.deepEqual(compositionSourceModes(version),['single-ray']);
+  }
  c.profiles=c.profiles.filter(p=>p.schemaVersion<=12);assert.equal(c.profiles.length,17);
  assert.equal(new Set(c.profiles.map(p=>p.id)).size,17);
  assert.deepEqual(compositionModels(1),['ideal-thin-lens-geometric']);
