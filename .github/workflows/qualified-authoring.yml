@@ -16,6 +16,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24.19.0'
+      # Hosted Ubuntu images can omit Chrome. Real-browser evidence is mandatory.
+      # Action SHA pins a reviewed Chrome for Testing installer (v2.2.0).
+      - name: Install Chrome for Testing
+        id: browser
+        uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4
+        with:
+          chrome-version: stable
+      - name: Require usable Chrome before native browser tests
+        env:
+          CHROME_PATH: ${{ steps.browser.outputs.chrome-path }}
+        run: |
+          test -x "$CHROME_PATH"
+          "$CHROME_PATH" --version
+          printf 'OPTICSIM_CHROME=%s\n' "$CHROME_PATH" >> "$GITHUB_ENV"
       - run: npm run setup
       - run: npm test
       - run: npm run build
