@@ -57,7 +57,7 @@ test('actual native two-lens rays agree with independent J19 paraxial concurrenc
  }
  const native=core.compile(document).native;
  assert.equal(native.objs[0].type,'Beam');
- assert.equal(run.summary.analysis.kind,'unavailable');
+ assert.equal(run.summary.analysis.status,'unavailable');
  console.log('V20_TWO_LENS_NATIVE '+JSON.stringify({completed:true,samples:8,conditionalConcurrenceMm:[1000,4],nativeImageDetected:false}));
 });
 test('signed offsets, zero offset and independent translation preserve native ideal geometry',async()=>{
@@ -90,6 +90,7 @@ test('reverse illumination uses actual native lens intersections in the opposite
 });
 test('finite second lens partial miss and total miss remain native propagation, not absorption',async()=>{
  const partial=fresh();by(partial,'L2').parameters.apertureHeight=20;
+ by(partial,'D1').parameters.length=300;by(partial,'D2').parameters.length=300;
  const p=await execute(partial);
  assert.equal(p.run.summary.native.status,'completed');
  assert.equal(p.results[0].value,8);
@@ -130,7 +131,7 @@ test('historical v19 and v4 lenses retain exact centred native compilation and r
  const illegal=structuredClone(v19.physical);illegal.components.find(c=>c.type==='ideal-lens').parameters.y=0;
  assert.throws(()=>prepareScene(illegal));
  assert.deepEqual(parseSave(serializeSave(old)),old);
- const invalid=structuredClone(d);
+ const invalid=structuredClone(prepared(fresh()));
  invalid.schemaVersion=invalid.adapterVersion=19;invalid.physics.model='native-parallel-lens-tracing';
  assert.throws(()=>validate(invalid));
 });
