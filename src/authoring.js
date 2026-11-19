@@ -10,6 +10,7 @@ import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
 import {CIRCLE_BLOCKER_TYPE,circleBlockerExtents} from './opaque-circle-blocker.js';
 import {FINITE_APERTURE_TYPE} from './finite-aperture.js';
 import {PARALLEL_BEAM_TYPE,PARALLEL_BEAM_VERSION,PARALLEL_LENS_MODEL,PARALLEL_PLANAR_MODEL,parallelBeamGeometry} from './parallel-beam.js';
+import {DECENTERED_BEAM_VERSION,DECENTERED_BEAM_MODEL} from './decentered-two-lens-beam.js';
 import {isCurved,curvedPoints} from './curved-mirrors.js';
 import {validate,UPSTREAM,SAMPLING_PRESETS,COMPONENT_TYPES,componentParameterNames,
   GENERAL_SCOPE,MAX_AUTHORING_COMPONENTS,COMPONENT_BOUNDS,LENGTH_PARAMETERS,mirrorEndpoints} from './contract.js';
@@ -69,6 +70,12 @@ export function capabilities() {
       geometry:'Entire emission segment lies within coordinate bounds, outside every surface/medium boundary and detector supporting line. First emitted samples near finite stop/lens endpoints are refused. Beam starting medium must be uniform.',
       execution:'Native pinned Beam emits all deterministic samples; density is numerical not a continuous source property. Brightness exceeding ray density is refused to prevent native saturation.',
       limitations:'No image reconstruction, PSF, diffraction, radiometric power, arbitrary composite optics or source-to-detector ancestry.'},
+    nativeTwoLensBeam:{schemaVersion:DECENTERED_BEAM_VERSION,model:DECENTERED_BEAM_MODEL,
+      lenses:{count:2,parameters:['x','y','focalLength','apertureHeight'],orientation:'vertical with explicit transverse centres'},
+      source:'One native finite deterministic horizontal parallel Beam; direction exactly 0, +180 or -180 degrees.',
+      geometry:'Both lenses ahead of the Beam, distinct x planes, finite endpoints and post-first-lens sample rim clearances; native chooses each interaction.',
+      components:'One Beam, two vertical ideal lenses, 0–2 downstream passive vertical detectors. No stops, tilt, prisms or material lenses.',
+      limitations:'Conservative high-angle guard; native misses remain misses. No image reconstruction or continuous irradiance.'},
     finiteApertures:{model:'general-component-tracing',nativeType:'Aperture',max:2,combinedStopMax:2,geometry:'Explicit centre x,y, tangent orientationDeg, full length and central openingLength; both opaque arms at least 1 mm; 0.01 mm clearance from other finite surfaces',scope:'Native planar segment with transparent gap; native absorber counts only, not continuous transmission, irradiance, diffraction or detected image.'},
     finiteBlockerComposition:finiteBlockerCompositionPolicy(),
     finiteShapeComposition:finiteShapeCompositionPolicy(),
@@ -115,8 +122,9 @@ export function capabilities() {
     bounds:COMPONENT_BOUNDS,
     runPolicies:Object.fromEntries(Object.entries(policies).map(([id,value])=>[id,{...value}])),
     requiredInput:['lengthUnit','components'],optionalInput:['title','runPolicy'],
+    lensParameterVariants:{legacy:{versions:'1–19',parameters:['x','focalLength','apertureHeight'],centreY:0},decentered:{version:DECENTERED_BEAM_VERSION,parameters:['x','y','focalLength','apertureHeight'],centreY:'required explicit mm'}},
     physicalPolicy:'All physical parameter values are required. Full-circle inactive angles are explicitly filled, not measured. No optical component or missing physical information is invented.',
-    opticalGeometry:'Thin ideal lenses are vertical and centred at y=0. Mirror, detector and aperture orientationDeg is the tangent in y-up coordinates. Native opaque arms and other finite surfaces must not intersect or overlap.',
+    opticalGeometry:'Historical thin lenses are vertical and centred at y=0; v20 two-lens Beam lenses have explicit independent y. Mirror, detector and aperture orientationDeg is the tangent in y-up coordinates. Native opaque arms and other finite surfaces must not intersect or overlap.',
     observations:[...NATIVE_OBSERVATION_KEYS],
     limitations:['native finite-ray sampling','signed relative detector power is not watts',
       'no image prediction for unconstrained general tracing','no source-specific detector provenance']
@@ -165,6 +173,8 @@ export function inspectAuthoringRequest(request){
       issues.push(issue(path,'INVALID_INPUT','Value is outside the live contract bounds'+
         (lengthKeys.has(key)?' after conversion to mm':'')));
   };
+  const selected=request.components.every(c=>isObject(c)&&typeof c.type==='string')
+    ?selectAuthoringComposition(request.components):null;
   const ids=new Set();
   for(const [i,c] of request.components.entries()){
     const path='$.components['+i+']';
@@ -179,7 +189,7 @@ export function inspectAuthoringRequest(request){
     if(!COMPONENT_TYPES.includes(c.type)){
       issues.push(issue(path+'.type','UNSUPPORTED_COMPONENT','Not a supported PhyDemo-backed component'));continue;
     }
-    const required=componentParameterNames(c.type);
+    const required=componentParameterNames(c.type,selected?.schemaVersion);
     if(own(c,'parameters')&&object(c.parameters,path+'.parameters',required,required))
       for(const key of required)if(own(c.parameters,key))number(key,c.parameters[key],path+'.parameters.'+key,c.type);
     if(c.type!=='point-source'){
@@ -212,8 +222,8 @@ function camera(components) {
     else if(c.type===PRISM_TYPE)vertices.push(...prismVertices(p));
     else if(c.type===POLYGON_TYPE)vertices.push(...polygonVertices(p));
     else if(isCurved(c.type))vertices.push(...curvedPoints(c));
-    else if(c.type==='ideal-lens')vertices.push({x:p.x,y:-p.apertureHeight/2},
-      {x:p.x,y:p.apertureHeight/2});
+    else if(c.type==='ideal-lens')vertices.push({x:p.x,y:(p.y??0)-p.apertureHeight/2},
+      {x:p.x,y:(p.y??0)+p.apertureHeight/2});
     else if(c.type==='planar-interface')vertices.push({x:p.x,y:p.y});
     else vertices.push(...mirrorEndpoints(p));
   }
@@ -229,10 +239,11 @@ export function prepareScene(request) {
   const scale=units(request.lengthUnit,'$.lengthUnit');
   const policyName=own(request,'runPolicy')?request.runPolicy:'preview-v1';
   const title=own(request,'title')?request.title:'LLM-authored optical scene';
+  const selectedComposition=selectAuthoringComposition(request.components);
   const knownIds=new Set(request.components.filter(c=>own(c,'id')).map(c=>c.id)),assignedIds=[];
   const components=request.components.map((component,i)=>{
     const path='$.components['+i+']';
-    const required=componentParameterNames(component.type);
+    const required=componentParameterNames(component.type,selectedComposition.schemaVersion);
     let id=component.id;
     if(!id) {
       let index=1,prefix=prefixes[component.type];
@@ -249,7 +260,7 @@ export function prepareScene(request) {
     }
     return result;
   });
-  const {schemaVersion,adapterVersion,model}=selectAuthoringComposition(components);
+  const {schemaVersion,adapterVersion,model}=selectedComposition;
   const doc={
     format:'ray-optics-2d',schemaVersion,adapterVersion,upstreamCommit:UPSTREAM,
     physics:{lengthUnit:'mm',coordinates:'x-right-y-up',model,components},
@@ -382,7 +393,7 @@ export function reviseComponents(document,patch){
     touched.add(author.id);
     if(!COMPONENT_TYPES.includes(author.type))
       fail([issue(cp+'.type','UNSUPPORTED_COMPONENT','Not a registered physical component type')]);
-    const required=componentParameterNames(author.type);
+    const required=componentParameterNames(author.type,document.schemaVersion);
     checkObject(author.parameters,cp+'.parameters',required,required);
     const parameters=Object.fromEntries(required.map(key=>[key,canonicalValue(
       key,author.parameters[key],scale,cp+'.parameters.'+key)]));
