@@ -24,3 +24,11 @@ One passive detector lies beyond the x=1 mm exit. It checks actual native callba
 6. If feasibility is positive, implement a bounded `n(y)`-family in a **new versioned public schema on a separate branch**, then get **one consolidated independent physics/numerical/integration review** after exact CI. Do not merge a public GRIN feature from this research test.
 
 This is a capability probe deliberately separate from old PR165 and previously reviewed PR183; failure is informative and should be preserved rather than weakening an acceptance criterion to make native passes.
+
+## Exploratory continuous-field reference (not preregistered)
+
+After the first actual pinned-native completion, an independent *analytical* control was added to test the numerical meaning of the Euler results. For the synthetic physical y-up field `n(y)=sqrt(1+y/(1 mm))` and horizontal injection at `x=0.1 mm,y=0`, translational invariance in x gives `n(y)cos(theta)=1`. The differentiable upward trajectory is `y=(x-0.1)^2/(4 mm)`, reaching physical y=+0.2025 mm at the vertical exit x=1 mm. Snell refraction into the **explicitly chosen** outside n=1 gives `sin(theta_out)=0.45`; at x=1.2 mm, the analytical detector is **native y=-0.3032806519720538 mm**.
+
+The pilot native detector readings were -0.2933435811, -0.2978052901 and -0.3000289006 mm at 0.04, 0.02 and 0.01-mm steps. Their absolute deviations from this conditional continuous-field prediction decrease from about 0.00994 to 0.00548 to 0.00325 mm. This is a **post-observation exploratory benchmark**, not a blind prediction, global convergence proof, guaranteed physical accuracy, or any originally stated J09 output. The native step-size dependence remains materially relevant at the finest tested step. The fixture asserts only this explicitly bounded control, and retains a null certified error bound.
+
+No analyst should treat a passing test as permission to author arbitrary GRIN LaTeX or to increase public ray-depth budgets. Public numerical qualification would additionally need tighter step sweeps, boundary and coordinate-translation controls, a dimensional field contract, domain positivity/singularity checks and one focused independent review of final shared integration.
