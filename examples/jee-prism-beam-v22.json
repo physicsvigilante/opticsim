@@ -1,0 +1,100 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "Synthetic JEE-style native finite parallel illumination of a triangular glass prism",
+    "runPolicy": "preview-v1",
+    "components": [
+      {
+        "id": "B1",
+        "type": "parallel-beam",
+        "parameters": {
+          "x": -100,
+          "y": 0,
+          "width": 20,
+          "directionDeg": 0,
+          "brightness": 0.08
+        }
+      },
+      {
+        "id": "G1",
+        "type": "triangular-prism",
+        "parameters": {
+          "x1": 0,
+          "y1": -70,
+          "x2": 0,
+          "y2": 70,
+          "x3": 100,
+          "y3": 0,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 200,
+          "y": 0,
+          "length": 600,
+          "orientationDeg": 90
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "emitted",
+      "kind": "source-emissions",
+      "componentId": "B1"
+    },
+    {
+      "id": "incidents",
+      "kind": "interface-interactions",
+      "componentId": "G1"
+    },
+    {
+      "id": "faces",
+      "kind": "interface-face-events",
+      "componentId": "G1"
+    },
+    {
+      "id": "first",
+      "kind": "interface-first-event",
+      "componentId": "G1"
+    },
+    {
+      "id": "tir",
+      "kind": "interface-tir-count",
+      "componentId": "G1"
+    },
+    {
+      "id": "crossings",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "hits",
+      "kind": "detector-hit-events",
+      "componentId": "D1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Observe the pinned native finite Beam's real refraction, internal reflections and finite face-specific prism events with passive detector crossings; distinguish a genuine sampled zero from absent evidence.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "This fully specified finite triangular cross-section is synthetic JEE-style teaching apparatus, not the original J13/J14 numerical givens.",
+      "Vertices are (0,-70),(0,70),(100,0) mm in x-right/y-up, defining a vertical left entrance face and a right apex.",
+      "The outside index 1, inside index 1.5, finite Beam width/brightness and downstream detector are deliberately authored physical controls.",
+      "Fresnel partial reflection is explicitly disabled. The pinned native total-internal-reflection decision is retained."
+    ],
+    "unknowns": [
+      "The original J13/J14 inverse problem's missing full numerical source geometry is not inferred.",
+      "Sampled finite intersections and a downstream detector zero are not complete 3D prism imaging, continuous power, visibility or a reconstructed physical image."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}
