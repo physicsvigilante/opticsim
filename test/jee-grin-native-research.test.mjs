@@ -106,9 +106,26 @@ test('Euler step-size sensitivity is measured, not mistaken for a converged solu
  assert.ok(values.every(Number.isFinite),'never emit undefined trajectory');
  assert.ok(Math.max(...values)-Math.min(...values)>.00001,
   'step-sensitive numerical position must not be relabelled exact/independent');
+ // Exploratory analytical benchmark added AFTER the first genuine native sweep,
+ // so this is NOT a preregistered/blind independent numerical result.
+ // In physical y-up, continuous n(y)=sqrt(1+y/(1 mm)), y(0.1)=0 and
+ // initial horizontal direction imply n(y)cos(theta)=1, selecting the
+ // differentiable upward branch y(x)=(x-0.1)^2/4 up to exit x=1.
+ // Plane-boundary Snell to explicitly chosen outside n=1 then predicts
+ // sin(theta_out)=0.45, and a linear flight to detector x=1.2.
+ const travel=1-.1,yExit=travel*travel/4,sinOut=travel/2;
+ const exactNativeY=-(yExit+(.2*sinOut)/Math.sqrt(1-sinOut*sinOut));
+ const errors=values.map(y=>Math.abs(y-exactNativeY));
+ assert.ok(errors.every(e=>Number.isFinite(e)&&e<.02),
+  'bounded research cases must agree with the separate continuous-field reference');
+ assert.ok(errors[0]>errors[1]&&errors[1]>errors[2],
+  'decreasing Euler step must improve the sampled detector location in this bounded case');
+ assert.ok(errors[2]>.0001,
+  'even the finest sampled native result is not the exact continuous trajectory');
  console.log('JEE_GRIN_STEP_SWEEP '+JSON.stringify({stepSizes:steps,
   nativeDetectorY:values,nativeIncidentCallbacks:cases.map(r=>r.internal.length),
-  referenceAnalyticalImage:null,certifiedErrorBound:null,
+  exploratoryAnalyticalDetectorY:exactNativeY,absoluteErrorsMm:errors,
+  referenceDerivedAfterNativeRun:true,certifiedErrorBound:null,
   model:'synthetic normalized 2D n(y)=sqrt(1+y/(1 mm))',
   originalSourceGeometryUnknown:true,solver:'pinned PhyDemo GrinGlass Euler'}));
 });
