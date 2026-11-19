@@ -34,8 +34,6 @@ export function validateCurvedEntryObservation(components,model,rayDensity,endpo
  const src=components.find(c=>c.type==='point-source'),s=src.parameters;
  if(src.emission.mode!=='single-ray'||![180,-180].includes(src.emission.directionDeg))
   refuse(fail,path,'A single real native ray directed horizontally from right to left (±180°) is required.');
- if(src.emission.angleDeg!==30)
-  refuse(fail,path,'Inactive single-ray angleDeg must be the canonical explicit 30° placeholder, not a hidden illumination cone.');
  if(s.x<p.x+R*1.2||s.x>p.x+R*4||
   Math.abs(s.y-p.y)>R*.08||!world(s.x)||!world(s.y))
   refuse(fail,path,'The real source must be right of the curved pole by 0.2R-3R and within ±0.08R of the axis.');
