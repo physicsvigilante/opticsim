@@ -161,3 +161,48 @@ test('unsupported v20 geometry and model combinations refuse before any native e
  assert.ok(inspectAuthoringRequest((()=>{const r=fresh();delete by(r,'L2').parameters.y;return r;})())
   .some(i=>i.path.endsWith('L2.y')||i.path.endsWith('.parameters.y')));
 });
+
+// Test-only native incident counters: observe, delegate once, never construct
+// paths or change the source/optical engine. An indirect detector-line test
+// alone must not be taken as proof that both finite lenses were intercepted.
+test('native first and second lens incident callbacks distinguish physical bypass',()=>{
+ const counts=doc=>{
+  const compiled=core.compile(doc),scene=core.loadNative(compiled.native),hits={L1:0,L2:0};
+  for(const id of Object.keys(hits)){
+   const obj=scene.objs[compiled.idMap.get(id)],original=obj.onRayIncident;
+   obj.onRayIncident=function(...args){hits[id]++;return original.apply(this,args);};
+  }
+  const sim=new core.Simulator(scene,null,null,null,null,null,false,doc.simulation.processedRayLimit);
+  let event=null;
+  sim.on('simulationComplete',()=>{event='complete';});
+  sim.on('simulationStop',()=>{event='stopped';});
+  sim.updateSimulation();
+  assert.equal(event,'complete');
+  assert.equal(sim.totalTruncation,0);
+  assert.equal(sim.totalUndefinedBehavior,0);
+  return hits;
+ };
+ assert.deepEqual(counts(prepared(fresh())),{L1:8,L2:8});
+ const partial=fresh();by(partial,'L2').parameters.apertureHeight=20;
+ assert.deepEqual(counts(prepared(partial)),{L1:8,L2:2});
+ const total=fresh();by(total,'L2').parameters.y=300;
+ assert.deepEqual(counts(prepared(total)),{L1:8,L2:0});
+});
+test('v20 stopped or depth-truncated native run withholds all per-detector events and counts',async()=>{
+ for(const [key,value] of [['maxRayDepth',0],['processedRayLimit',1]]){
+  const d=prepared(fresh());
+  d.simulation[key]=value;validate(d);
+  const out=evaluateDocument(d,core,fixture.requests);
+  assert.notEqual(out.summary.native.status,'completed',key);
+  const readouts=(await evaluateObservables(d,fixture.requests,out.summary)).results;
+  assert.ok(readouts.every(x=>x.status==='suppressed'&&x.value===null),key);
+ }
+});
+test('native dense Beam overflow retains complete counts but withholds unclipped detector event lists',async()=>{
+ const r=fresh();r.runPolicy='dense-v1';
+ const {run,results}=await execute(r);
+ assert.equal(run.summary.native.status,'completed');
+ assert.deepEqual(results.slice(0,3).map(x=>x.value),[40,40,40]);
+ assert.ok(results.slice(0,3).every(x=>x.status==='available'));
+ assert.ok(results.slice(3).every(x=>x.status==='unavailable'&&x.value===null));
+});
