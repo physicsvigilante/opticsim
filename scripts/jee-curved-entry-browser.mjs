@@ -85,6 +85,10 @@ async function main(){
   assert.equal(s.results[8].value.length,1);
   assert.equal(s.saveDisabled,false);
   check('Public v24 qualified import runs true curved native Glass, two inside detectors, one absorber, with flat boundary retained');
+  assert.match(s.model,/Curved Glass entrance/);
+  const controls=await js('({index:!!document.getElementById("G1-insideIndex"),source:!!document.getElementById("S1-mode-single-ray"),noFullCircle:!document.getElementById("S1-mode-full-circle"),detector:!!document.getElementById("D1-x"),absorber:!!document.getElementById("A1-x")})');
+  assert.ok(controls.index&&controls.source&&controls.noFullCircle&&controls.detector&&controls.absorber);
+  check('Browser exposes actual v24 material, source, passive detector and absorber controls with no unsupported source mode');
   await shot('v24-curved-entry-baseline');
   const before=s.results[3].value.transmittedAngleDeg;
   await edit('G1-insideIndex',1.5);
