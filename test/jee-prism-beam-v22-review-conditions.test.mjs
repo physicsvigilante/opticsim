@@ -71,8 +71,22 @@ test('actual v22 near-critical native hits are withheld below, at and above the 
   const p=copy();lens(p,'G1').x3=critX+delta;
   const {doc,run,results}=await observed(p);
   assert.equal(doc.schemaVersion,22);
-  const first=run.summary.observations?.interfacesById?.G1;
-  assert.ok(first,'native Glass did not supply a bounded event ledger');
+  // Qualified execution intentionally withholds its interface ledger on
+  // failure. Capture the ORIGINAL native callbacks in a second, separately
+  // labelled test-only replay of the exact same canonical scene. This raw
+  // event witness is not published as qualified execution evidence.
+  const loaded=core.loadDocument(doc);
+  const meter=core.observeInterfaceSet(doc,loaded.scene,loaded.idMap);
+  const sim=new core.Simulator(loaded.scene,null,null,null,null,null,false,10000);
+  let nativeTerminal=null;
+  for(const event of ['simulationComplete','simulationStop'])
+    sim.on(event,()=>{nativeTerminal=event;});
+  sim.updateSimulation();
+  assert.ok(nativeTerminal,'exact-scene raw witness did not finish native callback dispatch');
+  const first=meter.byId.G1;
+  assert.ok(first,'test-only native Glass callback ledger was not captured');
+  assert.ok(first.invalidObservations>0,
+    'a real native near-critical incident must raise v22 observer risk');
   const sides=['face-23','face-31'].map(k=>first.faces[k].first).filter(Boolean);
   assert.ok(sides.length>0,'real finite native ray reached an actual sloping face');
   // Critical proximity is evaluated ONLY from observed incoming direction
@@ -84,6 +98,7 @@ test('actual v22 near-critical native hits are withheld below, at and above the 
     'numerically unresolved near-critical branches must not become qualified measurements');
   assert.notEqual(run.summary.native.status,'completed');
   records.push({deltaMm:delta,actualNativeStatus:run.summary.native.status,
+    rawNativeTerminal:nativeTerminal,rawNativeWitnessNotQualified:true,
     sideEvents:sides.length,minimumCriticalResidual:closest,
     invalidObservations:first.invalidObservations,
     sampledTransmission:sides.filter(x=>x.outcome==='transmission').length,
