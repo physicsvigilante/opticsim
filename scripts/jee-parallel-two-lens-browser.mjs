@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import {spawn,spawnSync} from 'node:child_process';
 import {createServer} from 'node:net';
-import {mkdir,mkdtemp,readFile,readdir,writeFile,rm} from 'node:fs/promises';
+import {mkdir,mkdtemp,readFile,readdir,writeFile,rm,rename} from 'node:fs/promises';
 import {join} from 'node:path';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
@@ -138,7 +138,11 @@ async function main(){
     x=>x.includes('Fit includes apparatus'),'actual Fit Results button');
   assert.doesNotMatch(fitNote,/Apparatus exceeds/);
   const viewport=await evalJS('({width:document.getElementById("light").width,height:document.getElementById("light").height})');
-  await until(state,x=>x.status==='completed'&&!x.fitDisabled,'completed fitted v20 viewer');
+  await until(state,x=>x.status==='completed'&&!x.fitDisabled&&!x.saveDisabled,'completed fitted v20 viewer');
+  // Preserve the earlier physical-edit package under a distinct evidence name.
+  // Chrome can reuse a filename when exporting again; a renamed first file
+  // makes the second downloaded package unambiguous without changing the app.
+  await rename(exported,join(downloads,'pre-fit-qualified-scene.json'));
   const previousDownloads=new Set(await readdir(downloads));
   await evalJS('document.getElementById("save-qualified").click()');
   const fittedName=await until(async()=>(await readdir(downloads))
