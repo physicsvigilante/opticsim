@@ -1,6 +1,6 @@
 # Native v14–v18 integration on reviewed v24 main — draft
 
-**NOT MERGED; combined final CI and independent physics/integration review pending.** Built on exact production base `487314dcb7e74e7f16f5b711f950090e16400780`. Exact source blobs for the 41 additive paths from held PR #171 are preserved, with new shared-engine reconciling v19–v24 rather than adopting the obsolete development branch.
+**NOT MERGED; combined final CI and independent physics/integration review pending.** Built on exact production base `487314dcb7e74e7f16f5b711f950090e16400780`. All 41 previously additive paths from held PR #171 were initially imported using their original Git blobs. Of those, **38 remain exactly byte-identical**; two native-integration tests and one integration-only browser-fingerprint fixture were updated to refer truthfully to v24, while the six original native physics/validation modules and v18 corner guard remain byte-identical. One new integration document is an additional path. Shared engine files were reconciled against v19–v24 rather than replaced by the obsolete branch.
 
 The five isolated versioned native systems are v14 two disjoint convex Glass regions; v15 one/two true biconvex SphericalLens bodies; v16 one thick lens + finite mirror; v17 two thick lenses + mirror (native depth 16); and v18 two thick lenses + mirror + opaque centred-gap Aperture (depth 16 with **mandatory post-refracted-ray aperture-endpoint uncertainty withholding**). All objects use pinned native PhyDemo; paths, Snell refractions and events are not synthesized.
 
