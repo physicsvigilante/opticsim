@@ -26,11 +26,16 @@ export function compileFiniteGlass(parameters,vertices){
   notDone:false,refIndex:parameters.insideIndex/parameters.outsideIndex,
   partialReflect:parameters.partialReflection};
 }
-export function finiteGlassEncounter(parameters,vertices,nativePoint,incoming,clearanceMm){
+export function finiteGlassEncounter(parameters,vertices,nativePoint,incoming,clearanceMm,inclusiveVertex=false){
  // Identify a surface only AFTER PhyDemo has supplied its actual hit point.
  const point={x:nativePoint.x,y:-nativePoint.y},faces=finiteGlassFaces(vertices),
   near=faces.filter(f=>distanceToFiniteSegment(point,f.a,f.b)<=1e-5);
- if(near.length!==1||vertices.some(v=>Math.hypot(point.x-v.x,point.y-v.y)<clearanceMm))
+ // The default strict-< guard is frozen for v8/v9 historical records.
+ // v22 opts into inclusive equality at its larger callback vertex band.
+ if(near.length!==1||vertices.some(v=>{
+   const distance=Math.hypot(point.x-v.x,point.y-v.y);
+   return inclusiveVertex?distance<=clearanceMm:distance<clearanceMm;
+ }))
   return {point,normal:{x:NaN,y:NaN},faceId:null,invalid:true};
  const face=near[0],normal=face.normal,leaving=incoming&&dot(incoming,normal)>0;
  return {point,normal,faceId:face.id,from:leaving?'inside':'outside',

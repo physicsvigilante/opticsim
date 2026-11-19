@@ -2,6 +2,7 @@ import {compositionCountWithin} from './composition-profiles.js';
 // Native planar-medium adapter and bounded read-only interaction observation.
 // No Snell/Fresnel implementation, ray routing, intensity repair or resampling.
 import {PRISM_TYPE,prismFaces,prismEncounter} from './triangular-prism.js';
+import {PRISM_BEAM_VERTEX_CLEARANCE_MM,prismBeamNearCritical} from './prism-beam-qualification.js';
 import {POLYGON_TYPE,polygonFaces,polygonEncounter} from './polygon-dielectric.js';
 import {CIRCULAR_TYPE,circularEncounter} from './circular-dielectric.js';
 import {SEMICIRCULAR_TYPE,semicircularEncounter,semicircularFaces} from './semicircular-dielectric.js';
@@ -56,7 +57,8 @@ export function observeInterfaceSet(doc,scene,idMap,{parentage=null,finiteDiagno
     const native=scene.objs[idMap.get(component.id)],original=native.onRayIncident;
     const circular=component.type===CIRCULAR_TYPE,semicircle=component.type===SEMICIRCULAR_TYPE,
       prism=component.type===PRISM_TYPE,polygon=component.type===POLYGON_TYPE,
-      finite=prism||polygon,faceEvents=finite||semicircle;
+      finite=prism||polygon,faceEvents=finite||semicircle,
+      v22Prism=prism&&doc.schemaVersion===22;
     const meter={interactions:0,transmitted:0,reflected:0,totalInternalReflections:0,first:null,invalidObservations:0,
       ...(faceEvents?{faces:Object.fromEntries((semicircle?semicircularFaces:prism?prismFaces:polygonFaces)(component.parameters).map(f=>[f.id,{interactions:0,first:null}]))}:{})};
     native.onRayIncident=function(...args){
@@ -68,11 +70,16 @@ export function observeInterfaceSet(doc,scene,idMap,{parentage=null,finiteDiagno
         catch{try{finiteDiagnostic.captureFault?.();}catch{/* Native delegation must still occur. */}}
       }
       const incoming=direction(args[0]),beforePower=power(args[0]);
-      const encounter=prism?prismEncounter(component,args[2],incoming):polygon?polygonEncounter(component,args[2],incoming):
+      const encounter=prism?prismEncounter(component,args[2],incoming,
+        v22Prism?PRISM_BEAM_VERTEX_CLEARANCE_MM:undefined):polygon?polygonEncounter(component,args[2],incoming):
         semicircle?semicircularEncounter(component,args[2],incoming):circular?circularEncounter(component,args[2],incoming):null;
       const n=encounter?.normal||interfaceNormal(component.parameters);
       const incomingSign=incoming?Math.sign(incoming.x*n.x+incoming.y*n.y):0;
-      if((circular||faceEvents)&&(!incoming||encounter?.invalid||![n.x,n.y,encounter.point.x,encounter.point.y].every(Number.isFinite)||
+      // v22 checks only real native incoming direction and real hit normal.
+      // Near critical refraction/TIR and near-vertex geometry fail closed;
+      // neither check changes PhyDemo's transmitted/reflected ray or verdict.
+      const criticalRisk=v22Prism&&prismBeamNearCritical(encounter,incoming);
+      if((circular||faceEvents)&&(!incoming||encounter?.invalid||criticalRisk||![n.x,n.y,encounter.point.x,encounter.point.y].every(Number.isFinite)||
         Math.abs(incoming.x*n.x+incoming.y*n.y)<1e-10))meter.invalidObservations++;
       // Delegate exactly once, with identical arguments and return object.
       const returned=original.apply(this,args);

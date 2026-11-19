@@ -88,6 +88,10 @@ define(20,'native-parallel-two-lens-tracing',{
 define(21,'native-parallel-semicircular-tracing',{
   [beam]:range(1,1),[semicircle]:range(1,1),[detector]:range(0,2)
 },[],[rule('native-semicircular-beam')],[]);
+// Bounded genuine finite native Glass+Beam; no implicit v8/v19 upgrade.
+define(22,'native-parallel-prism-tracing',{
+  [beam]:range(1,1),[prism]:range(1,1),[detector]:range(0,2)
+},[],[rule('native-prism-beam')],[]);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 
@@ -96,6 +100,7 @@ const byKey=new Map(definitions.map(p=>[p.id,p]));
 // a more permissive profile after geometry/material validation fails.
 const selection=freeze([
   {model:'native-parallel-semicircular-tracing',version:21,when:[group([semicircle],1,32)]},
+  {model:'native-parallel-prism-tracing',version:22,when:[group([beam],1,32),group([prism],1,32)]},
   {model:'native-parallel-planar-tracing',version:19,when:[group([beam],1,32),group([plane],1,32)]},
   {model:'native-parallel-two-lens-tracing',version:20,when:[group([beam],1,32),group([lens],2,32)]},
   {model:'native-parallel-lens-tracing',version:19,when:[group([beam],1,32)]},

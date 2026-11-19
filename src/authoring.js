@@ -5,6 +5,7 @@ import {compositionCapabilities,compositionSourceModes,selectAuthoringCompositio
 import {FINITE_COMPOSITION_MODEL,FINITE_COMPOSITION_VERSION,extendedFiniteCompositionPolicy,finiteShapeCompositionPolicy,finiteBlockerCompositionPolicy} from './finite-dielectric-composition.js';
 import {NATIVE_OBSERVATION_KEYS} from './native-observations.js';
 import {PRISM_TYPE,prismVertices} from './triangular-prism.js';
+import {PRISM_BEAM_VERSION,PRISM_BEAM_MODEL,PRISM_BEAM_VERTEX_CLEARANCE_MM} from './native-prism-beam.js';
 import {POLYGON_TYPE,polygonVertices} from './polygon-dielectric.js';
 import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
 import {SEMICIRCULAR_TYPE,SEMICIRCULAR_VERSION,SEMICIRCULAR_MODEL,SEMICIRCULAR_PARAMETERS,semicircularExtents} from './semicircular-dielectric.js';
@@ -77,6 +78,13 @@ export function capabilities() {
       geometry:'Both lenses ahead of the Beam, distinct x planes, finite endpoints and post-first-lens sample rim clearances; native chooses each interaction.',
       components:'One Beam, two vertical ideal lenses, 0–2 downstream passive vertical detectors. No stops, tilt, prisms or material lenses.',
       limitations:'Conservative high-angle guard; native misses remain misses. No image reconstruction or continuous irradiance.'},
+    nativePrismBeam:{schemaVersion:PRISM_BEAM_VERSION,model:PRISM_BEAM_MODEL,
+      scope:'Exactly one deterministic native finite Beam, one real pinned Glass triangle with a flat vertical entrance face, and up to two external passive right-hand detectors; no lenses, mirrors, stops, additional media, sources or mixed profiles.',
+      geometry:'Required explicit triangle vertices x1=x2, y1<y2, x3>x1 and y1+1<y3<y2-1; all face lengths/altitudes >=1 mm; only horizontal rightward Beam. The full emitting segment must lie safely left of the flat face, with all sampled initial rays >0.1 mm from any vertex.',
+      media:'Explicit insideIndex/outsideIndex [1,4] with inside>outside and partialReflection=false; native TIR persists while Fresnel partial branches are deliberately omitted.',
+      execution:'Unmodified pinned native Beam and Glass choose all actual multiple face encounters, TIR, reflections, transmissions, misses and detector counts. Real native callback ambiguity, truncation or undefined behaviour suppress qualified readings.',
+      limits:'Only numerical sampled finite 2D paths; no continuous irradiance, physical image, general triangular beam prism family, symbolic inverse or solved original JEE J13/J14 claim.',
+      vertexClearanceMm:PRISM_BEAM_VERTEX_CLEARANCE_MM},
     nativeSemicircularBeam:{schemaVersion:SEMICIRCULAR_VERSION,model:SEMICIRCULAR_MODEL,
       shape:'Native finite right semicircle: a flat vertical diameter and one exact circular arc, with explicit x/y centre, radius and two absolute refractive indices.',
       beam:'One deterministic native finite Beam, -60 to +60 degrees; each initial emitted sample must cross the flat segment at least 0.1 mm from its endpoints.',
