@@ -206,3 +206,30 @@ test('native dense Beam overflow retains complete counts but withholds unclipped
  assert.ok(results.slice(0,3).every(x=>x.status==='available'));
  assert.ok(results.slice(3).every(x=>x.status==='unavailable'&&x.value===null));
 });
+
+test('opposing focal signs use the same real native two-lens encounters, not a positive-lens-only shortcut',async()=>{
+ const samples=[-17.5,-12.5,-7.5,-2.5,2.5,7.5,12.5,17.5];
+ const sorted=xs=>[...xs].sort((a,b)=>a-b);
+ for(const [f1,f2] of [[200,-200],[-200,200]]){
+  const req=fresh();
+  by(req,'L1').parameters.focalLength=f1;
+  by(req,'L2').parameters.focalLength=f2;
+  if(f1<0)by(req,'L2').parameters.apertureHeight=400;
+  by(req,'D1').parameters.length=400;
+  by(req,'D2').parameters.length=400;
+  const {run,results}=await execute(req);
+  assert.equal(run.summary.native.status,'completed','lens f1='+f1+' f2='+f2);
+  assert.deepEqual(results.slice(0,3).map(r=>r.value),[8,8,8]);
+  for(const [i,x] of [[3,900],[4,1100]]){
+   const expected=sorted(samples.map(y0=>{
+    const m1=-y0/f1;
+    const y2=y0+600*m1;
+    const m2=m1-(y2-2)/f2;
+    return y2+(x-600)*m2;
+   }));
+   const actual=sorted(results[i].value.map(h=>h.pointMm.y));
+   assert.equal(actual.length,expected.length);
+   actual.forEach((y,j)=>near(y,expected[j],1e-6));
+  }
+ }
+});
