@@ -10,6 +10,8 @@ import {CIRCLE_BLOCKER_TYPE,validateCircleBlockerGeometry} from './opaque-circle
 import {FINITE_APERTURE_TYPE,APERTURE_CLEARANCE_MM} from './finite-aperture.js';
 import {finiteSurfaceGeometry,pointWithinSupportingLineClearance,finiteSurfacesConflict} from './composition-validation.js';
 import {PARALLEL_BEAM_TYPE,PARALLEL_BEAM_VERSION,PARALLEL_BEAM_PARAMETERS,validateParallelBeamComposition} from './parallel-beam.js';
+import {PRISM_BEAM_VERSION,validateNativePrismBeam} from './native-prism-beam.js';
+import {CIRCLE_BEAM_VERSION,validateCircleBeam} from './native-circle-beam.js';
 import {DECENTERED_BEAM_VERSION,validateDecenteredTwoLensBeam} from './decentered-two-lens-beam.js';
 export const UPSTREAM = '811f508d2b070898c241a568b0c167dcb8645251';
 export const SAMPLING_PRESETS = Object.freeze({ sparse: 0.048, medium: 0.2, dense: 1 });
@@ -90,7 +92,7 @@ function validateVersion(doc, version) {
     object(c, ['id', 'type', 'parameters', ...(version >= 2 && c?.type === 'point-source' ? ['emission'] : [])], path);
     if (typeof c.id !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(c.id) || ids.has(c.id)) fail(`${path}.id`, 'expected a unique stable ID (letters, digits, underscores, hyphens)');
     ids.add(c.id);
-    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(version===4||(version===13&&t==='line-blocker')||(version===PARALLEL_BEAM_VERSION&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||[PARALLEL_BEAM_VERSION,DECENTERED_BEAM_VERSION,SEMICIRCULAR_VERSION].includes(version))&&(t!==SEMICIRCULAR_TYPE||version===SEMICIRCULAR_VERSION)) :
+    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(version===4||(version===13&&t==='line-blocker')||(version===PARALLEL_BEAM_VERSION&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||[PARALLEL_BEAM_VERSION,DECENTERED_BEAM_VERSION,SEMICIRCULAR_VERSION,PRISM_BEAM_VERSION,CIRCLE_BEAM_VERSION].includes(version))&&(t!==SEMICIRCULAR_TYPE||version===SEMICIRCULAR_VERSION)) :
       version >= 3 ? ['point-source', 'ideal-lens', 'plane-mirror'] :
       ['point-source', 'ideal-lens'], `${path}.type`);
     object(c.parameters, componentParameterNames(c.type,version), `${path}.parameters`);
@@ -124,6 +126,8 @@ function validateVersion(doc, version) {
     'native-parallel-beam':c=>validateParallelBeamComposition(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'native-decentered-two-lens':c=>validateDecenteredTwoLensBeam(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'native-semicircular-beam':c=>validateSemicircularBeam(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
+    'native-prism-beam':c=>validateNativePrismBeam(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
+    'native-circle-beam':c=>validateCircleBeam(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'polygon-region':c=>validatePolygonGeometry(c,mirrorEndpoints,fail),
     'prism-region':c=>validatePrismGeometry(c,mirrorEndpoints,fail),
     'circular-region':c=>validateCircularGeometry(c,mirrorEndpoints,fail),

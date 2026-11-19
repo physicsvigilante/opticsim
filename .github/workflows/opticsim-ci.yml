@@ -38,6 +38,14 @@ jobs:
         run: node scripts/jee-semicircular-beam-acceptance.mjs
       - name: v21 JEE semicircular Glass real Chrome physical edit and qualified reopen
         run: node scripts/jee-semicircular-beam-browser.mjs
+      - name: v22 JEE finite native prism Beam public qualified authoring
+        run: node scripts/jee-prism-beam-acceptance.mjs
+      - name: v22 JEE finite native prism Beam real Chrome physical edit and qualified reopen
+        run: node scripts/jee-prism-beam-browser.mjs
+      - name: v23 JEE native full CircleGlass finite Beam public qualified authoring
+        run: node scripts/jee-circle-beam-acceptance.mjs
+      - name: v23 JEE native full CircleGlass finite Beam real Chrome physical edits and qualified reopen
+        run: node scripts/jee-circle-beam-browser.mjs
       - name: Opaque blocker browser edits, detector readings and qualified exports
         run: node scripts/opaque-line-blocker-browser.mjs
       - name: LLM authoring CLI with real native execution and revision guards
@@ -80,6 +88,10 @@ jobs:
             test-artifacts/browser-jee-parallel-two-lens-v20/
             test-artifacts/llm-authoring/jee-semicircular-beam-v21/
             test-artifacts/browser-jee-semicircular-beam-v21/
+            test-artifacts/llm-authoring/jee-prism-beam-v22/
+            test-artifacts/browser-jee-prism-beam-v22/
+            test-artifacts/llm-authoring/jee-circle-beam-v23/
+            test-artifacts/browser-jee-circle-beam-v23/
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()

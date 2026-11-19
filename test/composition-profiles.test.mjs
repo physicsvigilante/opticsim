@@ -26,7 +26,7 @@ const types=(...values)=>values.map(type=>({type}));
 const componentPatch=operations=>({format:'opticsim-component-revision-v1',operations});
 
 test('one composition catalog preserves all 17 reviewed saved model/version contracts',()=>{
- const c=compositionCapabilities();assert.equal(c.profiles.length,22);
+ const c=compositionCapabilities();assert.equal(c.profiles.length,24);
  c.profiles=c.profiles.filter(p=>p.schemaVersion<=12);assert.equal(c.profiles.length,17);
  assert.equal(new Set(c.profiles.map(p=>p.id)).size,17);
  assert.deepEqual(compositionModels(1),['ideal-thin-lens-geometric']);
@@ -44,6 +44,8 @@ test('one composition catalog preserves all 17 reviewed saved model/version cont
  assert.deepEqual(compositionModels(19),['native-parallel-lens-tracing','native-parallel-planar-tracing']);
   assert.deepEqual(compositionModels(20),['native-parallel-two-lens-tracing']);
   assert.deepEqual(compositionModels(21),['native-parallel-semicircular-tracing']);
+  assert.deepEqual(compositionModels(22),['native-parallel-prism-tracing']);
+  assert.deepEqual(compositionModels(23),['native-parallel-circle-tracing']);
  assert.deepEqual(compositionSourceModes(19),[]);
  for(const v of [5,7,8,9,10,11,12])assert.deepEqual(compositionSourceModes(v),['single-ray']);
 });
