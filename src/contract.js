@@ -1,4 +1,9 @@
 import {compositionModels,compositionSourceModes,compositionProfile,compositionCapacity,compositionCountsMatch,validateCompositionRules} from './composition-profiles.js';
+import {SPHERICAL_LENS_TYPE,SPHERICAL_PARAMETERS,validateSphericalLensTrain} from './spherical-lens.js';
+import {validateTwoSeparatedDielectrics} from './two-finite-dielectrics.js';
+import {validateThickLensMirrorComposition} from './thick-lens-mirror-composition.js';
+import {TWO_THICK_MIRROR_VERSION,TWO_THICK_MIRROR_NATIVE_DEPTH,validateTwoThickLensMirrorComposition} from './two-thick-lens-mirror-composition.js';
+import {THICK_APERTURE_VERSION,THICK_APERTURE_NATIVE_DEPTH,validateThickApertureComposition} from './thick-lens-aperture-composition.js';
 import {validateFiniteDielectricComposition} from './finite-dielectric-composition.js';
 import {PRISM_TYPE,PRISM_PARAMETERS,validatePrismGeometry} from './triangular-prism.js';
 import {POLYGON_TYPE,POLYGON_PARAMETERS,validatePolygonGeometry} from './polygon-dielectric.js';
@@ -37,11 +42,11 @@ const parameters = { [PARALLEL_BEAM_TYPE]:[...PARALLEL_BEAM_PARAMETERS], 'point-
   [CIRCLE_BLOCKER_TYPE]: ['x', 'y', 'radius'],
   [FINITE_APERTURE_TYPE]: ['x', 'y', 'orientationDeg', 'length', 'openingLength'],
   'ray-detector': ['x', 'y', 'orientationDeg', 'length'],
-  [PLANAR_TYPE]: [...PLANAR_PARAMETERS], [CIRCULAR_TYPE]: [...CIRCULAR_PARAMETERS], [SEMICIRCULAR_TYPE]: [...SEMICIRCULAR_PARAMETERS], [PRISM_TYPE]: [...PRISM_PARAMETERS], [POLYGON_TYPE]: [...POLYGON_PARAMETERS], ...CURVED_PARAMETERS };
+  [PLANAR_TYPE]: [...PLANAR_PARAMETERS], [CIRCULAR_TYPE]: [...CIRCULAR_PARAMETERS], [SEMICIRCULAR_TYPE]: [...SEMICIRCULAR_PARAMETERS], [PRISM_TYPE]: [...PRISM_PARAMETERS], [POLYGON_TYPE]: [...POLYGON_PARAMETERS], [SPHERICAL_LENS_TYPE]: [...SPHERICAL_PARAMETERS], ...CURVED_PARAMETERS };
 // Shared authoring/validator definitions. General composition relaxes mandatory
 // apparatus types; it does not relax numerical, geometric or runtime limits.
 export const COMPONENT_TYPES = Object.freeze(Object.keys(parameters));
-export const LENGTH_PARAMETERS = Object.freeze(['x','y','x1','y1','x2','y2','x3','y3','x4','y4','width','focalLength','apertureHeight','length','openingLength','radius']);
+export const LENGTH_PARAMETERS = Object.freeze(['x','y','x1','y1','x2','y2','x3','y3','x4','y4','width','focalLength','apertureHeight','centerThickness','frontRadius','backRadius','length','openingLength','radius']);
 // Compatibility envelope for legacy clients; whole-system profiles determine
 // admission. These per-type maxima must never be summed across optical families.
 export const GENERAL_SCOPE = Object.freeze(Object.fromEntries(
@@ -93,7 +98,7 @@ function validateVersion(doc, version) {
     object(c, ['id', 'type', 'parameters', ...(version >= 2 && c?.type === 'point-source' ? ['emission'] : [])], path);
     if (typeof c.id !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(c.id) || ids.has(c.id)) fail(`${path}.id`, 'expected a unique stable ID (letters, digits, underscores, hyphens)');
     ids.add(c.id);
-    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(version===4||([13,CURVED_ENTRY_VERSION].includes(version)&&t==='line-blocker')||(version===PARALLEL_BEAM_VERSION&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||[PARALLEL_BEAM_VERSION,DECENTERED_BEAM_VERSION,SEMICIRCULAR_VERSION,PRISM_BEAM_VERSION,CIRCLE_BEAM_VERSION].includes(version))&&(t!==SEMICIRCULAR_TYPE||[SEMICIRCULAR_VERSION,CURVED_ENTRY_VERSION].includes(version))) :
+    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(t!==SPHERICAL_LENS_TYPE||[15,16,17,18].includes(version))&&(version===4||([13,CURVED_ENTRY_VERSION].includes(version)&&t==='line-blocker')||(version===THICK_APERTURE_VERSION&&t===FINITE_APERTURE_TYPE)||(version===PARALLEL_BEAM_VERSION&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||[PARALLEL_BEAM_VERSION,DECENTERED_BEAM_VERSION,SEMICIRCULAR_VERSION,PRISM_BEAM_VERSION,CIRCLE_BEAM_VERSION].includes(version))&&(t!==SEMICIRCULAR_TYPE||[SEMICIRCULAR_VERSION,CURVED_ENTRY_VERSION].includes(version))) :
       version >= 3 ? ['point-source', 'ideal-lens', 'plane-mirror'] :
       ['point-source', 'ideal-lens'], `${path}.type`);
     object(c.parameters, componentParameterNames(c.type,version), `${path}.parameters`);
@@ -108,7 +113,7 @@ function validateVersion(doc, version) {
       if (key === 'brightness') number(value, 0.01, 1, `${path}.parameters.brightness`);
       if (key === 'width') number(value, 10, 100, `${path}.parameters.width`);
       if (c.type===PARALLEL_BEAM_TYPE && key==='directionDeg') number(value,-180,180,`${path}.parameters.directionDeg`);
-      if (key === 'length'||key === 'openingLength') number(value, 1, 10000, `${path}.parameters.${key}`);
+      if (['length','openingLength','centerThickness','frontRadius','backRadius'].includes(key)) number(value, 1, 10000, `${path}.parameters.${key}`);
       if (key === 'orientationDeg') number(value, -180, 180, `${path}.parameters.orientationDeg`);
     }
     if (c.type===FINITE_APERTURE_TYPE && c.parameters.length-c.parameters.openingLength < 2)
@@ -124,6 +129,11 @@ function validateVersion(doc, version) {
   // removed from the authoritative document or the native scene compiler.
   validateCompositionRules(p.components,p.model,version,{
     'finite-composition':c=>validateFiniteDielectricComposition(c,mirrorEndpoints,fail,version),
+    'two-separated-glass':c=>validateTwoSeparatedDielectrics(c,mirrorEndpoints,fail),
+    'native-thick-lenses':c=>validateSphericalLensTrain(c,mirrorEndpoints,fail),
+    'native-thick-mirror':c=>validateThickLensMirrorComposition(c,mirrorEndpoints,fail),
+    'native-two-thick-mirror':c=>validateTwoThickLensMirrorComposition(c,mirrorEndpoints,fail),
+    'native-thick-aperture':c=>validateThickApertureComposition(c,mirrorEndpoints,fail),
     'native-parallel-beam':c=>validateParallelBeamComposition(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'native-decentered-two-lens':c=>validateDecenteredTwoLensBeam(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'native-semicircular-beam':c=>validateSemicircularBeam(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
@@ -155,7 +165,12 @@ function validateVersion(doc, version) {
   if (version === 1) number(v.brightness, 0.01, 1, '$.presentation.brightness');
   object(doc.simulation, ['rayDensity', 'maxRayDepth', 'processedRayLimit'], '$.simulation');
   number(doc.simulation.rayDensity, version === 1 ? 0.1 : SAMPLING_PRESETS.sparse, 1, '$.simulation.rayDensity');
-  number(doc.simulation.maxRayDepth, 0, 8, '$.simulation.maxRayDepth');
+  // Only v17-v18 receive the explicitly versioned deep native budget.
+  // v19-v21 remain bounded at their independently reviewed depth <=8.
+  number(doc.simulation.maxRayDepth,0,
+    version===TWO_THICK_MIRROR_VERSION?TWO_THICK_MIRROR_NATIVE_DEPTH:
+    version===THICK_APERTURE_VERSION?THICK_APERTURE_NATIVE_DEPTH:8,
+    '$.simulation.maxRayDepth');
   number(doc.simulation.processedRayLimit, 1, 10000, '$.simulation.processedRayLimit');
   for (const key of ['maxRayDepth', 'processedRayLimit']) if (!Number.isInteger(doc.simulation[key])) fail(`$.simulation.${key}`, 'expected integer');
   return doc;

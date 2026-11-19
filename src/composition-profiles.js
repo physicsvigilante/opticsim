@@ -3,10 +3,15 @@
 // A profile is an admission contract, NOT a prescribed optical encounter order.
 const source='point-source',beam='parallel-beam',mirror='plane-mirror',detector='ray-detector';
 const lens='ideal-lens',prism='triangular-prism',polygon='polygon-dielectric';
-const circle='circular-dielectric',semicircle='semicircular-dielectric',plane='planar-interface';
+const circle='circular-dielectric',semicircle='semicircular-dielectric',plane='planar-interface',thick='spherical-lens';
 const curves=['ideal-curved-mirror','circular-arc-mirror'];
 const stops=['line-blocker','circle-blocker','finite-aperture'];
 const finite='finite-dielectric-composition';
+const twoFinite='two-separated-dielectrics-tracing';
+const thickTrain='native-thick-lens-tracing';
+const thickMirror='native-thick-lens-mirror-tracing';
+const twoThickMirror='native-two-thick-lens-mirror-tracing';
+const thickAperture='native-two-thick-lens-mirror-aperture-tracing';
 const range=(min,max)=>({min,max});
 const group=(types,min,max)=>({types,min,max});
 const rule=(name,excludeTypes=[])=>({name,excludeTypes});
@@ -71,8 +76,26 @@ define(13,finite,{
   [mirror]:range(0,1),'line-blocker':range(0,1),[detector]:range(0,2)
 },[group([polygon,prism],1,1)],
   [rule('finite-composition'),optical('general-optical',polygon,prism)],single);
-// v19 is deliberately reserved for a separate JEE-first source family while
-// v14–v18 remain held. It never upgrades or broadens old saved profiles.
+// Restore the fully bounded, previously independently reviewed v14-v18
+// family on current main without reinterpreting later v19-v21 saves.
+define(14,twoFinite,{
+  [source]:range(1,4),[polygon]:range(2,2),[detector]:range(0,2)
+},[],[rule('two-separated-glass'),optical('general-optical',polygon)],single);
+define(15,thickTrain,{
+  [source]:range(1,4),[thick]:range(1,2),[detector]:range(0,2)
+},[],[rule('native-thick-lenses'),optical('general-optical',thick)],single);
+define(16,thickMirror,{
+  [source]:range(1,4),[thick]:range(1,1),[mirror]:range(1,1),[detector]:range(0,2)
+},[],[rule('native-thick-mirror'),optical('general-optical',thick)],single);
+define(17,twoThickMirror,{
+  [source]:range(1,4),[thick]:range(2,2),[mirror]:range(1,1),[detector]:range(0,2)
+},[],[rule('native-two-thick-mirror'),optical('general-optical',thick)],single);
+define(18,thickAperture,{
+  [source]:range(1,4),[thick]:range(2,2),[mirror]:range(1,1),
+  'finite-aperture':range(1,1),[detector]:range(0,2)
+},[],[rule('native-thick-aperture'),optical('general-optical',thick)],single);
+// v19 is an independently reviewed JEE-first source family. No automatic
+// upgrade from v14-v18, nor any widening of v19-v21 source or material policy.
 // It admits one true finite native Beam, not a point-source mode or a route.
 define(19,'native-parallel-lens-tracing',{
   [beam]:range(1,1),[lens]:range(0,1),'finite-aperture':range(0,1),[detector]:range(0,2)
@@ -110,6 +133,11 @@ const byKey=new Map(definitions.map(p=>[p.id,p]));
 // a more permissive profile after geometry/material validation fails.
 const selection=freeze([
   {model:'native-curved-entry-observation-tracing',version:24,when:[group([semicircle],1,32),group(['line-blocker'],1,32)]},
+  {model:thickAperture,version:18,when:[group([thick],2,32),group([mirror],1,32),group(['finite-aperture'],1,32)]},
+  {model:twoThickMirror,version:17,when:[group([thick],2,32),group([mirror],1,32)]},
+  {model:thickMirror,version:16,when:[group([thick],1,32),group([mirror],1,32)]},
+  {model:thickTrain,version:15,when:[group([thick],1,32)]},
+  {model:twoFinite,version:14,when:[group([polygon],2,32)]}
   {model:'native-parallel-semicircular-tracing',version:21,when:[group([semicircle],1,32)]},
   {model:'native-parallel-prism-tracing',version:22,when:[group([beam],1,32),group([prism],1,32)]},
   {model:'native-parallel-circle-tracing',version:23,when:[group([beam],1,32),group([circle],1,32)]},
