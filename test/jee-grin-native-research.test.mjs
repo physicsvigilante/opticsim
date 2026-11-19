@@ -9,7 +9,7 @@ import {createRequire} from 'node:module';
 const core=createRequire(import.meta.url)('../dist/test-core.cjs');
 const saved=JSON.parse(readFileSync(new URL('../scenes/polygon-dielectric.json',import.meta.url),'utf8'));
 const PIN='811f508d2b070898c241a568b0c167dcb8645251';
-const gradientFn='\\\\sqrt{1-y}'; // native y-down -> physical y-up; 1/mm unit scale is explicit.
+const gradientFn='\\sqrt{1-y}'; // native y-down -> physical y-up; 1/mm unit scale is explicit.
 const limits=Object.freeze({maxNativeCallbacks:4096,maxAbsCoordinate:10000});
 function finitePoint(point){return !!point&&Number.isFinite(point.x)&&Number.isFinite(point.y)
  &&Math.abs(point.x)<=limits.maxAbsCoordinate&&Math.abs(point.y)<=limits.maxAbsCoordinate;}
