@@ -279,8 +279,13 @@ function camera(components) {
   const xs=vertices.map(v=>v.x),ys=vertices.map(v=>v.y);
   const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
   const width=Math.max(320,maxX-minX+120),height=Math.max(240,maxY-minY+120);
+  // The v25 GRIN apparatus is approximately one millimetre wide; the
+  // historical 2x camera fit renders its native rectangle as two pixels.
+  // A display-only 80 CSS-pixel/mm close-up keeps its full 2mm detector in
+  // the 240px minimum stage; never change the underlying physical geometry.
+  const isGrinV25=components.some(c=>c.type===GRIN_V25_TYPE);
   return {x:(minX+maxX)/2,y:(minY+maxY)/2,
-    zoom:Math.max(.03,Math.min(2,.85*1200/width,.85*700/height))};
+    zoom:isGrinV25?80:Math.max(.03,Math.min(2,.85*1200/width,.85*700/height))};
 }
 export function prepareScene(request) {
   const issues=inspectAuthoringRequest(request);

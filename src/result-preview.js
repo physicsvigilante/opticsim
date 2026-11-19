@@ -84,14 +84,18 @@ export function apparatusPoints(doc){
     return [{x:p.x,y:p.y}];
   });
 }
-function cameraFor(points,width,height,padding){
+function cameraFor(points,width,height,padding,version=4){
   const xs=points.map(p=>p.x),ys=points.map(p=>p.y);
   const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
   const clamp=(x,[lo,hi])=>Math.max(lo,Math.min(hi,x));
+  // Preserve all historical camera semantics. v25 alone can magnify a real
+  // 1mm GRIN region while still fitting the true passive detector endpoints.
+  const grin=version===25,zoomCap=grin?100:2,minSpan=grin?.1:1;
   const view={x:clamp((minX+maxX)/2,CAMERA_BOUNDS.centerMm),
     y:clamp((minY+maxY)/2,CAMERA_BOUNDS.centerMm),
-    zoom:clamp(Math.min(2,(width-2*padding)/Math.max(1,maxX-minX),
-      (height-2*padding)/Math.max(1,maxY-minY)),CAMERA_BOUNDS.zoom)};
+    zoom:clamp(Math.min(zoomCap,(width-2*padding)/Math.max(minSpan,maxX-minX),
+      (height-2*padding)/Math.max(minSpan,maxY-minY)),
+      grin?[.03,100]:CAMERA_BOUNDS.zoom)};
   const fits=points.every(p=>Math.abs((p.x-view.x)*view.zoom)<=width/2-padding+1e-7&&
     Math.abs((p.y-view.y)*view.zoom)<=height/2-padding+1e-7);
   return {view,fits};
@@ -111,12 +115,12 @@ export async function fitRequestedView(doc,resultReport,width,height){
       excluded.push({id:r.id,reason:'infinite or unavailable position; no finite coordinate invented'});continue;
     }
     const candidate=[...points,{x:p.x,y:p.y}];
-    if(!cameraFor(candidate,width,height,padding).fits){
+    if(!cameraFor(candidate,width,height,padding,doc.schemaVersion).fits){
       excluded.push({id:r.id,reason:'cannot fit within camera bounds at this viewport size'});continue;
     }
     points.push({x:p.x,y:p.y});included.push(r.id);
   }
-  const fitted=cameraFor(points,width,height,padding);
+  const fitted=cameraFor(points,width,height,padding,doc.schemaVersion);
   const next=structuredClone(doc);next.presentation.view=fitted.view;validate(next);
   return {document:next,padding,included,excluded,apparatusFits:fitted.fits,
     note:`Fit includes apparatus and ${included.length} finite conditional result(s). No physics or sampling changed.`+

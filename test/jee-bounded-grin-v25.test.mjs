@@ -9,6 +9,7 @@ import {prepareScene,capabilities,reviseScene} from '../src/authoring.js';
 import {validate,UPSTREAM,serializeSave,parseSave} from '../src/contract.js';
 import {evaluateDocument} from '../scripts/author-scene.mjs';
 import {evaluateObservables} from '../src/observables.js';
+import {fitRequestedView} from '../src/result-preview.js';
 import {GRIN_V25_POLICY,GRIN_V25_MODEL,GRIN_V25_TRUSTED_LATEX,
  grinV25ExactReference,compileGrinV25,grinV25Extents}
  from '../src/native-grin-v25.js';
@@ -159,4 +160,33 @@ test('v25 accepted edits change the actual scene and suppress all stale native r
  console.log('JEE_V25_REVISED_REAL_NATIVE '+JSON.stringify({
   originalSha:original.summary.canonicalSha256,changedSha:revised.summary.canonicalSha256,
   staleAllSuppressed:true,originalQuestionSolved:false}));
+});
+
+test('v25 presentation-only close-up/fit makes millimetre apparatus legible without changing native measurements or older camera contracts',async()=>{
+ const d=scene();
+ assert.equal(d.presentation.view.zoom,80,'A 1mm GRIN body must not start as a 2px sliver');
+ const close=structuredClone(d);close.presentation.view.zoom=100;validate(close);
+ assert.deepEqual(core.compile(close).native.objs,core.compile(d).native.objs,
+  'Native physical objects may not depend on purely visual zoom');
+ const beyond=structuredClone(d);beyond.presentation.view.zoom=100.01;
+ assert.throws(()=>validate(beyond),'v25 display scale must remain bounded');
+ const legacy=prepareScene(JSON.parse(readFileSync(
+  new URL('../examples/jee-curved-entry-v24.json',import.meta.url),'utf8')).physical).document;
+ assert.ok(legacy.presentation.view.zoom<=2);
+ const forged=structuredClone(legacy);forged.presentation.view.zoom=80;
+ assert.throws(()=>validate(forged),'Older schemas cannot inherit the v25 camera allowance');
+ const fit=await fitRequestedView(d,{results:[]},710,240);
+ assert.equal(fit.apparatusFits,true);
+ assert.ok(fit.document.presentation.view.zoom>=60&&fit.document.presentation.view.zoom<=100,
+  'Fit must magnify while retaining the actual detector endpoints');
+ const baseline=actualNative(d),zoomed=actualNative(fit.document);
+ assert.equal(baseline.status,'completed');assert.equal(zoomed.status,'completed');
+ assert.deepEqual(zoomed.data.detectorsById,baseline.data.detectorsById,
+  'Presentation fit must not change real native crossings');
+ assert.deepEqual(zoomed.data.grinNumericalGuard.observedDetectorErrorMm,
+  baseline.data.grinNumericalGuard.observedDetectorErrorMm,
+  'Presentation fit must not change native numerical qualification');
+ console.log('JEE_V25_DISPLAY_ONLY_FIT '+JSON.stringify({
+  initialZoom:d.presentation.view.zoom,fittedZoom:fit.document.presentation.view.zoom,
+  nativeEvidenceUnchanged:true,olderVersionCameraUnchanged:true}));
 });

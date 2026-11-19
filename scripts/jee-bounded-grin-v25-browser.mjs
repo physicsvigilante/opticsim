@@ -86,6 +86,20 @@ async function main(){
   const controls=await js('({source:!!document.getElementById("S1-mode-single-ray"),noFullCircle:!document.getElementById("S1-mode-full-circle"),glass:!!document.getElementById("G1-indexSquaredAtAxis"),gradient:!!document.getElementById("G1-gradientLength"),detector:!!document.getElementById("D1-x"),sourceX:!!document.getElementById("S1-x")})');
   assert.ok(Object.values(controls).every(Boolean),JSON.stringify(controls));
   check('v25 exposes one exact source and scalar GRIN parameters, but no arbitrary equation editor');
+  const cam=await js('({zoom:Number(document.getElementById("zoom").value),max:Number(document.getElementById("zoom").max),fitDisabled:document.getElementById("fit-results").disabled})');
+  assert.equal(cam.zoom,80,'GRIN body needs a native mm-scale close-up');
+  assert.equal(cam.max,100,'Only v25 exposes extended presentation zoom');
+  assert.equal(cam.fitDisabled,false);
+  check('v25 camera begins at a legible 80 pixels/mm without changing physical inputs');
+  const beforeFit=JSON.stringify(s.results[2].value);
+  await js('document.getElementById("fit-results").click()');
+  const fitted=await until(async()=>({zoom:Number(await js('document.getElementById("zoom").value')),scene:await state()}),
+    x=>x.zoom>80&&x.zoom<=100&&x.scene.status==='completed'&&x.scene.results?.[2]?.value?.length===1,
+    'presentation-only GRIN fit');
+  assert.equal(JSON.stringify(fitted.scene.results[2].value),beforeFit,
+    'Zoom cannot change actual pinned-native crossing measurements');
+  check('Fitting tiny physical GRIN scene increases zoom and preserves the native detector crossing');
+  await shot('v25-grin-fit-closeup');
   await shot('v25-grin-baseline');
   const originalHits=JSON.stringify(s.results[2].value);
   await edit('S1-x',.2);

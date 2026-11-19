@@ -161,7 +161,7 @@ function validateVersion(doc, version) {
   object(v.view, ['x', 'y', 'zoom'], '$.presentation.view');
   number(v.view.x, -10000, 10000, '$.presentation.view.x');
   number(v.view.y, -10000, 10000, '$.presentation.view.y');
-  number(v.view.zoom, 0.03, 10, '$.presentation.view.zoom');
+  number(v.view.zoom, 0.03, version===GRIN_V25_VERSION?100:10, '$.presentation.view.zoom');
   choice(v.mode, ['rays', 'extended'], '$.presentation.mode');
   if (typeof v.grid !== 'boolean') fail('$.presentation.grid', 'expected boolean');
   if (version === 1) number(v.brightness, 0.01, 1, '$.presentation.brightness');

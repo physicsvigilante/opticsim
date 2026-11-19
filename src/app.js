@@ -335,10 +335,14 @@ function controls() {
   }
   if(graded){
     $('model-label').textContent='Bounded square-root graded-index Glass · native v25';
-    $('parameter-guidance').textContent='Lengths in mm, x right, y up. One exact horizontal source starts INSIDE a real rectangular GRIN body, with n(y)^2=1.5+(y-axisY)/(1 mm), exterior index exactly 1, and one actual external passive detector. The strict policy uses 0.0025-mm native Euler steps and a version-only depth allowance; this is not an open-ended expression parser.';
+    $('parameter-guidance').textContent='Lengths in mm, x right, y up. One exact horizontal source starts INSIDE a real rectangular GRIN body, with n(y)^2=1.5+(y-axisY)/(1 mm), exterior index exactly 1, and one actual external passive detector. The strict policy uses 0.0025-mm native Euler steps and a version-only depth allowance; this is not an open-ended expression parser. Zoom magnifies presentation only and never changes optical sampling.';
     $('physical-note').textContent='Every native internal ray callback and actual passive detector hit is compared with the conditional continuous-field first integral. Any numerical mismatch above 0.002 mm, missing hit, extra branch, truncation or auditor fault FAILS CLOSED and withholds accepted readouts—even after a native completion callback. Fresnel-off is explicit; no image, general GRIN, symbolic J09 grazing result or continuous irradiance is certified.';
   }
   $('grid-toggle').checked = session.document.presentation.grid;
+  // Only v25 receives magnification suitable for 1mm-scale physical GRIN
+  // geometry. Restoring an older scene restores its original slider range.
+  $('zoom').max=graded?'100':'2';
+  $('zoom').step=graded?'1':'0.01';
   $('zoom').value = session.document.presentation.view.zoom;
   syncSampling();
 }
@@ -526,7 +530,8 @@ for (const mode of ['rays', 'extended']) $(`mode-${mode}`).onchange = e => {
 };
 $('grid-toggle').onchange = e => viewChange(p => { p.grid = e.target.checked; });
 $('zoom').oninput = e => viewChange(p => { p.view.zoom = Number(e.target.value); });
-for (const [id, dx] of [['pan-left', -100], ['pan-right', 100]]) $(id).onclick = () => viewChange(p => { p.view.x += dx; });
+for (const [id, dx] of [['pan-left', -100], ['pan-right', 100]]) $(id).onclick = () =>
+  viewChange(p => { p.view.x += session.document.schemaVersion===25?Math.sign(dx)*.25:dx; });
 function resize() {
   const rect = $('stage').getBoundingClientRect();
   const nextSize = { width: Math.max(200, Math.round(rect.width)), height: Math.max(200, Math.round(rect.height)) };

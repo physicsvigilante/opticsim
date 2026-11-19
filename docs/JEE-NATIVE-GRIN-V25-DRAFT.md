@@ -26,3 +26,7 @@ A missing or ambiguous callback, unexpected second ray, position outside the bou
 4. Verify exact Git head/tree identity, full CI and artifacts. Publish a single consolidated independent physics/numerical/integration review before merging v25; do not require reviewers to redo the unchanged PR184/PR185 research.
 
 **Nonclaims:** Not a general GRIN expression language, J09 original grazing-incidence solution, physical image, quantitative radiometry, whole arbitrary-mixed optics engine, 3D simulation, or proof that native Euler is globally error-bounded. This first candidate is a cautious single-bounded-family capability.
+
+## Presentation-only optics visibility
+
+The native region is about 1 mm wide; historical default 2× rendering was only two screen pixels. **Only schema v25** may default to 80 CSS pixels/mm and accept a camera zoom of up to 100 while retaining the unchanged physics and fixed Euler step. The live Fit control uses the actual stage dimensions to show the full real GRIN rectangle and detector endpoints. Older schemas retain their original zoom bounds, auto-fit and pan behavior. These are purely presentation transformations: no ray resampling, altered refractive index or newly certified measurement can follow from zooming. Real Chrome checks must show the magnified physical region and unchanged source-bound native hit evidence.
