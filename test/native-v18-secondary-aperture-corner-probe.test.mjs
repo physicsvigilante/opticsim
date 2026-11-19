@@ -36,6 +36,10 @@ test('native-refracted v18 rays near an aperture gap joint: research observation
  assert.ok(Number.isFinite(nativeY));
  assert.ok(Math.abs(nativeY-10)>.2,'refracted crossing must differ from the original straight source line');
  const evidence=attempt();
+ const baselineInput=JSON.stringify(baseline,null,2)+'\n';
+ const baselineReport=JSON.stringify(run17.summary,null,2)+'\n';
+ writeFileSync(resolve(evidence,'baseline-v17-input.json'),baselineInput,{flag:'wx'});
+ writeFileSync(resolve(evidence,'baseline-v17-native-report.json'),baselineReport,{flag:'wx'});
  const controls=[];
  for(const delta of [-.03,-.005,0,.005,.03]){
   const scope18=structuredClone(fixture('native-thick-lens-aperture-v18.json').physical);
@@ -70,6 +74,8 @@ test('native-refracted v18 rays near an aperture gap joint: research observation
  const record={format:'opticsim-native-v18-corner-test-only-v2',
   status:'observed-not-certified',nativeReferenceY:nativeY,
   baselineV17NativeStatus:run17.summary.native.status,
+  baselineInputSha256:sha(baselineInput),
+  baselineNativeReportSha256:sha(baselineReport),
   referenceHit:{pointMm:crossing.pointMm,incomingUnit:crossing.incomingUnit},
   controls,limits:[
    'Real v17 sampled detector hit used to choose independent fully authored v18 aperture scene geometry; never a synthetic ray route.',
