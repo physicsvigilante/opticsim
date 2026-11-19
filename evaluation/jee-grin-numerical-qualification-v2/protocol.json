@@ -1,0 +1,115 @@
+{
+  "format": "opticsim-jee-grin-numerical-qualification-v2",
+  "status": "frozen-before-test-implementation",
+  "baseline": "d3c535d9fe1bc5e2a27e414a9224084a3ae7bc3f",
+  "pinnedPhyDemo": "811f508d2b070898c241a568b0c167dcb8645251",
+  "sourceProblem": "J09",
+  "sourceReview": "evaluation/jee-post164-coverage-v1/source-review.json",
+  "sourceReviewedCommit": "6a72bd67e58e9a3fd94a6bf33d88d1f20295b4c2",
+  "type": "nonpublic raw-native feasibility",
+  "solutionsRead": false,
+  "model": {
+    "designation": "synthetic fixed field, NOT the original J09 apparatus",
+    "physicalYUp": "n(y)^2 = 1.5 + y/(1 mm)",
+    "nativeYDownLatex": "\\sqrt{1.5-y}",
+    "material": "bounded rectangle, homogeneous outside index 1",
+    "bottomToTopNativeY": [
+      -0.9,
+      0.4
+    ],
+    "minSquaredIndex": 1.1,
+    "maxSquaredIndex": 2.4,
+    "nativeRectangle": [
+      [
+        0,
+        -0.9
+      ],
+      [
+        1,
+        -0.9
+      ],
+      [
+        1,
+        0.4
+      ],
+      [
+        0,
+        0.4
+      ]
+    ],
+    "sourceNativePosition": [
+      0.1,
+      0
+    ],
+    "sourceNativeDirection": "right, horizontal; source starts strictly inside",
+    "detectorNativeX": 1.2,
+    "detectorNativeSpanY": [
+      -1,
+      1
+    ],
+    "lengthUnit": "mm",
+    "absorption": "0",
+    "nativeDepthBudget": "research only, capped at 2048; not a public budget"
+  },
+  "predeclaredAnalyticalControl": {
+    "derivation": "For n(y)^2=A+y/L, p_x=n(y) cos theta=sqrt(A) is conserved; starting horizontal at y=0, the differentiable rising branch is y(x)=(x-x0)^2/(4*A*L). At the vertical exit x=1, n sin(theta_in)=(x_exit-x0)/(2*sqrt(A)*L). Refract into explicitly chosen outside n=1 and propagate to x=1.2.",
+    "A": 1.5,
+    "Lmm": 1,
+    "x0mm": 0.1,
+    "exitXmm": 1,
+    "detectorXmm": 1.2,
+    "yExitMm": 0.135,
+    "sinThetaOutside": 0.3674234614174768,
+    "analyticalNativeDetectorYmm": -0.21401123063510652,
+    "claim": "A bounded independent continuous-field reference, not an error guarantee for native rays"
+  },
+  "stepsMm": [
+    0.04,
+    0.02,
+    0.01,
+    0.005,
+    0.0025
+  ],
+  "translationsNativeMm": [
+    [
+      0,
+      0
+    ],
+    [
+      250,
+      150
+    ],
+    [
+      -250,
+      -150
+    ],
+    [
+      9000,
+      8500
+    ],
+    [
+      -9000,
+      -8500
+    ]
+  ],
+  "hypotheses": [
+    "All baseline step-sweep cases must have a genuine complete pinned native run, zero error/truncation/undefined behavior, exactly one passive detector hit and bounded finite callbacks. Unqualified cases cause test failure, not artificial qualification.",
+    "Baseline finest-step error must be lower than coarsest-step error. Per-step errors are recorded even if not strictly monotonic; a claimed certified numerical bound stays null.",
+    "Moderate (+/-250 mm) translated fixtures should preserve local detector ordinate within a conservative 0.005 mm tolerance at step 0.01. Near-world translations are recorded separately and never automatically admitted as public evidence.",
+    "A pure research preflight refuses arbitrary LaTeX input, unknown fields, non-mm units, non-finite/negative steps, insufficient index-squared positivity, near-boundary sources, and outside world coordinates before any native run.",
+    "All exact native inputs are synthetic added facts. No J09 source interpretation, symbolic ray or physical image is certified."
+  ],
+  "mandatoryNegativeCases": [
+    "raw latex injection/unknown field",
+    "invalid length unit",
+    "step zero",
+    "large step",
+    "index squared dipping below 1",
+    "outside index bound",
+    "source on material face",
+    "world extent outside +/-10000 mm"
+  ],
+  "permittedPublicChanges": [],
+  "reviewRequirement": "No independent review needed for this additive test-only study; any public fixed GRIN family must receive one final focused numerical/physics/integration review.",
+  "allowedOutcome": "Research success, failed native observation, or unsupported boundary; no result silently upgraded"
+}
