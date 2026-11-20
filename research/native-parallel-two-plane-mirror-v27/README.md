@@ -45,7 +45,7 @@ This work does not claim wave optics, attenuation, continuous irradiance, a phys
 
 ## Public v27 candidate in the same draft PR (after positive raw feasibility)
 
-The synthetic gap-separated system has now been implemented as a **distinct public schema v27**, with no silent change to old v5/v19/v26 files. The profile is `native-parallel-slab-mirror-tracing`; it admits exactly one genuine pinned finite Beam, two correctly ordered vertical `PlaneGlass` boundaries, one independent finite vertical `Mirror` in the third medium, and 0–2 source-side passive detectors.
+The synthetic gap-separated system has now been implemented as a **distinct public schema v27**, with no silent change to old v5/v19/v26 files. The profile is `native-parallel-slab-mirror-tracing`; it admits exactly one genuine pinned finite Beam, two correctly ordered vertical `PlaneGlass` boundaries, one independent finite vertical `Mirror` in the third medium, and 0–1 source-side passive detector. Two detectors on both legs create nine physical optical encounters, exceeding the native depth-eight profile, so they are not publicly authorable in v27.
 
 **Physical limitations are explicit:** the slab must have thickness **at least 1 mm**, and the Mirror must be **at least 1 mm beyond the rear refracting surface**. This is intentionally NOT a mirror directly resting on a glass plate. The two exterior indices must match and be authored explicitly; the slab index must be at least that exterior index. `partialReflection:false` is required at both interfaces. Reverse/tilted illumination, extra optical objects and arbitrary third media remain unsupported.
 
