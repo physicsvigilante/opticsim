@@ -86,7 +86,7 @@ export function capabilities() {
       execution:'Native pinned Beam emits all deterministic samples; density is numerical not a continuous source property. Brightness exceeding ray density is refused to prevent native saturation.',
       limitations:'No image reconstruction, PSF, diffraction, radiometric power, arbitrary composite optics or source-to-detector ancestry.'},
     nativeBeamTwoPlaneMirror:{schemaVersion:BEAM_TWO_PLANE_MIRROR_VERSION,model:BEAM_TWO_PLANE_MIRROR_MODEL,
-      scope:'One finite real native Beam, exactly two vertical native PlaneGlass boundaries forming one finite homogeneous slab, one finite native vertical Mirror strictly beyond the slab, and 0–2 passive source-side detectors.',
+      scope:'One finite real native Beam, exactly two vertical native PlaneGlass boundaries forming one finite homogeneous slab, one finite native vertical Mirror strictly beyond the slab, and 0–1 passive source-side detector (two full-return detectors exceed native depth 8).',
       material:'The original outside medium on both sides of the slab must be identical and explicitly declared, with slab index >= exterior. Both planes require partialReflection=false; native TIR remains.',
       geometry:'No touching or near-contact mirror/refracting interface: require >=1mm physical gap after rear face, slab thickness >=1mm, and >0.1mm first-mirror sample rim clearance. No other optics.',
       numerical:'Exact compiled native Beam samples with v26 B1 half-integer withholding (1e-10), 1–100 samples, density 0.048–1 and brightness <=density, 0–60deg forward incidence and depth <=8; stopped/incomplete/stale results suppressed.',
