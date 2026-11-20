@@ -1,0 +1,96 @@
+{
+  "format": "opticsim-jee-j02-three-mirror-orbit-frozen-v1",
+  "status": "pre-execution-frozen-research",
+  "productionBaseline": "a4f8502ec4b9c900079ac40b35d102cb36fccb93",
+  "pinnedPhyDemo": "811f508d2b070898c241a568b0c167dcb8645251",
+  "originalSource": {
+    "heldCoveragePR": 165,
+    "sourceReviewRef": "6a72bd67e58e9a3fd94a6bf33d88d1f20295b4c2",
+    "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/008.png",
+    "sourceArchiveSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+    "facts": [
+      "Three equal-length plane mirrors AB, BC, AC enclose a point object O in an equilateral triangle",
+      "The figure states sixty-degree angles",
+      "Question requests a number of images"
+    ],
+    "notStated": [
+      "Numeric mirror lengths, object location or coordinates",
+      "Surface-side coating and finite optical power/reflection efficiency",
+      "Observer position, eye pupil or path-specific visibility",
+      "Maximum number of reflections or source emission/sampling"
+    ],
+    "solutionsRead": false,
+    "sourceSuccessClaim": false
+  },
+  "conceptualSplit": {
+    "idealInfiniteSupportingLines": "Reflections in three ideal infinite supporting lines through the equilateral triangle sides generate an unbounded formal point-image orbit; demonstrate nonzero translation from four reflections.",
+    "actualFiniteMirrors": "Finite mirror segments and observer/path visibility are distinct; nonzero formal-image candidates do not certify actual visible images or light reaching an eye.",
+    "nativeSampledRay": "Pinned PhyDemo traces actual finite segments under authored illumination and depth limits; stopping/truncation remains incomplete, not zero light nor a complete image count.",
+    "textbookCompleteness": "Do not choose a finite two-mirror-pair counting convention or a unique final answer silently. Expose conditional mathematical model and any differing textbook counting conventions."
+  },
+  "mathematicalWitness": {
+    "sideLengthMm": 140,
+    "verticesYUp": [
+      {
+        "x": 0,
+        "y": 70
+      },
+      {
+        "x": 0,
+        "y": -70
+      },
+      {
+        "x": 121.2435565298214,
+        "y": 0
+      }
+    ],
+    "syntheticSourceInsideMm": {
+      "x": 35,
+      "y": 7
+    },
+    "faceOrder": [
+      "AB",
+      "BC",
+      "CA"
+    ],
+    "orderedReflectionWord": [
+      "AB",
+      "BC",
+      "AB",
+      "CA"
+    ],
+    "expectedTransform": "a nonzero pure translation in the equilateral triangle's affine reflection group, T^k(point)=point+k*translation",
+    "expectedTranslationMm": {
+      "x": 121.2435565298214,
+      "y": 210
+    },
+    "expectedTranslationNormMm": 242.4871130596428,
+    "repetitionGivesUnboundedOrbit": true,
+    "sourceLocationNotNeededForTheStructuralUnboundedStatement": true
+  },
+  "provisionalQueryScope": {
+    "sourceOnlyMode": "structural-unbounded-orbit; no source coordinates or length invented",
+    "authoredMode": "finite-order formal-orbit candidates for explicit equilateral vertices, source position, maxDepth bounded 0..8; no path/visibility claim",
+    "numericBounds": {
+      "minSideMm": 10,
+      "maxSideMm": 2000,
+      "maxAbsPositionMm": 10000,
+      "maxReflectionOrder": 8
+    },
+    "imageCompletenessCertified": false,
+    "nativeImageDetected": false
+  },
+  "nativeStudy": {
+    "source": "SingleRay inside finite equilateral three-Mirror enclosure, synthetic coordinates/brightness",
+    "translationAndRotationControls": true,
+    "numericalDepthControls": [
+      0,
+      3,
+      8
+    ],
+    "expectedCaveat": "Ray may undergo repeated native reflections until depth budget; any truncated run must withhold all qualified physical-image conclusions",
+    "noNewNativeSchema": true,
+    "noSolverOrRayEditing": true
+  },
+  "releaseHold": "Research first; freeze source and mathematical witnesses before implementation. One final independent physics/numerical/evidence review only after a combined production candidate has exact-head CI; never merge research or claim original image count based on sampled native traces."
+}
