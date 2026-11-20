@@ -108,7 +108,7 @@ function execute(c){
   glass.onRayIncident=function(...args){
    if(events.glass.length>=frozen.nativePolicy.maxEvents)throw Error('Native Glass evidence overflow');
    const incoming=vec(args[0]),at=point(args[2]);
-   const hit=prismEncounter(glassParameters,args[2],incoming);
+   const hit=prismEncounter({type:'triangular-prism',parameters:glassParameters},args[2],incoming);
    const result=onGlass.apply(this,args);
    const outRays=[
     ...(!result?.isAbsorbed?[args[0]]:[]),
@@ -170,7 +170,7 @@ function execute(c){
   terminal,emitted:diagnostics.emitted,glass:diagnostics.glassHits,
   direct:diagnostics.directDetectorHits,returned:diagnostics.returnDetectorHits,
   truncation:diagnostics.truncation,undefined:diagnostics.undefinedBehavior,
-  rawOnly:true}));
+  errorSnippet:error?error.slice(0,200):null,rawOnly:true}));
  return {id:c.id,input,report,diagnostics,complete,uncertainGlass,
   front:diagnostics.directDetectorHits,back:diagnostics.returnDetectorHits};
 }
