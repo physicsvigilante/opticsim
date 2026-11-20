@@ -1,0 +1,155 @@
+{
+  "format": "opticsim-jee-j13-reflected-prism-frozen-protocol-v1",
+  "status": "pre-execution-frozen",
+  "baselineMain": "c4e436fca34c01b3ce63bd426dc71bd0daf1daa9",
+  "pinnedPhyDemo": "811f508d2b070898c241a568b0c167dcb8645251",
+  "source": {
+    "caseId": "J13",
+    "originalProblem": "08_Ray_Optics_Explanations/05_Prism/Problems/001.png",
+    "sourceAudit": "held PR #165, evaluation/jee-post164-coverage-v1/source-review.json at 6a72bd67e58e9a3fd94a6bf33d88d1f20295b4c2",
+    "originalArchiveSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+    "sourceFacts": [
+      "Equilateral prism, incident ray enters face AB, reflects internally at face AC slightly above critical incidence, emerges via face BC",
+      "Emergent ray makes 30 degrees with outward normal to BC",
+      "Problem requests incidence angle and prism refractive index"
+    ],
+    "missing": [
+      "No explicit outside absolute refractive index",
+      "No quantitative tolerance for 'slightly above' the critical angle",
+      "No finite prism side length, launch position, illumination intensity or detector"
+    ],
+    "solutionsRead": false,
+    "interpretation": "conditional 2D meridional equilateral triangle, not a published solved-question grade"
+  },
+  "geometry": {
+    "faceNaming": "A=(0,+70), B=(0,-70), C=(70sqrt3,0) in y-up mm; AB=face-12, BC=face-23, CA=face-31, launch from left",
+    "vertices": [
+      {
+        "x": 0,
+        "y": 70
+      },
+      {
+        "x": 0,
+        "y": -70
+      },
+      {
+        "x": 121.2435565298214,
+        "y": 0
+      }
+    ],
+    "insideIndexExplicitResearchOnly": 1.6,
+    "outsideIndexExplicitResearchOnly": 1,
+    "partialReflection": false,
+    "beam": {
+      "type": "SingleRay",
+      "startX": -100,
+      "entranceY": 20,
+      "sourceY": -37.735026918962575,
+      "directionDeg": 30,
+      "brightness": 0.08
+    },
+    "nativePolicy": {
+      "maxRayDepth": 8,
+      "processedRayLimit": 10000,
+      "rayDensity": 0.2
+    },
+    "allNumericApparatusIsAddedResearchControl": true
+  },
+  "independentReference": {
+    "assumption": "Positive upper AC reflection and subsequent lower BC exit, ray enters AB and refracts then returns by a single TIR; not a route imposed on PhyDemo",
+    "incidentAngleFromABNormalDeg": 30,
+    "exitAngleFromBCNormalDeg": 30,
+    "initialRefractedInternalAngleDegFormula": "r=asin(sin(30deg)/m)",
+    "upperFaceIncidenceDegFormula": "alpha=60deg-r",
+    "upperFaceTIRCondition": "m*sin(alpha)>1; near equality is numerically withheld",
+    "lowerFaceEmergenceFormula": "e=asin(m*sin(r))",
+    "thresholdRelativeIndex": 1.5275252316519468,
+    "nInequality": "m > sqrt(7/3) for the declared TIR branch and exit=30deg; equality is critical not above",
+    "exteriorIndexUnknownMeansNoAbsoluteGlassIndex": true,
+    "wordSlightlyHasNoNumericalTolerance": true,
+    "nativeImageDetected": false
+  },
+  "studyCases": [
+    {
+      "id": "internal-tir-upper-then-lower",
+      "kind": "positive",
+      "m": 1.6,
+      "expectFaceRoute": [
+        "face-12",
+        "face-31",
+        "face-23"
+      ]
+    },
+    {
+      "id": "below-critical-upper-transmission",
+      "kind": "negative",
+      "m": 1.5,
+      "expectNotThreeFaceTIR": true
+    },
+    {
+      "id": "above-critical-near-but-separated",
+      "kind": "positive",
+      "m": 1.5276252316519467,
+      "expectFaceRoute": [
+        "face-12",
+        "face-31",
+        "face-23"
+      ]
+    },
+    {
+      "id": "below-critical-near-but-separated",
+      "kind": "negative",
+      "m": 1.5274252316519468,
+      "expectNotThreeFaceTIR": true
+    },
+    {
+      "id": "at-critical-ambiguous",
+      "kind": "critical",
+      "m": 1.5275252316519468,
+      "alwaysUnqualified": true
+    },
+    {
+      "id": "near-critical-plus-micro",
+      "kind": "critical",
+      "m": 1.5275252416519467,
+      "alwaysUnqualified": true
+    },
+    {
+      "id": "translated-invariant",
+      "kind": "positive",
+      "m": 1.6,
+      "translate": {
+        "x": 200,
+        "y": -100
+      },
+      "expectFaceRoute": [
+        "face-12",
+        "face-31",
+        "face-23"
+      ]
+    },
+    {
+      "id": "ray-depth-zero",
+      "kind": "limit",
+      "m": 1.6,
+      "maxRayDepth": 0,
+      "expectIncomplete": true
+    },
+    {
+      "id": "processed-limit-one",
+      "kind": "limit",
+      "m": 1.6,
+      "processedRayLimit": 1,
+      "expectIncomplete": true
+    }
+  ],
+  "rules": [
+    "Build actual canonical v8 SingleRay and real native Glass from explicitly supplied source/material/geometry; never change public authoring scope",
+    "Record real pinned Glass callback order, native output and actual indices, error, truncation and stop status; no prescribed route to simulator",
+    "Qualify a test-only 3-face witness only when native completed, no errors/truncation/undefined, exactly three original events with TIR at face-31, 30 degree emergence at face-23 and >1e-5 dimensionless TIR margin",
+    "Below/critical threshold cannot be mislabelled a valid three-face TIR witness; near critical always withheld",
+    "Zero original JEE solved rate, no exterior default air, no invented emitted ray or physical image, no source-specified finite scale",
+    "Preserve frozen source and previous first attempts; prospective pure analytical inverse only if native feasibility and independent physics derivation pass"
+  ],
+  "releaseHold": "Research-only draft until actual native results inspected. A future public source/additional analytical model requires final exact-head CI and one focused Chat B review. No automatic merge of this experiment."
+}
