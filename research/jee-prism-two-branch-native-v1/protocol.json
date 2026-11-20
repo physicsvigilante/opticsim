@@ -1,0 +1,142 @@
+{
+  "format": "opticsim-jee-prism-two-branch-native-research-v1",
+  "status": "pre-execution-frozen-protocol",
+  "baselineCommit": "bcf0151c004c94e179adb5ccc47e8d5f9851f23f",
+  "pinnedPhyDemoCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "sourceProvenance": {
+    "frozenSample": "PR #165, J13/J14 source-review.json at 6a72bd67e58e9a3fd94a6bf33d88d1f20295b4c2",
+    "sourceFactsJ14": [
+      "normally incident parallel light at first face",
+      "second prism face partly reflects and transmits",
+      "return departure is 4 degrees from reversed incident; forward deviation is 1 degree",
+      "unknown index and prism apex angle"
+    ],
+    "unprovidedFacts": [
+      "finite prism geometry",
+      "beam width/brightness",
+      "exterior refractive index",
+      "detector geometry",
+      "numeric policy",
+      "exact small-angle vs finite-angle interpretation"
+    ],
+    "solutionsRead": false
+  },
+  "researchScope": "Raw pinned PhyDemo Glass/Beam Fresnel feasibility; no canonical schema or source answer claim",
+  "nativePolicy": {
+    "rayDensity": 0.2,
+    "brightness": 0.08,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000,
+    "maxEvents": 512
+  },
+  "geometry": {
+    "prismYUp": {
+      "x1": 0,
+      "y1": -70,
+      "x2": 0,
+      "y2": 70,
+      "x3": 1.222,
+      "y3": 0,
+      "insideIndex": 2,
+      "outsideIndex": 1,
+      "partialReflection": false
+    },
+    "beamYUp": {
+      "x": -100,
+      "y": 20,
+      "width": 10,
+      "directionDeg": 0,
+      "brightness": 0.08
+    },
+    "directDetector": {
+      "x": 200,
+      "y": 0,
+      "length": 200,
+      "orientationDeg": 90
+    },
+    "returnDetector": {
+      "x": -200,
+      "y": 0,
+      "length": 200,
+      "orientationDeg": 90,
+      "rawResearchOnly": true
+    },
+    "note": "Synthetic finite 1 degree-scale wedge (x3=1.222 mm at half-height 70 mm). It is not original source geometry."
+  },
+  "safeguards": [
+    "Actual native source, Glass and detector callbacks only",
+    "Report all native emitted samples, interactions, return flags, brightness, truncation, undefined, stopping and errors",
+    "Unqualified raw two-detector research must not be exported to public qualified workflow",
+    "Never synthesize ray path, external solution, image, detector event or fluorescence/irradiance result",
+    "A simulationComplete with nonzero truncation or numerical undefined is INCOMPLETE; all public measurement claims withheld",
+    "Near-vertex, near-critical and over-budget events cannot certify a new safe authoring profile",
+    "Compare Fresnel-on/off and numerical budgets without claiming both physical branches are actually observed"
+  ],
+  "cases": [
+    {
+      "id": "fresnel-off-baseline",
+      "kind": "baseline",
+      "partialReflection": false
+    },
+    {
+      "id": "fresnel-on-small-wedge",
+      "kind": "fresnel",
+      "partialReflection": true
+    },
+    {
+      "id": "fresnel-on-1point5",
+      "kind": "fresnel",
+      "partialReflection": true,
+      "insideIndex": 1.5
+    },
+    {
+      "id": "fresnel-on-denser",
+      "kind": "fresnel",
+      "partialReflection": true,
+      "rayDensity": 0.4
+    },
+    {
+      "id": "fresnel-off-translation",
+      "kind": "translation",
+      "partialReflection": false,
+      "offset": {
+        "x": 120,
+        "y": 80
+      }
+    },
+    {
+      "id": "fresnel-on-translation",
+      "kind": "translation",
+      "partialReflection": true,
+      "offset": {
+        "x": 120,
+        "y": 80
+      }
+    },
+    {
+      "id": "fresnel-on-raydepth-zero",
+      "kind": "limit",
+      "partialReflection": true,
+      "maxRayDepth": 0
+    },
+    {
+      "id": "fresnel-on-processed-stop",
+      "kind": "limit",
+      "partialReflection": true,
+      "processedRayLimit": 1
+    },
+    {
+      "id": "fresnel-on-miss",
+      "kind": "miss",
+      "partialReflection": true,
+      "beamY": 150
+    },
+    {
+      "id": "fresnel-off-miss",
+      "kind": "miss",
+      "partialReflection": false,
+      "beamY": 150
+    }
+  ],
+  "qualification": "Exploratory outcomes only; no original J13/J14 solved count; independent final physics/integration review required for any future public authoring"
+}
