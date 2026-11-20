@@ -1,0 +1,9 @@
+{
+  "format": "opticsim-prism-two-branch-inverse-v1",
+  "kind": "small-angle-prism-apex-relative-index",
+  "model": "first-order-small-angle-homogeneous-prism",
+  "branchConvention": "normal-first-face-incidence-second-face-reflection-and-transmission",
+  "angleUnit": "deg",
+  "transmittedDeviationDeg": 1,
+  "returnedDeviationDeg": 4
+}

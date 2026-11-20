@@ -1,0 +1,132 @@
+{
+  "format": "opticsim-jee-j14-two-branch-inverse-frozen-v1",
+  "status": "frozen-before-model-or-tests",
+  "productionBaseline": "bcf0151c004c94e179adb5ccc47e8d5f9851f23f",
+  "inheritedNativePin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "source": {
+    "case": "J14",
+    "originalProblemPath": "08_Ray_Optics_Explanations/05_Prism/Problems/015.png",
+    "frozenCoverageAuditPR": 165,
+    "frozenSourceReviewRef": "6a72bd67e58e9a3fd94a6bf33d88d1f20295b4c2",
+    "sourceReviewPath": "evaluation/jee-post164-coverage-v1/source-review.json",
+    "sourceArchiveSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+    "sourceFacts": [
+      "Parallel ray enters a small-apex prism normally at first face.",
+      "Second face partially transmits and internally reflects.",
+      "Back-returning ray exits first face at 4 degrees to reversed incident direction.",
+      "Transmitted ray deviates by 1 degree.",
+      "Find prism index and prism apex angle."
+    ],
+    "missing": [
+      "Explicit exterior refractive index if an absolute prism index is desired.",
+      "Finite prism dimensions and path reach, source power/width, detector, material Fresnel branch policy."
+    ],
+    "solutionsRead": false,
+    "note": "This is a development-time source-bound conditional interpretation, not an independently scored JEE solution."
+  },
+  "fixedQuery": {
+    "format": "opticsim-prism-two-branch-inverse-v1",
+    "kind": "small-angle-prism-apex-relative-index",
+    "model": "first-order-small-angle-homogeneous-prism",
+    "branchConvention": "normal-first-face-incidence-second-face-reflection-and-transmission",
+    "angleUnit": "deg",
+    "transmittedDeviationDeg": 1,
+    "returnedDeviationDeg": 4
+  },
+  "expectedFirstOrder": {
+    "relativeIndex": 2,
+    "apexAngleDeg": 1,
+    "returnedFirstOrderDeg": 4,
+    "transmittedFirstOrderDeg": 1,
+    "absoluteInsideIndexIfExteriorOne": 2,
+    "originalExteriorIndexKnown": false,
+    "nativeStatus": "not-run"
+  },
+  "derivation": {
+    "notation": "m=n_inside/n_outside; A=positive apex angle; T>0 transmitted deviation in forward direction; R>0 return deviation with respect to reversed incident beam.",
+    "firstOrder": [
+      "T=(m-1)*A",
+      "R=2*m*A",
+      "A=R/2-T",
+      "m=R/(R-2*T)"
+    ],
+    "fullAngleWitness": [
+      "T_exact=asin(m*sin(A))-A",
+      "R_exact=asin(m*sin(2*A))"
+    ],
+    "notes": [
+      "Both first-order relationships are conditional on face 1 normal incidence and face 2 transmitted/reflected rays returning to face 1.",
+      "The exact trig witness is ONLY a first-order-suitability guard; not native propagation, validated Fresnel power or a true exact inverse.",
+      "Physical prism reach, returned ray incidence at face 1, polarization, Fresnel powers, weak native branch truncation are not supplied by scalar model."
+    ]
+  },
+  "proposedQualification": {
+    "maxInputDeviationDeg": 10,
+    "minPositiveDeviationDeg": 1e-8,
+    "minApexDeg": 1e-8,
+    "maxApexDeg": 5,
+    "maxRelativeIndex": 4,
+    "nearDegenerateDenominatorDeg": 1e-7,
+    "nearCriticalSineMargin": 0.00001,
+    "maxExactVsFirstOrderResidualDeg": 0.05,
+    "optionalExteriorIndexRange": [
+      1,
+      4
+    ],
+    "numericReference": "fixed conservative engineering admission policy, not proven physical modelling error bound"
+  },
+  "predeclaredNegativeControls": [
+    {
+      "id": "small-boundary",
+      "T": 2,
+      "R": 4,
+      "expected": "numerically-indeterminate or degenerate",
+      "noUniqueIndex": true
+    },
+    {
+      "id": "branch-incompatible",
+      "T": 3,
+      "R": 4,
+      "expected": "no-admissible-branch"
+    },
+    {
+      "id": "near-denominator",
+      "T": 1.99999999,
+      "R": 4,
+      "expected": "numerically-indeterminate"
+    },
+    {
+      "id": "model-out-of-range",
+      "T": 5,
+      "R": 16,
+      "expected": "unavailable"
+    },
+    {
+      "id": "exact-vs-first-order",
+      "T": 5,
+      "R": 20,
+      "expected": "unavailable"
+    },
+    {
+      "id": "bad-exterior",
+      "T": 1,
+      "R": 4,
+      "outsideIndex": 3,
+      "expected": "unavailable absolute inside index beyond 4"
+    },
+    {
+      "id": "valid-conditioned-scale",
+      "T": 0.5,
+      "R": 3,
+      "expected": "conditional apex 1, relative 1.5"
+    }
+  ],
+  "evaluationAxes": [
+    "source interpretation fidelity",
+    "conditional physical correctness",
+    "native simulation coverage (none)",
+    "educational usefulness not independently studied",
+    "optional textbook answer completeness"
+  ],
+  "implementationHold": "Do not merge; one focused Chat B independent physics/code/evidence review on final exact tested production candidate, then owner decision. No regrading of frozen first attempts."
+}
