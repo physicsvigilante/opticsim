@@ -70,6 +70,10 @@ jobs:
         run: node scripts/jee-bounded-grin-v25-acceptance.mjs
       - name: v25 GRIN real Chrome native numerical guard, physical edits, refusal and reopen
         run: node scripts/jee-bounded-grin-v25-browser.mjs
+      - name: v26 native Beam with PlaneGlass and finite Mirror public qualified authoring
+        run: node scripts/native-parallel-planar-mirror-v26-acceptance.mjs
+      - name: v26 real Chrome Beam refraction return, physical edit, corner refusal and reopen
+        run: node scripts/native-parallel-planar-mirror-v26-browser.mjs
       - name: Opaque blocker browser edits, detector readings and qualified exports
         run: node scripts/opaque-line-blocker-browser.mjs
       - name: LLM authoring CLI with real native execution and revision guards
@@ -122,6 +126,8 @@ jobs:
             test-artifacts/browser-jee-curved-entry-v24/
             test-artifacts/llm-authoring/jee-bounded-grin-v25/
             test-artifacts/browser-jee-bounded-grin-v25/
+            test-artifacts/llm-authoring/native-parallel-planar-mirror-v26/
+            test-artifacts/browser-native-parallel-planar-mirror-v26/
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
