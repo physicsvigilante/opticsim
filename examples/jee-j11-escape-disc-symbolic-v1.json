@@ -1,0 +1,10 @@
+{
+  "format": "opticsim-axisymmetric-escape-disc-v1",
+  "model": "isotropic-point-planar-interface-axisymmetric-geometric",
+  "geometry": "centered-opaque-surface-disc-infinite-interface",
+  "emission": "isotropic-point-3d",
+  "kind": "symbolic-escape-disc-radius",
+  "depthSymbol": "h",
+  "insideIndexSymbol": "mu",
+  "outsideIndexSymbol": "n_outside"
+}
