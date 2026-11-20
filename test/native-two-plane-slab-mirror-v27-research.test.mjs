@@ -136,7 +136,7 @@ test('source and research limits were frozen before executing native two-plane r
  assert.equal(freeze.baselineMain,'4f81a1625cc45ce731d3ee0e286ff3173f72f4fe');
  assert.equal(freeze.pinnedPhyDemo,'811f508d2b070898c241a568b0c167dcb8645251');
  assert.equal(freeze.frozenCases.length,11);
- assert.equal(freeze.motivation.JEEAnchor.includes('rest'),true);
+ assert.equal(freeze.motivation.JEEAnchor.includes('touching mirror'),true);
  assert.equal(freeze.independentGeometry.expectedNativeEmission,8);
 });
 test('real pinned Beam+two PlaneGlass+Mirror raw feasibility: correct sampled events and qualified refusals',()=>{
