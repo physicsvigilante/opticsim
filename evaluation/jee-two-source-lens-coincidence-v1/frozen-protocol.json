@@ -1,0 +1,158 @@
+{
+  "format": "opticsim-jee-two-source-lens-coincidence-freeze-v1",
+  "kind": "source-bound-conditional-inverse-model-and-native-witness",
+  "source": {
+    "frozenCaseId": "J17",
+    "originalProblemPath": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/001.png",
+    "originalPngSha256": "42364c9242e377fbdf4de4360450e980530626cbfe14992ac1fa089908a62e7b",
+    "sourceArchiveSourceManifestRun": 44360693719,
+    "sourceFactText": "Two point sources of light are separated by 24 cm; find placement of a converging lens of focal length 9 cm so their images occupy the same point.",
+    "sourceKnown": {
+      "separationCm": 24,
+      "focalLengthCm": 9
+    },
+    "sourceDoesNotSpecify": [
+      "Coaxial 1-D placement",
+      "Lens aperture",
+      "Illumination directions",
+      "Finite ray emission",
+      "Detector geometry",
+      "Which image is real or virtual"
+    ],
+    "originalSolutionsRead": false
+  },
+  "baseline": {
+    "merge": "eba628e37a21030364c3fc69755e160eb4b4c81f",
+    "pin": "811f508d2b070898c241a568b0c167dcb8645251"
+  },
+  "frozenBeforeImplementation": true,
+  "model": {
+    "exactApiFormat": "opticsim-two-source-lens-coincidence-v1",
+    "object": "two-ideal-thin-lens-conjugates",
+    "queryKind": "lens-position-for-coincident-images",
+    "model": "ideal-thin-lens-paraxial",
+    "coordinateConvention": "source-1-at-x0-source-2-at-positive-separation",
+    "incidentDirections": "left-source travels +x and right-source travels -x, lens strictly between",
+    "units": [
+      "mm",
+      "cm",
+      "m"
+    ],
+    "distancesRequired": [
+      "sourceSeparation",
+      "focalLength"
+    ],
+    "formula": "For d>0 f>0, if lens x=a between the two sources x=0 and x=d, global image coordinates are xL=a+f*a/(a-f), xR=a-f*(d-a)/(d-a-f), when a!=f and d-a!=f. Their finite coincidence requires 2*a*(d-a)=f*d and the lens roots a=(d±sqrt(d*(d-2*f)))/2.",
+    "exactThreshold": "If d=2f, the only algebraic midpoint root is a=f and both images are at infinity, so there is NO FINITE coincidence. If d<2f, no real between-source finite solution. If d>2f, two finite roots exist.",
+    "mathematicalImageX": "For a root a, common global image x=a*d/(2*a-d). In the first branch the nearer-to-source-1 object is inside focal length (virtual image), source-2 outside focal length (real image); second branch reversed.",
+    "outsideLens": "When a lens lies outside both separated sources, both are on the same side and the thin-lens imaging map of object distance is injective for distinct finite objects, so there is no common finite image.",
+    "nativeClaim": "Native ideal lens rays can verify one branch's real ray crossing and the reverse-line virtual conjugate, but do NOT detect a shared physical optical image."
+  },
+  "predeclaredJ17Reference": {
+    "separationCm": 24,
+    "focalLengthCm": 9,
+    "lensFromLeftSourceCm": [
+      6,
+      18
+    ],
+    "correspondingGlobalImageXCm": [
+      -12,
+      36
+    ],
+    "imageClassification": [
+      [
+        "virtual",
+        "real"
+      ],
+      [
+        "real",
+        "virtual"
+      ]
+    ],
+    "sourceOriginalModelNeedsCoaxialAssumption": true
+  },
+  "negativeCases": [
+    {
+      "separationCm": 18,
+      "focalLengthCm": 9,
+      "outcome": "no-finite-coincidence"
+    },
+    {
+      "separationCm": 12,
+      "focalLengthCm": 9,
+      "outcome": "no-finite-coincidence"
+    },
+    {
+      "separationCm": 24,
+      "focalLengthCm": 0,
+      "outcome": "refused"
+    },
+    {
+      "separationCm": 24,
+      "focalLengthCm": -9,
+      "outcome": "refused"
+    },
+    {
+      "separationCm": 24,
+      "focalLengthCm": 9,
+      "unrecognizedField": "arbitraryPredictedRayPath",
+      "outcome": "refused"
+    },
+    {
+      "separationCm": 18.0000001,
+      "focalLengthCm": 9,
+      "outcome": "numerically-indeterminate-near-infinite-image"
+    }
+  ],
+  "nativeWitness": {
+    "researchOnly": true,
+    "pinnedNativeObjects": [
+      "SingleRay",
+      "IdealLens",
+      "Detector"
+    ],
+    "selectedJ17LensCases": [
+      {
+        "lensXmm": 60,
+        "imageXmm": -120,
+        "realBranch": "right-source",
+        "virtualBranch": "left-source"
+      },
+      {
+        "lensXmm": 180,
+        "imageXmm": 360,
+        "realBranch": "left-source",
+        "virtualBranch": "right-source"
+      }
+    ],
+    "sourceNativeXmm": [
+      0,
+      240
+    ],
+    "rayLensHeightsMm": [
+      -5,
+      5
+    ],
+    "lensApertureMm": 100,
+    "note": "Native rays must choose actual lens intersections; the analysis may check actual outgoing measured segments against the already-frozen inverse image coordinate, but cannot reframe a virtual backward extrapolation as a detector crossing.",
+    "optionalPassiveDetectorAtRealImage": true,
+    "claimedNativeImageReconstruction": false,
+    "missingNativeFactsAreAddedTeachingAssumptions": [
+      "lensApertureMm",
+      "rayLensHeightsMm",
+      "sourceBrightness",
+      "detectorPositionAndLength"
+    ]
+  },
+  "evaluationAxes": [
+    "source interpretation fidelity",
+    "conditional ideal-thin-lens mathematical correctness",
+    "genuine native ray evidence vs virtual extension",
+    "educational usefulness",
+    "optional JEE final-answer completeness"
+  ],
+  "releaseGate": "Only one final independent physics/integration review if the new analytical API is production-bound. Test-only probes do not authorize release. Do not merge prior to exact CI and review.",
+  "noSourceSolutionOpen": true,
+  "blindLLMTrial": false,
+  "originalJeeCoverageScoreChange": null
+}
