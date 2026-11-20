@@ -1,0 +1,9 @@
+{
+  "format": "opticsim-three-face-prism-tir-bound-v1",
+  "kind": "three-face-reflected-prism-index-bound",
+  "model": "equilateral-prism-geometrical-principal-branch",
+  "branchConvention": "AB-entry-AC-total-internal-reflection-BC-exit",
+  "angleUnit": "deg",
+  "emergenceAngleDeg": 30,
+  "criticalRelation": "strictly-above"
+}
