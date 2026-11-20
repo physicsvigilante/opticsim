@@ -18,6 +18,7 @@ import {FINITE_APERTURE_TYPE} from './finite-aperture.js';
 import {PARALLEL_BEAM_TYPE,PARALLEL_BEAM_VERSION,PARALLEL_LENS_MODEL,PARALLEL_PLANAR_MODEL,parallelBeamGeometry} from './parallel-beam.js';
 import {DECENTERED_BEAM_VERSION,DECENTERED_BEAM_MODEL} from './decentered-two-lens-beam.js';
 import {curvedEntryCapabilities} from './native-curved-entry-observation.js';
+import {GRIN_V25_TYPE,GRIN_V25_VERSION,GRIN_V25_POLICY,grinV25Extents,grinV25Capabilities} from './native-grin-v25.js';
 import {isCurved,curvedPoints} from './curved-mirrors.js';
 import {validate,UPSTREAM,SAMPLING_PRESETS,COMPONENT_TYPES,componentParameterNames,
   GENERAL_SCOPE,MAX_AUTHORING_COMPONENTS,COMPONENT_BOUNDS,LENGTH_PARAMETERS,mirrorEndpoints} from './contract.js';
@@ -28,10 +29,12 @@ const policies=Object.freeze({
   'dense-v1':Object.freeze({rayDensity:SAMPLING_PRESETS.dense,maxRayDepth:8,processedRayLimit:10000}),
   // The deeper native limit is restricted to these two older sealed profiles.
   'native-deep-v17':Object.freeze({rayDensity:SAMPLING_PRESETS.medium,maxRayDepth:TWO_THICK_MIRROR_NATIVE_DEPTH,processedRayLimit:10000}),
-  'native-deep-v18':Object.freeze({rayDensity:SAMPLING_PRESETS.medium,maxRayDepth:THICK_APERTURE_NATIVE_DEPTH,processedRayLimit:10000})
+  'native-deep-v18':Object.freeze({rayDensity:SAMPLING_PRESETS.medium,maxRayDepth:THICK_APERTURE_NATIVE_DEPTH,processedRayLimit:10000}),
+  'native-grin-fine-v25':Object.freeze({rayDensity:GRIN_V25_POLICY.rayDensity,
+    maxRayDepth:GRIN_V25_POLICY.maxRayDepth,processedRayLimit:GRIN_V25_POLICY.processedRayLimit})
 });
 const prefixes=Object.freeze({
-  'point-source':'source',[PARALLEL_BEAM_TYPE]:'beam',[SEMICIRCULAR_TYPE]:'semicircle','ideal-lens':'lens','plane-mirror':'mirror','line-blocker':'blocker',[CIRCLE_BLOCKER_TYPE]:'circle-blocker',[FINITE_APERTURE_TYPE]:'aperture','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism',[POLYGON_TYPE]:'glass',[SPHERICAL_LENS_TYPE]:'thick-lens'
+  'point-source':'source',[PARALLEL_BEAM_TYPE]:'beam',[SEMICIRCULAR_TYPE]:'semicircle','ideal-lens':'lens','plane-mirror':'mirror','line-blocker':'blocker',[CIRCLE_BLOCKER_TYPE]:'circle-blocker',[FINITE_APERTURE_TYPE]:'aperture','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism',[POLYGON_TYPE]:'glass',[SPHERICAL_LENS_TYPE]:'thick-lens',[GRIN_V25_TYPE]:'grin'
 });
 const lengthKeys=new Set(LENGTH_PARAMETERS);
 const own=(value,key)=>Object.prototype.hasOwnProperty.call(value,key);
@@ -105,6 +108,7 @@ export function capabilities() {
       limits:'Only numerical sampled finite 2D paths; no continuous irradiance, physical image, general triangular beam prism family, symbolic inverse or solved original JEE J13/J14 claim.',
       vertexClearanceMm:PRISM_BEAM_VERTEX_CLEARANCE_MM},
     nativeCurvedEntryObservation:curvedEntryCapabilities(),
+    nativeGrinV25:grinV25Capabilities(),
     nativeSemicircularBeam:{schemaVersion:SEMICIRCULAR_VERSION,model:SEMICIRCULAR_MODEL,
       shape:'Native finite right semicircle: a flat vertical diameter and one exact circular arc, with explicit x/y centre, radius and two absolute refractive indices.',
       beam:'One deterministic native finite Beam, -60 to +60 degrees; each initial emitted sample must cross the flat segment at least 0.1 mm from its endpoints.',
@@ -150,6 +154,7 @@ export function capabilities() {
       ...(type===CIRCULAR_TYPE?{booleanParameters:['partialReflection'],nativeType:'CircleGlass',indices:['insideIndex','outsideIndex'],geometry:'Finite 2D circle, not an ideal thin lens or a truncated sphere'}:{}),
       ...(type===PRISM_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-31'],geometry:'Three physical vertices; vertex order defines face labels, not a ray route'}:{}),
       ...(type===POLYGON_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-34','face-41'],geometry:'One strictly convex four-vertex finite region, never a ray route'}:{}),
+      ...(type===GRIN_V25_TYPE?{nativeType:'GrinGlass',geometry:'Bounded physical rectangle with fixed positive square-root index field; native Euler inside steps, real exit and passive detector; no arbitrary LaTeX.'}:{}),
       ...(type===SPHERICAL_LENS_TYPE?{nativeType:'SphericalLens',booleanParameters:['partialReflection'],faceIds:['front-arc','back-arc','top-rim','bottom-rim'],geometry:'Native finite 2D biconvex lens. Both radii are positive lengths, not a thin-lens focal length; back-face native curvature sign is reversed'}:{}),
       ...(type==='line-blocker'?{nativeType:'Blocker',geometry:'Opaque finite line segment; centre, tangent orientation, and length are explicit; absorbs each actual native ray incident'}:{}),
       ...(type===CIRCLE_BLOCKER_TYPE?{nativeType:'CircleBlocker',geometry:'Opaque 2D circular boundary with explicit centre and positive radius; absorbs actual native ray incidents; not a 3D body'}:{}),
@@ -264,6 +269,7 @@ function camera(components) {
     else if(c.type===PRISM_TYPE)vertices.push(...prismVertices(p));
     else if(c.type===POLYGON_TYPE)vertices.push(...polygonVertices(p));
     else if(c.type===SPHERICAL_LENS_TYPE)vertices.push(...thickLensExtents(p));
+    else if(c.type===GRIN_V25_TYPE)vertices.push(...grinV25Extents(p));
     else if(isCurved(c.type))vertices.push(...curvedPoints(c));
     else if(c.type==='ideal-lens')vertices.push({x:p.x,y:(p.y??0)-p.apertureHeight/2},
       {x:p.x,y:(p.y??0)+p.apertureHeight/2});
@@ -273,8 +279,13 @@ function camera(components) {
   const xs=vertices.map(v=>v.x),ys=vertices.map(v=>v.y);
   const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
   const width=Math.max(320,maxX-minX+120),height=Math.max(240,maxY-minY+120);
+  // The v25 GRIN apparatus is approximately one millimetre wide; the
+  // historical 2x camera fit renders its native rectangle as two pixels.
+  // A display-only 80 CSS-pixel/mm close-up keeps its full 2mm detector in
+  // the 240px minimum stage; never change the underlying physical geometry.
+  const isGrinV25=components.some(c=>c.type===GRIN_V25_TYPE);
   return {x:(minX+maxX)/2,y:(minY+maxY)/2,
-    zoom:Math.max(.03,Math.min(2,.85*1200/width,.85*700/height))};
+    zoom:isGrinV25?80:Math.max(.03,Math.min(2,.85*1200/width,.85*700/height))};
 }
 export function prepareScene(request) {
   const issues=inspectAuthoringRequest(request);
@@ -305,9 +316,12 @@ export function prepareScene(request) {
   });
   const {schemaVersion,adapterVersion,model}=selectedComposition;
   const policyName=requestedPolicy??(schemaVersion===TWO_THICK_MIRROR_VERSION?
-    'native-deep-v17':schemaVersion===THICK_APERTURE_VERSION?'native-deep-v18':'preview-v1');
+    'native-deep-v17':schemaVersion===THICK_APERTURE_VERSION?'native-deep-v18':
+    schemaVersion===GRIN_V25_VERSION?'native-grin-fine-v25':'preview-v1');
   if((policyName==='native-deep-v17'&&schemaVersion!==TWO_THICK_MIRROR_VERSION)||
-     (policyName==='native-deep-v18'&&schemaVersion!==THICK_APERTURE_VERSION))
+     (policyName==='native-deep-v18'&&schemaVersion!==THICK_APERTURE_VERSION)||
+     (policyName==='native-grin-fine-v25'&&schemaVersion!==GRIN_V25_VERSION)||
+     (schemaVersion===GRIN_V25_VERSION&&policyName!=='native-grin-fine-v25'))
     fail([issue('$.runPolicy','UNSUPPORTED_POLICY','A deeper native ray budget is admitted only for its exact v17 or v18 profile')]);
   const doc={
     format:'ray-optics-2d',schemaVersion,adapterVersion,upstreamCommit:UPSTREAM,

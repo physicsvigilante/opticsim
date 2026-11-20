@@ -30,7 +30,9 @@ test('restored native v14–v18 preserve all original sealed v24 profiles',()=>{
  assert.equal(c.profiles.filter(p=>p.schemaVersion<=13).length,18);
  assert.equal(c.profiles.filter(p=>p.schemaVersion<=23&&![14,15,16,17,18].includes(p.schemaVersion)).length,24,
   'The original pre-v24 profiles remain present under their original IDs');
- assert.equal(c.profiles.length,30,'25 old profiles plus five isolated native glass/thick-lens profiles');
+ assert.equal(c.profiles.length,31,'25 prior public profiles, five restored v14-v18, and one isolated v25 GRIN profile');
+ assert.deepEqual(compositionModels(25),['native-bounded-grin-tracing']);
+ assert.deepEqual(compositionSourceModes(25),['single-ray']);
  for(const [version,model] of [[14,'two-separated-dielectrics-tracing'],[15,'native-thick-lens-tracing'],
   [16,'native-thick-lens-mirror-tracing'],[17,'native-two-thick-lens-mirror-tracing'],
   [18,'native-two-thick-lens-mirror-aperture-tracing']]){

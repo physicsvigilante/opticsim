@@ -2,6 +2,7 @@
 import {PRISM_TYPE,prismVertices} from './triangular-prism.js';
 import {POLYGON_TYPE,polygonVertices} from './polygon-dielectric.js';
 import {SPHERICAL_LENS_TYPE,thickLensExtents} from './spherical-lens.js';
+import {GRIN_V25_TYPE,grinV25Extents} from './native-grin-v25.js';
 import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
 import {SEMICIRCULAR_TYPE,semicircularExtents} from './semicircular-dielectric.js';
 import {CIRCLE_BLOCKER_TYPE,circleBlockerExtents} from './opaque-circle-blocker.js';
@@ -75,6 +76,7 @@ export function apparatusPoints(doc){
     if(c.type===CIRCULAR_TYPE)return circularExtents(p);
     if(c.type===SEMICIRCULAR_TYPE)return semicircularExtents(p);
     if(c.type===SPHERICAL_LENS_TYPE)return thickLensExtents(p);
+    if(c.type===GRIN_V25_TYPE)return grinV25Extents(p);
     if(c.type===CIRCLE_BLOCKER_TYPE)return circleBlockerExtents(p);
     if(isCurved(c.type))return curvedPoints(c);
     if(c.type==='ideal-lens')return [{x:p.x,y:(p.y??0)-p.apertureHeight/2},{x:p.x,y:(p.y??0)+p.apertureHeight/2}];
@@ -82,14 +84,18 @@ export function apparatusPoints(doc){
     return [{x:p.x,y:p.y}];
   });
 }
-function cameraFor(points,width,height,padding){
+function cameraFor(points,width,height,padding,version=4){
   const xs=points.map(p=>p.x),ys=points.map(p=>p.y);
   const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
   const clamp=(x,[lo,hi])=>Math.max(lo,Math.min(hi,x));
+  // Preserve all historical camera semantics. v25 alone can magnify a real
+  // 1mm GRIN region while still fitting the true passive detector endpoints.
+  const grin=version===25,zoomCap=grin?100:2,minSpan=grin?0.1:1;
   const view={x:clamp((minX+maxX)/2,CAMERA_BOUNDS.centerMm),
     y:clamp((minY+maxY)/2,CAMERA_BOUNDS.centerMm),
-    zoom:clamp(Math.min(2,(width-2*padding)/Math.max(1,maxX-minX),
-      (height-2*padding)/Math.max(1,maxY-minY)),CAMERA_BOUNDS.zoom)};
+    zoom:clamp(Math.min(zoomCap,(width-2*padding)/Math.max(minSpan,maxX-minX),
+      (height-2*padding)/Math.max(minSpan,maxY-minY)),
+      grin?[.03,100]:CAMERA_BOUNDS.zoom)};
   const fits=points.every(p=>Math.abs((p.x-view.x)*view.zoom)<=width/2-padding+1e-7&&
     Math.abs((p.y-view.y)*view.zoom)<=height/2-padding+1e-7);
   return {view,fits};
@@ -109,12 +115,12 @@ export async function fitRequestedView(doc,resultReport,width,height){
       excluded.push({id:r.id,reason:'infinite or unavailable position; no finite coordinate invented'});continue;
     }
     const candidate=[...points,{x:p.x,y:p.y}];
-    if(!cameraFor(candidate,width,height,padding).fits){
+    if(!cameraFor(candidate,width,height,padding,doc.schemaVersion).fits){
       excluded.push({id:r.id,reason:'cannot fit within camera bounds at this viewport size'});continue;
     }
     points.push({x:p.x,y:p.y});included.push(r.id);
   }
-  const fitted=cameraFor(points,width,height,padding);
+  const fitted=cameraFor(points,width,height,padding,doc.schemaVersion);
   const next=structuredClone(doc);next.presentation.view=fitted.view;validate(next);
   return {document:next,padding,included,excluded,apparatusFits:fitted.fits,
     note:`Fit includes apparatus and ${included.length} finite conditional result(s). No physics or sampling changed.`+

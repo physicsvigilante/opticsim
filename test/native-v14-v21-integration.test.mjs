@@ -28,7 +28,8 @@ const prepare=path=>prepareScene(load(path).physical).document;
 
 test('separate v14–v21 apparatuses choose only their declared schema and original native object set',()=>{
  const catalogue=capabilities().composition;
- assert.equal(catalogue.profiles.length,30,'Preserved 25 old profiles plus five restored native families');
+ assert.equal(catalogue.profiles.filter(p=>p.schemaVersion<=24).length,30,'Reviewed v1-v24 profiles remain intact');
+ assert.equal(catalogue.profiles.length,31,'New isolated v25 is additional; historical 30 still present');
  for(const [version,path,model,types] of examples){
   const f=load(path),before=JSON.stringify(f),d=prepareScene(f.physical).document;
   assert.equal(JSON.stringify(f),before,path+' authoring changed input');

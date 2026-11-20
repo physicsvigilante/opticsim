@@ -216,7 +216,12 @@ test('v18 browser provenance is append-only relative to reviewed v17 code, never
   assert.equal(reconciliation.originalV18AppGitBlob,p.newV18AppGitBlob);
   assert.equal(reconciliation.originalV21IntegrationBase,'59b485d14ac28ca4ee97acc754a4cd207a7d33f1');
   assert.equal(reconciliation.mainBeforeIntegration,'487314dcb7e74e7f16f5b711f950090e16400780');
-  assert.equal(reconciliation.reconciledAppGitBlob,sha);
+  assert.equal(reconciliation.reconciledAppGitBlob,'ac8ee9e3bf448c4280342d9049052bbbce1691b0',
+   'The independently reviewed v24 integration app SHA is now historical');
+  const grinFollowup=JSON.parse(readFileSync(new URL('./fixtures/grin-v25-app-integration-v1.json',import.meta.url),'utf8'));
+  assert.equal(grinFollowup.sourceReviewedV24AppGitBlob,reconciliation.reconciledAppGitBlob);
+  assert.equal(grinFollowup.newV25AppGitBlob,sha);
+  assert.notEqual(sha,reconciliation.reconciledAppGitBlob,'New v25 UI is not the reviewed v24 browser code');
   assert.notEqual(sha,p.newV18AppGitBlob,'Do not claim new UI matches old reviewed v18 byte identity');
   assert.equal(p.originalV17AppGitBlob,'9d447af4c8fc59ec1e8fdcfbcec0c4d739fc477f');
   const historical=JSON.parse(readFileSync(new URL('./fixtures/two-thick-lens-mirror-app-postfreeze-v1.json',import.meta.url),'utf8'));

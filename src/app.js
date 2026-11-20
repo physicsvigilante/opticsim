@@ -1,7 +1,8 @@
 import {ExplorationUI} from './exploration-ui.js';
+import {installGrinV25DisplayScale} from './grin-v25-display.js';
 import {isCurved} from './curved-mirrors.js';
 import {QualifiedUI} from './qualified-ui.js';
-import { loadDocument, Simulator, diagnostics, nativeExport, observeSourceSet, observeMirrorSet, observeDetectorSet, observeInterfaceSet, observeBlockerSet, observeNativeV18ApertureCorner } from './adapter.js';
+import { loadDocument, Simulator, diagnostics, nativeExport, observeSourceSet, observeMirrorSet, observeDetectorSet, observeInterfaceSet, observeBlockerSet, observeNativeV18ApertureCorner, observeNativeGrinV25 } from './adapter.js';
 import {createNativeRayParentage} from './native-ray-parentage.js';
 import {createNativeFiniteHitDiagnostic} from './native-finite-hit-diagnostic.js';
 import { parseSave, serializeSave, SAMPLING_PRESETS, samplingPreset, setSourceMode } from './contract.js';
@@ -35,13 +36,16 @@ const session = new Session(doc => {
   const interfaceMeter = observeInterfaceSet(doc, scene, idMap,{parentage,finiteDiagnostic});
   const blockerMeter = observeBlockerSet(doc, scene, idMap);
   const apertureCornerGuard=observeNativeV18ApertureCorner(doc,scene,idMap);
+  const grinNumericalGuard=observeNativeGrinV25(doc,scene,idMap);
   const sim = new Simulator(scene, ...canvases.map(c => c.getContext('2d')), null, true, doc.simulation.processedRayLimit);
+  // v25-only native display pen sizing; never touch scene.lengthScale or rays.
+  installGrinV25DisplayScale(doc,scene,sim);
   const cancel = () => {
     if (sim.simulationTimerId !== -1) clearTimeout(sim.simulationTimerId);
     sim.simulationTimerId = -1; sim.shouldSimulatorStop = true;
   };
   return { scene, cancel, run: notify => {
-    for (const event of ['simulationComplete', 'simulationStop']) sim.on(event, () => notify(event, diagnostics(scene, sim, meter, mirrorMeter, detectorMeter, interfaceMeter, blockerMeter,{detectorHitEvents:captureHitEvents,nativeEvent:event,parentage,finiteDiagnostic,apertureCornerGuard})));
+    for (const event of ['simulationComplete', 'simulationStop']) sim.on(event, () => notify(event, diagnostics(scene, sim, meter, mirrorMeter, detectorMeter, interfaceMeter, blockerMeter,{detectorHitEvents:captureHitEvents,nativeEvent:event,parentage,finiteDiagnostic,apertureCornerGuard,grinNumericalGuard})));
     sim.updateSimulation(false, false);
   } };
 }, update);
@@ -77,7 +81,7 @@ function update() {
   const mixed = session.document?.physics.model === 'lens-mirror-return-geometric';
   const mirror = session.document?.physics.components.some(c => c.type === 'plane-mirror'||isCurved(c.type));
   const hasOptics = session.document?.physics.components.some(c =>
-    c.type==='ideal-lens'||c.type==='plane-mirror'||c.type==='line-blocker'||c.type==='circle-blocker'||c.type==='finite-aperture'||c.type==='circular-dielectric'||c.type==='semicircular-dielectric'||c.type==='triangular-prism'||c.type==='polygon-dielectric'||c.type==='spherical-lens'||isCurved(c.type));
+    c.type==='ideal-lens'||c.type==='plane-mirror'||c.type==='line-blocker'||c.type==='circle-blocker'||c.type==='finite-aperture'||c.type==='circular-dielectric'||c.type==='semicircular-dielectric'||c.type==='triangular-prism'||c.type==='polygon-dielectric'||c.type==='spherical-lens'||c.type==='graded-index-rectangle'||isCurved(c.type));
   const partial = !['completed', 'completed-with-warnings'].includes(state);
   const perMirror = d?.reflectionsById ? Object.entries(d.reflectionsById)
     .map(([id,count])=>id+': '+count).join(' · ') : '';
@@ -103,7 +107,7 @@ function update() {
   const blockerSummary=d?.blockersById&&blockers?Object.entries(d.blockersById).map(([id,r])=>
     id+': '+r.absorptions+' absorbed native ray'+(r.absorptions===1?'':'s')).join(' · '):'';
   $('sampling-note').textContent = session.document?.physics.components.some(c=>c.type==='parallel-beam') ?
-    'Native Beam emits deterministic parallel rays from separate positions along its finite width. Density changes spatial sample count and positions, not source divergence, continuous power or a detected image.' : ['planar-media-tracing','circular-dielectric-tracing','triangular-prism-tracing','polygon-dielectric-tracing','finite-dielectric-composition','two-separated-dielectrics-tracing','native-thick-lens-tracing','native-thick-lens-mirror-tracing','native-two-thick-lens-mirror-tracing','native-two-thick-lens-mirror-aperture-tracing'].includes(session.document?.physics.model) ?
+    'Native Beam emits deterministic parallel rays from separate positions along its finite width. Density changes spatial sample count and positions, not source divergence, continuous power or a detected image.' : ['planar-media-tracing','circular-dielectric-tracing','triangular-prism-tracing','polygon-dielectric-tracing','finite-dielectric-composition','two-separated-dielectrics-tracing','native-thick-lens-tracing','native-thick-lens-mirror-tracing','native-two-thick-lens-mirror-tracing','native-two-thick-lens-mirror-aperture-tracing','native-bounded-grin-tracing'].includes(session.document?.physics.model) ?
     'Each single-ray source emits one exact native ray. Sampling density does not widen it into a cone; change its explicit direction to investigate incidence.' : d && d.emitted < 3 ?
     !hasOptics ? `Only ${d.emitted} native ray${d.emitted===1?'':'s'} emitted; increase sampling to inspect free-space propagation.` :
     `Only ${d.emitted} native ray${d.emitted===1?'':'s'} emitted. This cone is sparsely sampled and may miss the ${mixed ? 'lens or mirror' : mirror ? 'mirror' : 'lenses'}. Increase sampling or opening angle to inspect more rays.` :
@@ -195,6 +199,7 @@ function controls() {
   const parallelSlab = session.document.physics.model === 'native-parallel-planar-tracing';
   const parallelSemi = session.document.physics.model === 'native-parallel-semicircular-tracing';
   const curvedEntry = session.document.physics.model === 'native-curved-entry-observation-tracing';
+  const graded = session.document.physics.model === 'native-bounded-grin-tracing';
   const parallelTwoLens = session.document.physics.model === 'native-parallel-two-lens-tracing';
   const parallelPrism = session.document.physics.model === 'native-parallel-prism-tracing';
   const parallelCircle = session.document.physics.model === 'native-parallel-circle-tracing';
@@ -213,7 +218,7 @@ function controls() {
   const general = session.document.physics.model === 'general-component-tracing';
    const hasLineBlockers = session.document.physics.components.some(c=>['line-blocker','circle-blocker','finite-aperture'].includes(c.type));
   const tracing = general || session.document.physics.model === 'mixed-lens-mirror-tracing';
-  const labels = { x1:'Vertex 1 x',y1:'Vertex 1 y',x2:'Vertex 2 x',y2:'Vertex 2 y',x3:'Vertex 3 x',y3:'Vertex 3 y',x4:'Vertex 4 x',y4:'Vertex 4 y',radius:(circular||parallelSemi||parallelCircle||curvedEntry)?'Glass radius (positive)':general?'Circle blocker radius (positive)':'Signed curvature radius',insideIndex:'Inside refractive index',outsideIndex:'Outside refractive index',normalDeg:'Normal direction',negativeIndex:'Negative-side index',positiveIndex:'Positive-side index',x: 'Position x', y: 'Position y', focalLength: 'Focal length', apertureHeight: 'Aperture height',centerThickness:'Centre thickness',frontRadius:'Front spherical radius',backRadius:'Back spherical radius', orientationDeg: 'Surface orientation', length: 'Length', openingLength:'Clear opening length',width:'Perpendicular beam width',directionDeg:'Propagation direction' };
+  const labels = { x1:'Vertex 1 x',y1:'Vertex 1 y',x2:'Vertex 2 x',y2:'Vertex 2 y',x3:'Vertex 3 x',y3:'Vertex 3 y',x4:'Vertex 4 x',y4:'Vertex 4 y',radius:(circular||parallelSemi||parallelCircle||curvedEntry)?'Glass radius (positive)':general?'Circle blocker radius (positive)':'Signed curvature radius',insideIndex:'Inside refractive index',outsideIndex:'Outside refractive index',normalDeg:'Normal direction',negativeIndex:'Negative-side index',positiveIndex:'Positive-side index',x: 'Position x', y: 'Position y', focalLength: 'Focal length', apertureHeight: 'Aperture height',leftX:'Left face x',axisY:'Reference axis y',spanX:'GRIN width',upHeight:'Height above axis',downHeight:'Height below axis',gradientLength:'Index gradient length',indexSquaredAtAxis:'Index squared on axis',centerThickness:'Centre thickness',frontRadius:'Front spherical radius',backRadius:'Back spherical radius', orientationDeg: 'Surface orientation', length: 'Length', openingLength:'Clear opening length',width:'Perpendicular beam width',directionDeg:'Propagation direction' };
   for (const component of session.document.physics.components) {
     const fieldset = document.createElement('fieldset');
     const legend = document.createElement('legend'); legend.textContent = component.id;
@@ -235,7 +240,7 @@ function controls() {
       const fixed = mixed && component.type === 'plane-mirror' && ['y', 'orientationDeg'].includes(key);
       addNumber(component.type === 'point-source' && key === 'brightness' && !multipleSources ?
         $('source-parameters') : fieldset, component.id, 'parameters', key,
-        key === 'brightness' ? 'Brightness (relative)' : `${labels[key]} (${['orientationDeg','normalDeg','directionDeg'].includes(key) ? '°' : ['negativeIndex','positiveIndex','insideIndex','outsideIndex'].includes(key)?'dimensionless':'mm'})`, value, slider, fixed);
+        key === 'brightness' ? 'Brightness (relative)' : `${labels[key]} (${['orientationDeg','normalDeg','directionDeg'].includes(key) ? '°' : ['negativeIndex','positiveIndex','insideIndex','outsideIndex','indexSquaredAtAxis'].includes(key)?'dimensionless':'mm'})`, value, slider, fixed);
     }
     if (['line-blocker','circle-blocker','finite-aperture'].includes(component.type)) {
       const note=document.createElement('p');note.className='muted';
@@ -251,6 +256,11 @@ function controls() {
       note.textContent=component.type==='ideal-curved-mirror'?
         'Native IdealMirror: ideal Gaussian mapping, not a circular surface. Positive f concave, negative f convex; normal defines the front side.':
         'Native ArcMirror: circular geometry and local-normal reflection. Positive radius concave toward front; negative convex. Gaussian image prediction is paraxial, not exact finite-aperture ray intersection.';
+      fieldset.append(note);
+    }
+    if(component.type==='graded-index-rectangle'){
+      const note=document.createElement('p');note.className='muted';
+      note.textContent='Pinned native GrinGlass with a fixed trusted positive square-root index field and physical rectangular boundary. Euler rays are accepted only after independent first-integral and real detector numerical checks. No arbitrary equations or detected image.';
       fieldset.append(note);
     }
     if(component.type==='spherical-lens'){
@@ -299,7 +309,7 @@ function controls() {
       addNumber(sourceParent, component.id, 'emission', 'angleDeg', 'Opening angle (°)', component.emission.angleDeg, { min: 1, max: 180, step: 1 }, disabled);
       addNumber(sourceParent, component.id, 'emission', 'directionDeg', 'Direction (°)', component.emission.directionDeg, { min: -180, max: 180, step: 1 }, component.emission.mode==='full-circle');
       const note = document.createElement('p'); note.className = 'muted';
-      note.textContent = (planar||circular||prism||polygon||thick||curvedEntry) ? 'One exact native ray; the cone-angle field is inactive. 0° right · +90° up · −90° down.' : (multipleSources ? 'Use the toolbar to select this source for Full-circle / Directional mode. ' : '')+
+      note.textContent = (planar||circular||prism||polygon||thick||curvedEntry||graded) ? 'One exact native ray; the cone-angle field is inactive. 0° right · +90° up · −90° down.' : (multipleSources ? 'Use the toolbar to select this source for Full-circle / Directional mode. ' : '')+
         '0° right · +90° up · −90° down. Opening is the full cone angle. Selecting Directional starts at Medium global sampling.';
       fieldset.append(note);
     }
@@ -326,12 +336,21 @@ function controls() {
       'Only exact v17/v18 retain depth 16; all other versions preserve their previous budgets.')+
       ' Invalid, truncated, stopped or stale results are withheld. These are sampled 2D rays, not physical image detection, continuous irradiance or a solved original JEE question.';
   }
+  if(graded){
+    $('model-label').textContent='Bounded square-root graded-index Glass · native v25';
+    $('parameter-guidance').textContent='Lengths in mm, x right, y up. One exact horizontal source starts INSIDE a real rectangular GRIN body, with n(y)^2=1.5+(y-axisY)/(1 mm), exterior index exactly 1, and one actual external passive detector. The strict policy uses 0.0025-mm native Euler steps and a version-only depth allowance; this is not an open-ended expression parser. Zoom magnifies presentation only and never changes optical sampling.';
+    $('physical-note').textContent='Every native internal ray callback and actual passive detector hit is compared with the conditional continuous-field first integral. Any numerical mismatch above 0.002 mm, missing hit, extra branch, truncation or auditor fault FAILS CLOSED and withholds accepted readouts—even after a native completion callback. Fresnel-off is explicit; no image, general GRIN, symbolic J09 grazing result or continuous irradiance is certified.';
+  }
   $('grid-toggle').checked = session.document.presentation.grid;
+  // Only v25 receives magnification suitable for 1mm-scale physical GRIN
+  // geometry. Restoring an older scene restores its original slider range.
+  $('zoom').max=graded?'100':'2';
+  $('zoom').step='0.01';
   $('zoom').value = session.document.presentation.view.zoom;
   syncSampling();
 }
 function sourcePicker(component) {
-  const choices = [5,7,8,9,10,11,12,13,14,15,16,17,18,24].includes(session.document.schemaVersion)?[{mode:'single-ray',title:'Single ray (native)',description:'One exact direction; sampling density does not create a cone',icon:angleSourceIcon}]:[
+  const choices = [5,7,8,9,10,11,12,13,14,15,16,17,18,24,25].includes(session.document.schemaVersion)?[{mode:'single-ray',title:'Single ray (native)',description:'One exact direction; sampling density does not create a cone',icon:angleSourceIcon}]:[
     { mode: 'full-circle', title: 'Point source (360°)', description: 'Light in every direction', icon: pointSourceIcon },
     { mode: 'directional', title: 'Point source (directional)', description: 'Symmetric cone · 1–180°', icon: angleSourceIcon }
   ];
@@ -514,7 +533,8 @@ for (const mode of ['rays', 'extended']) $(`mode-${mode}`).onchange = e => {
 };
 $('grid-toggle').onchange = e => viewChange(p => { p.grid = e.target.checked; });
 $('zoom').oninput = e => viewChange(p => { p.view.zoom = Number(e.target.value); });
-for (const [id, dx] of [['pan-left', -100], ['pan-right', 100]]) $(id).onclick = () => viewChange(p => { p.view.x += dx; });
+for (const [id, dx] of [['pan-left', -100], ['pan-right', 100]]) $(id).onclick = () =>
+  viewChange(p => { p.view.x += session.document.schemaVersion===25?Math.sign(dx)*.25:dx; });
 function resize() {
   const rect = $('stage').getBoundingClientRect();
   const nextSize = { width: Math.max(200, Math.round(rect.width)), height: Math.max(200, Math.round(rect.height)) };

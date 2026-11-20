@@ -1,0 +1,80 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "JEE teaching: fixed graded-index native ray with numerical qualification",
+    "runPolicy": "native-grin-fine-v25",
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": 0.1,
+          "y": 0,
+          "brightness": 0.5
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 0
+        }
+      },
+      {
+        "id": "G1",
+        "type": "graded-index-rectangle",
+        "parameters": {
+          "leftX": 0,
+          "axisY": 0,
+          "spanX": 1,
+          "upHeight": 0.9,
+          "downHeight": 0.4,
+          "indexSquaredAtAxis": 1.5,
+          "gradientLength": 1,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 1.2,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 2
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "emitted",
+      "kind": "source-emissions",
+      "componentId": "S1"
+    },
+    {
+      "id": "crossings",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "hit-events",
+      "kind": "detector-hit-events",
+      "componentId": "D1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Observe real pinned-native continuously graded refraction and one downstream passive detector hit, but accept readings only when the v25 numerical guard compares the measured ray to the independent continuous-field reference within declared tolerance.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "This is a synthetic teaching setup, not the original JEE J09 grazing-entry slab question.",
+      "The field is n(y)^2=1.5+(y-axisY)/(1 mm) with explicit scale; it stays >=1 over this finite rectangle.",
+      "Source is explicitly inside GRIN glass, horizontal, at x=0.1 mm; outside index=1 and Fresnel partial reflections disabled as an explicit approximation.",
+      "The passive detector lies outside the right material boundary. The v25 native high-step policy is numerical, not a physical ray-density claim."
+    ],
+    "unknowns": [
+      "The original J09 source does not specify this geometry, length scale, index offset, initial inside-source or detector.",
+      "No reconstructed physical image, continuous irradiance, exact symbolic ray, general 3D GRIN or certified global Euler error is asserted."
+    ]
+  }
+}

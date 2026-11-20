@@ -4,6 +4,8 @@ import {compilePolygon,POLYGON_TYPE} from './polygon-dielectric.js';
 import {compileCircular} from './circular-dielectric.js';
 import {SEMICIRCULAR_TYPE,compileSemicircular} from './semicircular-dielectric.js';
 import {SPHERICAL_LENS_TYPE,compileSphericalLens} from './spherical-lens.js';
+import {GRIN_V25_TYPE,compileGrinV25,observeNativeGrinV25} from './native-grin-v25.js';
+export {observeNativeGrinV25};
 import {observeNativeV18ApertureCorner as nativeV18CornerObserver} from './native-v18-aperture-corner-guard.js';
 import {CIRCLE_BLOCKER_TYPE,compileCircleBlocker} from './opaque-circle-blocker.js';
 import {FINITE_APERTURE_TYPE,compileFiniteAperture} from './finite-aperture.js';
@@ -23,7 +25,7 @@ export function observeNativeV18ApertureCorner(doc,scene,idMap){
 const compilers = {
   [PARALLEL_BEAM_TYPE]:compileParallelBeam,
   'circular-dielectric':compileCircular,[SEMICIRCULAR_TYPE]:compileSemicircular,[PRISM_TYPE]:compilePrism,[POLYGON_TYPE]:compilePolygon,
-  [SPHERICAL_LENS_TYPE]:compileSphericalLens,
+  [SPHERICAL_LENS_TYPE]:compileSphericalLens,[GRIN_V25_TYPE]:compileGrinV25,
   [CIRCLE_BLOCKER_TYPE]:compileCircleBlocker,
   [FINITE_APERTURE_TYPE]:c=>compileFiniteAperture(c,mirrorEndpoints),
   'ideal-curved-mirror':compileCurved,'circular-arc-mirror':compileCurved,
@@ -216,8 +218,8 @@ export function observeBlockerSet(doc, scene, idMap) {
       id+': native blocker incident did not report absorption');}
   };
 }
-export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, detectorMeter = null, interfaceMeter = null, blockerMeter = null, {detectorHitEvents=false,nativeEvent=null,parentage=null,finiteDiagnostic=null,apertureCornerGuard=null}={}) {
-  const errors = [...(interfaceMeter?.errors||[]),...(blockerMeter?.errors||[]),...(apertureCornerGuard?.errors||[]),scene.error, simulator.error, ...scene.objs.map(o => o.getError())].filter(Boolean);
+export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, detectorMeter = null, interfaceMeter = null, blockerMeter = null, {detectorHitEvents=false,nativeEvent=null,parentage=null,finiteDiagnostic=null,apertureCornerGuard=null,grinNumericalGuard=null}={}) {
+  const errors = [...(interfaceMeter?.errors||[]),...(blockerMeter?.errors||[]),...(apertureCornerGuard?.errors||[]),...(grinNumericalGuard?.errors||[]),scene.error, simulator.error, ...scene.objs.map(o => o.getError())].filter(Boolean);
   const warnings = [scene.warning, simulator.warning, ...scene.objs.map(o => o.getWarning())].filter(Boolean);
   const emissionsById=meter?.byId ?? null;
   const sourceCount=emissionsById ? Object.keys(emissionsById).length : 0;
@@ -252,7 +254,8 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
     blockersById: blockerMeter?.byId ?? null,
     ...(parentage?{detectorRayProvenanceById:parentageById}:{} ),
     ...(finiteDiagnostic?{finiteHitDiagnostic:finiteHitAdvisory}:{}),
-    ...(apertureCornerGuard?{apertureCornerGuard:apertureCornerGuard.observation}:{}) }; 
+    ...(apertureCornerGuard?{apertureCornerGuard:apertureCornerGuard.observation}:{}),
+    ...(grinNumericalGuard?{grinNumericalGuard:grinNumericalGuard.observation}:{}) }; 
 }
 export function classifyRun(event, data) {
   return data.errors.length ? 'failed' : event === 'simulationStop' ? 'stopped' :
