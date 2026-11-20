@@ -2,19 +2,47 @@
 // Admission geometry and conservative first-hit clearance only. Native PhyDemo
 // alone refracts, reflects and creates detector events; never route or modify rays.
 import {compositionCountsMatch} from './composition-profiles.js';
-import {parallelBeamGeometry,parallelBeamSamples,BEAM_CLEARANCE_MM} from './parallel-beam.js';
+import {parallelBeamGeometry,compileParallelBeam,BEAM_CLEARANCE_MM} from './parallel-beam.js';
 
 export const BEAM_PLANAR_MIRROR_VERSION=26;
 export const BEAM_PLANAR_MIRROR_MODEL='native-parallel-planar-mirror-tracing';
 export const BEAM_PLANAR_MIRROR_MIRROR_RIM_CLEARANCE_MM=0.1;
 export const BEAM_PLANAR_MIRROR_DETECTOR_ENDPOINT_CLEARANCE_MM=0.1;
 export const BEAM_PLANAR_MIRROR_MIN_SPACING_MM=0.01;
+// Pin-specific conservative guard against branch-crossing half-integer native
+// Beam emission counts when endpoint arithmetic differs across JS runtimes.
+export const BEAM_PLANAR_MIRROR_HALF_SAMPLE_GUARD=1e-10;
 const RAD=Math.PI/180,refuse=(fail,path,message)=>fail(path,message,'UNSUPPORTED_SCOPE');
 const world=p=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&
  Math.abs(p.x)<=10000&&Math.abs(p.y)<=10000;
 const near=(a,b,t=1e-8)=>Math.abs(a-b)<=t;
-const support=(p,x)=>p.x-x;
 const inside=(a,low,high,tol)=>a>low+tol&&a<high-tol;
+
+// This v26-only admission enumerator mirrors the PINNED native Beam exactly:
+// compile the real y-DOWN Beam endpoints, sqrt(dx*dx+dy*dy), then native n =
+// length*rayDensity/lengthScale, step=delta/n and p1+i*step for i=.5,1.5,...
+// The adapter's native lengthScale is exactly 1, and is regression-tested.
+// DO NOT change the legacy v19 parallelBeamSamples: its reviewed behavior
+// must remain byte-identical, while this new profile guards B1 independently.
+export function v26PinnedBeamAdmissionSamples(parameters,rayDensity){
+ const compiled=compileParallelBeam({type:'parallel-beam',parameters});
+ const dx=compiled.p2.x-compiled.p1.x,dy=compiled.p2.y-compiled.p1.y;
+ const length=Math.sqrt(dx*dx+dy*dy);
+ const nativeLengthScale=1;
+ const n=length*rayDensity/nativeLengthScale;
+ if(!Number.isFinite(n)||n<=0) return {
+  samples:[],nativeSampleFactor:n,computedNativeLengthMm:length,
+  nearHalfInteger:true,nativeLengthScale};
+ const nearestHalf=Math.round(n-0.5)+0.5;
+ const nearHalfInteger=Math.abs(n-nearestHalf)<=BEAM_PLANAR_MIRROR_HALF_SAMPLE_GUARD;
+ const stepX=dx/n,stepY=dy/n,samples=[];
+ for(let i=0.5;i<=n;i++){
+  if(samples.length>100)break; // Refuse >100 instead of silently qualifying.
+  samples.push({x:compiled.p1.x+i*stepX,y:-(compiled.p1.y+i*stepY)});
+ }
+ return {samples,nativeSampleFactor:n,computedNativeLengthMm:length,
+  nearHalfInteger,nativeLengthScale};
+}
 
 // Predicted FIRST outbound glass->mirror intersection is an independent
 // necessary admission check against finite endpoint uncertainty. It is NOT
@@ -25,7 +53,8 @@ export function beamPlanarMirrorSafetyWitness(components,rayDensity){
  const glass=components.find(c=>c.type==='planar-interface').parameters;
  const mirror=components.find(c=>c.type==='plane-mirror').parameters;
  const geometry=parallelBeamGeometry(beam),emitter=[geometry.p1,geometry.p2];
- const densitySamples=parallelBeamSamples(beam,rayDensity);
+ const nativeSamples=v26PinnedBeamAdmissionSamples(beam,rayDensity);
+ const densitySamples=nativeSamples.samples;
  const i=beam.directionDeg*RAD,r=Math.asin(glass.negativeIndex/
   glass.positiveIndex*Math.sin(i)),tangentIn=Math.tan(i),
   tangentGlass=Math.tan(r);
@@ -36,7 +65,10 @@ export function beamPlanarMirrorSafetyWitness(components,rayDensity){
   const returnY=entryY+2*(xM-x0)*tangentGlass;
   return {emitted:point,entryY,mirrorY,returnY};
  });
- return {emitter,tracks,refractionDeg:r/RAD,
+ return {emitter,tracks,nativeSampleFactor:nativeSamples.nativeSampleFactor,
+  computedNativeLengthMm:nativeSamples.computedNativeLengthMm,
+  nearHalfInteger:nativeSamples.nearHalfInteger,
+  nativeLengthScale:nativeSamples.nativeLengthScale,refractionDeg:r/RAD,
   incidentDeg:beam.directionDeg,frontX:x0,mirrorX:xM,
   mirrorBottom:mirror.y-halfM,mirrorTop:mirror.y+halfM,
   sourceSideExit:'negative',nativePathVerified:false};
@@ -63,16 +95,17 @@ export function validateBeamPlanarMirror(components,model,rayDensity,mirrorEndpo
  if(!(beam.width>=10&&beam.width<=100)||ends.some(p=>!world(p)||
     interfaceP.x-p.x<BEAM_CLEARANCE_MM))
   refuse(fail,path,'The complete finite Beam must lie within +/-10000 mm, width 10–100 mm and at least 0.01 mm before the vertical interface.');
- const samples=parallelBeamSamples(beam,rayDensity);
- if(samples.length<1||samples.length>100)
-  refuse(fail,path,'Native Beam must emit 1–100 deterministic samples under this numerical density.');
+ const witness=beamPlanarMirrorSafetyWitness(components,rayDensity);
+ if(witness.nearHalfInteger)
+  refuse(fail,path,'Native Beam emission factor is too close to a half-integer threshold (<=1e-10); v26 withholds ambiguous native sample counts rather than leaving an unchecked sample.');
+ if(witness.tracks.length<1||witness.tracks.length>100)
+  refuse(fail,path,'Pinned native Beam must emit 1–100 deterministic samples under this numerical density.');
  if(![90,-90].includes(mirror.orientationDeg))
   refuse(fail,path,'v26 requires a vertical finite ideal mirror: no tilted mirror or additional later interface is admitted.');
  const mirrorSegment=mirrorEndpoints(mirror),dist=mirror.x-interfaceP.x;
  if(!Number.isFinite(dist)||dist<BEAM_PLANAR_MIRROR_MIN_SPACING_MM||
     !mirrorSegment.every(world)||mirror.length<20)
   refuse(fail,path,'Mirror must be wholly within world bounds, at least 0.01 mm inside the second medium and at least 20 mm long.');
- const witness=beamPlanarMirrorSafetyWitness(components,rayDensity);
  if(!Number.isFinite(witness.refractionDeg)||witness.tracks.some(v=>
      !world({x:interfaceP.x,y:v.entryY})||
      !world({x:mirror.x,y:v.mirrorY})||
