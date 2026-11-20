@@ -30,7 +30,7 @@ function witness({lensXMm,imageXMm,fromSide='left',heightMm=5}){
  detector.p1={x:imageXMm,y:-20};
  detector.p2={x:imageXMm,y:20};
  const native={...template,objs:[...sources,lens,detector],
-  maxRayDepth:8,processedRayLimit:10000};
+  maxRayDepth:8}; // Processed-ray limit belongs to Simulator, never Scene JSON.
  const scene=core.loadNative(native);
  const actualTypes=scene.objs.map(o=>o.constructor.type);
  assert.deepEqual(actualTypes,['SingleRay','SingleRay','IdealLens','Detector']);
