@@ -5,7 +5,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
-import {prepareScene} from '../src/authoring.js';
+import {prepareScene,capabilities} from '../src/authoring.js';
 import {validate} from '../src/contract.js';
 import {compileParallelBeam,parallelBeamSamples} from '../src/parallel-beam.js';
 import {
@@ -66,6 +66,8 @@ test('B1 exact 50-mm +1-degree density-.29 discrepancy has 15 pinned rays, never
  near(admitted.nativeSampleFactor,14.500000000000002,1e-14);
  assert.equal(admitted.nearHalfInteger,true);
  assert.equal(BEAM_PLANAR_MIRROR_HALF_SAMPLE_GUARD,1e-10);
+ assert.equal(capabilities().nativeBeamPlanarMirror.nativeHalfIntegerSampleGuard,1e-10);
+ assert.match(capabilities().nativeBeamPlanarMirror.numerical,/half-integer native threshold/);
  const safe=beamPlanarMirrorSafetyWitness(doc.physics.components,.29);
  assert.equal(safe.tracks.length,15);
  assert.ok(safe.tracks.slice(0,14).every(x=>x.mirrorY>-20.1&&x.mirrorY<28.1));
