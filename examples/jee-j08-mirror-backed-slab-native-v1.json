@@ -1,0 +1,108 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "Synthetic J08-style mirror-backed slab: native refraction-return",
+    "runPolicy": "preview-v1",
+    "components": [
+      {
+        "id": "S",
+        "type": "point-source",
+        "parameters": {
+          "x": -100,
+          "y": -173.20508075688767,
+          "brightness": 0.08
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 60
+        }
+      },
+      {
+        "id": "I",
+        "type": "planar-interface",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "normalDeg": 0,
+          "negativeIndex": 1,
+          "positiveIndex": 1.8,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "M",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": 60,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 420
+        }
+      },
+      {
+        "id": "D",
+        "type": "ray-detector",
+        "parameters": {
+          "x": -10,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 420
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "emission",
+      "kind": "source-emissions",
+      "componentId": "S"
+    },
+    {
+      "id": "glass-interactions",
+      "kind": "interface-interactions",
+      "componentId": "I"
+    },
+    {
+      "id": "first-entry",
+      "kind": "interface-first-event",
+      "componentId": "I"
+    },
+    {
+      "id": "mirror-reflections",
+      "kind": "mirror-reflections",
+      "componentId": "M"
+    },
+    {
+      "id": "crossings",
+      "kind": "detector-crossings",
+      "componentId": "D"
+    },
+    {
+      "id": "sample-hit-positions",
+      "kind": "detector-hit-events",
+      "componentId": "D"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Illustrate real pinned native entry, mirror return and exit events in a fully authored mirror-backed plate, separate from conditional surface displacement.",
+    "stated": [
+      "J08 source specifies thickness 6 cm, plate index 1.8 and incidence 60 degrees; mirror directly behind plate"
+    ],
+    "derived": [
+      "At independently chosen exterior index 1, conditional front-face separation 65.85855599381419 mm"
+    ],
+    "assumptions": [
+      "Synthetic exterior absolute index 1, source position/brightness, 420 mm finite ideal mirror and passive detector are added teaching choices not source facts.",
+      "One infinite native PlaneGlass boundary at x=0, finite specular Mirror at x=60 mm entirely in glass.",
+      "partialReflection=false explicitly omits weak Fresnel reflections; native TIR remains active.",
+      "The detector lies 10 mm outside the glass and is crossed on both inbound and outbound passes; its hit-point separation is not the same as front-face entry-to-exit separation."
+    ],
+    "unknowns": [
+      "The original exterior index and full apparatus are not specified.",
+      "No native image reconstruction, continuous power, source-specific image or textbook answer certification."
+    ]
+  },
+  "illustration": true,
+  "verifyNative": true
+}
