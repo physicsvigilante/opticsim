@@ -157,6 +157,21 @@ function execute(c){
   x.outgoing.some(b=>b.invariant.residual===null||b.invariant.residual>1e-6));
  const faces=Object.fromEntries(['face-12','face-23','face-31'].map(k=>[
   k,events.glass.filter(x=>x.faceId===k).length]));
+ // Distinguish the two ACTUALLY OBSERVED reverse-angle populations.
+ // This checks geometric directions, not parent-ray identity or a complete
+ // measurement: Fresnel-on native truncation still withholds qualification.
+ const angleDeg=(event,travelSign)=>{
+  const d=event.incoming;
+  if(!d||d.x*travelSign<=0)return null;
+  return Math.atan2(Math.abs(d.y),Math.abs(d.x))*180/Math.PI;
+ };
+ const directAngles=events.detectors.direct.map(e=>angleDeg(e,+1));
+ const reverseAngles=events.detectors.return.map(e=>angleDeg(e,-1));
+ const a=Math.atan2(glassParameters.x3-glassParameters.x1,
+  glassParameters.y2-glassParameters.y3);
+ const ratio=glassParameters.insideIndex/glassParameters.outsideIndex;
+ const predictedDirectDeg=(Math.asin(ratio*Math.sin(a))-a)*180/Math.PI;
+ const predictedReturnDeg=Math.asin(ratio*Math.sin(2*a))*180/Math.PI;
  const result={format:'opticsim-jee-prism-two-branch-native-raw-result-v1',
   id:c.id,kind:c.kind,control:c,physicalCanonicalSeed:physical,
   rawModification:'research-only: Glass.partialReflect, second return Detector, optional Beam/density/depth',
@@ -164,7 +179,12 @@ function execute(c){
   pinnedNativeComplete:complete,qualified:false,
   branchQualifiedForAuthoring:false,originalJeeJ14Solved:false,
   observedNativeImage:false,
-  diagnostics,faces,uncertainGlass,events};
+  diagnostics,faces,uncertainGlass,events,directionEvidence:{
+   directAnglesDeg:directAngles,returnAnglesFromReverseDeg:reverseAngles,
+   independentlyPredictedSmallWedgeDirectDeg:predictedDirectDeg,
+   independentlyPredictedSecondFaceReturnDeg:predictedReturnDeg,
+   note:'Necessary geometric angles only; no guaranteed Fresnel completeness or ray lineage'}
+  };
  const report=save(c.id+'.raw-report.json',result);
  console.log('JEE_PRISM_TWO_BRANCH_RAW '+JSON.stringify({id:c.id,complete,
   terminal,emitted:diagnostics.emitted,glass:diagnostics.glassHits,
@@ -172,7 +192,8 @@ function execute(c){
   truncation:diagnostics.truncation,undefined:diagnostics.undefinedBehavior,
   errorSnippet:error?error.slice(0,200):null,rawOnly:true}));
  return {id:c.id,input,report,diagnostics,complete,uncertainGlass,
-  front:diagnostics.directDetectorHits,back:diagnostics.returnDetectorHits};
+  front:diagnostics.directDetectorHits,back:diagnostics.returnDetectorHits,
+  directionEvidence:result.directionEvidence,faces};
 }
 test('the frozen J13/J14 research protocol is distinct from rejected public Fresnel authoring',()=>{
  assert.equal(frozen.status,'pre-execution-frozen-protocol');
@@ -216,5 +237,29 @@ test('fixed raw Fresnel study runs every pinned native control and preserves all
   'Outside-source miss cannot turn into a virtual prism collision');
  assert.equal(evidence.cases.find(x=>x.id==='fresnel-on-processed-stop').diagnostics.terminal,
   'simulationStop','Processed-ray limit is a native stop, never successful completion');
+ const off=evidence.cases.find(x=>x.id==='fresnel-off-baseline');
+ const on=evidence.cases.find(x=>x.id==='fresnel-on-small-wedge');
+ assert.equal(off.complete,true,'Pinned Fresnel-off control must terminate without truncation');
+ assert.equal(off.front,2);assert.equal(off.back,0);
+ assert.equal(off.faces['face-12'],2);
+ assert.ok(off.directionEvidence.directAnglesDeg.every(angle=>Number.isFinite(angle)&&
+  Math.abs(angle-off.directionEvidence.independentlyPredictedSmallWedgeDirectDeg)<.05),
+  'Fresnel-off actual transmitted directions must agree with independent two-face Snell angles');
+ assert.equal(on.complete,false,'Native Fresnel-on truncated evidence must never qualify');
+ assert.equal(on.diagnostics.terminal,'simulationComplete');
+ assert.ok(on.diagnostics.truncation>0,'Weak native Fresnel branches are actually truncated');
+ assert.equal(on.diagnostics.undefinedBehavior,0);
+ assert.equal(on.front,2);assert.equal(on.back,4);
+ assert.ok(on.faces['face-12']>=4,'actual entry and return Glass callbacks should be visible');
+ const angles=on.directionEvidence.returnAnglesFromReverseDeg;
+ const theory=on.directionEvidence.independentlyPredictedSecondFaceReturnDeg;
+ assert.ok(angles.every(Number.isFinite),'backward detector hits must travel backward');
+ assert.ok(angles.some(v=>v<.05),'native first-face Fresnel reflection is measured');
+ assert.ok(angles.some(v=>Math.abs(v-theory)<.05),
+  'a distinct returned angled branch is witnessed, not inferred from crossing counts alone');
+ const onShift=evidence.cases.find(x=>x.id==='fresnel-on-translation');
+ assert.equal(onShift.complete,false);
+ assert.equal(onShift.front,on.front);assert.equal(onShift.back,on.back);
+ assert.ok(onShift.diagnostics.truncation>0);
  save('report.json',evidence);
 });
