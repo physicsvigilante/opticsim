@@ -125,6 +125,11 @@ define(24,'native-curved-entry-observation-tracing',{
   [source]:range(1,1),[semicircle]:range(1,1),
   'line-blocker':range(1,1),[detector]:range(2,2)
 },[],[rule('native-curved-entry')],single);
+// v26 adds a bounded, independent true Beam + one PlaneGlass + one finite
+// Mirror return. Existing v5/v19 and earlier saved contracts remain unchanged.
+define(26,'native-parallel-planar-mirror-tracing',{
+  [beam]:range(1,1),[plane]:range(1,1),[mirror]:range(1,1),[detector]:range(0,2)
+},[],[rule('native-beam-planar-mirror')],[]);
 // v25 admits exactly one numerically qualified square-root GRIN rectangle.
 define(25,'native-bounded-grin-tracing',{
   [source]:range(1,1),[grin]:range(1,1),[detector]:range(1,1)
@@ -146,6 +151,7 @@ const selection=freeze([
   {model:'native-parallel-semicircular-tracing',version:21,when:[group([semicircle],1,32)]},
   {model:'native-parallel-prism-tracing',version:22,when:[group([beam],1,32),group([prism],1,32)]},
   {model:'native-parallel-circle-tracing',version:23,when:[group([beam],1,32),group([circle],1,32)]},
+  {model:'native-parallel-planar-mirror-tracing',version:26,when:[group([beam],1,32),group([plane],1,32),group([mirror],1,32)]},
   {model:'native-parallel-planar-tracing',version:19,when:[group([beam],1,32),group([plane],1,32)]},
   {model:'native-parallel-two-lens-tracing',version:20,when:[group([beam],1,32),group([lens],2,32)]},
   {model:'native-parallel-lens-tracing',version:19,when:[group([beam],1,32)]},

@@ -16,6 +16,7 @@ import {SEMICIRCULAR_TYPE,SEMICIRCULAR_VERSION,SEMICIRCULAR_MODEL,SEMICIRCULAR_P
 import {CIRCLE_BLOCKER_TYPE,circleBlockerExtents} from './opaque-circle-blocker.js';
 import {FINITE_APERTURE_TYPE} from './finite-aperture.js';
 import {PARALLEL_BEAM_TYPE,PARALLEL_BEAM_VERSION,PARALLEL_LENS_MODEL,PARALLEL_PLANAR_MODEL,parallelBeamGeometry} from './parallel-beam.js';
+import {BEAM_PLANAR_MIRROR_VERSION,BEAM_PLANAR_MIRROR_MODEL,BEAM_PLANAR_MIRROR_MIRROR_RIM_CLEARANCE_MM,BEAM_PLANAR_MIRROR_HALF_SAMPLE_GUARD} from './native-beam-planar-mirror-v26.js';
 import {DECENTERED_BEAM_VERSION,DECENTERED_BEAM_MODEL} from './decentered-two-lens-beam.js';
 import {curvedEntryCapabilities} from './native-curved-entry-observation.js';
 import {GRIN_V25_TYPE,GRIN_V25_VERSION,GRIN_V25_POLICY,grinV25Extents,grinV25Capabilities} from './native-grin-v25.js';
@@ -83,6 +84,14 @@ export function capabilities() {
       geometry:'Entire emission segment lies within coordinate bounds, outside every surface/medium boundary and detector supporting line. First emitted samples near finite stop/lens endpoints are refused. Beam starting medium must be uniform.',
       execution:'Native pinned Beam emits all deterministic samples; density is numerical not a continuous source property. Brightness exceeding ray density is refused to prevent native saturation.',
       limitations:'No image reconstruction, PSF, diffraction, radiometric power, arbitrary composite optics or source-to-detector ancestry.'},
+    nativeBeamPlanarMirror:{schemaVersion:BEAM_PLANAR_MIRROR_VERSION,model:BEAM_PLANAR_MIRROR_MODEL,
+      scope:'One true deterministic finite Beam, one infinite vertical native PlaneGlass, one finite vertical native Mirror entirely inside the second medium and 0–2 passive detectors in the incident/source-side medium. No other optical objects.',
+      geometry:'All sample mirror encounters must lie safely within the finite mirror (>0.1 mm from either endpoint), sample source must be fully before the interface; detectors are finite vertical segments between source and interface.',
+      materials:'Both absolute indices explicit in [1,4], second index >= first, required partialReflection=false Fresnel-off approximation; native TIR preserved, no full Fresnel branching or weak-ray certification.',
+      numerical:'Exact compiled pinned Beam samples 1–100; sampling count within 1e-10 of half-integer native threshold is refused. Beam brightness <= ray density, 0–60 degree forward incidence, native depth <=8. Real native events, misses, endpoint ambiguity, stops and truncation remain native outcomes; unqualified observations are withheld.',
+      limits:'No native image reconstruction, physical irradiance, Ray ancestry, original J08 full-source simulation, arbitrary mirror tilt, reverse illumination or extra interfaces.',
+      mirrorRimClearanceMm:BEAM_PLANAR_MIRROR_MIRROR_RIM_CLEARANCE_MM,
+      nativeHalfIntegerSampleGuard:BEAM_PLANAR_MIRROR_HALF_SAMPLE_GUARD},
     nativeThickLensAperture:{schemaVersion:THICK_APERTURE_VERSION,model:THICK_APERTURE_MODEL,scope:'Exactly two independent finite native biconvex thick lenses, one plane mirror, one centred-gap native aperture, 1–4 exact single rays and 0–2 passive detectors',geometry:'Reuses v17 native lens/mirror/material, finite segment and source guards; entire stop x-plane strictly separated by >=0.01 mm from each lens envelope and other segments',execution:'native-deep-v18 only, depth at most 16; incomplete runs suppress results',limits:'No arbitrary optical mixing, predicted return route, wave/diffraction, reconstructed image or unrestricted corner qualification'},
     nativeTwoThickLensMirror:{schemaVersion:TWO_THICK_MIRROR_VERSION,model:TWO_THICK_MIRROR_MODEL,scope:'Two finite native biconvex lenses and one finite mirror, exact single rays and 0–2 detectors; separate v17 deep native policy',geometry:'Disjoint lens bodies, shared outside material index, mirror outside both thick lens x envelopes',execution:'native-deep-v17 only, depth at most 16; incomplete reads withheld',limits:'No arbitrary path, image solver or continuous power'},
     nativeThickLensMirror:{schemaVersion:16,model:'native-thick-lens-mirror-tracing',scope:'One finite native spherical thick lens plus one independent finite mirror, 1–4 explicit native single rays and two passive detectors',geometry:'Mirror x-plane strictly outside full lens body, finite optical clearances',limits:'Native chooses every true hit and miss, no inferred return or image'},

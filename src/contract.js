@@ -17,6 +17,7 @@ import {finiteSurfaceGeometry,pointWithinSupportingLineClearance,finiteSurfacesC
 import {PARALLEL_BEAM_TYPE,PARALLEL_BEAM_VERSION,PARALLEL_BEAM_PARAMETERS,validateParallelBeamComposition} from './parallel-beam.js';
 import {PRISM_BEAM_VERSION,validateNativePrismBeam} from './native-prism-beam.js';
 import {CIRCLE_BEAM_VERSION,validateCircleBeam} from './native-circle-beam.js';
+import {BEAM_PLANAR_MIRROR_VERSION,validateBeamPlanarMirror} from './native-beam-planar-mirror-v26.js';
 import {DECENTERED_BEAM_VERSION,validateDecenteredTwoLensBeam} from './decentered-two-lens-beam.js';
 import {CURVED_ENTRY_VERSION,validateCurvedEntryObservation} from './native-curved-entry-observation.js';
 import {GRIN_V25_TYPE,GRIN_V25_VERSION,GRIN_V25_PARAMETERS,GRIN_V25_POLICY,validateGrinV25} from './native-grin-v25.js';
@@ -99,7 +100,7 @@ function validateVersion(doc, version) {
     object(c, ['id', 'type', 'parameters', ...(version >= 2 && c?.type === 'point-source' ? ['emission'] : [])], path);
     if (typeof c.id !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(c.id) || ids.has(c.id)) fail(`${path}.id`, 'expected a unique stable ID (letters, digits, underscores, hyphens)');
     ids.add(c.id);
-    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(t!==SPHERICAL_LENS_TYPE||[15,16,17,18].includes(version))&&(t!==GRIN_V25_TYPE||version===GRIN_V25_VERSION)&&(version===4||([13,CURVED_ENTRY_VERSION].includes(version)&&t==='line-blocker')||(version===THICK_APERTURE_VERSION&&t===FINITE_APERTURE_TYPE)||(version===PARALLEL_BEAM_VERSION&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||[PARALLEL_BEAM_VERSION,DECENTERED_BEAM_VERSION,SEMICIRCULAR_VERSION,PRISM_BEAM_VERSION,CIRCLE_BEAM_VERSION].includes(version))&&(t!==SEMICIRCULAR_TYPE||[SEMICIRCULAR_VERSION,CURVED_ENTRY_VERSION].includes(version))) :
+    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(t!==SPHERICAL_LENS_TYPE||[15,16,17,18].includes(version))&&(t!==GRIN_V25_TYPE||version===GRIN_V25_VERSION)&&(version===4||([13,CURVED_ENTRY_VERSION].includes(version)&&t==='line-blocker')||(version===THICK_APERTURE_VERSION&&t===FINITE_APERTURE_TYPE)||(version===PARALLEL_BEAM_VERSION&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||[PARALLEL_BEAM_VERSION,DECENTERED_BEAM_VERSION,SEMICIRCULAR_VERSION,PRISM_BEAM_VERSION,CIRCLE_BEAM_VERSION,BEAM_PLANAR_MIRROR_VERSION].includes(version))&&(t!==SEMICIRCULAR_TYPE||[SEMICIRCULAR_VERSION,CURVED_ENTRY_VERSION].includes(version))) :
       version >= 3 ? ['point-source', 'ideal-lens', 'plane-mirror'] :
       ['point-source', 'ideal-lens'], `${path}.type`);
     object(c.parameters, componentParameterNames(c.type,version), `${path}.parameters`);
@@ -139,6 +140,7 @@ function validateVersion(doc, version) {
     'native-decentered-two-lens':c=>validateDecenteredTwoLensBeam(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'native-semicircular-beam':c=>validateSemicircularBeam(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'native-prism-beam':c=>validateNativePrismBeam(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
+    'native-beam-planar-mirror':c=>validateBeamPlanarMirror(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'native-circle-beam':c=>validateCircleBeam(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'native-curved-entry':c=>validateCurvedEntryObservation(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'native-grin-v25':c=>validateGrinV25(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),

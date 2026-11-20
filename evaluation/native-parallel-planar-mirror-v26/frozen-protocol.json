@@ -1,0 +1,156 @@
+{
+  "format": "opticsim-native-parallel-planar-mirror-v26-frozen-v1",
+  "status": "frozen-before-code",
+  "productionBaseline": "34a85e21985d13b4663473c20d7adc1d93fc4953",
+  "pinnedNative": "811f508d2b070898c241a568b0c167dcb8645251",
+  "motivation": {
+    "JEEAnchors": [
+      "J08 multi-sample refraction-reflection return demonstration",
+      "general beam+interface+mirror teaching apparatus independent of one textbook question"
+    ],
+    "gap": "Existing v19 true Beam + PlaneGlass admits one/two planes and passive Detectors, but no Mirror; v5 supports SingleRay+PlaneGlass+Mirror, but not a true spatially finite Beam.",
+    "nonGoals": [
+      "New physical ray tracer",
+      "3D wavefront, image, irradiance or ray-lineage certification",
+      "Original J08 problem solved (missing exterior absolute index/source geometry)",
+      "Full Fresnel weak-branch propagation",
+      "Symbolic image reconstruction",
+      "General arbitrary composition or two-plane slab+mirror immediately"
+    ]
+  },
+  "syntheticScene": {
+    "lengthUnit": "mm",
+    "beam": {
+      "x": -100,
+      "y": 0,
+      "width": 40,
+      "directionDeg": 30,
+      "brightness": 0.08
+    },
+    "interface": {
+      "x": 0,
+      "y": 0,
+      "normalDeg": 0,
+      "negativeIndex": 1,
+      "positiveIndex": 1.5,
+      "partialReflection": false
+    },
+    "mirror": {
+      "x": 60,
+      "y": 0,
+      "orientationDeg": 90,
+      "length": 420
+    },
+    "detector": {
+      "x": -10,
+      "y": 0,
+      "orientationDeg": 90,
+      "length": 420
+    },
+    "numerical": {
+      "rayDensity": 0.2,
+      "maxRayDepth": 8,
+      "processedRayLimit": 10000
+    },
+    "explicitExtraPhysicalChoices": true
+  },
+  "firstOrderIndependentReference": {
+    "geometry": "Every native Beam sample is straight to a single front interface, refracts into the positive-index half-plane, reflects at a finite vertical mirror inside that same medium, exits through the same interface and crosses the source-side detector again. Actual propagation is never prescribed.",
+    "refractionDeg": 19.47122063449069,
+    "interfaceReturnShiftMm": 42.426406871192846,
+    "expectedEmittedSamples": 8,
+    "expectedInterfaceEncounters": 16,
+    "expectedMirrorEncounters": 8,
+    "expectedDetectorCrossings": 16,
+    "detectorInboundOutboundYSeparationMm": 53.97341225498536,
+    "brightnessScale": "relative only, no power calibration",
+    "noDetectedImage": true
+  },
+  "proposedPublicProfile": {
+    "schemaVersion": 26,
+    "model": "native-parallel-planar-mirror-tracing",
+    "requiredCounts": {
+      "parallel-beam": 1,
+      "planar-interface": 1,
+      "plane-mirror": 1
+    },
+    "passiveDetectors": "0-2",
+    "geometry": "one vertical interface (normalDeg 0), a vertical finite mirror lying strictly inside the positive-index half-plane, a deterministic Beam entirely left of interface moving right at 0-60deg incl., beam brightness<=rayDensity, every emitted sample must avoid measured/predicted mirror endpoints by conservative 0.1 mm",
+    "authorability": "Only new v26, no silent upgrade of old saves; no downgraded v19 admission after mirror is invalid",
+    "Fresnel": "partialReflection must be explicitly false; native TIR stays enabled; no Fresnel-on full branch certification",
+    "gate": "Finite mirror corners after Snell refraction must be guarded by an independent necessary first-encounter Snell geometry check and 0.1mm corner clearance; actual ray path still owned entirely by pinned PhyDemo.",
+    "noAutoFix": true
+  },
+  "testMatrix": [
+    {
+      "id": "baseline",
+      "mirror": true,
+      "beamDirectionDeg": 30,
+      "insideIndex": 1.5,
+      "expected": "complete 8 native Beam samples, 8 real Mirror interactions, 16 real PlaneGlass hits, 16 detector crossings"
+    },
+    {
+      "id": "translated",
+      "shiftX": 100,
+      "shiftY": -60,
+      "mirror": true,
+      "expected": "same complete native event counts and translated positions"
+    },
+    {
+      "id": "normal",
+      "beamDirectionDeg": 0,
+      "mirror": true,
+      "expected": "same complete route for 8 samples, zero inner direction angle"
+    },
+    {
+      "id": "higher-index",
+      "insideIndex": 1.8,
+      "mirror": true,
+      "expected": "same complete route with independent smaller return displacement"
+    },
+    {
+      "id": "denser",
+      "rayDensity": 0.4,
+      "mirror": true,
+      "expected": "16 native emissions, 16 mirror reflections and 32 detector crossings if capped detector hit observations are not requested"
+    },
+    {
+      "id": "mirror-absent",
+      "mirror": false,
+      "expected": "native first interface only and 8 inbound detector crossings; public v19 baseline"
+    },
+    {
+      "id": "near-mirror-corner",
+      "mirror": true,
+      "mirrorLength": 72,
+      "expected": "unqualified RAW native first-corner research; future v26 validator refuses close first hit"
+    },
+    {
+      "id": "fresnel-on-raw",
+      "mirror": true,
+      "partialReflection": true,
+      "expected": "test-only raw branching, no public qualified measurement"
+    },
+    {
+      "id": "depth-zero",
+      "mirror": true,
+      "maxRayDepth": 0,
+      "expected": "incomplete with positive truncation"
+    },
+    {
+      "id": "processed-stop",
+      "mirror": true,
+      "processedRayLimit": 1,
+      "expected": "native simulationStop"
+    }
+  ],
+  "safeguards": [
+    "Retain original valid v19 Beam+PlaneGlass+Detector scene and clone only RAW native for mirror/Fresnel probe. No public authoring bypass used for release claims.",
+    "A stopped or truncated native run with genuine partial events is incomplete and every public measurement is withheld.",
+    "No fake exit, reflected ray, detector hit, parentage token or image is generated.",
+    "A test-only paper Snell prediction only guards initial post-first-interface mirror endpoints; the ray geometry is entirely native.",
+    "Native path witness must positively verify exact measured emitted and expected interaction counts, no undefined/truncated/warnings, actual Mirror reflection residual and entry/exit Snell vector invariants, not just visual evidence.",
+    "Negative controls are allowed to return explicit incomplete or unsupported; archived raw evidence must distinguish these outcomes."
+  ],
+  "reviewHold": "One focused independent review on final v26 public feature and raw-native evidence after exact-head CI. No separate independent review for initial feasibility."
+}

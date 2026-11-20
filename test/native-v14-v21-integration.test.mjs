@@ -29,7 +29,12 @@ const prepare=path=>prepareScene(load(path).physical).document;
 test('separate v14–v21 apparatuses choose only their declared schema and original native object set',()=>{
  const catalogue=capabilities().composition;
  assert.equal(catalogue.profiles.filter(p=>p.schemaVersion<=24).length,30,'Reviewed v1-v24 profiles remain intact');
- assert.equal(catalogue.profiles.length,31,'New isolated v25 is additional; historical 30 still present');
+ assert.equal(catalogue.profiles.filter(p=>p.schemaVersion<=25).length,31,
+  'All 31 reviewed v1-v25 profiles remain unchanged and present');
+ assert.equal(catalogue.profiles.length,32,
+  'Exactly one new isolated v26 composition augments the historical catalog');
+ assert.deepEqual(catalogue.profiles.filter(p=>p.schemaVersion>25).map(p=>p.id),
+  ['native-parallel-planar-mirror-tracing@26']);
  for(const [version,path,model,types] of examples){
   const f=load(path),before=JSON.stringify(f),d=prepareScene(f.physical).document;
   assert.equal(JSON.stringify(f),before,path+' authoring changed input');

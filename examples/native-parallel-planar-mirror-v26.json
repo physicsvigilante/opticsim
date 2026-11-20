@@ -1,0 +1,102 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "Synthetic JEE-style finite native Beam refract-mirror-return",
+    "runPolicy": "preview-v1",
+    "components": [
+      {
+        "id": "B1",
+        "type": "parallel-beam",
+        "parameters": {
+          "x": -100,
+          "y": 0,
+          "width": 40,
+          "directionDeg": 30,
+          "brightness": 0.08
+        }
+      },
+      {
+        "id": "I1",
+        "type": "planar-interface",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "normalDeg": 0,
+          "negativeIndex": 1,
+          "positiveIndex": 1.5,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "M1",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": 60,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 420
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": -10,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 420
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "emitted",
+      "kind": "source-emissions",
+      "componentId": "B1"
+    },
+    {
+      "id": "medium-encounters",
+      "kind": "interface-interactions",
+      "componentId": "I1"
+    },
+    {
+      "id": "first-refracted",
+      "kind": "interface-first-event",
+      "componentId": "I1"
+    },
+    {
+      "id": "mirror",
+      "kind": "mirror-reflections",
+      "componentId": "M1"
+    },
+    {
+      "id": "crossings",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "sample-hits",
+      "kind": "detector-hit-events",
+      "componentId": "D1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Trace actual finite native parallel rays through a real planar interface and a finite mirror with their true return crossings.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "Fully synthetic finite native apparatus and explicit source/indices, not an original JEE question.",
+      "Beam width 40 mm, +30 degree inclination, 0.08 relative brightness, true native finite Mirror 60 mm in the higher-index region and source-side passive detector.",
+      "partialReflection=false explicitly neglects Fresnel partial reflections; native total internal reflection is retained.",
+      "Observed sampled detector crossings are not a reconstructed image, real irradiance, source-labelled ray history or a complete original JEE answer."
+    ],
+    "unknowns": [
+      "No original J08 absolute exterior medium is supplied by the problem source.",
+      "No Fresnel-on power, continuous beam field, wave diffraction or physical image is certified."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}
