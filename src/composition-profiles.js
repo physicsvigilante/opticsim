@@ -125,6 +125,11 @@ define(24,'native-curved-entry-observation-tracing',{
   [source]:range(1,1),[semicircle]:range(1,1),
   'line-blocker':range(1,1),[detector]:range(2,2)
 },[],[rule('native-curved-entry')],single);
+// v27 adds a separately bounded true Beam + two PlaneGlass boundaries and a
+// strictly separated finite downstream Mirror, without widening v19/v26.
+define(27,'native-parallel-slab-mirror-tracing',{
+  [beam]:range(1,1),[plane]:range(2,2),[mirror]:range(1,1),[detector]:range(0,2)
+},[],[rule('native-beam-two-plane-mirror')],[]);
 // v26 adds a bounded, independent true Beam + one PlaneGlass + one finite
 // Mirror return. Existing v5/v19 and earlier saved contracts remain unchanged.
 define(26,'native-parallel-planar-mirror-tracing',{
@@ -151,6 +156,7 @@ const selection=freeze([
   {model:'native-parallel-semicircular-tracing',version:21,when:[group([semicircle],1,32)]},
   {model:'native-parallel-prism-tracing',version:22,when:[group([beam],1,32),group([prism],1,32)]},
   {model:'native-parallel-circle-tracing',version:23,when:[group([beam],1,32),group([circle],1,32)]},
+  {model:'native-parallel-slab-mirror-tracing',version:27,when:[group([beam],1,32),group([plane],2,32),group([mirror],1,32)]},
   {model:'native-parallel-planar-mirror-tracing',version:26,when:[group([beam],1,32),group([plane],1,32),group([mirror],1,32)]},
   {model:'native-parallel-planar-tracing',version:19,when:[group([beam],1,32),group([plane],1,32)]},
   {model:'native-parallel-two-lens-tracing',version:20,when:[group([beam],1,32),group([lens],2,32)]},
