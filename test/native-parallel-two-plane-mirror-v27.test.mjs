@@ -198,32 +198,55 @@ test('v27 exactly-1mm rear Mirror gap is a real separate native interface, while
   assert.throws(()=>prepareScene(bad),undefined,'A contact/near-contact gap of '+gap+' mm must fail closed');
  }
 });
-test('v27 0, 1 or 2 passive detectors remain independently sampled, with no image reconstruction',async()=>{
+test('v27 zero and one passive detector complete; a second detector is refused before native',async()=>{
  const none=request();
  none.components=none.components.filter(c=>c.type!=='ray-detector');
  const onlyPhysical=fixture.requests.filter(x=>x.componentId!=='D1');
  const a=await perform(none,onlyPhysical);
  assert.equal(a.doc.schemaVersion,27);
  assert.equal(a.native.summary.native.status,'completed');
+ assert.equal(a.native.summary.native.truncation,0);
  assert.equal(a.byId.emissions.value,8);
  assert.equal(a.byId.front.value,16);
  assert.equal(a.byId.rear.value,16);
  assert.equal(a.byId.mirror.value,8);
+ const one=await perform(request());
+ assert.equal(one.native.summary.native.status,'completed');
+ assert.equal(one.byId['detector-count'].value,16);
  const two=request();
  two.components.push({
   id:'D2',type:'ray-detector',
   parameters:{x:-20,y:0,orientationDeg:90,length:420}
  });
- const requests=[...fixture.requests,{id:'second-detector',kind:'detector-crossings',componentId:'D2'}];
- const b=await perform(two,requests);
- assert.equal(b.doc.schemaVersion,27);
- assert.equal(b.native.summary.native.status,'completed');
- assert.equal(b.native.summary.native.truncation,0);
- assert.equal(b.byId['detector-count'].value,16);
- assert.equal(b.byId['second-detector'].value,16);
- assert.equal(b.byId.positions.value.length,16);
- const bad=structuredClone(two);
- part(bad,'D2').x=part(bad,'D1').x;
- assert.throws(()=>prepareScene(bad),/0.01 mm|separat/,
-  'Overlapping passive detector planes must not silently qualify');
+ assert.throws(()=>prepareScene(two),/at most one passive detector/,
+  'Two source-side detectors exceed the v27 eight-interaction native depth budget');
+ assert.equal(capabilities().nativeBeamTwoPlaneMirror.scope.includes('0–1'),true);
+});
+test('test-only second native detector adds two interactions and yields incomplete depth-eight propagation',()=>{
+ // Distinct RAW native clone used only to verify the numerical refusal.
+ // Never qualify, save or submit this as a public v27 canonical scene.
+ const canonical=prepareScene(request()).document;
+ const raw=structuredClone(core.compile(canonical).native);
+ const original=raw.objs.find(x=>x.type==='Detector');
+ assert.ok(original);
+ const second=structuredClone(original);
+ second.p1.x-=10;second.p2.x-=10;
+ raw.objs.push(second);
+ assert.deepEqual(raw.objs.map(x=>x.type),[
+  'Beam','PlaneGlass','PlaneGlass','Mirror','Detector','Detector']);
+ assert.equal(raw.maxRayDepth,8);
+ const scene=core.loadNative(raw);
+ const simulator=new core.Simulator(scene,null,null,null,null,null,false,10000);
+ let terminal=null;
+ simulator.on('simulationComplete',()=>terminal='simulationComplete');
+ simulator.on('simulationStop',()=>terminal='simulationStop');
+ simulator.updateSimulation();
+ const diagnostics=core.diagnostics(scene,simulator,null,null,null,null,null,{
+  nativeEvent:terminal
+ });
+ assert.equal(core.classifyRun(terminal,diagnostics),'incomplete');
+ assert.ok(diagnostics.truncation>0,
+  'The extra native Detector crossing exceeds the eight-interaction budget');
+ assert.equal(diagnostics.undefinedBehavior,0);
+ // Truncation means no complete return measurement or inferred optical image.
 });
