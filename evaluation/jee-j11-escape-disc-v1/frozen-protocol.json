@@ -1,0 +1,153 @@
+{
+  "format": "opticsim-jee-j11-axisymmetric-escape-disc-frozen-v1",
+  "status": "pre-implementation-frozen-protocol",
+  "baselineMain": "2a529aeca8cf4960f3c7f285e635c55ae5a130b9",
+  "pinnedNative": "811f508d2b070898c241a568b0c167dcb8645251",
+  "source": {
+    "frozenCase": "J11",
+    "path": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/005.png",
+    "sourceAuditRef": "6a72bd67e58e9a3fd94a6bf33d88d1f20295b4c2",
+    "sourceAuditPath": "evaluation/jee-post164-coverage-v1/source-review.json",
+    "sourceArchiveSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+    "statedFacts": [
+      "An isotropic point source is submerged at depth h below a water surface.",
+      "The water refractive index is the symbolic parameter mu.",
+      "An opaque floating disc hides the source; problem asks for minimum disc radius."
+    ],
+    "missingForNative": [
+      "Numeric source depth and water index",
+      "Numerically explicit exterior index",
+      "Actual finite emitting source/detector specifications",
+      "Opaque disc in 3D and observer/visibility definition"
+    ],
+    "sourceAnswersOrSolutionsRead": false,
+    "condition": "Symbolic h and mu cannot be silently replaced with specific material/depth for original numerical answer."
+  },
+  "geometry": {
+    "ideal3D": "A single infinite planar horizontal interface separating two homogeneous isotropic transparent media. Point source at (0,0,-h). Disc is opaque, circular, centered at (0,0,0), lies in interface plane.",
+    "rotationalSymmetry": "All azimuthal angles share the same polar Snell/TIR condition; 2D meridional cross-section is not 3D validation by a sampled ray or a line blocker.",
+    "upwardRayDefinition": "Ray with initial polar angle theta in [0,90deg) from upward normal; surface radial hit r=h*tan(theta)",
+    "escapeCondition": "For inside index n1>outside n0, transmitted upward rays have theta<critical arcsin(n0/n1); all surface intersections have 0<=r<Rlim",
+    "radiusLimit": "Rlim=h*tan(arcsin(n0/n1))=h*n0/sqrt(n1^2-n0^2)",
+    "coverage": "Disc radius >=Rlim conditionally intercepts all *geometrically* upward transmitted rays; does not prove human visibility, diffraction/finite optical power, coating behavior.",
+    "equality": "At exact critical angle transmitted grazing branch is numerically uncertain and not necessary to assert physical escape; Rlim is limiting supremum, not a detected critical photon.",
+    "ifInsideNotGreater": "n1<=n0 allows arbitrarily near-grazing rays at unbounded surface radius; no finite disc covers every geometrical upward outgoing direction over an infinite plane."
+  },
+  "admissionPolicy": {
+    "absoluteIndices": [
+      1,
+      4
+    ],
+    "numericDepthMm": [
+      1,
+      10000
+    ],
+    "numericalNearEqualRelativeGuard": 1e-8,
+    "maxReportedRadiusMm": 1000000,
+    "criticalSineGuardForNative": 0.000001,
+    "zeroSourcePlaneSeparationUnsupported": true,
+    "originalSourceCompleteNativeSimulation": false
+  },
+  "fixedCases": [
+    {
+      "id": "source-symbolic",
+      "kind": "symbolic",
+      "expected": "formal conditional R=h*nOutside/sqrt(nWater^2-nOutside^2), when nWater>nOutside"
+    },
+    {
+      "id": "numeric-explicit-water-air",
+      "kind": "numeric",
+      "depthMm": 100,
+      "insideIndex": 1.5,
+      "outsideIndex": 1,
+      "expectedRadiusMm": 89.44271909999158,
+      "expected": "conditional"
+    },
+    {
+      "id": "numeric-water-like",
+      "kind": "numeric",
+      "depthMm": 60,
+      "insideIndex": 1.3333333333333333,
+      "outsideIndex": 1,
+      "expectedRadiusMm": 68.0336051416609,
+      "expected": "conditional"
+    },
+    {
+      "id": "numeric-immersed",
+      "kind": "numeric",
+      "depthMm": 100,
+      "insideIndex": 2,
+      "outsideIndex": 1.5,
+      "expectedRadiusMm": 113.38934190276817,
+      "expected": "conditional"
+    },
+    {
+      "id": "near-equal",
+      "kind": "numeric",
+      "depthMm": 100,
+      "insideIndex": 1.0000000001,
+      "outsideIndex": 1,
+      "expected": "numerically-indeterminate"
+    },
+    {
+      "id": "equal-index",
+      "kind": "numeric",
+      "depthMm": 100,
+      "insideIndex": 1,
+      "outsideIndex": 1,
+      "expected": "no-finite-coverage"
+    },
+    {
+      "id": "inverted-index",
+      "kind": "numeric",
+      "depthMm": 100,
+      "insideIndex": 1,
+      "outsideIndex": 1.5,
+      "expected": "no-finite-coverage"
+    },
+    {
+      "id": "zero-depth",
+      "kind": "numeric",
+      "depthMm": 0,
+      "insideIndex": 1.5,
+      "outsideIndex": 1,
+      "expected": "rejected"
+    },
+    {
+      "id": "missing-outside-index",
+      "kind": "numeric",
+      "depthMm": 100,
+      "insideIndex": 1.5,
+      "expected": "needs-information"
+    }
+  ],
+  "native": {
+    "testOnly": "Pinned PhyDemo public v5 SingleRay from a fully authored below-interface medium to PlaneGlass; test only true native surface interactions. No physical disc exists in this 2D model.",
+    "syntheticDepthMm": 100,
+    "syntheticInsideIndex": 1.5,
+    "syntheticOutsideIndex": 1,
+    "syntheticInputAnglesFromUpwardNormalDeg": [
+      0,
+      15,
+      30,
+      41,
+      41.81021489577859,
+      41.81031489577859,
+      41.81041489577859,
+      50
+    ],
+    "expectedActualTIRAboveCritical": true,
+    "expectedUnresolvedAtExactCritical": true,
+    "partialReflection": false,
+    "processedRayLimit": 10000,
+    "maxRayDepth": 8
+  },
+  "evaluationAxes": [
+    "source interpretation fidelity",
+    "conditional physical correctness",
+    "native 2D cross-section illustration (not 3D visibility)",
+    "educational usefulness",
+    "optional textbook-answer completeness"
+  ],
+  "gate": "One focused independent review of final exact-tested combined source, NOT of unchanged historical PlanarGlass or line blockers; leave draft unmerged until owner release decision."
+}
