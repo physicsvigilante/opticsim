@@ -149,7 +149,7 @@ export function analyzeTwoSourceLensCoincidence(q){
      signedImageDistanceAlongLeftwardIncident:vRight/scale,
      globalImageX:imageFromRight/scale},
    sharedImageX:image/scale,sharedImageXMm:image,
-   normalizedGaussianMismatchMm:spread,
+   maximumSignedGaussianCoordinateMismatchMm:spread,
    physicalDetectorCoincidenceCertified:false,
    oneRealOneVirtual:true
   });
