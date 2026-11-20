@@ -74,6 +74,10 @@ jobs:
         run: node scripts/native-parallel-planar-mirror-v26-acceptance.mjs
       - name: v26 real Chrome Beam refraction return, physical edit, corner refusal and reopen
         run: node scripts/native-parallel-planar-mirror-v26-browser.mjs
+      - name: v27 public native Beam two-plane slab and strictly separated Mirror return qualification
+        run: node scripts/native-two-plane-mirror-v27-acceptance.mjs
+      - name: v27 real Chrome two-face slab and Mirror physical edits, contact refusal, qualified reopen
+        run: node scripts/native-two-plane-mirror-v27-browser.mjs
       - name: Opaque blocker browser edits, detector readings and qualified exports
         run: node scripts/opaque-line-blocker-browser.mjs
       - name: LLM authoring CLI with real native execution and revision guards
@@ -128,6 +132,9 @@ jobs:
             test-artifacts/browser-jee-bounded-grin-v25/
             test-artifacts/llm-authoring/native-parallel-planar-mirror-v26/
             test-artifacts/browser-native-parallel-planar-mirror-v26/
+            test-artifacts/llm-authoring/native-two-plane-mirror-v27/
+            test-artifacts/browser-native-two-plane-mirror-v27/
+            test-artifacts/llm-authoring/native-two-plane-mirror-v27-research/
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
