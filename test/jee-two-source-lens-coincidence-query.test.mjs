@@ -39,6 +39,8 @@ test('J17 stated 24cm and 9cm yield 6cm and 18cm lenses, image x -12cm and +36cm
   near(x.source1Image.globalImageX,x.sharedImageX);
   near(x.source2Image.globalImageX,x.sharedImageX);
   assert.equal(x.oneRealOneVirtual,true);
+  assert.ok(x.maximumSignedGaussianCoordinateMismatchMm<1e-8,
+   'The displayed Gaussian coordinate discrepancy is an absolute mm value');
   assert.equal(x.physicalDetectorCoincidenceCertified,false);
   assert.deepEqual([x.source1Image.kind,x.source2Image.kind],
    [['virtual','real'],['real','virtual']][i]);
