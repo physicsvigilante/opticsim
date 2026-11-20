@@ -30,7 +30,11 @@ test('restored native v14–v18 preserve all original sealed v24 profiles',()=>{
  assert.equal(c.profiles.filter(p=>p.schemaVersion<=13).length,18);
  assert.equal(c.profiles.filter(p=>p.schemaVersion<=23&&![14,15,16,17,18].includes(p.schemaVersion)).length,24,
   'The original pre-v24 profiles remain present under their original IDs');
- assert.equal(c.profiles.length,31,'25 prior public profiles, five restored v14-v18, and one isolated v25 GRIN profile');
+ assert.equal(c.profiles.filter(p=>p.schemaVersion!==26).length,31,
+  'All 31 original v1-v25 profiles must remain exactly present');
+ assert.equal(c.profiles.length,32,'One and only one new v26 profile is admitted');
+ assert.deepEqual(c.profiles.filter(p=>p.schemaVersion===26).map(p=>p.id),
+  ['native-parallel-planar-mirror-tracing@26']);
  assert.deepEqual(compositionModels(25),['native-bounded-grin-tracing']);
  assert.deepEqual(compositionSourceModes(25),['single-ray']);
  for(const [version,model] of [[14,'two-separated-dielectrics-tracing'],[15,'native-thick-lens-tracing'],
