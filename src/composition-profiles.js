@@ -128,7 +128,7 @@ define(24,'native-curved-entry-observation-tracing',{
 // v27 adds a separately bounded true Beam + two PlaneGlass boundaries and a
 // strictly separated finite downstream Mirror, without widening v19/v26.
 define(27,'native-parallel-slab-mirror-tracing',{
-  [beam]:range(1,1),[plane]:range(2,2),[mirror]:range(1,1),[detector]:range(0,2)
+  [beam]:range(1,1),[plane]:range(2,2),[mirror]:range(1,1),[detector]:range(0,1)
 },[],[rule('native-beam-two-plane-mirror')],[]);
 // v26 adds a bounded, independent true Beam + one PlaneGlass + one finite
 // Mirror return. Existing v5/v19 and earlier saved contracts remain unchanged.
