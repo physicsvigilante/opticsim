@@ -177,3 +177,53 @@ test('native depth truncation and processed-ray stop withhold ALL v27 observatio
   assert.equal(r.summary.observations,null);
  }
 });
+
+
+test('v27 exactly-1mm rear Mirror gap is a real separate native interface, while any smaller gap is refused',async()=>{
+ const valid=request();
+ part(valid,'M1').x=61;
+ const {doc,native,byId}=await perform(valid);
+ assert.equal(doc.schemaVersion,27);
+ assert.equal(native.summary.native.status,'completed');
+ assert.equal(native.summary.native.truncation,0);
+ assert.equal(byId.emissions.value,8);
+ assert.equal(byId.front.value,16);
+ assert.equal(byId.rear.value,16,
+  'Both refracting surfaces must actually receive 8 inbound and 8 returning native rays');
+ assert.equal(byId.mirror.value,8);
+ assert.equal(byId['detector-count'].value,16);
+ for(const gap of [0,0.005,0.5,0.999999999]){
+  const bad=request();
+  part(bad,'M1').x=60+gap;
+  assert.throws(()=>prepareScene(bad),undefined,'A contact/near-contact gap of '+gap+' mm must fail closed');
+ }
+});
+test('v27 0, 1 or 2 passive detectors remain independently sampled, with no image reconstruction',async()=>{
+ const none=request();
+ none.components=none.components.filter(c=>c.type!=='ray-detector');
+ const onlyPhysical=fixture.requests.filter(x=>x.componentId!=='D1');
+ const a=await perform(none,onlyPhysical);
+ assert.equal(a.doc.schemaVersion,27);
+ assert.equal(a.native.summary.native.status,'completed');
+ assert.equal(a.byId.emissions.value,8);
+ assert.equal(a.byId.front.value,16);
+ assert.equal(a.byId.rear.value,16);
+ assert.equal(a.byId.mirror.value,8);
+ const two=request();
+ two.components.push({
+  id:'D2',type:'ray-detector',
+  parameters:{x:-20,y:0,orientationDeg:90,length:420}
+ });
+ const requests=[...fixture.requests,{id:'second-detector',kind:'detector-crossings',componentId:'D2'}];
+ const b=await perform(two,requests);
+ assert.equal(b.doc.schemaVersion,27);
+ assert.equal(b.native.summary.native.status,'completed');
+ assert.equal(b.native.summary.native.truncation,0);
+ assert.equal(b.byId['detector-count'].value,16);
+ assert.equal(b.byId['second-detector'].value,16);
+ assert.equal(b.byId.positions.value.length,16);
+ const bad=structuredClone(two);
+ part(bad,'D2').x=part(bad,'D1').x;
+ assert.throws(()=>prepareScene(bad),/0.01 mm|separat/,
+  'Overlapping passive detector planes must not silently qualify');
+});
