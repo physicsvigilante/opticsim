@@ -72,6 +72,14 @@ The test records unmodified native `onRayIncident` callbacks and the actual entr
 
 The complete native illustrated system may be physically useful to teach the source problem while remaining distinct from the underspecified original question. A detector crossing is not an optical image reconstruction or radiometrically calibrated light power.
 
+## Public v5 native authoring and qualified observables
+
+In addition to the raw test-only wrapper, the fully declared **native** example `examples/jee-j08-mirror-backed-slab-native-v1.json` uses the existing public `opticsim-problem-v1` authoring request and six explicit sampled observables (`source-emissions`, `interface-interactions`, `interface-first-event`, `mirror-reflections`, `detector-crossings`, and `detector-hit-events`). Its canonical v5 scene contains an actual `SingleRay`, `PlaneGlass`, `Mirror` and `Detector`, with all physical and numerical choices authored.
+
+`test/jee-j08-slab-public-native.test.mjs` checks ordinary `prepareScene`, pinned-native `evaluateDocument` and `evaluateObservables`, completed native status, qualified sampled observations, round-trip counts, save/reopen, invalid omitted medium, absent mirror and stale-hash suppression. Importantly, an external detector 10 mm in front of the slab is crossed **twice** (on the incoming and outgoing legs). The difference between those **detector** y coordinates is `D+20*tan(i)`, **not** the front-surface separation `D`. Only the direct independent real glass-interface callback witness checks the actual two front-face crossing coordinates. Neither two detector crossings nor their count are a native image reconstruction.
+
+This example verifies existing public authorability and measurement reuse; it does not license a new schema version, source-complete J08 scene, generalized return-path identity or automatic image detector.
+
 ## J02 reviewer follow-up, consolidated with J08 release review
 
 Chat B’s cleared PR #191 review recommended numerical tests at the exact centroid/on the median and almost symmetric object positions in the three-mirror reflection orbit. The new **test-only** `test/jee-j02-centroid-median-review-followup.test.mjs` checks those cases through the *unchanged reviewed J02 source*, without changing its result contract or performing another full review. Its mathematical formal unbounded orbit still makes no physical visible-image claim.
