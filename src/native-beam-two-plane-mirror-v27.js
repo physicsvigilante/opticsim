@@ -66,9 +66,15 @@ export function beamTwoPlaneMirrorSafetyWitness(components,rayDensity){
 }
 export function validateBeamTwoPlaneMirror(components,model,rayDensity,mirrorEndpoints,fail){
  const path='$.physics.components';
+ // With a full outbound+return slab path, two source-side passive detector
+ // planes yield nine genuine encounters (2+2 detector, 2+2 glass, 1 mirror),
+ // exceeding the v27 native maxRayDepth=8. Do not silently admit a scene
+ // which can only return incomplete measurements.
+ if(components.filter(c=>c.type==='ray-detector').length>1)
+  refuse(fail,path,'v27 admits at most one passive detector: two detector planes need nine native interactions on the round trip and exceed depth budget 8.');
  if(model!==BEAM_TWO_PLANE_MIRROR_MODEL||
   !compositionCountsMatch(components,model,BEAM_TWO_PLANE_MIRROR_VERSION))
-  refuse(fail,path,'v27 requires precisely one finite Beam, exactly two planar refracting interfaces, one finite return Mirror and zero to two passive source-side Detectors, with no other optics.');
+  refuse(fail,path,'v27 requires precisely one finite Beam, exactly two planar refracting interfaces, one finite return Mirror and at most one passive source-side Detector, with no other optics.');
  const {beam,planes,mirror,detectors}=structure(components);
  const [front,rear]=planes;
  if(front.normalDeg!==0||rear.normalDeg!==0||
@@ -132,6 +138,4 @@ export function validateBeamTwoPlaneMirror(components,model,rayDensity,mirrorEnd
    }
   }
  }
- if(detectors.length===2&&Math.abs(detectors[0].x-detectors[1].x)<0.01)
-  refuse(fail,path,'Two passive detector planes must have at least 0.01 mm independent separation.');
 }
