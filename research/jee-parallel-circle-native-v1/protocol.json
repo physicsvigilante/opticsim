@@ -1,0 +1,130 @@
+{
+  "format": "opticsim-jee-parallel-circle-native-feasibility-v1",
+  "status": "pre-execution-frozen-test-only-protocol",
+  "baselineMain": "59b485d14ac28ca4ee97acc754a4cd207a7d33f1",
+  "pinnedPhyDemo": "811f508d2b070898c241a568b0c167dcb8645251",
+  "sourceScope": "Synthetic 2D meridional circular dielectric motivated by JEE J16 sphere/bubble; all radius/index/beam/detector controls added openly. J15 single-surface power not solved by a two-boundary circular region. Original Solutions never read.",
+  "qualification": "Not canonical authoring; raw native-only, unqualified; no production schema extension or preserved public results.",
+  "numerics": {
+    "rayDensity": 0.2,
+    "sourceBrightness": 0.08,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000,
+    "maxEvidenceEvents": 256,
+    "nearTangentDistanceMm": 0.1,
+    "normalIncidenceDotFloor": 1e-8
+  },
+  "circle": {
+    "x": 0,
+    "y": 0,
+    "radius": 100,
+    "insideIndex": 1.5,
+    "outsideIndex": 1,
+    "partialReflection": false
+  },
+  "beam": {
+    "x": -160,
+    "y": 0,
+    "width": 20,
+    "directionDeg": 0
+  },
+  "detector": {
+    "x": 260,
+    "y": 0,
+    "length": 200,
+    "orientationDeg": 90
+  },
+  "cases": [
+    {
+      "id": "baseline",
+      "family": "core"
+    },
+    {
+      "id": "translated",
+      "family": "geometry",
+      "shift": {
+        "x": 70,
+        "y": -35
+      }
+    },
+    {
+      "id": "right-to-left",
+      "family": "reverse",
+      "beamX": 160,
+      "directionDeg": 180,
+      "detectorX": -260
+    },
+    {
+      "id": "radius80",
+      "family": "geometry",
+      "radius": 80
+    },
+    {
+      "id": "index13",
+      "family": "index",
+      "insideIndex": 1.3
+    },
+    {
+      "id": "index20",
+      "family": "index",
+      "insideIndex": 2
+    },
+    {
+      "id": "density04",
+      "family": "sampling",
+      "rayDensity": 0.4
+    },
+    {
+      "id": "width40",
+      "family": "sampling",
+      "beamWidth": 40
+    },
+    {
+      "id": "circle-miss",
+      "family": "miss",
+      "beamY": 150,
+      "detectorY": 150
+    },
+    {
+      "id": "near-tangent",
+      "family": "numerical-risk",
+      "beamY": 97.495
+    },
+    {
+      "id": "exact-tangent",
+      "family": "numerical-risk",
+      "beamY": 97.5
+    },
+    {
+      "id": "interior-source",
+      "family": "inside",
+      "beamX": 0,
+      "beamY": 0
+    },
+    {
+      "id": "interior-tir",
+      "family": "inside-tir",
+      "beamX": 0,
+      "beamY": 80
+    },
+    {
+      "id": "fresnel-on",
+      "family": "fresnel",
+      "partialReflection": true
+    },
+    {
+      "id": "depth-zero",
+      "family": "limit",
+      "maxRayDepth": 0
+    },
+    {
+      "id": "processed-stop",
+      "family": "limit",
+      "processedRayLimit": 1
+    },
+    {
+      "id": "free-space",
+      "family": "no-glass"
+    }
+  ]
+}
