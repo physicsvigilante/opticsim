@@ -1,0 +1,7 @@
+{
+  "format": "opticsim-plane-mirror-formal-orbit-v1",
+  "kind": "equilateral-three-mirror-orbit-structure",
+  "model": "ideal-infinite-supporting-line-specular-orbit",
+  "topology": "three-equal-sides-enclosing-object",
+  "reflectionPolicy": "unlimited-ideal-reflections"
+}

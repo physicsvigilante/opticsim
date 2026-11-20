@@ -1,0 +1,26 @@
+{
+  "format": "opticsim-plane-mirror-formal-orbit-v1",
+  "kind": "equilateral-three-mirror-bounded-formal-points",
+  "model": "ideal-infinite-supporting-line-specular-orbit",
+  "topology": "three-equal-sides-enclosing-object",
+  "reflectionPolicy": "unlimited-ideal-reflections",
+  "vertices": [
+    {
+      "x": 0,
+      "y": 70
+    },
+    {
+      "x": 0,
+      "y": -70
+    },
+    {
+      "x": 121.2435565298214,
+      "y": 0
+    }
+  ],
+  "source": {
+    "x": 35,
+    "y": 7
+  },
+  "maxReflectionOrder": 5
+}
