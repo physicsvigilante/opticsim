@@ -72,7 +72,7 @@ function execute(c){
    ...(result?.newRays||[])
   ].map(direction);
   seen.push({
-   faceId:hit.faceId,invalid:hit.invalid,from:hit.from,
+   faceId:hit.faceId,invalid:hit.invalid===true,from:hit.from,
    nativePointYUp:{x:nativePoint.x,y:-nativePoint.y},
    incoming,outgoing,normal:hit.normal,incidentIndex:hit.incidentIndex,
    destinationIndex:hit.destinationIndex,
