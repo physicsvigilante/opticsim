@@ -1,0 +1,9 @@
+{
+  "format": "opticsim-two-source-lens-coincidence-v1",
+  "kind": "coincident-image-lens-placement",
+  "model": "ideal-thin-lens-paraxial",
+  "coordinateConvention": "source-1-at-zero-source-2-at-positive-separation",
+  "lengthUnit": "cm",
+  "sourceSeparation": 24,
+  "focalLength": 9
+}
