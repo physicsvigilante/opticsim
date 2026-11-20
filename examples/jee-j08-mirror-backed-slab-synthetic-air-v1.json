@@ -1,0 +1,12 @@
+{
+  "format": "opticsim-mirror-backed-slab-displacement-v1",
+  "kind": "slab-return-surface-separation",
+  "model": "homogeneous-parallel-slab-ideal-backing-mirror",
+  "branchConvention": "entry-refraction-mirror-return-exit-refraction",
+  "coordinateConvention": "normal-into-plate-positive-x-upward-incident",
+  "lengthUnit": "cm",
+  "thickness": 6,
+  "insideIndex": 1.8,
+  "incidentAngleDeg": 60,
+  "outsideIndex": 1
+}

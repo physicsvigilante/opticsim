@@ -1,0 +1,137 @@
+{
+  "format": "opticsim-jee-j08-mirror-backed-slab-frozen-protocol-v1",
+  "status": "frozen-before-implementation-and-execution",
+  "productionBaseline": "cf0366d2b46a0cb88e97bc8d9ec94a29e556ed83",
+  "nativePin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "source": {
+    "caseId": "J08",
+    "path": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/006.png",
+    "sourceAudit": "held PR165 evaluation/jee-post164-coverage-v1/source-review.json, commit 6a72bd67e58e9a3fd94a6bf33d88d1f20295b4c2",
+    "originalArchiveSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+    "statedFacts": [
+      "Plane-parallel glass plate refractive index 1.8",
+      "Plate thickness 6 cm",
+      "Plate rests on a plane mirror",
+      "Incident ray at 60 degrees to upper-face normal",
+      "Find separation between entrance and final exit point after mirror reflection"
+    ],
+    "notStated": [
+      "Numeric exterior refractive index",
+      "Finite mirror and plate widths",
+      "Source location or brightness",
+      "Detector location or sampling/observation policy"
+    ],
+    "solutionsRead": false,
+    "noOriginalNumericSolvedRate": true
+  },
+  "physics": {
+    "model": "planar-isotropic-homogeneous-plate-with-coincident-back-mirror",
+    "assumedBranch": "single-entry-transmission-interior-specular-mirror-return-exit-transmission",
+    "normalConvention": "physical plate upper face x=0, positive +x toward back mirror at x=t; external incident direction along +x at angle +i to x",
+    "equations": [
+      "n0*sin(i)=n1*sin(r)",
+      "entry-to-exit lateral surface displacement D=2*t*tan(r)",
+      "D=2*t*n0*sin(i)/sqrt(n1^2-n0^2*sin(i)^2) for strictly propagating entry",
+      "emergent ray direction from +x is 180-i in y-up for an upward-inclined entering ray"
+    ],
+    "reflectivity": "Ideal specular mirror. Fresnel partial reflection disabled explicitly for synthetic native illustration; native TIR remains active.",
+    "unknownExterior": "Numeric D is needs-information until outsideIndex is explicitly supplied, never default air."
+  },
+  "frozenCases": [
+    {
+      "id": "J08-source-only-missing-index",
+      "insideIndex": 1.8,
+      "thickness": 6,
+      "unit": "cm",
+      "incidentAngleDeg": 60,
+      "expected": "needs-information, no numeric displacement"
+    },
+    {
+      "id": "J08-explicit-exterior-1",
+      "outsideIndex": 1,
+      "insideIndex": 1.8,
+      "thickness": 6,
+      "unit": "cm",
+      "incidentAngleDeg": 60,
+      "expectedDisplacementCm": 6.585855599381421,
+      "expected": "conditional"
+    },
+    {
+      "id": "equal-index-normal",
+      "outsideIndex": 1.8,
+      "insideIndex": 1.8,
+      "thickness": 6,
+      "unit": "cm",
+      "incidentAngleDeg": 0,
+      "expectedDisplacementCm": 0,
+      "expected": "conditional"
+    },
+    {
+      "id": "high-to-low-entrance-TIR",
+      "outsideIndex": 1.8,
+      "insideIndex": 1,
+      "thickness": 6,
+      "unit": "cm",
+      "incidentAngleDeg": 60,
+      "expected": "unavailable; no forward plate ray"
+    },
+    {
+      "id": "near-critical",
+      "outsideIndex": 1.8,
+      "insideIndex": 1,
+      "thickness": 6,
+      "unit": "cm",
+      "incidentAngleDeg": 33.74898859588859,
+      "expected": "numerically-indeterminate"
+    },
+    {
+      "id": "index-1point33",
+      "outsideIndex": 1.33,
+      "insideIndex": 1.8,
+      "thickness": 6,
+      "unit": "cm",
+      "incidentAngleDeg": 60,
+      "expected": "conditional"
+    },
+    {
+      "id": "thickness-twice",
+      "outsideIndex": 1,
+      "insideIndex": 1.8,
+      "thickness": 12,
+      "unit": "cm",
+      "incidentAngleDeg": 60,
+      "expected": "double displacement"
+    }
+  ],
+  "nativeResearch": {
+    "usingExistingVersion": 5,
+    "objects": [
+      "SingleRay",
+      "PlaneGlass",
+      "Mirror",
+      "Detector"
+    ],
+    "physicallySyntheticChoices": {
+      "exteriorIndex": 1,
+      "glassIndex": 1.8,
+      "thicknessMm": 60,
+      "mirrorVerticalLengthMm": 400,
+      "sourceBrightness": 0.08,
+      "sourceXmm": -100,
+      "detectorXmm": -10,
+      "incidentAngleDeg": 60,
+      "partialReflection": false
+    },
+    "expectedNativeEvents": [
+      "entry PlaneGlass",
+      "Mirror",
+      "exit PlaneGlass"
+    ],
+    "actualRouteMustBeObserved": true,
+    "expectedRealEntryExitSeparationMm": 65.85855599381419,
+    "fullFresnelUnqualifiedUnlessComplete": true,
+    "depthStopUnqualified": true,
+    "nearCriticalWithheld": true
+  },
+  "reviewPolicy": "Only final full combined analytical + native test-only research exact source gets one focused independent physics/code/evidence review; old v5 and J02 core physics not re-reviewed. Main protected until review."
+}
