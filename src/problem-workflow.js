@@ -6,6 +6,7 @@ import {analyzeTwoFaceQuery,twoFaceCapabilities,TWO_FACE_FACTS,TWO_FACE_QUERY} f
 import {analyzePowerQuery,powerCapabilities,POWER_FACTS,POWER_QUERY} from './coincident-optical-power.js';
 import {analyzeFocus,focusCapabilities,FOCUS_FACTS,FOCUS_QUERY} from './separated-lens-focus.js';
 import {analyzeSurfaceFocus,surfaceFocusCapabilities,SURFACE_FOCUS_FACTS,SURFACE_FOCUS_QUERY} from './two-surface-focus.js';
+import {analyzeMirrorOutline,mirrorOutlineCapabilities,OUTLINE_FACTS,OUTLINE_QUERY} from './mirror-image-outline.js';
 import {analyzeMirrorPlanePort,mirrorPlanePortCapabilities,PORT_FACTS,PORT_QUERY} from './mirror-plane-port.js';
 import {analyzeSlabMirror,slabMirrorCapabilities,SLAB_MIRROR_FACTS,SLAB_MIRROR_QUERY} from './slab-mirror-conjugate.js';
 import {analyzeOffsetFocus,offsetFocusCapabilities,OFFSET_FACTS,OFFSET_QUERY} from './offset-pair-focus.js';
@@ -27,6 +28,7 @@ const prismKinds=new Set(prismAngleCapabilities().kinds);
 const twoFaceKinds=new Set(twoFaceCapabilities().kinds);
 const reducedAngularAndPowerRoutes=new Map();
 for(const [kinds,format,analyze,missing] of [
+  [mirrorOutlineCapabilities().kinds,OUTLINE_QUERY,analyzeMirrorOutline,'Explicit ordered vertices or axis-based trapezoid facts required.'],
   [mirrorPlanePortCapabilities().kinds,PORT_QUERY,analyzeMirrorPlanePort,'Explicit axial source, exit plane and concave mirror facts required.'],
   [prismLimitCapabilities().kinds,PRISM_LIMIT_QUERY,analyzePrismLimit,'Explicit common exterior, apex and grazing or material facts required.'],
   [slabMirrorCapabilities().kinds,SLAB_MIRROR_QUERY,analyzeSlabMirror,'Explicit curved mirror, object and slab facts required.'],
@@ -47,6 +49,7 @@ const mirrorKinds=new Set(mirrorAngularCapabilities().kinds);
 const observableKinds=observableCapabilities().kinds;
 // References the live fact/query formats, not a second physics validator.
 const factContracts=Object.freeze({
+ [OUTLINE_QUERY]:[OUTLINE_FACTS],
  [PORT_QUERY]:[PORT_FACTS],
  [PRISM_LIMIT_QUERY]:[PRISM_LIMIT_FACTS],
  [SLAB_MIRROR_QUERY]:[SLAB_MIRROR_FACTS],
@@ -65,6 +68,7 @@ const factContracts=Object.freeze({
  [MIRROR_QUERY_FORMAT]:[MIRROR_FACTS_FORMAT]
 });
 const requestKindRegistry=()=>({
+ ...Object.fromEntries(mirrorOutlineCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:OUTLINE_QUERY}])),
  ...Object.fromEntries(mirrorPlanePortCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:PORT_QUERY}])),
  ...Object.fromEntries(prismLimitCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:PRISM_LIMIT_QUERY}])),
  ...Object.fromEntries(slabMirrorCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:SLAB_MIRROR_QUERY}])),
@@ -95,6 +99,7 @@ export function problemWorkflowCapabilities(){
     coincidentOpticalPower:powerCapabilities(),
     separatedLensFocus:focusCapabilities(),
     twoSurfaceFocus:surfaceFocusCapabilities(),
+    mirrorOutline:mirrorOutlineCapabilities(),
     mirrorPlanePort:mirrorPlanePortCapabilities(),
     prismAngularLimits:prismLimitCapabilities(),
     slabMirrorConjugate:slabMirrorCapabilities(),
