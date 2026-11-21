@@ -148,3 +148,25 @@ test('bounded replay preserves baseline, rejects invalid branches and refuses sa
  assert.equal(report.educationalUsefulness,'not-assessed-by-teachers');
  await assert.rejects(runExploration({outputPath:out}),/exist|fresh|empty/i);
 });
+
+test('Beam comparisons bind spatial illumination and require observed emissions',async()=>{
+ const fixture=JSON.parse(read('examples/jee-parallel-lens-v19.json'));
+ fixture.physical.components=fixture.physical.components.filter(c=>c.type!=='finite-aperture');
+ const doc=prepareScene(fixture.physical).document;
+ const requests=[{id:'power',kind:'detector-signed-power',componentId:'D1'}];
+ const base=await evidence(doc,requests);
+ const compare=async candidate=>(await compareScenario(base,candidate)).entries[0];
+ assert.equal((await compare(base)).comparison,'sampled-native-comparison');
+ for(const [patch,count,power] of [[{brightness:.16},8,-6.4],[{width:20},4,-1.6],[{y:1},8,-3.2]]){
+  const changed=structuredClone(doc);
+  Object.assign(changed.physics.components.find(c=>c.id==='B1').parameters,patch);
+  const variant=await evidence(changed,requests),entry=await compare(variant);
+  assert.equal(variant.execution.summary.observations.emissionsById.B1.emitted,count);
+  assert.ok(Math.abs(variant.results.results[0].value-power)<1e-10);
+  assert.equal(entry.conditions.compatibleSourceEmission,false);
+  assert.equal(entry.comparison,'not-comparable');
+ }
+ const missing=structuredClone(base);
+ delete missing.execution.summary.observations.emissionsById.B1;
+ assert.equal((await compare(missing)).conditions.unclippedWarningFreeSamples,false);
+});

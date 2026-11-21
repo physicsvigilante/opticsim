@@ -58,7 +58,7 @@ function assertNativeMatch(doc){
 test('B1 exact 50-mm +1-degree density-.29 discrepancy has 15 pinned rays, never 14 admission checks',()=>{
  const doc=candidate();
  const p=doc.physics.components.find(x=>x.id==='B1').parameters;
- assert.equal(parallelBeamSamples(p,.29).length,14,'Legacy reviewed v19 approximation is unchanged');
+ assert.equal(parallelBeamSamples(p,.29).length,0,'All legacy admissions withhold ambiguous sample counts');
  const {admitted,actual}=assertNativeMatch(doc);
  assert.equal(actual.length,15,'Pinned Beam actually emits the fifteenth sample');
  assert.equal(admitted.samples.length,15,'All actual native samples must be represented in v26 witness');
@@ -157,5 +157,23 @@ test('v26 stable off-threshold 14/15 sampled profiles match pinned Beam counts a
   assert.equal(sim.totalTruncation,0);
   assert.equal(sim.totalUndefinedBehavior,0);
   assert.deepEqual(counters,{glass:2*wanted,mirror:wanted,detector:2*wanted,source:wanted});
+ }
+});
+
+test('legacy lens admission withholds the actual thirteenth pinned emission on the lower rim',()=>{
+ const fixture=JSON.parse(readFileSync(new URL('../examples/jee-parallel-lens-v19.json',import.meta.url)));
+ fixture.physical.components=fixture.physical.components.filter(c=>c.type!=='finite-aperture');
+ const doc=prepareScene(fixture.physical).document;
+ const beam=doc.physics.components.find(c=>c.id==='B1').parameters;
+ Object.assign(beam,{width:49.99999999999999,y:-10});
+ doc.physics.components.find(c=>c.id==='L1').parameters.apertureHeight=70;
+ doc.simulation.rayDensity=.25;
+ const points=actualPinnedEmission(doc).points;
+ assert.equal(points.length,13);
+ assert.equal(points.at(-1).y,-35);
+ assert.throws(()=>validate(doc),{code:'UNSUPPORTED_SCOPE'});
+ for(const density of [.24999,.25001]){
+  doc.simulation.rayDensity=density;
+  assert.deepEqual(parallelBeamSamples(beam,density),actualPinnedEmission(doc).points);
  }
 });

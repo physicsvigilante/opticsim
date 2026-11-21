@@ -243,3 +243,24 @@ export function compositionCapacity(type){
   return {min:Math.min(...definitions.map(p=>p.counts[type]?.min||0)),
     max:Math.max(...definitions.map(p=>p.counts[type]?.max||0))};
 }
+
+const guidanceByProfile=freeze({
+ 'native-parallel-planar-mirror-tracing@26':{
+  label:'Finite parallel Beam · planar interface and return mirror',
+  geometry:'Place one finite Beam before a planar dielectric interface and a finite plane mirror beyond it.',
+  scope:'PhyDemo traces refraction and reflection. Detector readings describe discrete sampled encounters. Full Fresnel branching is unsupported.'
+ },
+ 'native-parallel-slab-mirror-tracing@27':{
+  label:'Finite parallel Beam · dielectric slab and return mirror',
+  geometry:'Separate the plane mirror from the rear slab surface by at least 1 mm. At most one passive detector is supported.',
+  scope:'PhyDemo traces both slab faces and the mirror. Readings require complete native evidence. Full Fresnel branching is unsupported.'
+ },
+ 'native-post-lens-aperture-tracing@28':{
+  label:'Finite parallel Beam · ideal lens and downstream aperture',
+  geometry:'Place the finite aperture downstream of the ideal lens. Specify the opening and both opaque arms.',
+  scope:'Native samples can pass the opening or strike an arm. Counts describe sampled rays.'
+ }
+});
+export function compositionGuidance(model,version){
+ return guidanceByProfile[compositionProfile(model,version)?.id];
+}

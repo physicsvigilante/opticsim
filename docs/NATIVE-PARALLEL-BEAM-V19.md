@@ -59,3 +59,5 @@ No JEE textbook answer, original interpretation fidelity, instrument magnificati
 Before any owner release decision, verify real pinned-native tests and the ordinary public problem workflow, actual real-Chrome physical edit/export/reopen and invalidation, preserved historical save/version behavior, exact source tree identity, and separately authored second-context physics review. Missing or ambiguous information must remain explicit. Preserve old review reports and original frozen source hashes.
 
 **Separate owner authorization, source CI and independent physical review are distinct.** No automatic merge of this new candidate or the held PR #107/#110/#113/#116/#118/#120/#122/#125/#126 is implied by this document.
+
+The pre-transfer audit corrected the shared v19–v23 admission sampler. It now uses the compiled y-down endpoints, pinned Beam operation order and the same 1e-10 half-integer exclusion as v26. Earlier saves near this count boundary can now fail admission. The native emitter and engine pin are unchanged.

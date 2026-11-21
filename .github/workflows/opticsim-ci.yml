@@ -32,6 +32,8 @@ jobs:
       - run: npm run setup
       - run: npm test
       - run: npm run build
+      - name: Verify deferred example loads and refractive mirror guidance in Chrome
+        run: node scripts/pre-transfer-audit-browser.mjs
       - name: Package isolated browser demo (no source/test bundles)
         run: node scripts/pack-demo.mjs
       - name: Native finite opaque stop and immutable position sweep

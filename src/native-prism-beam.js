@@ -49,7 +49,7 @@ export function validateNativePrismBeam(components,model,rayDensity,mirrorEndpoi
    refuse(fail,'$.simulation.rayDensity','Native density .048-1 and brightness <= density are mandatory; no saturated native samples.');
  const samples=parallelBeamSamples(beam,rayDensity);
  if(samples.length<1||samples.length>100)
-   refuse(fail,path,'Native Beam must emit 1-100 deterministic spatial samples.');
+   refuse(fail,path,'Native Beam requires 1–100 samples and a sample factor clear of a half-integer threshold.');
  // Only the ORIGINAL straight sample paths are screened. We do NOT
  // calculate outgoing Snell, TIR, or a prescribed route in admission.
  // Subsequent actual onRayIncident vertex ambiguity is rejected by the

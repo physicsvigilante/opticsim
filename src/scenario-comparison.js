@@ -6,7 +6,7 @@ import {evaluateObservables} from './observables.js';
 import {canonicalJSON} from './qualified-utils.js';
 const same=(a,b)=>canonicalJSON(a)===canonicalJSON(b);
 const accepted=new Set(['available','qualified','conditional']);
-const sources=d=>d.physics.components.filter(c=>c.type==='point-source');
+const sources=d=>d.physics.components.filter(c=>c.type==='point-source'||c.type==='parallel-beam');
 async function checked(input){
  try{
   const bundle=await verifyQualifiedBundle(input.bundle);
@@ -27,12 +27,13 @@ async function checked(input){
 }
 function clearSampling(e){
  if(!e.ok||!Array.isArray(e.summary.native.warnings)||e.summary.native.warnings.length)return false;
- return sources(e.doc).every(s=>{
+ const emitters=sources(e.doc);
+ return emitters.length>0&&emitters.every(s=>{
   const v=e.summary.observations?.emissionsById?.[s.id];
-  return v&&Number.isFinite(v.emitted)&&v.emitted>=0&&v.brightnessScale===1;
+  return v&&Number.isSafeInteger(v.emitted)&&v.emitted>0&&v.brightnessScale===1;
  });
 }
-function emissionPolicy(e){return sources(e.doc).map(c=>({id:c.id,brightness:c.parameters.brightness,emission:c.emission})).sort((a,b)=>a.id.localeCompare(b.id));}
+function emissionPolicy(e){return sources(e.doc).map(c=>c.type==='parallel-beam'?{id:c.id,type:c.type,parameters:c.parameters}:{id:c.id,type:c.type,brightness:c.parameters.brightness,emission:c.emission}).sort((a,b)=>a.id.localeCompare(b.id));}
 function interpretationScope(e){return {origin:e.bundle.qualification.origin,
  assumptions:e.bundle.qualification.assumptions,
  source:e.bundle.qualification.interpretation?.source??null,

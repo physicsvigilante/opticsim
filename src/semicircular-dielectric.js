@@ -71,7 +71,7 @@ export function validateSemicircularBeam(components,model,rayDensity,mirrorEndpo
    unsupported(fail,'$.simulation.rayDensity','Density must be .048-1 and brightness must not exceed density.');
  const samples=parallelBeamSamples(beam,rayDensity);
  if(samples.length<1||samples.length>100)
-   unsupported(fail,path,'Only 1-100 deterministic native emitted samples are admitted.');
+   unsupported(fail,path,'Native Beam requires 1–100 samples and a sample factor clear of a half-integer threshold.');
  const slope=Math.tan(beam.directionDeg*Math.PI/180);
  for(const source of samples){
    // ONLY the un-refracted initial line vs authored flat face, never an

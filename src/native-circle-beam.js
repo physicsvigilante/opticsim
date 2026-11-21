@@ -68,7 +68,7 @@ export function validateCircleBeam(components,model,rayDensity,mirrorEndpoints,f
    refuse(fail,'$.simulation.rayDensity','Sampling density must be .048–1 and Beam brightness <= density.');
  const samples=parallelBeamSamples(b,rayDensity);
  if(!samples.length||samples.length>100)
-   refuse(fail,path,'Only 1–100 actual native deterministic Beam emissions are admitted.');
+   refuse(fail,path,'Native Beam requires 1–100 samples and a sample factor clear of a half-integer threshold.');
  for(const s of samples){
    const tangentSine=Math.abs(s.y-c.y)/c.radius;
    // Necessary *first-surface* Snell admission only, not predicted
