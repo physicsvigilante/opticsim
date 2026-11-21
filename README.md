@@ -1,5 +1,7 @@
 # Ray Optics 2D
 
+Compare how a common lens shape changes focal length and bending direction across materials and media using the [immersed material-lens query](docs/IMMERSED-MATERIAL-LENSES.md).
+
 Measure the sampled transverse extent of a parallel beam on a hemisphere’s flat face with the [curved-entry Beam contract](docs/CURVED-ENTRY-BEAM.md).
 
 Explore refraction and total internal reflection from one directional point source with the [schema-v29 fan contract and worked example](docs/REFRACTIVE-FAN.md).

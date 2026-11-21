@@ -1,0 +1,51 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-material-lens-facts-v1",
+    "model": "thin-lenses-of-identical-shape",
+    "shape": {
+      "kind": "positive-curvature-factor"
+    },
+    "materials": [
+      {
+        "id": "glass1",
+        "index": 1.5
+      },
+      {
+        "id": "glass2",
+        "index": 1.7
+      }
+    ],
+    "media": [
+      {
+        "id": "air",
+        "index": 1
+      },
+      {
+        "id": "liquid",
+        "index": 1.6
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "comparison",
+      "kind": "compare-same-shape-material-lenses"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Compare the first and second focal lengths in air, and classify each immersed lens for an off-axis parallel incident ray.",
+    "stated": [
+      "Identical double-convex lens shapes, glass indices 1.5 and 1.7, liquid index 1.6."
+    ],
+    "derived": [
+      "A double-convex lens has positive curvature factor in the positive-x convention."
+    ],
+    "assumptions": [
+      "Paraxial thin lenses with a homogeneous common exterior on both sides. Unit-index air is assumed for part (a)."
+    ],
+    "unknowns": [
+      "Radii, thickness and absolute focal lengths."
+    ]
+  }
+}

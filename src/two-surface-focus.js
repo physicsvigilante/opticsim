@@ -20,7 +20,9 @@ const tiny=(x,scale)=>x!==0&&Math.abs(x)<=1e-10*scale;
 const tolerance=1e-10;
 // The bounded radii, thicknesses and indices are integer multiples of 2^-64
 // in their authored units. Exact polynomials separate zeros from rounded zeros.
-function evaluate(n0,n,n2,r1,r2,d){
+// Callers validate their material and length domains first. Zero thickness
+// is used only for a declared analytical thin element.
+export function paraxialSurfacePair(n0,n,n2,r1,r2,d){
   const p1=(n-n0)/r1,p2=(n2-n)/r2;
   const bend=d*p1/n,a=1-bend,p=p1+a*p2;
   const [i0,i,i2,front,rear,thickness]=[n0,n,n2,r1,r2,d].map(x=>BigInt(x*2**64));
@@ -45,7 +47,7 @@ function sphere(g){
   if(g.materialBasis!=='relative-index')fail('UNSUPPORTED_SCOPE','Declare a common exterior relative-index basis.');
   const m=g.coreToExteriorRatio;
   if(!Number.isFinite(m)||m<.25||m>4)fail('INVALID_SURFACE_FACTS','Relative index must be in [0.25,4].');
-  const s=evaluate(1,m,1,1,-1,2);
+  const s=paraxialSurfacePair(1,m,1,1,-1,2);
   if(!s)return uncertain();
   return {status:'conditional',value:{state:s.state,signedDistanceFromRearPoleOverR:s.back,
     signedDistanceFromCentreOverR:s.back===null?null:1+s.back}};
@@ -64,7 +66,7 @@ function lens(g){
   if(g.front.id===g.rear.id)fail('INVALID_SURFACE_FACTS','Use distinct face IDs.');
   for(const length of [g.axialThickness,Math.abs(g.front.signedRadius),Math.abs(g.rear.signedRadius)])
     if(!Number.isFinite(length)||length*scale<.001||length*scale>10)fail('INVALID_SURFACE_FACTS','Thickness and radius magnitudes must span 1–10000 mm.');
-  const s=evaluate(g.entranceIndex,g.coreIndex,g.exitIndex,g.front.signedRadius,g.rear.signedRadius,g.axialThickness);
+  const s=paraxialSurfacePair(g.entranceIndex,g.coreIndex,g.exitIndex,g.front.signedRadius,g.rear.signedRadius,g.axialThickness);
   if(!s||Math.abs(s.back)*scale>1e6)return uncertain();
   return {status:'conditional',value:{state:s.state,signedBackFocalDistance:s.back,lengthUnit:g.lengthUnit,
     referenceFaceId:g.rear.id,entranceFaceId:g.front.id,systemPowerD:s.power/scale}};
