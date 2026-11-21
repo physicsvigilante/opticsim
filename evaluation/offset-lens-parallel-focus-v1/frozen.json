@@ -1,0 +1,15 @@
+{
+  "case": "A35",
+  "problem": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/027.png",
+  "sha256": "85c88a0d9215a19d8207d812963dcbb56b0daa207621267f46b23fd493076b47",
+  "pin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "facts": "Two equal thin positive lenses of focal length f, separation 3f, second axis a signed displacement d above the first, d much smaller than f. Parallel horizontal input from the left. Origin at the first lens centre. Asks both x and y of the final focus.",
+  "scope": "Two distinct parallel thin lenses. With q=f2/f1, k=gap/f1 and f1 positive, compute a conditional affine paraxial focus for rays encountering both elements. Report x as a coefficient of f1 and y as a coefficient of the signed axis offset; no absolute f, offset, aperture, or native image may be invented.",
+  "predictions": [
+    "A35 k=3, q=1 gives x=5f1, y=2d. For the already released v20 numeric instance f1=200 mm and d=2 mm, native detector positions and directions extrapolate to (1000,4) mm.",
+    "For k=3, q=-1 the exit rays extrapolate upstream from lens 2 to x=(7/3)f1, y=(2/3)d. Check actual native outgoing directions; this is a virtual conjugate.",
+    "For k=1.5, q=0.5 the outgoing bundle is collimated; no finite x or y. Near cancellation without an exact afocal identity is withheld.",
+    "At k=1 the bundle crosses the front axis in the second lens plane. Finite native misses can split the bundle, so results are conditional on encounter with both lenses."
+  ],
+  "priorEvidence": "Preserve the v20 native controls and initial frozen expectations. Reuse test/jee-parallel-two-lens-v20.test.mjs and its public v20 example. Add native controls only for outputs not established there. Keep finite native lens separation and historical authoring contracts."
+}

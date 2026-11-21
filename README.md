@@ -1,5 +1,7 @@
 # Ray Optics 2D
 
+For the signed collimated focus of two transversely displaced thin lenses, use the [offset-pair focus query](docs/OFFSET-PAIR-FOCUS.md).
+
 Compare how a common lens shape changes focal length and bending direction across materials and media using the [immersed material-lens query](docs/IMMERSED-MATERIAL-LENSES.md).
 
 Measure the sampled transverse extent of a parallel beam on a hemisphere’s flat face with the [curved-entry Beam contract](docs/CURVED-ENTRY-BEAM.md).
