@@ -48,6 +48,16 @@ function eyeBAffine(u,e,first,second){
     slope:multiply(after,before)};
 }
 
+function hasVirtualSeparation(object,first,second){
+  // The eyepiece input B and output D must have the same sign. Their
+  // numerators reduce to b and second*(first-object)-b, respectively.
+  const slope=subtract(first,object),intercept=multiply(object,first);
+  const atMinimum=add(intercept,slope),atMaximum=add(intercept,multiply(fromBinary64(10000),slope));
+  const boundary=multiply(second,slope);
+  if(slope.n>0n)return compare(atMinimum,boundary)<0;
+  return slope.n<0n&&compare(atMinimum,boundary)>0&&atMaximum.n<0n;
+}
+
 function swappedSeparation(u,e,spacing,objective,eyepiece){
   const [object,eye,separation,first,second]=[u,e,spacing,objective,eyepiece].map(fromBinary64);
   const before=eyeBAffine(object,eye,first,second),after=eyeBAffine(object,eye,second,first);
@@ -55,9 +65,13 @@ function swappedSeparation(u,e,spacing,objective,eyepiece){
   const initialB=add(before.intercept,multiply(separation,before.slope));
   const numerator=subtract(multiply(total,after.intercept),multiply(initialB,objectAndEye));
   const denominator=subtract(initialB,multiply(total,after.slope));
-  if(denominator.n===0n)return numerator.n===0n?
-    failure('unavailable','SEPARATION_NOT_IDENTIFIED','The equal-gain condition does not select a unique separation.'):
-    failure('unavailable','NO_EQUAL_GAIN_SEPARATION','The two affine optical relations admit no equal-gain separation.');
+  if(denominator.n===0n){
+    if(numerator.n!==0n)
+      return failure('unavailable','NO_EQUAL_GAIN_SEPARATION','The two affine optical relations admit no equal-gain separation.');
+    return hasVirtualSeparation(object,second,first)?
+      failure('unavailable','SEPARATION_NOT_IDENTIFIED','More than one separated virtual-image layout gives that signed gain.'):
+      failure('unavailable','NO_FINITE_VIRTUAL_SWAP','No separated layout satisfies both equal signed gain and a finite virtual image.');
+  }
   const candidate=divide(numerator,denominator);
   if(compare(candidate,fromBinary64(1))<0||compare(candidate,fromBinary64(10000))>0)
     return failure('unavailable','SWAPPED_SEPARATION_OUTSIDE_SCOPE',
