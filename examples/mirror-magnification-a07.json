@@ -1,0 +1,32 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-mirror-magnification-facts-v1",
+    "model": "paraxial-mirror-real-object-inverse",
+    "lengthUnit": "cm",
+    "focalLength": 10,
+    "target": {
+      "kind": "magnitude",
+      "value": 4
+    }
+  },
+  "requests": [
+    {
+      "id": "placements",
+      "kind": "mirror-object-distance-from-magnification"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Find every real-object distance yielding the stated fourfold image size.",
+    "stated": [
+      "Concave mirror of focal length 10 cm and image size four times the object size."
+    ],
+    "derived": [],
+    "assumptions": [
+      "Use the first paraxial mirror conjugate and a real object in front of the mirror."
+    ],
+    "unknowns": [
+      "Image orientation and original object height."
+    ]
+  }
+}
