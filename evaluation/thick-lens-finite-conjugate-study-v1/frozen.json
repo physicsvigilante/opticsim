@@ -1,0 +1,24 @@
+{
+  "format": "opticsim-thick-lens-finite-conjugate-frozen-v1",
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "relationship": "Extend the A29 collimated two-surface work to finite source positions and separated thick elements on an explicit common axis.",
+  "model": "First-order optics in the reduced slope n times dy/dx, with a translation d/n and signed surface power (n_out-n_in)/R.",
+  "lenses": {
+    "L1": {"x": 0, "y": 0, "apertureHeight": 30, "centerThickness": 20, "frontRadius": 120, "backRadius": 80, "insideIndex": 1.5, "outsideIndex": 1, "partialReflection": false},
+    "L2": {"x": 110, "y": 0, "apertureHeight": 25, "centerThickness": 15, "frontRadius": 70, "backRadius": 90, "insideIndex": 1.6, "outsideIndex": 1, "partialReflection": false}
+  },
+  "trials": [
+    {"id":"single-real","lensIds":["L1"],"objectDistanceFromFrontMm":180,"rearPoleMm":10,"signedImageDistanceMm":204.65116279069764,"magnification":-1.1162790697674418},
+    {"id":"single-virtual","lensIds":["L1"],"objectDistanceFromFrontMm":30,"rearPoleMm":10,"signedImageDistanceMm":-67.79661016949153,"magnification":1.6271186440677967},
+    {"id":"separated-doublet","lensIds":["L1","L2"],"objectDistanceFromFrontMm":180,"rearPoleMm":117.5,"signedImageDistanceMm":36.25286507359877,"magnification":-0.4315974967987444}
+  ],
+  "nativeProtocol": {
+    "objectHeightsMm": [-0.2, 0.2],
+    "slopes": [-0.001, 0, 0.001],
+    "detectorGapFromRearMm": 25,
+    "maxAxialResidualMm": 0.08,
+    "maxTransverseResidualMm": 0.001,
+    "method": "Separate schema-v15 SingleRay trials through native SphericalLens objects and one real downstream detector. Require actual clear front and rear arc encounters in each element, then one detector crossing. Measure finite line intersections from the actual outgoing directions. The virtual case uses backward mathematical extrapolation of the observed rays."
+  },
+  "scope": "Synthetic explicit geometry. No inferred source dimensions, continuous spot-size or native image-detection claim. Public authoring remains unchanged during this study."
+}
