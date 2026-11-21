@@ -1,0 +1,31 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-perpendicular-dielectric-facts-v1",
+    "model": "perpendicular-faces-meridional",
+    "entryFaceId": "AB",
+    "wallFaceId": "BC",
+    "materials": {
+      "basis": "symbolic-common-exterior"
+    }
+  },
+  "requests": [
+    {
+      "id": "adjacentExit",
+      "kind": "grazing-entry-emergence-limit"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Limiting emergence angle at the adjacent face and greatest allowed relative index.",
+    "stated": [
+      "A17. A grazing entrance and emergence at the adjacent face of a square glass section."
+    ],
+    "derived": [],
+    "assumptions": [
+      "One common exterior medium. The symbolic m is the core-to-exterior ratio."
+    ],
+    "unknowns": [
+      "Absolute exterior index and finite source geometry."
+    ]
+  }
+}
