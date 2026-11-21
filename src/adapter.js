@@ -1,3 +1,4 @@
+import {curvedEntryBeamAudit} from './curved-entry-beam.js';
 import {installRefractiveFanAudit} from './refractive-fan.js';
 import {installPostLensAudit} from './native-post-lens-audit.js';
 import {compilePrism,PRISM_TYPE} from './triangular-prism.js';
@@ -91,6 +92,7 @@ export function loadDocument(doc, width, height) {
     endpointAudits.set(scene,{key:'v27EndpointsVerified',finish:installV27EndpointAudit(doc,scene,compiled.idMap)});
   if(doc.schemaVersion===28)
     endpointAudits.set(scene,{key:'v28EndpointsVerified',finish:installPostLensAudit(doc,scene,compiled.idMap)});
+  if(doc.schemaVersion===30) endpointAudits.set(scene,curvedEntryBeamAudit(doc,scene,compiled.idMap));
   if(doc.schemaVersion===29)
     endpointAudits.set(scene,{key:'v29FanVerified',finish:installRefractiveFanAudit(doc,scene,compiled.idMap)});
   return { ...compiled, scene };
@@ -233,13 +235,17 @@ export function observeBlockerSet(doc, scene, idMap) {
 export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, detectorMeter = null, interfaceMeter = null, blockerMeter = null, {detectorHitEvents=false,nativeEvent=null,parentage=null,finiteDiagnostic=null,apertureCornerGuard=null,grinNumericalGuard=null}={}) {
   const errors = [...(interfaceMeter?.errors||[]),...(blockerMeter?.errors||[]),...(apertureCornerGuard?.errors||[]),...(grinNumericalGuard?.errors||[]),scene.error, simulator.error, ...scene.objs.map(o => o.getError())].filter(Boolean);
   const warnings = [scene.warning, simulator.warning, ...scene.objs.map(o => o.getWarning())].filter(Boolean);
+  const interfacesById = interfaceMeter?.byId ?? null;
   const endpointAudit = endpointAudits.get(scene);
   let endpointsVerified = false;
   if (endpointAudit && nativeEvent==='simulationComplete' && !errors.length &&
       simulator.totalTruncation===0 && simulator.totalUndefinedBehavior===0) {
-    const issue = endpointAudit.finish(meter?.emitted,interfaceMeter?.byId,warnings);
+    const issue = endpointAudit.finish(meter?.emitted,interfacesById,warnings);
     if (issue) errors.push(issue);
-    else endpointsVerified = true;
+    else {
+      endpointsVerified = true;
+      endpointAudit.decorate?.(interfacesById);
+    }
   }
   const emissionsById=meter?.byId ?? null;
   const sourceCount=emissionsById ? Object.keys(emissionsById).length : 0;
@@ -271,7 +277,7 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
     ...(detectorHitEvents?{detectorHitEventsById:nativeEvent==='simulationComplete'&&
       errors.length===0&&simulator.totalTruncation===0&&simulator.totalUndefinedBehavior===0?
       detectorMeter?.hitEventsById??null:null}:{}),
-    interfacesById: interfaceMeter?.byId ?? null,
+    interfacesById,
     blockersById: blockerMeter?.byId ?? null,
     ...(parentage?{detectorRayProvenanceById:parentageById}:{} ),
     ...(finiteDiagnostic?{finiteHitDiagnostic:finiteHitAdvisory}:{}),
@@ -280,6 +286,6 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
 }
 export function classifyRun(event, data) {
   return data.errors.length ? 'failed' : event === 'simulationStop' ? 'stopped' :
-    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false || data.v28EndpointsVerified===false || data.v29FanVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
+    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false || data.v28EndpointsVerified===false || data.v29FanVerified===false || data.v30CurvedBeamVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
 }
 export { Scene, Simulator };

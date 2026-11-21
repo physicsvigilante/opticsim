@@ -1,0 +1,57 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "model": "native-curved-entry-beam-tracing",
+    "title": "Parallel beam entering the curved face of a hemisphere",
+    "lengthUnit": "mm",
+    "runPolicy": "preview-v1",
+    "rayDensity": 0.2,
+    "components": [
+      {
+        "id": "B",
+        "type": "parallel-beam",
+        "parameters": {
+          "x": 200,
+          "y": 0,
+          "width": 100,
+          "directionDeg": 180,
+          "brightness": 0.08
+        }
+      },
+      {
+        "id": "G",
+        "type": "semicircular-dielectric",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "radius": 100,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "faces",
+      "kind": "interface-face-events",
+      "componentId": "G"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Measure the sampled light-ray positions on the flat face in a meridional section.",
+    "stated": [
+      "The A14 hemisphere radius is twice the incident beam radius; the glass index is 1.5."
+    ],
+    "derived": [],
+    "assumptions": [
+      "The section uses a 100 mm hemisphere radius in an exterior of index 1. The chosen native density and brightness are numerical controls. The table is omitted."
+    ],
+    "unknowns": [
+      "Continuous illuminated radius on the table."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}
