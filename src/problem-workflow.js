@@ -4,6 +4,7 @@ import {analyzePrismAngleQuery,prismAngleCapabilities,PRISM_FACTS_FORMAT,PRISM_Q
 import {analyzeTwoFaceQuery,twoFaceCapabilities,TWO_FACE_FACTS,TWO_FACE_QUERY} from './perpendicular-dielectric-faces.js';
 import {analyzePowerQuery,powerCapabilities,POWER_FACTS,POWER_QUERY} from './coincident-optical-power.js';
 import {analyzeFocus,focusCapabilities,FOCUS_FACTS,FOCUS_QUERY} from './separated-lens-focus.js';
+import {analyzeSurfaceFocus,surfaceFocusCapabilities,SURFACE_FOCUS_FACTS,SURFACE_FOCUS_QUERY} from './two-surface-focus.js';
 import {analyzeLensTrainQuery,lensTrainCapabilities,LENS_FACTS_FORMAT,LENS_QUERY_FORMAT} from './lens-train-queries.js';
 import {analyzeCurvedMirrorQuery,curvedQueryCapabilities,CURVED_FACTS_FORMAT,CURVED_QUERY_FORMAT} from './curved-mirror-queries.js';
 import {assessMethodSuitability,METHOD_SUITABILITY_FORMAT} from './method-suitability.js';
@@ -20,6 +21,7 @@ const prismKinds=new Set(prismAngleCapabilities().kinds);
 const twoFaceKinds=new Set(twoFaceCapabilities().kinds);
 const reducedAngularAndPowerRoutes=new Map();
 for(const [kinds,format,analyze,missing] of [
+  [surfaceFocusCapabilities().kinds,SURFACE_FOCUS_QUERY,analyzeSurfaceFocus,'Explicit two-surface geometry and material facts are required.'],
   [focusCapabilities().kinds,FOCUS_QUERY,analyzeFocus,'Explicit separated lenses, conjugate condition and angular reference are required.'],
   [prismKinds,PRISM_QUERY_FORMAT,analyzePrismAngleQuery,'Explicit prism angle, incidence, material indices or deviation facts are required.'],
   [twoFaceKinds,TWO_FACE_QUERY,analyzeTwoFaceQuery,'Explicit face and material facts are required.'],
@@ -37,6 +39,7 @@ const factContracts=Object.freeze({
  [TWO_FACE_QUERY]:[TWO_FACE_FACTS],
  [POWER_QUERY]:[POWER_FACTS],
  [FOCUS_QUERY]:[FOCUS_FACTS],
+ [SURFACE_FOCUS_QUERY]:[SURFACE_FOCUS_FACTS],
  [LENS_QUERY_FORMAT]:[LENS_FACTS_FORMAT],
  [CURVED_QUERY_FORMAT]:[CURVED_FACTS_FORMAT,'authoring-scene'],
  [INVERSE_QUERY_FORMAT]:[INVERSE_FACTS_FORMAT],
@@ -44,6 +47,7 @@ const factContracts=Object.freeze({
  [MIRROR_QUERY_FORMAT]:[MIRROR_FACTS_FORMAT]
 });
 const requestKindRegistry=()=>({
+ ...Object.fromEntries(surfaceFocusCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:SURFACE_FOCUS_QUERY}])),
  ...Object.fromEntries(focusCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:FOCUS_QUERY}])),
  ...Object.fromEntries(powerCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:POWER_QUERY}])),
  ...Object.fromEntries([...twoFaceKinds].map(k=>[k,{route:'conditional-analytical',contract:TWO_FACE_QUERY}])),
@@ -66,6 +70,7 @@ export function problemWorkflowCapabilities(){
     perpendicularDielectricFaces:twoFaceCapabilities(),
     coincidentOpticalPower:powerCapabilities(),
     separatedLensFocus:focusCapabilities(),
+    twoSurfaceFocus:surfaceFocusCapabilities(),
     methodSuitability:{format:METHOD_SUITABILITY_FORMAT,mode:'exact-typed-request-diagnostic',
       contractFamilies:structuredClone(factContracts),
       limits:['No natural-language interpretation, image parsing or automatic method aliasing.',
@@ -116,7 +121,7 @@ export function planProblem(input){
   const authoredNativeRequests=request.requests.filter(r=>own(observableKinds,r.kind));
   const needsNative=authoredNativeRequests.length>0||request.verifyNative===true;
   let preparation=null,scene=null,sceneConflict=false;
-  if(physical&&physical.format!==FOCUS_FACTS&&physical.format!==POWER_FACTS&&physical.format!==TWO_FACE_FACTS&&physical.format!==PRISM_FACTS_FORMAT&&physical.format!==LENS_FACTS_FORMAT&&physical.format!==ANGLE_FACTS_FORMAT&&physical.format!==MIRROR_FACTS_FORMAT&&physical.format!==CURVED_FACTS_FORMAT&&physical.format!==INVERSE_FACTS_FORMAT){
+  if(physical&&!Object.values(factContracts).some(formats=>formats.includes(physical.format)&&physical.format!=='authoring-scene')){
     preparation=resolveProblemRequest(physical,{illustration:request.illustration===true});
     scene=preparation.prepared?.document??null;
   }

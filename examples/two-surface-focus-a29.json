@@ -1,0 +1,28 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-two-surface-focus-facts-v1",
+    "incidence": "collimated-positive-x",
+    "geometry": {
+      "kind": "sphere",
+      "materialBasis": "symbolic-relative-index"
+    }
+  },
+  "requests": [
+    {
+      "id": "focus",
+      "kind": "two-surface-back-focus"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Signed paraxial image distance relative to the rear pole and centre.",
+    "stated": [
+      "Solid glass sphere of radius R, index mu, with a parallel near-normal incident beam."
+    ],
+    "derived": [],
+    "assumptions": [
+      "Use m = nCore/nExterior with one common exterior. No absolute exterior index is specified."
+    ],
+    "unknowns": []
+  }
+}
