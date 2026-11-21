@@ -1,0 +1,11 @@
+{
+  "source": "A22",
+  "problem": "08_Ray_Optics_Explanations/05_Prism/Problems/004.png",
+  "sha256": "ab8949d8594431b2e88cd81b3fdaa683255ce2925a938531738a72f82cbad7aa",
+  "upstream": "811f508d2b070898c241a568b0c167dcb8645251",
+  "stated": "Isosceles prism angle 45 degrees. When incident angle equals prism angle, the emerging ray grazes the second face. Asks material index and incident angle at minimum deviation.",
+  "assumptions": "Direct nonnegative two-face meridional path with the same homogeneous unit-index exterior on both sides, a denser homogeneous core and a single wavelength. Treat grazing as an exact limiting direction. The finite aperture and third side affect whether particular native samples reach their intended face.",
+  "predictions": "At exact grazing emergence, m*sin(A-r1)=1 and m*sin(r1)=sin(i). The positive ratio is hypot(sin(i),(1+cos(A)*sin(i))/sin(A)), giving sqrt(5) for A22. At the minimum on the direct branch r1=r2=A/2 and i=e=asin(m*sin(A/2)). A finite interval of strict direct transmission must exist; symmetry alone does not establish this.",
+  "nativeControls": "Test-only existing v8 triangle, vertices (0,-100), (0,100), (200,-100) in mm, common outside 1 and inside sqrt(5), partial reflection disabled. One native SingleRay starts at x=-30 mm and y=-30*tan(i), with i=44,46,55,iMin,62 degrees, to hit the first named face near the origin. The adjacent angled face is the first exit encounter. At 44 degrees expect TIR; at 46 expect direct transmission. Around the minimum require strict transmission, real exit direction, and deviation both below and above iMin greater than its deviation. A subsequent native unsupported/undefined/limit outcome is a failed witness. Do not run or accept actual native grazing at 45 degrees.",
+  "boundaries": "Preserve v8, v22 and v29 numerical gates and all historical prism-angle requests. No inferred isosceles finite geometry in the public facts, no minimum-deviation result outside the strict direct branch, no exact native boundary claim."
+}

@@ -1,10 +1,12 @@
 // Deterministic dispatch only. Physics, angular algebra, qualification and
 // native result gating stay in their existing implementations.
 import {analyzePrismAngleQuery,prismAngleCapabilities,PRISM_FACTS_FORMAT,PRISM_QUERY_FORMAT} from './prism-angle-queries.js';
+import {analyzePrismLimit,prismLimitCapabilities,PRISM_LIMIT_FACTS,PRISM_LIMIT_QUERY} from './prism-critical-minimum.js';
 import {analyzeTwoFaceQuery,twoFaceCapabilities,TWO_FACE_FACTS,TWO_FACE_QUERY} from './perpendicular-dielectric-faces.js';
 import {analyzePowerQuery,powerCapabilities,POWER_FACTS,POWER_QUERY} from './coincident-optical-power.js';
 import {analyzeFocus,focusCapabilities,FOCUS_FACTS,FOCUS_QUERY} from './separated-lens-focus.js';
 import {analyzeSurfaceFocus,surfaceFocusCapabilities,SURFACE_FOCUS_FACTS,SURFACE_FOCUS_QUERY} from './two-surface-focus.js';
+import {analyzeSlabMirror,slabMirrorCapabilities,SLAB_MIRROR_FACTS,SLAB_MIRROR_QUERY} from './slab-mirror-conjugate.js';
 import {analyzeOffsetFocus,offsetFocusCapabilities,OFFSET_FACTS,OFFSET_QUERY} from './offset-pair-focus.js';
 import {analyzeBoundaryInterval,boundaryIntervalCapabilities,INTERVAL_FACTS,INTERVAL_QUERY} from './semicircular-boundary-intervals.js';
 import {analyzeMaterialLens,materialLensCapabilities,MATERIAL_FACTS,MATERIAL_QUERY} from './material-lens-comparison.js';
@@ -24,6 +26,8 @@ const prismKinds=new Set(prismAngleCapabilities().kinds);
 const twoFaceKinds=new Set(twoFaceCapabilities().kinds);
 const reducedAngularAndPowerRoutes=new Map();
 for(const [kinds,format,analyze,missing] of [
+  [prismLimitCapabilities().kinds,PRISM_LIMIT_QUERY,analyzePrismLimit,'Explicit common exterior, apex and grazing or material facts required.'],
+  [slabMirrorCapabilities().kinds,SLAB_MIRROR_QUERY,analyzeSlabMirror,'Explicit curved mirror, object and slab facts required.'],
   [offsetFocusCapabilities().kinds,OFFSET_QUERY,analyzeOffsetFocus,'Explicit thin lens spacing and signed focal ratios required.'],
   [boundaryIntervalCapabilities().kinds,INTERVAL_QUERY,analyzeBoundaryInterval,'Explicit semicircular material, launch and geometry facts are required.'],
   [materialLensCapabilities().kinds,MATERIAL_QUERY,analyzeMaterialLens,'Explicit common shape, lens materials and exterior media are required.'],
@@ -41,6 +45,8 @@ const mirrorKinds=new Set(mirrorAngularCapabilities().kinds);
 const observableKinds=observableCapabilities().kinds;
 // References the live fact/query formats, not a second physics validator.
 const factContracts=Object.freeze({
+ [PRISM_LIMIT_QUERY]:[PRISM_LIMIT_FACTS],
+ [SLAB_MIRROR_QUERY]:[SLAB_MIRROR_FACTS],
  [OFFSET_QUERY]:[OFFSET_FACTS],
  [INTERVAL_QUERY]:[INTERVAL_FACTS],
  [MATERIAL_QUERY]:[MATERIAL_FACTS],
@@ -56,6 +62,8 @@ const factContracts=Object.freeze({
  [MIRROR_QUERY_FORMAT]:[MIRROR_FACTS_FORMAT]
 });
 const requestKindRegistry=()=>({
+ ...Object.fromEntries(prismLimitCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:PRISM_LIMIT_QUERY}])),
+ ...Object.fromEntries(slabMirrorCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:SLAB_MIRROR_QUERY}])),
  ...Object.fromEntries(offsetFocusCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:OFFSET_QUERY}])),
  ...Object.fromEntries(boundaryIntervalCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:INTERVAL_QUERY}])),
  ...Object.fromEntries(materialLensCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:MATERIAL_QUERY}])),
@@ -83,6 +91,8 @@ export function problemWorkflowCapabilities(){
     coincidentOpticalPower:powerCapabilities(),
     separatedLensFocus:focusCapabilities(),
     twoSurfaceFocus:surfaceFocusCapabilities(),
+    prismAngularLimits:prismLimitCapabilities(),
+    slabMirrorConjugate:slabMirrorCapabilities(),
     offsetPairFocus:offsetFocusCapabilities(),
     semicircularBoundaryIntervals:boundaryIntervalCapabilities(),
     materialLensComparison:materialLensCapabilities(),

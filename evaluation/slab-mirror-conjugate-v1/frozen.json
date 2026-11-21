@@ -1,0 +1,13 @@
+{
+  "source": "A12",
+  "linkedProtocol": "../slab-curved-mirror-v1/frozen.json",
+  "premise": "Paraxial real object, concave mirror, one plane-parallel slab of known thickness and indices. Object and mirror are in one common exterior. The mirror pole is the origin of a local axis positive toward the object. The bare and inserted configurations have the same real object distance.",
+  "cases": [
+    {"name":"A12","radius":200,"objectDistance":300,"thickness":60,"outside":1,"inside":1.5,"placement":"beyond-centre-of-curvature","expectedBare":150,"expectedInserted":155.55555555555554,"expectedRatio":1.1111111111111112},
+    {"name":"image-in-slab","radius":200,"objectDistance":300,"thickness":60,"outside":1,"inside":1.5,"near":140,"far":200,"expectedInserted":163.33333333333334},
+    {"name":"image-beyond-slab","radius":200,"objectDistance":300,"thickness":60,"outside":1,"inside":1.5,"near":20,"far":80,"expectedInserted":175.55555555555554},
+    {"name":"afocal-on-insertion","radius":200,"objectDistance":120,"thickness":60,"outside":1,"inside":1.5,"near":10,"far":70,"expected":"bare finite; inserted parallel"}
+  ],
+  "derivation": "Use reduced slope q=n theta; length L in index n propagates by L/n. Express distances in equivalent exterior length. On the incoming leg the slab subtracts exactly t*(1-ne/ng); this is a single pass. On the outgoing leg solve the real image location across zero, part, or all of the plate from its reduced distance. Signed transverse magnification is minus reduced image distance divided by reduced object distance. Virtual images lie behind the mirror and use exterior reduced distance directly.",
+  "controls": "Preserve the actual six A12 native controls. The additional in- and beyond-slab controls are analytical validation of the general propagation inverse; any native claim needs a separately placed detector and evidence per case. Withhold near focus, grazing and near-interface branch ambiguity; exact matches and exact plane equality should have explicit states."
+}
