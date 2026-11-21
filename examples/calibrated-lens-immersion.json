@@ -1,0 +1,14 @@
+{
+  "format":"opticsim-problem-v1",
+  "physical":{
+    "format":"opticsim-calibrated-lens-immersion-facts-v1",
+    "model":"fixed-shape-paraxial-thin-lens",
+    "lengthUnit":"cm",
+    "lensId":"L",
+    "materialIndex":1.6,
+    "reference":{"exteriorIndex":1,"signedFocalLength":10},
+    "media":[{"id":"A","exteriorIndex":1.5},{"id":"B","exteriorIndex":1.7}]
+  },
+  "requests":[{"id":"focusA","kind":"immersed-lens-focal-length","mediumId":"A"},
+    {"id":"focusB","kind":"immersed-lens-focal-length","mediumId":"B"}]
+}

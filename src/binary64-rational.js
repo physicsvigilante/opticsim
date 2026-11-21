@@ -26,3 +26,21 @@ export const subtract=(a,b)=>rational(a.n*b.d-b.n*a.d,a.d*b.d);
 export const multiply=(a,b)=>rational(a.n*b.n,a.d*b.d);
 export const divide=(a,b)=>rational(a.n*b.d,a.d*b.n);
 export const compare=(a,b)=>a.n*b.d<b.n*a.d?-1:a.n*b.d>b.n*a.d?1:0;
+
+// Round the exact quotient once to the nearest binary64, ties to even.
+export function toBinary64({n,d}){
+  if(n===0n)return 0;
+  const numerator=absolute(n);
+  let exponent=numerator.toString(2).length-d.toString(2).length;
+  const belowPower=exponent>=0 ? numerator<(d<<BigInt(exponent)) : (numerator<<BigInt(-exponent))<d;
+  if(belowPower)exponent--;
+  if(exponent>1023)return n<0n?-Infinity:Infinity;
+  const step=Math.max(exponent-52,-1074);
+  const dividend=step<0?numerator<<BigInt(-step):numerator;
+  const divisor=step>0?d<<BigInt(step):d;
+  let significand=dividend/divisor;
+  const twiceRemainder=2n*(dividend%divisor);
+  if(twiceRemainder>divisor || (twiceRemainder===divisor && significand%2n===1n))significand++;
+  const result=Number(significand)*2**step;
+  return n<0n?-result:result;
+}
