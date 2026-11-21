@@ -43,8 +43,9 @@ function lensResult(material,medium,shape) {
 export function analyzeMaterialLens(f,q){
   fields(q,['kind','format']);
   if(q.kind!==kind||q.format!==MATERIAL_QUERY)reject('Unsupported material-lens query.');
+  if(f?.format!==MATERIAL_FACTS)throw Object.assign(new Error('Explicit common-shape material facts required.'),{code:'UNSUPPORTED_FACTS'});
   fields(f,['format','model','shape','materials','media']);
-  if(f.format!==MATERIAL_FACTS||f.model!=='thin-lenses-of-identical-shape')reject('Declare the shared thin shape explicitly.');
+  if(f.model!=='thin-lenses-of-identical-shape')throw Object.assign(new Error('Declare the shared thin model explicitly.'),{code:'UNSUPPORTED_MODEL'});
   validateList(f.materials,2,2);validateList(f.media,1,4);
   const s=f.shape;
   if(s?.kind==='signed-radii-metres'){

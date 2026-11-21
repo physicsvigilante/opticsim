@@ -50,3 +50,17 @@ test('missing media, incompatible model and invalid comparison operands withhold
     const bad=example();change(bad.physical);assert.equal(run(bad).value,null);
   }
 });
+
+test('an incompatible material query preserves a valid native face result',async()=>{
+  const mixed=read('../examples/curved-entry-beam-v30.json');
+  mixed.requests.push(example().requests[0]);
+  const root='test-artifacts/llm-authoring';mkdirSync(root,{recursive:true});
+  const outputPath=join(mkdtempSync(join(root,'material-lens-mixed-')),'v30');
+  const {report}=await runProblemEvidence({inputBytes:Buffer.from(JSON.stringify(mixed)),outputPath});
+  assert.equal(report.native.status,'completed');
+  assert.equal(report.results[0].value['face-flat'].sampledYRangeMm.count,20);
+  assert.equal(report.results[1].status,'unavailable');
+  assert.equal(report.results[1].reasonCode,'UNSUPPORTED_FACTS');
+  const p=example();p.physical.model='thick-lens';
+  assert.equal(run(p).reasonCode,'UNSUPPORTED_MODEL');
+});
