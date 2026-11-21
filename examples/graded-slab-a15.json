@@ -1,0 +1,35 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-graded-slab-first-passage-facts-v1",
+    "model": "positive-linear-squared-index-slab",
+    "geometryScale": "symbolic-thickness-over-gradient-length",
+    "baseIndexSquared": 1,
+    "entryIndex": 1,
+    "exitIndex": 1,
+    "entry": {
+      "kind": "grazing-entry-limit"
+    }
+  },
+  "requests": [
+    {
+      "id": "path",
+      "kind": "graded-slab-first-far-face"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Find the symbolic internal trajectory and first far-face coordinates for the inward grazing limit.",
+    "stated": [
+      "The ray is incident at grazing on a slab of thickness d with refractive index μ = √(1 + y) in the source's coordinates."
+    ],
+    "derived": [
+      "Tangential momentum is conserved because the material varies only in the normal direction."
+    ],
+    "assumptions": [
+      "Use unit-index exteriors and an inward limit of real entering rays. Express the coordinates in units of the unspecified gradient scale L and retain d/L symbolically."
+    ],
+    "unknowns": [
+      "Original dimensional gradient scale, absolute thickness and finite lateral width."
+    ]
+  }
+}
