@@ -1,0 +1,32 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-semicircular-boundary-facts-v1",
+    "geometry": "hemisphere-of-revolution",
+    "glassIndex": 1.5,
+    "exteriorIndex": 1,
+    "launch": {
+      "kind": "centred-filled-circular-beam",
+      "radiusOverGlassRadius": 0.5
+    }
+  },
+  "requests": [
+    {
+      "id": "interval",
+      "kind": "curved-entry-base-interval"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Geometric radius of first incidence on the base, in units of the beam radius.",
+    "stated": [
+      "Beam radius r, hemisphere radius 2r, symmetric vertical incidence, index 3/2 and a table in contact with the base."
+    ],
+    "derived": [],
+    "assumptions": [
+      "A filled axial beam, rotational symmetry, unit-index exterior and geometrical optics. A luminous spot of the same extent would require the table to register incident light across the footprint."
+    ],
+    "unknowns": [
+      "Table optical response and intensity distribution."
+    ]
+  }
+}
