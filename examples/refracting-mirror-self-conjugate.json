@@ -1,0 +1,12 @@
+{
+  "format":"opticsim-problem-v1",
+  "physical":{
+    "format":"opticsim-refracting-mirror-return-facts-v1",
+    "model":"coaxial-paraxial-refraction-reflection-return",
+    "lengthUnit":"cm",
+    "exteriorIndex":1,
+    "interiorIndex":1.5,
+    "geometry":{"kind":"signed-poles","frontSignedRadius":25,"mirrorSignedRadius":-25,"poleSeparation":0}
+  },
+  "requests":[{"id":"object","kind":"refracting-mirror-self-conjugate"}]
+}
