@@ -71,10 +71,12 @@ test('v35 withholds exact corner escape, a native near-endpoint reflection and e
   assert.equal(rim.observations,null);
   assert.match(rim.native.errors.join(','),/ambiguous finite encounter/);
   const targetRim=original();
-  byId(targetRim,'B').parameters.y-=.95;
-  const rimAtTarget=run(prepareScene(targetRim).document);
-  assert.equal(rimAtTarget.observations,null);
-  assert.match(rimAtTarget.native.errors.join(','),/B: ambiguous finite encounter/);
+  for(const offset of [.95,.9]){
+    byId(targetRim,'B').parameters.y=60-offset;
+    const rimAtTarget=run(prepareScene(targetRim).document);
+    assert.equal(rimAtTarget.observations,null);
+    assert.match(rimAtTarget.native.errors.join(','),/B: ambiguous finite encounter/);
+  }
   const early=original();
   byId(early,'S').emission.directionDeg=0;
   byId(early,'B').parameters.y=byId(early,'S').parameters.y;

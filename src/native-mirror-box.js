@@ -3,9 +3,10 @@ import {compositionCountsMatch} from './composition-profiles.js';
 export const MIRROR_BOX_VERSION=35;
 export const MIRROR_BOX_MODEL='native-rectangular-mirror-box';
 const wallTypes=['plane-mirror','line-blocker'];
+const positionTolerance=1e-7;
 const isVertical=p=>Math.abs(p.orientationDeg)===90;
 const axial=p=>[0,90,-90,180,-180].includes(p.orientationDeg);
-const near=(a,b,tolerance=1e-7)=>Number.isFinite(a)&&Math.abs(a-b)<=tolerance;
+const near=(a,b,tolerance=positionTolerance)=>Number.isFinite(a)&&Math.abs(a-b)<=tolerance;
 const inside=(p,min,max)=>p>=min+1&&p<=max-1;
 const world=p=>Math.abs(p.x)<=10000&&Math.abs(p.y)<=10000;
 const samePoint=(a,b)=>a.x===b.x&&a.y===b.y;
@@ -81,7 +82,7 @@ export function mirrorBoxAudit(doc,scene,idMap){
       if(input!==ray||absorbed||!last||!samePoint(input.p1,last.point)||!matchesDirection(heading,last.heading)||
         !hasAuthoredBrightness(input)||!near(dx*heading.y,dy*heading.x)||dx*heading.x+dy*heading.y<=1e-4||
         Math.abs(normal)<.02||!near(vertical?hit.x:hit.y,vertical?p.x:-p.y)||
-        Math.abs(vertical?hit.y+p.y:hit.x-p.x)>p.length/2-rimClearance)
+        Math.abs(vertical?hit.y+p.y:hit.x-p.x)+rimClearance+positionTolerance>=p.length/2)
         fault??=c.id+': ambiguous finite encounter or broken ray continuity';
       const result=incident.call(this,input,index,point,...rest);
       if(!samePoint(hit,point)||result?.isUndefinedBehavior||result?.newRays?.length||!hasAuthoredBrightness(input))
