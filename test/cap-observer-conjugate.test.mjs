@@ -32,6 +32,18 @@ test('interior probe, equal materials and true hemisphere retain independent ref
   near(r.apparentPositionFromBase,.1);near(r.distanceFromObserver,7.9);
   p.physical.interiorIndex=1.6;p.physical.capHeight=5;p.physical.object={kind:'base-contact-limit'};
   r=run(p).value;assert.equal(r.apparentPositionFromBase,0);near(r.distanceFromObserver,8);
+  Object.assign(p.physical,{capHeight:6.144011345156943,curvatureRadius:6.144011345156943,
+    observerDistanceFromBase:7.632040661977631,interiorIndex:1.9});
+  r=run(p).value;
+  assert.equal(r.signedImageDistanceFromPole,-p.physical.capHeight);
+  assert.equal(r.distanceFromObserver,p.physical.observerDistanceFromBase);
+  const matched=scenario();
+  matched.physical.exteriorIndex=matched.physical.interiorIndex;
+  matched.physical.object={kind:'interior-axial-point',depthFromBase:.123456789};
+  r=run(matched).value;
+  assert.equal(r.apparentPositionFromBase,matched.physical.object.depthFromBase);
+  assert.equal(r.signedImageDistanceFromPole,r.apparentPositionFromBase-matched.physical.capHeight);
+  assert.equal(r.distanceFromObserver,matched.physical.observerDistanceFromBase-r.apparentPositionFromBase);
 });
 test('invalid observer or point and unresolved material contrast withhold the requested coordinate',()=>{
   for(const change of [f=>f.observerDistanceFromBase=3,f=>f.capHeight=6,f=>delete f.exteriorIndex,
