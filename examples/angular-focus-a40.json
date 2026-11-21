@@ -1,0 +1,43 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-separated-lens-focus-facts-v1",
+    "model": "positive-thin-lens-pair-in-air",
+    "lengthUnit": "m",
+    "objective": {
+      "id": "objective",
+      "focalLength": 0.5
+    },
+    "eyepiece": {
+      "id": "eyepiece",
+      "focalLength": 0.05
+    },
+    "output": "collimated",
+    "given": {
+      "kind": "object-distance-from-objective",
+      "value": 10
+    },
+    "angleReference": {
+      "kind": "objective-plane"
+    }
+  },
+  "requests": [
+    {
+      "id": "focus",
+      "kind": "two-lens-angular-focus"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Telescope focus displacement from infinity and angular gain at the finite adjustment.",
+    "stated": [
+      "Positive focal lengths 50 cm and 5 cm, Moon then a target 10 m away, unchanged accommodation."
+    ],
+    "derived": [],
+    "assumptions": [
+      "Distance measured from the objective, relaxed eye in both settings, collimated input for the Moon, unaided comparison angle at objective."
+    ],
+    "unknowns": [
+      "Reference plane for the unaided finite-distance angle is not specified."
+    ]
+  }
+}
