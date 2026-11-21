@@ -1,4 +1,5 @@
 // Observer for a bounded, explicitly qualified sequence of actual native interactions.
+import {expectedDetectorPower,preservesDetectorPassage} from './native-detector-audit.js';
 const rad=Math.PI/180;
 const near=(a,b,tolerance=1e-6)=>Number.isFinite(a)&&Math.abs(a-b)<=tolerance;
 export function nativeFanOffsets(cone,density){
@@ -36,6 +37,7 @@ export function installAxialFanAudit({doc,scene,idMap,source,mirror,detector,fac
       if(!state||sequence[state.stage]!==c||!near(state.p.x,ray.p1.x)||!near(state.p.y,ray.p1.y)||
         !near(state.d.x,before.x,1e-9)||!near(state.d.y,before.y,1e-9)||
         !(dx*before.x+dy*before.y>0)||!near(dx*before.y,dy*before.x))fault??=c.id+': unexpected incoming encounter';
+      const power=c===detector?expectedDetectorPower(this,ray,{x:before.x,y:-before.y}):null;
       const result=incident.call(this,ray,index,point,...rest),after=direction(ray);
       if(!near(ray.p1.x,point.x)||!near(ray.p1.y,point.y)||result?.isAbsorbed||
         result?.isUndefinedBehavior||result?.newRays?.length)fault??=c.id+': unexpected native outgoing branch';
@@ -48,7 +50,8 @@ export function installAxialFanAudit({doc,scene,idMap,source,mirror,detector,fac
       }else{
         if(!near(point.x,p.x)||!(before.x*after.x>0))fault??=c.id+': unexpected plane encounter';
         if(c===detector){
-          if(Math.abs(point.y+p.y)>=p.length/2-.1||!near(before.y,after.y,1e-9))fault??=c.id+': uncertain detector direction or rim clearance';
+          if(Math.abs(point.y+p.y)>=p.length/2-.1||!near(before.x,after.x,1e-9)||!near(before.y,after.y,1e-9)||
+            !preservesDetectorPassage(this,ray,point,result,power))fault??=c.id+': uncertain detector direction, rim clearance or signed power';
         }else{
           const [from,to]=before.x>0?[p.negativeIndex,p.positiveIndex]:[p.positiveIndex,p.negativeIndex];
           if(!near(from*before.y,to*after.y,1e-8))fault??=c.id+': uncertain refraction';

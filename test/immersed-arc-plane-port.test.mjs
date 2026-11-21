@@ -54,6 +54,18 @@ test('v34 rejects ambiguous spaces, incomplete callback paths and absent evidenc
     return loaded;
   }};
   assert.equal(evaluateDocument(doc,disappeared,fixture.requests).summary.observations,null);
+  const loaded=core.loadDocument(doc),detectorPrototype=Object.getPrototypeOf(loaded.scene.objs[loaded.idMap.get('D')]);
+  const nativeDetector=detectorPrototype.onRayIncident;
+  detectorPrototype.onRayIncident=function(...args){
+    const result=nativeDetector.apply(this,args);
+    this.power=0;
+    return result;
+  };
+  try{
+    assert.equal(evaluateDocument(doc,core,fixture.requests).summary.observations,null);
+  }finally{
+    detectorPrototype.onRayIncident=nativeDetector;
+  }
   doc.simulation.processedRayLimit=1;
   assert.equal(evaluateDocument(doc,core,fixture.requests).summary.observations,null);
 });
