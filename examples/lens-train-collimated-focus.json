@@ -1,0 +1,17 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-lens-train-collimated-focus-facts-v1",
+    "model": "coaxial-ideal-thin-lenses",
+    "signConvention": "x-increasing",
+    "incidence": "collimated-along-axis",
+    "lengthUnit": "cm",
+    "lenses": [
+      {"id": "L1", "x": 0, "focalLength": 7},
+      {"id": "L2", "x": 3, "focalLength": 6}
+    ]
+  },
+  "requests": [
+    {"id": "focus", "kind": "lens-train-collimated-focus"}
+  ]
+}
