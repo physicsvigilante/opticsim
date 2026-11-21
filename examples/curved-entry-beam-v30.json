@@ -46,7 +46,7 @@
     ],
     "derived": [],
     "assumptions": [
-      "The section uses a 100 mm hemisphere radius in an exterior of index 1. The chosen native density and brightness are numerical controls. The table is omitted."
+      "The meridional section uses a 100 mm radius and an exterior of index 1. The source is placed at x=200 mm with an assumed relative brightness of 0.08. Native ray density 0.2 sets the numerical sampling. Partial reflection is disabled. The table is omitted."
     ],
     "unknowns": [
       "Continuous illuminated radius on the table."
