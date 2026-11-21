@@ -1,5 +1,7 @@
 # Ray Optics 2D
 
+Trace an axial inside source through the curved face of a finite [circular dielectric cap](docs/FINITE-CIRCULAR-CAP.md).
+
 Compose a parallel slab and a finite spherical mirror with the [native slab return contract](docs/SLAB-ARC-RETURN.md).
 
 Compare where that arrangement forms its first paraxial image and how its size changes with the [slab and mirror conjugate query](docs/SLAB-MIRROR-CONJUGATE.md).
