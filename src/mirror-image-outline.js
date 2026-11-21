@@ -1,5 +1,5 @@
 import {isRecord} from './qualified-utils.js';
-import {analyzeCurvedMirrorQuery,CURVED_FACTS_FORMAT,CURVED_QUERY_FORMAT} from './curved-mirror-queries.js';
+import {absolute,fromBinary64,subtract,multiply,divide} from './binary64-rational.js';
 
 export const OUTLINE_FACTS='opticsim-mirror-image-outline-facts-v1';
 export const OUTLINE_QUERY='opticsim-mirror-image-outline-query-v1';
@@ -49,6 +49,30 @@ function uncertain(){
   return {status:'numerically-indeterminate',value:null,reasonCode:'UNCERTAIN_IMAGE_OUTLINE',
     reason:'Near focal or transverse degeneracy prevents a well-conditioned closed image outline.'};
 }
+function projectableLocalGeometry(inputs,outputs,f){
+  const focus=fromBinary64(f);
+  const exact=inputs.map(v=>{
+    const gap=subtract(fromBinary64(v.distance),focus);
+    const ratio=divide(focus,gap);
+    return {x:multiply(fromBinary64(v.distance),ratio),y:multiply(fromBinary64(-v.height),ratio)};
+  });
+  const reported=outputs.map(v=>({x:fromBinary64(v.distance),y:fromBinary64(v.height)}));
+  const offset=(points,a,b,key)=>subtract(points[b][key],points[a][key]);
+  const area=(points,a,b,c)=>subtract(
+    multiply(offset(points,a,b,'x'),offset(points,a,c,'y')),
+    multiply(offset(points,a,b,'y'),offset(points,a,c,'x')));
+  const preserves=(actual,reference)=>{
+    const error=subtract(actual,reference);
+    // Keep exact equalities and limit relative error in nonzero local geometry.
+    return 100n*absolute(error.n)*reference.d<=absolute(reference.n)*error.d;
+  };
+  for(let a=0;a<inputs.length-1;a++)for(let b=a+1;b<inputs.length;b++){
+    if(!['x','y'].every(key=>preserves(offset(reported,a,b,key),offset(exact,a,b,key))))return false;
+    for(let c=b+1;c<inputs.length;c++)
+      if(!preserves(area(reported,a,b,c),area(exact,a,b,c)))return false;
+  }
+  return true;
+}
 function polygon(g){
   fields(g,['kind','lengthUnit','focalLength','vertices']);
   if(typeof g.lengthUnit!=='string'||!Object.hasOwn(units,g.lengthUnit))
@@ -68,15 +92,14 @@ function polygon(g){
   if(order===null)return uncertain();
   const vertices=[];
   for(const v of g.vertices){
-    const conjugate=analyzeCurvedMirrorQuery({format:CURVED_FACTS_FORMAT,model:'spherical-paraxial',
-      signConvention:'real-positive-local',lengthUnit:g.lengthUnit,focalLength:f,objectDistance:v.distance,objectHeight:v.height},
-      {format:CURVED_QUERY_FORMAT,kind:'curved-mirror-image'});
-    const image=conjugate.value;
-    if(conjugate.status!=='conditional'||!(image.imageDistance*scale<=1e6)||Math.abs(image.imageHeight)*scale>1e6)
+    const gap=v.distance-f;
+    if(gap<=1e-10*v.distance)return uncertain();
+    const ratio=f/gap,distance=f+f*ratio,height=-ratio*v.height;
+    if(!Number.isFinite(distance)||!Number.isFinite(height)||distance*scale>1e6||Math.abs(height)*scale>1e6)
       return uncertain();
-    vertices.push({id:v.id,distance:image.imageDistance,height:image.imageHeight});
+    vertices.push({id:v.id,distance,height});
   }
-  if(winding(vertices)!==order)return uncertain();
+  if(winding(vertices)!==order||!projectableLocalGeometry(g.vertices,vertices,f))return uncertain();
   return {status:'conditional',value:{kind:'ordered-real-image-outline',lengthUnit:g.lengthUnit,vertices}};
 }
 export function analyzeMirrorOutline(f,q){

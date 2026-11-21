@@ -49,3 +49,28 @@ test('near focus, crossed outlines and malformed physical facts fail closed',()=
     const p=numeric();edit(p.physical.geometry);assert.equal(planProblem(p).results[0].value,null);
   }
 });
+test('resolved near-focus offsets survive subtraction, while rounded microscopic geometry is withheld',()=>{
+  const p=numeric(),g=p.physical.geometry;
+  g.focalLength=1400;
+  g.vertices=[{id:'A',distance:1402.0000000000007,height:0},
+    {id:'B',distance:1402.000000000001,height:1.5916157281020816e-10},
+    {id:'C',distance:1402.0000000000011,height:0}];
+  const v=planProblem(p).results[0].value.vertices;
+  assert.ok(v[0].distance>v[1].distance&&v[1].distance>v[2].distance);
+  const span=v[0].distance-v[2].distance;
+  assert.ok(Math.abs((v[0].distance-v[1].distance)/span-.5)<.005);
+  g.focalLength=1;
+  g.vertices=[{id:'A',distance:9000,height:0},{id:'B',distance:9000.000000003,height:8e-13},
+    {id:'C',distance:9000.00000003,height:0}];
+  const r=planProblem(p).results[0];
+  assert.equal(r.status,'numerically-indeterminate');
+  assert.equal(r.value,null);
+});
+test('exactly horizontal projected edges can keep equal represented heights',()=>{
+  const p=numeric();
+  p.physical.geometry.vertices=[{id:'A',distance:300,height:4},
+    {id:'B',distance:200,height:2},{id:'C',distance:250,height:-1}];
+  const v=planProblem(p).results[0].value.vertices;
+  assert.equal(v[0].height,-2);
+  assert.equal(v[1].height,-2);
+});
