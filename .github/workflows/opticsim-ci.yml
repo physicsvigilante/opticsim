@@ -80,6 +80,10 @@ jobs:
         run: node scripts/native-two-plane-mirror-v27-browser.mjs
       - name: Opaque blocker browser edits, detector readings and qualified exports
         run: node scripts/opaque-line-blocker-browser.mjs
+      - name: Public post-lens aperture authoring and real Chrome qualification
+        run: |
+          node scripts/run-problem.mjs examples/native-post-lens-aperture-v28.json --out test-artifacts/llm-authoring/post-lens-aperture
+          node scripts/post-lens-aperture-browser.mjs
       - name: LLM authoring CLI with real native execution and revision guards
         run: node scripts/author-scene-acceptance.mjs
       - name: Evaluate deterministic LLM pilot controls against native tracing
@@ -134,6 +138,7 @@ jobs:
             test-artifacts/browser-native-parallel-planar-mirror-v26/
             test-artifacts/llm-authoring/native-two-plane-mirror-v27/
             test-artifacts/browser-native-two-plane-mirror-v27/
+            test-artifacts/browser-post-lens-aperture/
             test-artifacts/llm-authoring/native-two-plane-mirror-v27-research/
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4

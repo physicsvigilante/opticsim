@@ -33,7 +33,7 @@ test('restored native v14–v18 preserve all original sealed v24 profiles',()=>{
  assert.equal(c.profiles.filter(p=>p.schemaVersion<=25).length,31,
   'All 31 original v1-v25 profiles must remain exactly present');
  assert.equal(c.profiles.filter(p=>p.schemaVersion<=26).length,32,'All original 32 reviewed v1-v26 profiles remain present');
- assert.equal(c.profiles.length,33,'Exactly one new v27 profile is added to the 32 original profiles');
+ assert.equal(c.profiles.filter(p=>p.schemaVersion<=27).length,33,'Exactly one new v27 profile is added to the 32 original profiles');
  assert.deepEqual(c.profiles.filter(p=>p.schemaVersion===26).map(p=>p.id),
   ['native-parallel-planar-mirror-tracing@26']);
  assert.deepEqual(c.profiles.filter(p=>p.schemaVersion===27).map(p=>p.id),

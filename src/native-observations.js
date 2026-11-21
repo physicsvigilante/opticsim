@@ -3,8 +3,9 @@
 export const NATIVE_OBSERVATION_KEYS=Object.freeze([
   'emissionsById','reflectionsById','detectorsById','interfacesById','blockersById'
 ]);
-export const MISSING_V27_ENDPOINTS='A fresh v27 native endpoint verification is required.';
+export const MISSING_V27_ENDPOINTS='A fresh native endpoint verification is required for this profile.';
 export function hasEndpointEvidence(doc,evidence) {
+  if(doc?.schemaVersion===28)return evidence?.v28EndpointsVerified===true;
   return doc?.schemaVersion!==27 || evidence?.v27EndpointsVerified===true;
 }
 // An injected runner can use an older core with the same upstream pin and
@@ -23,6 +24,7 @@ export function snapshotNativeObservations(diagnostics,requests=[]){
   const parentage=requests.some(r=>r?.kind==='detector-ray-provenance');
   const finite=requests.some(r=>r?.kind==='finite-hit-numerical-diagnostic');
   return {...ordinary,
+    ...(diagnostics?.v28EndpointsVerified===true?{v28EndpointsVerified:true}:{}),
     ...(diagnostics?.v27EndpointsVerified===true?{v27EndpointsVerified:true}:{}),
     ...(hits?{detectorHitEventsById:structuredClone(diagnostics?.detectorHitEventsById??null)}:{}),
     ...(parentage?{detectorRayProvenanceById:structuredClone(diagnostics?.detectorRayProvenanceById??null)}:{}),

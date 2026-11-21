@@ -139,6 +139,7 @@ define(26,'native-parallel-planar-mirror-tracing',{
 define(25,'native-bounded-grin-tracing',{
   [source]:range(1,1),[grin]:range(1,1),[detector]:range(1,1)
 },[],[rule('native-grin-v25')],single);
+define(28,'native-post-lens-aperture-tracing',{[beam]:range(1,1),[lens]:range(1,1),'finite-aperture':range(1,1),[detector]:range(0,1)},[],[rule('native-post-lens-aperture')],[]);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 

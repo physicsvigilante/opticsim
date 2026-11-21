@@ -1,3 +1,4 @@
+import {POST_LENS_MODEL} from './post-lens-aperture.js';
 import {compositionCapabilities,compositionSourceModes,selectAuthoringComposition} from './composition-profiles.js';
 // Small LLM authoring view over the EXISTING strict opticsim scene contract.
 // Interpret/choose physics outside this module. No new ray tracing, geometry DSL,
@@ -85,6 +86,7 @@ export function capabilities() {
       geometry:'Entire emission segment lies within coordinate bounds, outside every surface/medium boundary and detector supporting line. First emitted samples near finite stop/lens endpoints are refused. Beam starting medium must be uniform.',
       execution:'Native pinned Beam emits all deterministic samples; density is numerical not a continuous source property. Brightness exceeding ray density is refused to prevent native saturation.',
       limitations:'No image reconstruction, PSF, diffraction, radiometric power, arbitrary composite optics or source-to-detector ancestry.'},
+    postLensAperture:{schemaVersion:28,model:POST_LENS_MODEL,selection:'Set physical.model explicitly. Historical unmarked requests keep their existing selection.',scope:'One rightward horizontal Beam, one centered ideal lens, one downstream vertical finite aperture and 0–1 farther vertical detectors. Minimum plane gap 1 mm. All emitted samples must meet the lens. Aperture and detector finite misses are allowed. Optical clearance >0.1 mm plus 0.001 mm admission reserve, checked at native completion.'},
     nativeBeamTwoPlaneMirror:{schemaVersion:BEAM_TWO_PLANE_MIRROR_VERSION,model:BEAM_TWO_PLANE_MIRROR_MODEL,
       scope:'One finite real native Beam, exactly two vertical native PlaneGlass boundaries forming one finite homogeneous slab, one finite native vertical Mirror strictly beyond the slab, and 0–1 passive source-side detector (two full-return detectors exceed native depth 8).',
       material:'The original outside medium on both sides of the slab must be identical and explicitly declared, with slab index >= exterior. Both planes require partialReflection=false; native TIR remains.',
@@ -185,7 +187,7 @@ export function capabilities() {
     }])),
     bounds:COMPONENT_BOUNDS,
     runPolicies:Object.fromEntries(Object.entries(policies).map(([id,value])=>[id,{...value}])),
-    requiredInput:['lengthUnit','components'],optionalInput:['title','runPolicy'],
+    requiredInput:['lengthUnit','components'],optionalInput:['title','runPolicy','model'],
     lensParameterVariants:{legacy:{versions:'1–19',parameters:['x','focalLength','apertureHeight'],centreY:0},decentered:{version:DECENTERED_BEAM_VERSION,parameters:['x','y','focalLength','apertureHeight'],centreY:'required explicit mm'}},
     physicalPolicy:'All physical parameter values are required. Full-circle inactive angles are explicitly filled, not measured. No optical component or missing physical information is invented.',
     opticalGeometry:'Historical thin lenses are vertical and centred at y=0; v20 two-lens Beam lenses have explicit independent y; v21 semicircular Glass has a flat diameter and true curved arc. Mirror, detector and aperture orientationDeg is the tangent in y-up coordinates. Native opaque arms and other finite surfaces must not intersect or overlap.',
@@ -204,12 +206,13 @@ export function inspectAuthoringRequest(request){
     catch(error){if(!(error instanceof AuthoringError))throw error;issues.push(...error.issues);}
     return isObject(value);
   };
-  if(!object(request,'$',['lengthUnit','components','title','runPolicy'],['lengthUnit','components']))return issues;
+  if(!object(request,'$',['lengthUnit','components','title','runPolicy','model'],['lengthUnit','components']))return issues;
   let scale=null;
   if(own(request,'lengthUnit')){
     try{scale=units(request.lengthUnit,'$.lengthUnit');}
     catch(error){issues.push(...error.issues);}
   }
+  if(own(request,'model')&&request.model!==POST_LENS_MODEL)issues.push(issue('$.model','UNSUPPORTED_MODEL','Explicit model must be '+POST_LENS_MODEL));
   if(own(request,'runPolicy')&&(typeof request.runPolicy!=='string'||!own(policies,request.runPolicy)))
     issues.push(issue('$.runPolicy','UNSUPPORTED_POLICY','Use a run policy exposed by capabilities()'));
   if(own(request,'title')&&(typeof request.title!=='string'||request.title.length>120))
@@ -238,7 +241,7 @@ export function inspectAuthoringRequest(request){
         (lengthKeys.has(key)?' after conversion to mm':'')));
   };
   const selected=request.components.every(c=>isObject(c)&&typeof c.type==='string')
-    ?selectAuthoringComposition(request.components):null;
+    ?selectRequestComposition(request):null;
   const ids=new Set();
   for(const [i,c] of request.components.entries()){
     const path='$.components['+i+']';
@@ -305,13 +308,16 @@ function camera(components) {
   return {x:(minX+maxX)/2,y:(minY+maxY)/2,
     zoom:isGrinV25?80:Math.max(.03,Math.min(2,.85*1200/width,.85*700/height))};
 }
+function selectRequestComposition(request) {
+  return request.model===POST_LENS_MODEL ? {model:POST_LENS_MODEL,schemaVersion:28,adapterVersion:28} : selectAuthoringComposition(request.components);
+}
 export function prepareScene(request) {
   const issues=inspectAuthoringRequest(request);
   if(issues.length)fail(issues);
   const scale=units(request.lengthUnit,'$.lengthUnit');
   const requestedPolicy=own(request,'runPolicy')?request.runPolicy:null;
   const title=own(request,'title')?request.title:'LLM-authored optical scene';
-  const selectedComposition=selectAuthoringComposition(request.components);
+  const selectedComposition=selectRequestComposition(request);
   const knownIds=new Set(request.components.filter(c=>own(c,'id')).map(c=>c.id)),assignedIds=[];
   const components=request.components.map((component,i)=>{
     const path='$.components['+i+']';

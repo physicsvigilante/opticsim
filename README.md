@@ -1,5 +1,7 @@
 # Ray Optics 2D
 
+For a finite parallel Beam passing through an ideal lens and then a finite aperture, see the [schema-v28 authoring contract and worked example](docs/POST-LENS-APERTURE.md).
+
 A standalone-browser-capable optical bench powered by PhyDemo Ray Optics Simulation **v5.4.0**,
 pinned to **811f508d2b070898c241a568b0c167dcb8645251**. Browser runtime resources
 are local. No LLM request is needed to open, simulate, or edit supported scenes.
