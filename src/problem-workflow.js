@@ -23,7 +23,9 @@ import {assessMethodSuitability,METHOD_SUITABILITY_FORMAT} from './method-suitab
 import {analyzeReducedInverseQuery,reducedInverseCapabilities,INVERSE_FACTS_FORMAT,INVERSE_QUERY_FORMAT} from './reduced-inverse-queries.js';
 import {problemCapabilities,resolveProblemRequest} from './problem-authoring.js';
 import {analyzePlanarAngleQuery,angularCapabilities,ANGLE_QUERY_FORMAT,ANGLE_FACTS_FORMAT} from './planar-angle-queries.js';
-import {analyzePlaneMirrorAngleQuery,mirrorAngularCapabilities,MIRROR_FACTS_FORMAT,MIRROR_QUERY_FORMAT} from './mirror-angle-queries.js';
+import {analyzeMirrorHeadingInverse,mirrorHeadingCapabilities,MIRROR_HEADING_FACTS,
+  MIRROR_HEADING_QUERY,MIRROR_LINE_RELATION_FACTS,analyzePlaneMirrorAngleQuery,
+  mirrorAngularCapabilities,MIRROR_FACTS_FORMAT,MIRROR_QUERY_FORMAT} from './mirror-angle-queries.js';
 import {observableCapabilities,validateObservables} from './observables.js';
 import {validateInterpretation} from './qualification.js';
 import {canonicalJSON,isRecord,boundedText} from './qualified-utils.js';
@@ -33,6 +35,7 @@ const prismKinds=new Set(prismAngleCapabilities().kinds);
 const twoFaceKinds=new Set(twoFaceCapabilities().kinds);
 const reducedAngularAndPowerRoutes=new Map();
 for(const [kinds,format,analyze,missing] of [
+  [mirrorHeadingCapabilities().kinds,MIRROR_HEADING_QUERY,analyzeMirrorHeadingInverse,'Explicit incident and outgoing directions or crossed two-mirror line relations are required.'],
   [fourWallCapabilities().kinds,FOUR_WALL_QUERY,analyzeFourWall,'Explicit specular rectangle and symbolic or numeric endpoint facts required.'],
   [mirrorOscillationCapabilities().kinds,OSCILLATION_QUERY,analyzeMirrorOscillation,'Explicit normalized cosine motion and requested phases required.'],
   [mirrorMagnificationCapabilities().kinds,MIRROR_MAGNIFICATION_QUERY,analyzeMirrorMagnification,'Explicit signed focal length and signed or magnitude-only magnification required.'],
@@ -59,6 +62,7 @@ const mirrorKinds=new Set(mirrorAngularCapabilities().kinds);
 const observableKinds=observableCapabilities().kinds;
 // References the live fact/query formats, not a second physics validator.
 const factContracts=Object.freeze({
+ [MIRROR_HEADING_QUERY]:[MIRROR_HEADING_FACTS,MIRROR_LINE_RELATION_FACTS],
  [FOUR_WALL_QUERY]:[FOUR_WALL_FACTS],
  [OSCILLATION_QUERY]:[OSCILLATION_FACTS],
  [MIRROR_MAGNIFICATION_QUERY]:[MIRROR_MAGNIFICATION_FACTS],
@@ -83,6 +87,7 @@ const factContracts=Object.freeze({
  [MIRROR_QUERY_FORMAT]:[MIRROR_FACTS_FORMAT]
 });
 const requestKindRegistry=()=>({
+ ...Object.fromEntries(mirrorHeadingCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:MIRROR_HEADING_QUERY}])),
  ...Object.fromEntries(fourWallCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:FOUR_WALL_QUERY}])),
  ...Object.fromEntries(mirrorOscillationCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:OSCILLATION_QUERY}])),
  ...Object.fromEntries(mirrorMagnificationCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:MIRROR_MAGNIFICATION_QUERY}])),
@@ -119,6 +124,7 @@ export function problemWorkflowCapabilities(){
     coincidentOpticalPower:powerCapabilities(),
     separatedLensFocus:focusCapabilities(),
     twoSurfaceFocus:surfaceFocusCapabilities(),
+    planeMirrorHeadingInverse:mirrorHeadingCapabilities(),
     fourWallMirrorDirections:fourWallCapabilities(),
     mirrorOscillation:mirrorOscillationCapabilities(),
     mirrorMagnification:mirrorMagnificationCapabilities(),

@@ -110,3 +110,85 @@ export function analyzePlaneMirrorAngleQuery(facts,query){
     reasonCode:status==='unavailable'?'NO_NONGRAZING_SOLUTION':status==='multiple-solutions'?'AMBIGUOUS_INCIDENCE':null,
     limitations:'Angular reflection relation only; no native ray, source, finite-mirror hit, detector or signed output direction is asserted.'};
 }
+
+export const MIRROR_HEADING_FACTS='opticsim-plane-mirror-heading-facts-v1';
+export const MIRROR_LINE_RELATION_FACTS='opticsim-two-mirror-line-relation-facts-v1';
+export const MIRROR_HEADING_QUERY='opticsim-plane-mirror-heading-inverse-query-v1';
+const headingsKind='mirror-incidence-from-headings';
+const linesKind='two-mirror-inclination-and-deviation';
+const turnDeg=(a,b)=>wrap360(b-a+180)-180;
+export function mirrorHeadingCapabilities(){
+  return {format:MIRROR_HEADING_QUERY,kinds:[headingsKind,linesKind],
+    facts:{[headingsKind]:MIRROR_HEADING_FACTS,[linesKind]:MIRROR_LINE_RELATION_FACTS},
+    angleConvention:'Degrees, counterclockwise in y-up. Incidence from the normal. Net deviation is the shortest directed heading change.',
+    scope:'One plane mirror with explicit incoming and outgoing directions, or two nonparallel plane mirrors with crossed endpoint line constraints.'};
+}
+
+function unitDirection(v){
+  exactObject(v,['x','y'],['x','y'],'direction');
+  for(const a of [v.x,v.y])boundedFinite(a,-1e9,1e9,'Direction component');
+  const norm=Math.hypot(v.x,v.y);
+  if(norm<1e-9)fail('Direction must have a norm of at least 1e-9');
+  return {x:v.x/norm,y:v.y/norm};
+}
+function fromHeadings(facts){
+  exactObject(facts,['format','mirrorId','incoming','outgoing'],['format','mirrorId','incoming','outgoing'],'plane-mirror heading facts');
+  if(facts.format!==MIRROR_HEADING_FACTS)fail('Expected single-plane-mirror heading facts');
+  id(facts.mirrorId);
+  const a=unitDirection(facts.incoming), b=unitDirection(facts.outgoing);
+  const dx=b.x-a.x,dy=b.y-a.y,change=Math.hypot(dx,dy);
+  if(change<=eps)return {status:'numerically-indeterminate',value:null,reasonCode:'DIRECTIONS_UNRESOLVED_AT_GRAZING'};
+  const turn=Math.atan2(Math.abs(a.x*b.y-a.y*b.x),a.x*b.x+a.y*b.y)*180/Math.PI;
+  return {status:'conditional',reasonCode:null,value:{mirrorId:facts.mirrorId,
+    incidenceAngleDeg:(180-turn)/2,principalDeviationMagnitudeDeg:turn,
+    normalLineDirection:{x:dx/change,y:dy/change}}};
+}
+function crossedLineRelations(facts){
+  const keys=['format','mirrorIds','incomingToSecond','outgoingToFirst'];
+  exactObject(facts,keys,keys,'two-mirror line relation facts');
+  if(facts.format!==MIRROR_LINE_RELATION_FACTS)fail('Expected crossed two-mirror line relations');
+  if(!Array.isArray(facts.mirrorIds)||facts.mirrorIds.length!==2||facts.mirrorIds[0]===facts.mirrorIds[1])
+    fail('Supply two distinct mirror IDs in reflection order');
+  for(const mirror of facts.mirrorIds)id(mirror);
+  const relations={parallel:0,perpendicular:90};
+  const [p,q]=[facts.incomingToSecond,facts.outgoingToFirst].map(r=>{
+    if(typeof r!=='string'||!own(relations,r))fail('Use parallel or perpendicular endpoint line relations');
+    return relations[r];
+  });
+  const candidates=[];
+  // With the first tangent at zero, beta_in = theta + p (mod 180).
+  // Two reflections give beta_out = 3 theta + p (mod 180).
+  // Keep one representative per nonparallel line in (-90, 90].
+  for(const k of [-1,0,1,2]){
+    const theta=(q-p+180*k)/3;
+    if(theta<=-90||theta>90||theta===0)continue;
+    for(const offset of [0,180]){
+      const input=wrap360(theta+p+offset);
+      const intermediate=reflectHeading(input,0);
+      const output=reflectHeading(intermediate,theta);
+      const incidence=[incidenceFromNormal(input,0),incidenceFromNormal(intermediate,theta)];
+      if(incidence.includes(90))continue;
+      const turns=[turnDeg(input,intermediate),turnDeg(intermediate,output)];
+      candidates.push({secondTangentRelativeDeg:theta,headingSequenceDeg:[input,intermediate,output],
+        incidenceFromNormalDeg:incidence,signedTurnsDeg:turns,
+        signedPrincipalDeviationDeg:turnDeg(input,output)});
+    }
+  }
+  if(candidates.length===0)return {status:'unavailable',value:null,reasonCode:'NO_NONGRAZING_SOLUTION'};
+  const [first]=candidates;
+  return {status:'conditional',reasonCode:null,value:{mirrorIds:[...facts.mirrorIds],
+    angleBetweenMirrorsDeg:Math.abs(first.secondTangentRelativeDeg),
+    principalDeviationMagnitudeDeg:Math.abs(first.signedPrincipalDeviationDeg),
+    sumOfTurnMagnitudesDeg:first.signedTurnsDeg.reduce((sum,angle)=>sum+Math.abs(angle),0),
+    candidates}};
+}
+export function analyzeMirrorHeadingInverse(facts,query){
+  exactObject(query,['format','kind'],['format','kind'],'mirror heading inverse query');
+  if(query.format!==MIRROR_HEADING_QUERY||![headingsKind,linesKind].includes(query.kind))
+    fail('Unsupported mirror heading inverse query');
+  const result=query.kind===headingsKind?fromHeadings(facts):crossedLineRelations(facts);
+  return {format:'opticsim-plane-mirror-heading-inverse-result-v1',kind:query.kind,
+    method:'conditional-analytical-specular-reflections',...result,native:{status:'not-run'},
+    assumptions:['Ideal 2D specular two-sided plane mirrors and the stated reflection order.'],
+    limitations:['The angular facts leave physical extent, location and interception unresolved.']};
+}

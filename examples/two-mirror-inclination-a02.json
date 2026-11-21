@@ -1,0 +1,17 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-two-mirror-line-relation-facts-v1",
+    "mirrorIds": ["first", "second"],
+    "incomingToSecond": "parallel",
+    "outgoingToFirst": "parallel"
+  },
+  "requests": [{"id": "angles", "kind": "two-mirror-inclination-and-deviation"}],
+  "interpretation": {
+    "requestedResult": "Angle between the two mirrors and the total ray deviation.",
+    "stated": ["Light enters parallel to the second mirror, reflects at the two inclined mirrors in order and leaves parallel to the first mirror."],
+    "derived": ["Consider both signed orientations and both input headings that satisfy each line condition."],
+    "assumptions": ["Ideal in-plane specular reflection. Use the first mirror tangent as the relative angular reference."],
+    "unknowns": ["Absolute orientations, source position and finite mirror extent."]
+  }
+}

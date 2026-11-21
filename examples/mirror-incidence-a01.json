@@ -1,0 +1,17 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-plane-mirror-heading-facts-v1",
+    "mirrorId": "mirror",
+    "incoming": {"x": 0.5, "y": 0.8660254037844386},
+    "outgoing": {"x": 0.5, "y": -0.8660254037844386}
+  },
+  "requests": [{"id": "incidence", "kind": "mirror-incidence-from-headings"}],
+  "interpretation": {
+    "requestedResult": "Angle of incidence at the plane mirror.",
+    "stated": ["Incoming direction is (1, sqrt(3))/2. Outgoing direction is (1, -sqrt(3))/2."],
+    "derived": ["Encode the y components of both direction vectors at binary64 precision."],
+    "assumptions": ["Use ideal specular reflection in the plane of the given vectors."],
+    "unknowns": ["Mirror extent and source position."]
+  }
+}
