@@ -15,6 +15,7 @@ test('v34 composes actual direct and reflected trips to the same exterior detect
     const p=original();
     p.components[0].parameters.x=depth;
     p.components[0].emission.directionDeg=heading;
+    if(heading===-180)p.components.at(-1).parameters.orientationDeg=-90;
     const reflected=heading===0;
     for(const c of p.components){c.parameters.x+=120;c.parameters.y-=75;}
     const doc=prepareScene(p).document;
@@ -22,6 +23,7 @@ test('v34 composes actual direct and reflected trips to the same exterior detect
     assert.deepEqual(core.compile(doc).native.objs.map(o=>o.type),['AngleSource','PlaneGlass','ArcMirror','Detector']);
     const {summary}=evaluateDocument(doc,core,fixture.requests);
     assert.equal(summary.observations?.v34ImmersedArcVerified,true);
+    assert.equal(Math.sign(summary.observations.detectorsById.D.signedPower),heading===-180?-1:1);
     const {results}=await evaluateObservables(doc,fixture.requests,summary);
     assert.deepEqual(results.slice(0,2).map(r=>r.value),[reflected?3:0,3]);
     for(const {pointMm,incomingUnit} of results[2].value){
@@ -68,4 +70,85 @@ test('v34 rejects ambiguous spaces, incomplete callback paths and absent evidenc
   }
   doc.simulation.processedRayLimit=1;
   assert.equal(evaluateDocument(doc,core,fixture.requests).summary.observations,null);
+});
+
+test('v34 withholds altered brightness at emission, reflection, refraction or detection',()=>{
+  const doc=prepareScene(original()).document;
+  const {scene}=core.loadDocument(doc);
+  for(const [i,obj] of scene.objs.entries()){
+    const name=i===0?'onSimulationStart':'onRayIncident';
+    const prototype=Object.getPrototypeOf(obj),delegate=prototype[name];
+    let changed=0;
+    prototype[name]=function(...args){
+      const result=delegate.apply(this,args);
+      const ray=i===0?result.newRays[0]:args[0];
+      ray.brightness_s*=.5;
+      changed++;
+      return result;
+    };
+    try{
+      assert.equal(evaluateDocument(doc,core,fixture.requests).summary.observations,null);
+      assert.ok(changed>0);
+    }finally{
+      prototype[name]=delegate;
+    }
+  }
+});
+
+test('v34 withholds offset native detector power before or after its complete fan',()=>{
+  const doc=prepareScene(original()).document;
+  const {scene,idMap}=core.loadDocument(doc);
+  const index=idMap.get('D'),prototype=Object.getPrototypeOf(scene.objs[index]);
+  const start=prototype.onSimulationStart;
+  prototype.onSimulationStart=function(...args){
+    const result=start.apply(this,args);
+    this.power+=10;
+    return result;
+  };
+  try{
+    assert.equal(evaluateDocument(doc,core,fixture.requests).summary.observations,null);
+  }finally{
+    prototype.onSimulationStart=start;
+  }
+  let changed=false;
+  const offsetAtCompletion={...core,Simulator:class extends core.Simulator{
+    emit(event,...args){
+      if(event==='simulationComplete'){
+        this.scene.objs[index].power+=10;
+        changed=true;
+      }
+      return super.emit(event,...args);
+    }
+  }};
+  assert.equal(evaluateDocument(doc,offsetAtCompletion,fixture.requests).summary.observations,null);
+  assert.equal(changed,true);
+});
+
+test('v34 withholds the opposite circle branch even if the native mirror reflects at the reported point',()=>{
+  const p=original(),mirror=p.components.find(c=>c.id==='M').parameters;
+  Object.assign(mirror,{x:200,radius:50,apertureHeight:30});
+  p.components.find(c=>c.id==='D').parameters.length=100;
+  const doc=prepareScene(p).document;
+  assert.equal(evaluateDocument(doc,core,fixture.requests).summary.observations?.v34ImmersedArcVerified,true);
+  let replaced=0;
+  const wrongBranch={...core,loadDocument(...args){
+    const loaded=core.loadDocument(...args);
+    const arc=loaded.scene.objs[loaded.idMap.get('M')],intersect=arc.checkRayIntersects;
+    arc.checkRayIntersects=function(ray){
+      const hit=intersect.call(this,ray);
+      if(!hit)return hit;
+      const dx=ray.p2.x-ray.p1.x,dy=ray.p2.y-ray.p1.y;
+      const x=ray.p1.x-(mirror.x-mirror.radius),y=ray.p1.y+mirror.y;
+      const a=dx*dx+dy*dy,b=dx*x+dy*y,c=x*x+y*y-mirror.radius*mirror.radius;
+      const time=(-b-Math.sqrt(b*b-a*c))/a;
+      assert.ok(time>0);
+      const opposite={x:ray.p1.x+time*dx,y:ray.p1.y+time*dy};
+      assert.ok(opposite.x<mirror.x-mirror.radius&&hit.x>mirror.x-mirror.radius);
+      replaced++;
+      return opposite;
+    };
+    return loaded;
+  }};
+  assert.equal(evaluateDocument(doc,wrongBranch,fixture.requests).summary.observations,null);
+  assert.equal(replaced,3);
 });
