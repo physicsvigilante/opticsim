@@ -1,5 +1,5 @@
 import {isRecord} from './qualified-utils.js';
-import {fromBinary64, compare, subtract, multiply, divide} from './binary64-rational.js';
+import {fromBinary64, toBinary64, compare, subtract, multiply, divide} from './binary64-rational.js';
 
 export const IMMERSION_FACTS = 'opticsim-calibrated-lens-immersion-facts-v1';
 export const IMMERSION_QUERY = 'opticsim-calibrated-lens-immersion-query-v1';
@@ -64,5 +64,5 @@ export function analyzeImmersion(f,q) {
   const result=divide(multiply(multiply(focal,target),calibration.value),multiply(reference,changed.value));
   if (compare(multiply(absolute(result),unit),cap)>0) return uncertain();
   return {...base,status:'conditional',value:{...description,state:result.n>0n?'converging':'diverging',
-    signedFocalLength:Number(result.n)/Number(result.d)}};
+    signedFocalLength:toBinary64(result)}};
 }
