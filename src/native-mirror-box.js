@@ -1,4 +1,6 @@
 import {compositionCountsMatch} from './composition-profiles.js';
+import {segmentsIntersect} from './composition-validation.js';
+import {separatedSegmentDistance} from './finite-aperture.js';
 
 export const MIRROR_BOX_VERSION=35;
 export const MIRROR_BOX_MODEL='native-rectangular-mirror-box';
@@ -51,8 +53,9 @@ function direction(ray){
   return {x:dx/magnitude,y:dy/magnitude};
 }
 
-export function mirrorBoxAudit(doc,scene,idMap){
+export function mirrorBoxAudit(doc,scene,idMap,endpoints){
   const {source,mirrors,target}=parts(doc.physics.components);
+  const opaque=endpoints(target.parameters).map(p=>({x:p.x,y:-p.y}));
   const emitter=scene.objs[idMap.get(source.id)],nativeStart=emitter.onSimulationStart;
   const sourceAngle=source.emission.directionDeg*Math.PI/180;
   const expectedDirection={x:Math.cos(sourceAngle),y:-Math.sin(sourceAngle)};
@@ -84,6 +87,13 @@ export function mirrorBoxAudit(doc,scene,idMap){
         Math.abs(normal)<.02||!near(vertical?hit.x:hit.y,vertical?p.x:-p.y)||
         Math.abs(vertical?hit.y+p.y:hit.x-p.x)+rimClearance+positionTolerance>=p.length/2)
         fault??=c.id+': ambiguous finite encounter or broken ray continuity';
+      if(c!==target){
+        // Check this already observed leg. An earlier opaque contact cannot
+        // be skipped on a qualified route to the mirror.
+        const leg=[input.p1,hit];
+        if(segmentsIntersect(leg,opaque)||separatedSegmentDistance(leg,opaque)<=positionTolerance)
+          fault??=c.id+': incoming segment crossed or approached the opaque target';
+      }
       const result=incident.call(this,input,index,point,...rest);
       if(!samePoint(hit,point)||result?.isUndefinedBehavior||result?.newRays?.length||!hasAuthoredBrightness(input))
         fault??=c.id+': unexpected native continuation';
