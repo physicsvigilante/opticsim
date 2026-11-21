@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {randomUUID,createHash} from 'node:crypto';
 import {resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {
  analyzeTwoSourceLensCoincidence,twoSourceLensCoincidenceCapabilities,
@@ -159,7 +160,7 @@ test('CLI preserves original bytes and SHA for conditional, no-placement and ref
  assert.equal(existsSync(resolve(badDir,'analytical-result.json')),false);
  assert.deepEqual(readFileSync(resolve(badDir,'input.json')),malformed);
  const caps=JSON.parse(execFileSync(process.execPath,[
-  new URL('../scripts/two-source-lens-coincidence-query.mjs',import.meta.url).pathname,
+  fileURLToPath(new URL('../scripts/two-source-lens-coincidence-query.mjs',import.meta.url)),
   'capabilities'],{encoding:'utf8'}));
  assert.deepEqual(caps.kinds,twoSourceLensCoincidenceCapabilities().kinds);
  assert.match(caps.native,/not-run/);

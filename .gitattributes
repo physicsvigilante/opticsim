@@ -2,5 +2,9 @@
 * text=auto
 *.md text eol=lf
 *.json text eol=lf
+# Preserve source and workflow bytes used by provenance and visibility tests.
+*.js text eol=lf
+*.mjs text eol=lf
+.github/workflows/opticsim-pages.yml text eol=lf
 .gitignore text eol=lf
 .gitattributes text eol=lf
