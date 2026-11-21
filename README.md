@@ -1,5 +1,7 @@
 # Ray Optics 2D
 
+Compose a parallel slab and a finite spherical mirror with the [native slab return contract](docs/SLAB-ARC-RETURN.md).
+
 For the signed collimated focus of two transversely displaced thin lenses, use the [offset-pair focus query](docs/OFFSET-PAIR-FOCUS.md).
 
 Compare how a common lens shape changes focal length and bending direction across materials and media using the [immersed material-lens query](docs/IMMERSED-MATERIAL-LENSES.md).

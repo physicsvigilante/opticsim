@@ -1,0 +1,105 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "model": "native-fan-slab-arc-return-tracing",
+    "lengthUnit": "mm",
+    "runPolicy": "dense-v1",
+    "title": "Concave spherical mirror with a separated parallel plate",
+    "components": [
+      {
+        "id": "S",
+        "type": "point-source",
+        "parameters": {
+          "x": -300,
+          "y": 1,
+          "brightness": 0.04
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 0,
+          "angleDeg": 1.8
+        }
+      },
+      {
+        "id": "I1",
+        "type": "planar-interface",
+        "parameters": {
+          "x": -285,
+          "y": 0,
+          "normalDeg": 0,
+          "negativeIndex": 1,
+          "positiveIndex": 1.5,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "I2",
+        "type": "planar-interface",
+        "parameters": {
+          "x": -225,
+          "y": 0,
+          "normalDeg": 0,
+          "negativeIndex": 1.5,
+          "positiveIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "D",
+        "type": "ray-detector",
+        "parameters": {
+          "x": -100,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 60
+        }
+      },
+      {
+        "id": "M",
+        "type": "circular-arc-mirror",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "normalDeg": 180,
+          "radius": 200,
+          "apertureHeight": 40
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "reflections",
+      "kind": "mirror-reflections",
+      "componentId": "M"
+    },
+    {
+      "id": "frontEvents",
+      "kind": "interface-interactions",
+      "componentId": "I1"
+    },
+    {
+      "id": "rearEvents",
+      "kind": "interface-interactions",
+      "componentId": "I2"
+    },
+    {
+      "id": "detectorHits",
+      "kind": "detector-hit-events",
+      "componentId": "D"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Measure finite sampled return rays and slab encounters for an A12 configuration.",
+    "stated": [
+      "Concave radius 200 mm, object distance 300 mm and slab thickness 60 mm with index 1.5, between the object and centre of curvature."
+    ],
+    "derived": [],
+    "assumptions": [
+      "Unit index exterior, explicit slab placement, a one-millimetre off-axis point probe, relative brightness and emission cone, finite mirror aperture and passive detector. Partial reflections are disabled."
+    ],
+    "unknowns": [
+      "Original object height and absolute image height."
+    ]
+  }
+}
