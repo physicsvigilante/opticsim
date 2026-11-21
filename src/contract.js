@@ -1,3 +1,4 @@
+import {CAP_TYPE,CAP_VERSION,CAP_PARAMETERS,validateCircularCap} from './finite-circular-cap.js';
 import {validateSlabArcReturn} from './slab-arc-return.js';
 import {validateCurvedEntryBeam} from './curved-entry-beam.js';
 import {validateRefractiveFan} from './refractive-fan.js';
@@ -49,11 +50,11 @@ const parameters = { [PARALLEL_BEAM_TYPE]:[...PARALLEL_BEAM_PARAMETERS], 'point-
   [CIRCLE_BLOCKER_TYPE]: ['x', 'y', 'radius'],
   [FINITE_APERTURE_TYPE]: ['x', 'y', 'orientationDeg', 'length', 'openingLength'],
   'ray-detector': ['x', 'y', 'orientationDeg', 'length'],
-  [PLANAR_TYPE]: [...PLANAR_PARAMETERS], [CIRCULAR_TYPE]: [...CIRCULAR_PARAMETERS], [SEMICIRCULAR_TYPE]: [...SEMICIRCULAR_PARAMETERS], [PRISM_TYPE]: [...PRISM_PARAMETERS], [POLYGON_TYPE]: [...POLYGON_PARAMETERS], [SPHERICAL_LENS_TYPE]: [...SPHERICAL_PARAMETERS], [GRIN_V25_TYPE]:[...GRIN_V25_PARAMETERS], ...CURVED_PARAMETERS };
+  [PLANAR_TYPE]: [...PLANAR_PARAMETERS], [CIRCULAR_TYPE]: [...CIRCULAR_PARAMETERS], [CAP_TYPE]: [...CAP_PARAMETERS], [SEMICIRCULAR_TYPE]: [...SEMICIRCULAR_PARAMETERS], [PRISM_TYPE]: [...PRISM_PARAMETERS], [POLYGON_TYPE]: [...POLYGON_PARAMETERS], [SPHERICAL_LENS_TYPE]: [...SPHERICAL_PARAMETERS], [GRIN_V25_TYPE]:[...GRIN_V25_PARAMETERS], ...CURVED_PARAMETERS };
 // Shared authoring/validator definitions. General composition relaxes mandatory
 // apparatus types; it does not relax numerical, geometric or runtime limits.
 export const COMPONENT_TYPES = Object.freeze(Object.keys(parameters));
-export const LENGTH_PARAMETERS = Object.freeze(['x','y','x1','y1','x2','y2','x3','y3','x4','y4','width','focalLength','apertureHeight','centerThickness','frontRadius','backRadius','leftX','axisY','spanX','upHeight','downHeight','gradientLength','length','openingLength','radius']);
+export const LENGTH_PARAMETERS = Object.freeze(['x','y','x1','y1','x2','y2','x3','y3','x4','y4','width','focalLength','apertureHeight','centerThickness','frontRadius','backRadius','leftX','axisY','spanX','upHeight','downHeight','gradientLength','length','openingLength','radius','capHeight']);
 // Compatibility envelope for legacy clients; whole-system profiles determine
 // admission. These per-type maxima must never be summed across optical families.
 export const GENERAL_SCOPE = Object.freeze(Object.fromEntries(
@@ -105,7 +106,7 @@ function validateVersion(doc, version) {
     object(c, ['id', 'type', 'parameters', ...(version >= 2 && c?.type === 'point-source' ? ['emission'] : [])], path);
     if (typeof c.id !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(c.id) || ids.has(c.id)) fail(`${path}.id`, 'expected a unique stable ID (letters, digits, underscores, hyphens)');
     ids.add(c.id);
-    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(t!==SPHERICAL_LENS_TYPE||[15,16,17,18].includes(version))&&(t!==GRIN_V25_TYPE||version===GRIN_V25_VERSION)&&(version===4||([13,CURVED_ENTRY_VERSION].includes(version)&&t==='line-blocker')||(version===THICK_APERTURE_VERSION&&t===FINITE_APERTURE_TYPE)||([PARALLEL_BEAM_VERSION,28].includes(version)&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||[PARALLEL_BEAM_VERSION,DECENTERED_BEAM_VERSION,SEMICIRCULAR_VERSION,PRISM_BEAM_VERSION,CIRCLE_BEAM_VERSION,BEAM_PLANAR_MIRROR_VERSION,BEAM_TWO_PLANE_MIRROR_VERSION,28,30].includes(version))&&(t!==SEMICIRCULAR_TYPE||[SEMICIRCULAR_VERSION,CURVED_ENTRY_VERSION,30].includes(version))) :
+    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version===CAP_VERSION||t!==CAP_TYPE)&&(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(t!==SPHERICAL_LENS_TYPE||[15,16,17,18].includes(version))&&(t!==GRIN_V25_TYPE||version===GRIN_V25_VERSION)&&(version===4||([13,CURVED_ENTRY_VERSION].includes(version)&&t==='line-blocker')||(version===THICK_APERTURE_VERSION&&t===FINITE_APERTURE_TYPE)||([PARALLEL_BEAM_VERSION,28].includes(version)&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||[PARALLEL_BEAM_VERSION,DECENTERED_BEAM_VERSION,SEMICIRCULAR_VERSION,PRISM_BEAM_VERSION,CIRCLE_BEAM_VERSION,BEAM_PLANAR_MIRROR_VERSION,BEAM_TWO_PLANE_MIRROR_VERSION,28,30].includes(version))&&(t!==SEMICIRCULAR_TYPE||[SEMICIRCULAR_VERSION,CURVED_ENTRY_VERSION,30].includes(version))) :
       version >= 3 ? ['point-source', 'ideal-lens', 'plane-mirror'] :
       ['point-source', 'ideal-lens'], `${path}.type`);
     object(c.parameters, componentParameterNames(c.type,version), `${path}.parameters`);
@@ -141,6 +142,7 @@ function validateVersion(doc, version) {
     'native-thick-mirror':c=>validateThickLensMirrorComposition(c,mirrorEndpoints,fail),
     'native-two-thick-mirror':c=>validateTwoThickLensMirrorComposition(c,mirrorEndpoints,fail),
     'native-thick-aperture':c=>validateThickApertureComposition(c,mirrorEndpoints,fail),
+    'inside-circular-cap':c=>validateCircularCap(c,doc.simulation?.rayDensity,fail),
     'slab-arc-return':c=>validateSlabArcReturn(c,doc.simulation?.rayDensity,fail),
     'curved-entry-beam':c=>validateCurvedEntryBeam(c,doc.simulation?.rayDensity,fail),
     'native-refractive-fan':c=>validateRefractiveFan(c,doc.simulation?.rayDensity,fail),

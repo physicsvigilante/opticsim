@@ -7,13 +7,13 @@ import {sceneHash,isRecord,boundedText} from './qualified-utils.js';
 import {supportsNativeRayParentage} from './native-ray-parentage.js';
 import {supportsFiniteHitDiagnostic,FINITE_DIAGNOSTIC_METHOD} from './native-finite-hit-diagnostic.js';
 const kinds=Object.freeze({
-  'interface-interactions':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','spherical-lens'],unit:'sampled interactions'},
-  'interface-incidence-angle':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','spherical-lens'],unit:'degrees from normal; first native encounter'},
-  'interface-transmission-angle':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','spherical-lens'],unit:'degrees from normal; first native encounter'},
-  'interface-reflection-angle':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','spherical-lens'],unit:'degrees from normal; first native encounter'},
-  'interface-tir-count':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','spherical-lens'],unit:'native TIR interactions'},
-  'interface-first-event':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','spherical-lens'],unit:'native event; directions y-up; power relative'},
-  'interface-face-events':{type:['triangular-prism','polygon-dielectric','semicircular-dielectric','spherical-lens'],unit:'bounded first native encounter and total count per finite face'},
+  'interface-interactions':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','circular-cap-dielectric','spherical-lens'],unit:'sampled interactions'},
+  'interface-incidence-angle':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','circular-cap-dielectric','spherical-lens'],unit:'degrees from normal; first native encounter'},
+  'interface-transmission-angle':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','circular-cap-dielectric','spherical-lens'],unit:'degrees from normal; first native encounter'},
+  'interface-reflection-angle':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','circular-cap-dielectric','spherical-lens'],unit:'degrees from normal; first native encounter'},
+  'interface-tir-count':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','circular-cap-dielectric','spherical-lens'],unit:'native TIR interactions'},
+  'interface-first-event':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','circular-cap-dielectric','spherical-lens'],unit:'native event; directions y-up; power relative'},
+  'interface-face-events':{type:['triangular-prism','polygon-dielectric','semicircular-dielectric','circular-cap-dielectric','spherical-lens'],unit:'bounded first native encounter and total count per finite face'},
   'source-emissions':{type:['point-source','parallel-beam'],unit:'sampled rays'},
   'blocker-absorptions':{type:['line-blocker','circle-blocker','finite-aperture'],unit:'sampled absorbed rays'},
   'mirror-reflections':{type:['plane-mirror','ideal-curved-mirror','circular-arc-mirror'],unit:'sampled interactions'},
@@ -81,7 +81,7 @@ export async function evaluateObservables(doc,requests,execution){
   const complete=fresh&&execution.executionPassed===true&&
     hasEndpointEvidence(doc,execution.observations)&&
     ['completed','completed-with-warnings'].includes(execution.native?.status);
-  const warnings=[...(execution?.native?.warnings||[]),...doc.physics.components.filter(c=>['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','spherical-lens','graded-index-rectangle'].includes(c.type)&&!c.parameters.partialReflection)
+  const warnings=[...(execution?.native?.warnings||[]),...doc.physics.components.filter(c=>['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','circular-cap-dielectric','spherical-lens','graded-index-rectangle'].includes(c.type)&&!c.parameters.partialReflection)
     .map(c=>c.id+': explicit transmitted-only approximation omits Fresnel partial reflections; native TIR remains active.')];
   const results=requests.map(r=>{
     const base={...r,status:'unavailable',value:null,method:null,unit:null,reason:null};

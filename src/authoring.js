@@ -1,3 +1,4 @@
+import {CAP_TYPE,CAP_MODEL,CAP_VERSION,capExtents} from './finite-circular-cap.js';
 import {SLAB_ARC_MODEL} from './slab-arc-return.js';
 import {CURVED_BEAM_MODEL} from './curved-entry-beam.js';
 import {REFRACTIVE_FAN_MODEL} from './refractive-fan.js';
@@ -40,7 +41,7 @@ const policies=Object.freeze({
     maxRayDepth:GRIN_V25_POLICY.maxRayDepth,processedRayLimit:GRIN_V25_POLICY.processedRayLimit})
 });
 const prefixes=Object.freeze({
-  'point-source':'source',[PARALLEL_BEAM_TYPE]:'beam',[SEMICIRCULAR_TYPE]:'semicircle','ideal-lens':'lens','plane-mirror':'mirror','line-blocker':'blocker',[CIRCLE_BLOCKER_TYPE]:'circle-blocker',[FINITE_APERTURE_TYPE]:'aperture','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism',[POLYGON_TYPE]:'glass',[SPHERICAL_LENS_TYPE]:'thick-lens',[GRIN_V25_TYPE]:'grin'
+  'point-source':'source',[PARALLEL_BEAM_TYPE]:'beam',[SEMICIRCULAR_TYPE]:'semicircle',[CAP_TYPE]:'cap','ideal-lens':'lens','plane-mirror':'mirror','line-blocker':'blocker',[CIRCLE_BLOCKER_TYPE]:'circle-blocker',[FINITE_APERTURE_TYPE]:'aperture','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism',[POLYGON_TYPE]:'glass',[SPHERICAL_LENS_TYPE]:'thick-lens',[GRIN_V25_TYPE]:'grin'
 });
 const lengthKeys=new Set(LENGTH_PARAMETERS);
 const own=(value,key)=>Object.prototype.hasOwnProperty.call(value,key);
@@ -89,6 +90,7 @@ export function capabilities() {
       geometry:'Entire emission segment lies within coordinate bounds, outside every surface/medium boundary and detector supporting line. First emitted samples near finite stop/lens endpoints are refused. Beam starting medium must be uniform.',
       execution:'Native pinned Beam emits all deterministic samples; density is numerical not a continuous source property. Brightness exceeding ray density is refused to prevent native saturation.',
       limitations:'No image reconstruction, PSF, diffraction, radiometric power, arbitrary composite optics or source-to-detector ancestry.'},
+    finiteCircularCap:{schemaVersion:CAP_VERSION,model:CAP_MODEL,selection:'Select physical.model explicitly and use dense-v1.',scope:'An axial directional source inside a finite circular cap and one exterior detector beyond the curved pole.'},
     slabArcReturn:{schemaVersion:31,model:SLAB_ARC_MODEL,selection:'Select physical.model explicitly and use dense-v1.',scope:'One directional fan, two parallel interfaces, a separated concave spherical mirror and one exterior detector.'},
     curvedEntryBeam:{schemaVersion:30,model:CURVED_BEAM_MODEL,selection:'Select physical.model explicitly.',scope:'One horizontal leftward Beam through a finite right semicircular dielectric. Returns sampled flat-face y extrema in mm.'},
     refractiveFan:{schemaVersion:29,model:REFRACTIVE_FAN_MODEL,selection:'Set physical.model explicitly. Optional physical.rayDensity overrides the numerical preset.',scope:'One directional fan below one horizontal interface. Partial reflection disabled. Entire fan withheld at near-critical samples.'},
@@ -219,7 +221,7 @@ export function inspectAuthoringRequest(request){
     try{scale=units(request.lengthUnit,'$.lengthUnit');}
     catch(error){issues.push(...error.issues);}
   }
-  if(own(request,'model')&&![POST_LENS_MODEL,REFRACTIVE_FAN_MODEL,CURVED_BEAM_MODEL,SLAB_ARC_MODEL].includes(request.model))issues.push(issue('$.model','UNSUPPORTED_MODEL','Unknown explicit physical model'));
+  if(own(request,'model')&&![POST_LENS_MODEL,REFRACTIVE_FAN_MODEL,CURVED_BEAM_MODEL,SLAB_ARC_MODEL,CAP_MODEL].includes(request.model))issues.push(issue('$.model','UNSUPPORTED_MODEL','Unknown explicit physical model'));
   if(own(request,'runPolicy')&&(typeof request.runPolicy!=='string'||!own(policies,request.runPolicy)))
     issues.push(issue('$.runPolicy','UNSUPPORTED_POLICY','Use a run policy exposed by capabilities()'));
   if(own(request,'title')&&(typeof request.title!=='string'||request.title.length>120))
@@ -292,6 +294,7 @@ function camera(components) {
     if(c.type===PARALLEL_BEAM_TYPE){const g=parallelBeamGeometry(p);vertices.push(g.p1,g.p2);}
     else if(c.type==='point-source')vertices.push({x:p.x,y:p.y});
     else if(c.type===CIRCULAR_TYPE)vertices.push(...circularExtents(p));
+    else if(c.type===CAP_TYPE)vertices.push(...capExtents(p));
     else if(c.type===SEMICIRCULAR_TYPE)vertices.push(...semicircularExtents(p));
     else if(c.type===CIRCLE_BLOCKER_TYPE)vertices.push(...circleBlockerExtents(p));
     else if(c.type===PRISM_TYPE)vertices.push(...prismVertices(p));
@@ -316,6 +319,7 @@ function camera(components) {
     zoom:isGrinV25?80:Math.max(.03,Math.min(2,.85*1200/width,.85*700/height))};
 }
 function selectRequestComposition(request) {
+  if(request.model===CAP_MODEL)return {model:CAP_MODEL,schemaVersion:CAP_VERSION,adapterVersion:CAP_VERSION};
   if(request.model===SLAB_ARC_MODEL)return {model:SLAB_ARC_MODEL,schemaVersion:31,adapterVersion:31};
   if(request.model===CURVED_BEAM_MODEL)return {model:CURVED_BEAM_MODEL,schemaVersion:30,adapterVersion:30};
   if(request.model===REFRACTIVE_FAN_MODEL)return {model:REFRACTIVE_FAN_MODEL,schemaVersion:29,adapterVersion:29};
