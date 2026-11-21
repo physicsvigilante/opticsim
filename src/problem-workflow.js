@@ -5,6 +5,7 @@ import {analyzeTwoFaceQuery,twoFaceCapabilities,TWO_FACE_FACTS,TWO_FACE_QUERY} f
 import {analyzePowerQuery,powerCapabilities,POWER_FACTS,POWER_QUERY} from './coincident-optical-power.js';
 import {analyzeFocus,focusCapabilities,FOCUS_FACTS,FOCUS_QUERY} from './separated-lens-focus.js';
 import {analyzeSurfaceFocus,surfaceFocusCapabilities,SURFACE_FOCUS_FACTS,SURFACE_FOCUS_QUERY} from './two-surface-focus.js';
+import {analyzeMaterialLens,materialLensCapabilities,MATERIAL_FACTS,MATERIAL_QUERY} from './material-lens-comparison.js';
 import {analyzeLensTrainQuery,lensTrainCapabilities,LENS_FACTS_FORMAT,LENS_QUERY_FORMAT} from './lens-train-queries.js';
 import {analyzeCurvedMirrorQuery,curvedQueryCapabilities,CURVED_FACTS_FORMAT,CURVED_QUERY_FORMAT} from './curved-mirror-queries.js';
 import {assessMethodSuitability,METHOD_SUITABILITY_FORMAT} from './method-suitability.js';
@@ -21,6 +22,7 @@ const prismKinds=new Set(prismAngleCapabilities().kinds);
 const twoFaceKinds=new Set(twoFaceCapabilities().kinds);
 const reducedAngularAndPowerRoutes=new Map();
 for(const [kinds,format,analyze,missing] of [
+  [materialLensCapabilities().kinds,MATERIAL_QUERY,analyzeMaterialLens,'Explicit common shape, lens materials and exterior media are required.'],
   [surfaceFocusCapabilities().kinds,SURFACE_FOCUS_QUERY,analyzeSurfaceFocus,'Explicit two-surface geometry and material facts are required.'],
   [focusCapabilities().kinds,FOCUS_QUERY,analyzeFocus,'Explicit separated lenses, conjugate condition and angular reference are required.'],
   [prismKinds,PRISM_QUERY_FORMAT,analyzePrismAngleQuery,'Explicit prism angle, incidence, material indices or deviation facts are required.'],
@@ -35,6 +37,7 @@ const mirrorKinds=new Set(mirrorAngularCapabilities().kinds);
 const observableKinds=observableCapabilities().kinds;
 // References the live fact/query formats, not a second physics validator.
 const factContracts=Object.freeze({
+ [MATERIAL_QUERY]:[MATERIAL_FACTS],
  [PRISM_QUERY_FORMAT]:[PRISM_FACTS_FORMAT],
  [TWO_FACE_QUERY]:[TWO_FACE_FACTS],
  [POWER_QUERY]:[POWER_FACTS],
@@ -47,6 +50,7 @@ const factContracts=Object.freeze({
  [MIRROR_QUERY_FORMAT]:[MIRROR_FACTS_FORMAT]
 });
 const requestKindRegistry=()=>({
+ ...Object.fromEntries(materialLensCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:MATERIAL_QUERY}])),
  ...Object.fromEntries(surfaceFocusCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:SURFACE_FOCUS_QUERY}])),
  ...Object.fromEntries(focusCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:FOCUS_QUERY}])),
  ...Object.fromEntries(powerCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:POWER_QUERY}])),
@@ -71,6 +75,7 @@ export function problemWorkflowCapabilities(){
     coincidentOpticalPower:powerCapabilities(),
     separatedLensFocus:focusCapabilities(),
     twoSurfaceFocus:surfaceFocusCapabilities(),
+    materialLensComparison:materialLensCapabilities(),
     methodSuitability:{format:METHOD_SUITABILITY_FORMAT,mode:'exact-typed-request-diagnostic',
       contractFamilies:structuredClone(factContracts),
       limits:['No natural-language interpretation, image parsing or automatic method aliasing.',

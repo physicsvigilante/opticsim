@@ -1,5 +1,7 @@
 # Ray Optics 2D
 
+Compare how a common lens shape changes focal length and bending direction across materials and media using the [immersed material-lens query](docs/IMMERSED-MATERIAL-LENSES.md).
+
 Explore refraction and total internal reflection from one directional point source with the [schema-v29 fan contract and worked example](docs/REFRACTIVE-FAN.md).
 
 For the grazing-entry emergence limit and meridional guide acceptance angle, use the [two-face dielectric query](docs/PERPENDICULAR-DIELECTRIC-FACES.md).
