@@ -1,0 +1,15 @@
+{
+  "case": "A28",
+  "problem": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/007.png",
+  "sha256": "2f95c58717b644ca282fc22957899410c3e3c02d2c753eabfaa815682728380c",
+  "pin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "facts": "Glass hemisphere radius 100 mm and index 1.5. The curved surface is silvered. An axial air bubble lies 50 mm from the flat surface. The observer looks along the axis through the flat face. Requested positions of the images.",
+  "assumptions": "The bubble acts as a small axial point scatterer, with no specified bubble shape or size. Use a unit-index exterior and two paraxial routes: direct to the plane, and one specular reflection followed by transmission at the plane. The origin is at the plane and positive x points into the body.",
+  "predictions": [
+    "For sphere radius R, mirror pole x=R and concave f=R/2. The direct apparent depth is xObject/m with m=glass/exterior index ratio.",
+    "For source depth 25 mm, the reflected bundle gives a real conjugate at x=-100/3 mm after refraction at the flat face. For depth 75 mm it gives a virtual conjugate at x=100 mm. The respective direct apparent depths are 50/3 and 50 mm.",
+    "The original depth 50 mm is the mirror focus in the paraxial model. The reflected return remains collimated after the plane; its image is at infinity. Finite incident-angle samples can exhibit spherical aberration, so their residual angles are measured rather than rounded to zero."
+  ],
+  "nativeControls": "Use one real AngleSource at each chosen depth and y=0 in two independent experiments centred at 180 degrees for the direct branch and 0 degrees for the reflected branch. Each emits a 1.8 degree cone with density 1 and relative brightness .04. Use a native PlaneGlass at x=0 with normal 0 degrees, negative index 1, positive index 1.5 and partial reflection disabled. Use one pinned concave ArcMirror at x=100 mm, radius 100 mm, aperture 50 mm, normal 180 degrees. Place a native passive vertical detector at x=-15 mm, length 60 mm. All true contacts must lie on the intended near-axis patch. The declared mirror models the silvered patch directly, and the PlaneGlass only models the exit plane; the test does not expose an arbitrary silvered dielectric volume. Require three sampled rays, observed completion with no warnings, every ray crossing the detector, and true callbacks in the order plane/detector or mirror/plane/detector. Signed detector line extrapolation should agree within 0.20 mm for the finite predictions. Every native outgoing sample at the focal setting should have absolute slope below 0.00002, with residual recorded.",
+  "release": "Test-only. Preserve the original source, native PhyDemo, v30 curved-entry behavior and the separate v31 composition. One explicit reflecting patch has no inferred bubble boundary, full hemisphere surface model or observer brightness claim."
+}

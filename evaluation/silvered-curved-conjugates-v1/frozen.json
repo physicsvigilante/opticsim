@@ -1,0 +1,13 @@
+{
+  "source": "A28",
+  "study": "../silvered-curved-region-v1/frozen.json",
+  "model": "An axial point in a homogeneous medium between a plane exit face and a concave spherical reflector. Specify object depth, reflector pole depth and reflector curvature independently. The two declared branches are direct exit and exactly one reflection before exit. Output signed positions from the plane with positive x into the medium.",
+  "controls": [
+    {"poleMm":100,"radiusMm":100,"depthMm":50,"inside":1.5,"outside":1,"directMm":33.33333333333333,"return":"afocal"},
+    {"poleMm":100,"radiusMm":100,"depthMm":25,"inside":1.5,"outside":1,"directMm":16.66666666666667,"returnMm":-33.33333333333333},
+    {"poleMm":100,"radiusMm":100,"depthMm":75,"inside":1.5,"outside":1,"directMm":50,"returnMm":100},
+    {"poleMm":120,"radiusMm":100,"depthMm":20,"inside":1.5,"outside":1,"directMm":13.33333333333333,"returnMm":13.33333333333333},
+    {"poleMm":100,"radiusMm":80,"depthMm":100,"inside":1.5,"outside":1,"return":"unsupported contact"}
+  ],
+  "numericalPolicy": "Use the existing curved-mirror paraxial query in homogeneous material and use signed axial scaling through one plane (nExterior/nInterior). Retain exact afocal and exact at-plane branches. Withhold only the uncertain reflected position near cancellation when the direct image is determinable. Coincident conjugate coordinates are a geometric result for distinct branches and do not establish a visible brightness sum."
+}

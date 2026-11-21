@@ -1,0 +1,38 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-prism-angular-limits-facts-v1",
+    "model": "homogeneous-denser-prism-direct-transmission",
+    "apexAngleDeg": 45,
+    "outsideIndex": 1,
+    "material": {
+      "kind": "grazing-exit-limit",
+      "incidentAngleDeg": 45
+    }
+  },
+  "requests": [
+    {
+      "id": "material",
+      "kind": "prism-index-at-grazing-emergence"
+    },
+    {
+      "id": "minimum",
+      "kind": "prism-minimum-direct-deviation"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Infer the prism material index from grazing emergence and calculate the incidence angle at minimum deviation.",
+    "stated": [
+      "Isosceles prism with 45-degree apex. The emergent ray grazes the second face at 45-degree incidence."
+    ],
+    "derived": [
+      "Grazing emergence is the limiting refraction angle of 90 degrees from the exit normal."
+    ],
+    "assumptions": [
+      "One homogeneous exterior of index one, the direct nonnegative meridional branch, and one homogeneous prism material."
+    ],
+    "unknowns": [
+      "Finite aperture and source launch position."
+    ]
+  }
+}
