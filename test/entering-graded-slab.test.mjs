@@ -50,6 +50,19 @@ test('ambiguous placement, failed step evidence and stop withhold v33 measuremen
     return loaded;
   }};
   assert.equal(evaluateDocument(doc,disturbed,fixture.requests).summary.observations,null);
+  const loaded=core.loadDocument(doc);
+  const detectorPrototype=Object.getPrototypeOf(loaded.scene.objs[loaded.idMap.get('D')]);
+  const nativeDetector=detectorPrototype.onRayIncident;
+  detectorPrototype.onRayIncident=function(...args){
+    const result=nativeDetector.apply(this,args);
+    this.power=0;
+    return result;
+  };
+  try{
+    assert.equal(evaluateDocument(doc,core,fixture.requests).summary.observations,null);
+  }finally{
+    detectorPrototype.onRayIncident=nativeDetector;
+  }
   const stopped={...core,Simulator:class extends core.Simulator{
     constructor(scene,...args){super(scene,...args.slice(0,-1),100);}
   }};

@@ -100,9 +100,15 @@ export function capNativeAudit(doc,scene,idMap){
   };
   gauge.onRayIncident=function(ray,index,point,...rest){
     const before=incoming(ray,point,1),p=detector.parameters;
+    const tangentX=this.p2.x-this.p1.x,tangentY=this.p2.y-this.p1.y;
+    const sign=Math.sign(before.x*tangentY+before.y*tangentX);
+    const incidentPower=ray.brightness_s+ray.brightness_p;
+    const expectedPower=this.power+sign*incidentPower;
     const result=detectorIncident.call(this,ray,index,point,...rest),after=direction(ray);
     if(!near(point.x,p.x)||Math.abs(point.y+p.y)>=p.length/2-.1||
-      !near(before.x,after.x,1e-9)||!near(before.y,after.y,1e-9))fault=true;
+      !near(ray.p1.x,point.x)||!near(ray.p1.y,point.y)||!near(before.x,after.x,1e-9)||!near(before.y,after.y,1e-9)||
+      result?.isAbsorbed||result?.isUndefinedBehavior||result?.newRays?.length||
+      !sign||!(incidentPower>0)||!near(this.power,expectedPower,1e-9))fault=true;
     pending.delete(ray);crossings++;
     return result;
   };

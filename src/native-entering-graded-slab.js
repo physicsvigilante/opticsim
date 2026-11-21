@@ -1,5 +1,6 @@
 import {compositionCountsMatch} from './composition-profiles.js';
 import {GRIN_V25_TYPE,compileGrinV25,grinV25Extents} from './native-grin-v25.js';
+import {expectedDetectorPower,preservesDetectorPassage} from './native-detector-audit.js';
 
 export const GRIN_SLAB_VERSION=33;
 export const GRIN_SLAB_MODEL='native-entering-graded-slab';
@@ -94,11 +95,15 @@ export function enteringGradedSlabAudit(doc,scene,idMap){
   };
   gauge.onRayIncident=function(input,index,point,...rest){
     const direction=primary(input),x=point.x,y=-point.y;
+    const expected=expectedDetectorPower(this,input,direction);
     const result=detect.call(this,input,index,point,...rest);
+    const after=primary(input);
     hits++;
     if(input!==ray||exit!==1||!last||!near(direction.x,last.d.x,1e-9)||!near(direction.y,last.d.y,1e-9)||
       !near((x-last.x)*direction.y,(y-last.y)*direction.x)||!near(y,d.y)||!near(x,ref.detectorX,tolerance)||
-      !near(direction.x,ref.q,tolerance)||direction.y<=0||Math.abs(x-d.x)>=d.length/2-clearance/2)fault=true;
+      !near(direction.x,ref.q,tolerance)||direction.y<=0||Math.abs(x-d.x)>=d.length/2-clearance/2||
+      !near(direction.x,after.x,1e-9)||!near(direction.y,after.y,1e-9)||
+      !preservesDetectorPassage(this,input,point,result,expected))fault=true;
     return result;
   };
   return {
