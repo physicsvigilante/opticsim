@@ -1,0 +1,24 @@
+{
+  "format": "opticsim-plane-mirror-heading-inverses-frozen-v1",
+  "sourceCommit": "d33b45226348d9b0c701f2a3e8b86dd1285de2d0",
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "cases": [
+    {
+      "id": "A01",
+      "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/001.png",
+      "sha256": "bc419ed8858e6674a6b1061c0387f8e19ff6e12508b5991af5411d4da3be35c5",
+      "stated": "One plane mirror reflects a ray directed along (1, sqrt(3))/2 into (1, -sqrt(3))/2. Find the incidence angle.",
+      "prediction": "The direction change lies on the normal line and the incidence angle is 30 degrees from that normal.",
+      "nativeControl": "Synthetic mirror tangent parallel to x, strike at the origin, source 40 mm before and absorbing target 40 mm after. Measure incoming and outgoing native headings and mirror incidence."
+    },
+    {
+      "id": "A02",
+      "problemPath": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/004.png",
+      "sha256": "d8c5dfb3c70b0dcf4462414faf807c2313405811f35656738a89235737d43e36",
+      "stated": "A ray parallel to mirror 2 reflects at mirror 1, then mirror 2, and exits parallel to mirror 1. Find the angle between the mirrors and the deviation from the original ray.",
+      "prediction": "Set mirror 1 tangent to zero and mirror 2 tangent to theta. The directed exit heading modulo 180 is 3 theta. Distinct non-grazing orientations are plus and minus 60 degrees. Net unsigned change of propagation heading is 120 degrees. The accumulated unsigned turns are 240 degrees and are a distinct quantity.",
+      "nativeControl": "Use synthetic finite 40 mm mirror segments centred at (-120,0) and (-60,-60 sqrt(3)) mm, the second with line orientation 60 degrees. Use a source 35 mm before the first contact and an absorbing target 40 mm after the second. Repeat with reflected geometry and both opposite headings via a 180-degree scene rotation."
+    }
+  ],
+  "method": "Read only the two Problems PNGs. No source positions, sizes, mirror sides or absolute orientations are supplied. Native control geometry is explicit, synthetic, and additional to the source facts. Both mirrors are ideal 2D specular surfaces. A fixed sequence is a conditional angular constraint, and native controls must observe the sequence and actual terminal absorption."
+}
