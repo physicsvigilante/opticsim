@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {randomUUID,createHash} from 'node:crypto';
 import {resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {analyzeApparentDepth,apparentDepthCapabilities,
@@ -234,7 +235,7 @@ test('CLI retains original bytes, SHA-256 and refusals without inventing a nativ
  assert.deepEqual(readFileSync(resolve(invalidDir,'input.json')),invalid);
  assert.equal(existsSync(resolve(invalidDir,'analytical-result.json')),false);
  const cap=JSON.parse(execFileSync(process.execPath,
-  [new URL('../scripts/planar-apparent-depth-query.mjs',import.meta.url).pathname,'capabilities'],{encoding:'utf8'}));
+  [fileURLToPath(new URL('../scripts/planar-apparent-depth-query.mjs',import.meta.url)),'capabilities'],{encoding:'utf8'}));
  assert.equal(cap.format,APPARENT_DEPTH_QUERY_FORMAT);
  assert.deepEqual(cap.statuses,apparentDepthCapabilities().statuses);
 });

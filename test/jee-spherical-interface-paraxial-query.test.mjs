@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {createHash,randomUUID} from 'node:crypto';
 import {resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {analyzeSphericalInterface,sphericalInterfaceCapabilities,
  SPHERICAL_INTERFACE_QUERY_FORMAT} from '../src/spherical-interface-paraxial-query.js';
@@ -155,7 +156,7 @@ test('CLI preserves original bytes and source hash, isolates analysis and reject
  assert.deepEqual(readFileSync(resolve(badDir,'input.json')),bad);
  assert.equal(existsSync(resolve(badDir,'analytical-result.json')),false);
  const caps=JSON.parse(execFileSync(process.execPath,
-  [new URL('../scripts/spherical-interface-query.mjs',import.meta.url).pathname,
+  [fileURLToPath(new URL('../scripts/spherical-interface-query.mjs',import.meta.url)),
    'capabilities'],{encoding:'utf8'}));
  assert.deepEqual(caps.kinds,sphericalInterfaceCapabilities().kinds);
  assert.equal(caps.native.startsWith('not-run'),true);
