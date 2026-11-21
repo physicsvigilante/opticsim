@@ -201,7 +201,7 @@ function controls() {
   const mixed = session.document.physics.model === 'lens-mirror-return-geometric';
   const parallelLens = session.document.physics.model === 'native-parallel-lens-tracing';
   const parallelSlab = session.document.physics.model === 'native-parallel-planar-tracing';
-  const parallelSemi = session.document.physics.model === 'native-parallel-semicircular-tracing';
+  const parallelSemi = ['native-parallel-semicircular-tracing','native-curved-entry-beam-tracing'].includes(session.document.physics.model);
   const curvedEntry = session.document.physics.model === 'native-curved-entry-observation-tracing';
   const graded = session.document.physics.model === 'native-bounded-grin-tracing';
   const parallelTwoLens = session.document.physics.model === 'native-parallel-two-lens-tracing';
@@ -328,6 +328,11 @@ function controls() {
     $('model-label').textContent='Directional fan at a horizontal dielectric interface';
     $('parameter-guidance').textContent='The source is at least 1 mm below the interface. Its whole cone must lie within 75° of the upward normal.';
     $('physical-note').textContent='PhyDemo samples the cone and traces transmission and total internal reflection. Partial reflections are disabled. A single near-critical sample withholds readings for the entire fan.';
+  }
+  if(session.document.schemaVersion===30){
+    $('model-label').textContent='Curved-entry parallel beam through a semicircular dielectric';
+    $('parameter-guidance').textContent='Aim the finite beam left toward the curved face. Its full width must fit within the central half-radius above and below the glass axis.';
+    $('physical-note').textContent='The flat-face measurement gives the smallest and largest sampled y coordinates in mm. Sampling density changes the positions emitted. The continuous footprint on a table remains undetermined.';
   }
   if(thick||twoGlass){
     const kind=thickAperture?'Two thick lenses + mirror + finite aperture':twoThickMirror?'Two thick lenses + finite mirror':thickMirror?'Thick lens + finite mirror':thick?'Thick spherical lens train':'Two separate glass regions';
