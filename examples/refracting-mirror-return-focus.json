@@ -1,0 +1,12 @@
+{
+  "format":"opticsim-problem-v1",
+  "physical":{
+    "format":"opticsim-refracting-mirror-return-facts-v1",
+    "model":"coaxial-paraxial-refraction-reflection-return",
+    "lengthUnit":"cm",
+    "exteriorIndex":1,
+    "interiorIndex":1.5,
+    "geometry":{"kind":"equiconvex-thin-from-focal-length","uncoatedFocalLength":60}
+  },
+  "requests":[{"id":"returnFocus","kind":"refracting-mirror-return-focus"}]
+}
