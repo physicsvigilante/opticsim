@@ -1,0 +1,17 @@
+{
+  "format":"opticsim-planar-interface-lens-conjugate-study-v1",
+  "upstreamCommit":"811f508d2b070898c241a568b0c167dcb8645251",
+  "sourceArchiveCommit":"d33b45226348d9b0c701f2a3e8b86dd1285de2d0",
+  "sourceArchiveSha256":"03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+  "sourcePath":"08_Ray_Optics_Explanations/07_Lens_Formula/Problems/009.png",
+  "sourceSha256":"9df31b9f5af847853cc031ee898b42676925b76ad630ef954102d0e1b869f998",
+  "givens":"A lens sits 45 cm from an axial point at the tank bottom. The empty image lies 36 cm beyond the lens. With 40 cm liquid the new image lies 48 cm beyond the same lens. Find the liquid index.",
+  "assumptions":["Paraxial imaging along the upward normal, represented by +x.","Homogeneous liquid, flat boundary and unit-index air. The fixed ideal thin lens remains wholly in air."],
+  "relation":"The empty object and image calibrate the lens. With liquid present the apparent object-to-lens distance is the remaining air gap plus the liquid depth times the exterior-to-liquid index ratio.",
+  "cases":[
+    {"id":"source-control","objectLensMm":450,"depthMm":400,"focalLengthMm":200,"insideIndex":1.3658536585365855,"insideExact":"56/41","dryImageMm":360,"wetImageMm":480},
+    {"id":"virtual-control","objectLensMm":300,"depthMm":200,"focalLengthMm":250,"insideIndex":2,"dryImageMm":1500,"wetImageMm":-1000}
+  ],
+  "nativeProtocol":{"sourceXmm":0,"slopes":[-0.002,0.002],"lensApertureMm":20,"detectorGapMm":25,"detectorHeightMm":20,"brightness":0.04,"depthBudget":8,"axialToleranceMm":0.12,"symmetryToleranceMm":0.002,
+    "acceptance":"Eight independent native runs. Each dry ray reaches IdealLens then Detector. Each wet ray first crosses one PlaneGlass from liquid to air, reaches the same lens, then Detector. Require one emitted ray and completed warning-free native diagnostics. Estimate signed axial conjugate from the measured downstream direction; extrapolate the virtual case backwards. These static fits do not measure an index natively."}
+}
