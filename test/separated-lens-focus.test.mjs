@@ -19,7 +19,7 @@ test('public CLI: frozen source cases and qualified reference conventions',async
     assert.equal(report.native.status,'not-run');assert.equal(report.portable.status,'not-created');
     assert.equal(report.results[0].status,'conditional');const v=report.results[0].value;
     close(v.signedAngularGain,id==='A39'?-327.5:-200/19);
-    if(id==='A40'){close(v.farFocusSeparation,.55);close(v.eyepieceShiftFromFarFocus,1/38);}
+    if(id==='A40'){close(v.farFocusSeparation,.55);close(v.eyepieceShiftFromFarFocus,1/38);close(v.farFocusSignedAngularGain,-10);}
   }
   const microscope=problem(39);microscope.physical.given.kind='focal-plane-interval';
   close(run(microscope).value.signedAngularGain,-400);close(run(microscope).value.lensPlaneSeparation,189);

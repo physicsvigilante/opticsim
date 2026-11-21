@@ -78,5 +78,6 @@ export function analyzeFocus(f,q){
   return {...base,status:'conditional',value:{objectiveId:f.objective.id,eyepieceId:f.eyepiece.id,
     lengthUnit:f.lengthUnit,objectDistanceFromObjective:u,intermediateDistanceFromObjective:v,
     lensPlaneSeparation:spacing,farFocusSeparation:farSpacing,eyepieceShiftFromFarFocus:delta,
-    angleReference:{...f.angleReference},signedAngularGain:gain,angularGainMagnitude:Math.abs(gain)}};
+    angleReference:{...f.angleReference},signedAngularGain:gain,angularGainMagnitude:Math.abs(gain),
+    ...(ref==='specified-viewing-distance'?{}:{farFocusSignedAngularGain:-fo/fe})}};
 }

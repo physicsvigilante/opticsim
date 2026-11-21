@@ -28,7 +28,7 @@
     }
   ],
   "interpretation": {
-    "requestedResult": "Telescope focus displacement from infinity and angular gain at the finite adjustment.",
+    "requestedResult": "Initial separation, eyepiece displacement and signed angular magnification at both the distant and finite adjustments.",
     "stated": [
       "Positive focal lengths 50 cm and 5 cm, Moon then a target 10 m away, unchanged accommodation."
     ],
