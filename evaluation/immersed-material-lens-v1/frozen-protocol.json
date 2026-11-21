@@ -1,0 +1,18 @@
+{
+  "format": "opticsim-immersed-material-lens-study-v1",
+  "upstream": "811f508d2b070898c241a568b0c167dcb8645251",
+  "source": {
+    "id": "A34",
+    "problem": "08_Ray_Optics_Explanations/07_Lens_Formula/Problems/020.png",
+    "sha256": "26982ca24f70b6c009b9c82477fb1962be8a41f49ef9cc53306f5ae23d4eacc2",
+    "stated": "Identical double-convex shapes with indices 1.5 and 1.7. Part (a) asks for a focal-length ratio. Part (b) specifies immersion in liquid of index 1.6 and asks how each acts on an axial parallel ray.",
+    "assumptions": "Use a paraxial thin lens in the same homogeneous medium on both sides of each element. Part (a) needs an explicit exterior; unit-index air is an assumption. Interpret the parallel ray as off-axis for bending. A ray on the optical axis remains axial.",
+    "expected": "With unit-index air, f1/f2=7/5. In the liquid the first lens diverges and the second converges. Uniformly matched material is afocal, and no absolute focal length follows from identical shape alone."
+  },
+  "numericControl": {
+    "geometry": "Front +200 mm, rear -200 mm. Two separate lens designs compared, never stacked.",
+    "expected": "Shape factor 10/m. In air the powers are 5 and 7 dioptres. In index 1.6 their powers are -1 and +1 dioptre and their focal lengths are -1.6 m and +1.6 m.",
+    "nativeWitness": "Use the existing finite-thickness native SphericalLens with thickness 5 mm and aperture 20 mm. Launch horizontal SingleRay controls at y=+1 and -1 mm. Inspect directions at an exterior downstream detector. Compare the four material/medium combinations against the existing finite-thickness two-surface calculation and then the thin limit. Native scenes retain their physical thickness; do not use a contact-lens scene or assert exact thin focal lengths from those finite runs."
+  },
+  "limits": "Support a known shared signed curvature factor or shared shape sign for ratio and classifications. Reject missing medium, unqualified thickness or independent unknown shapes. Distinguish matched index and exact zero curvature power from near matching or cancellation."
+}
