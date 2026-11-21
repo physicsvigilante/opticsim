@@ -60,3 +60,26 @@ test('v32 refuses facet contact, excessive curvature and unverified measurement'
   doc.simulation.processedRayLimit=1;
   assert.equal(evaluateDocument(doc,core,fixture.requests).summary.observations,null);
 });
+
+test('v32 withholds detector observations if native pass-through state or signed power is inconsistent',()=>{
+  const doc=prepareScene(original()).document;
+  const loaded=core.loadDocument(doc),detector=loaded.scene.objs[loaded.idMap.get('D')];
+  const prototype=Object.getPrototypeOf(detector),nativeIncident=prototype.onRayIncident;
+  for(const corrupt of [
+    ()=>({isAbsorbed:true}),
+    ray=>{ray.p1.x+=1;ray.p2.x+=1;},
+    function(){this.power=0;}
+  ]){
+    prototype.onRayIncident=function(ray,...args){
+      const result=nativeIncident.call(this,ray,...args);
+      return corrupt.call(this,ray)??result;
+    };
+    try{
+      const {summary}=evaluateDocument(doc,core,fixture.requests);
+      assert.equal(summary.observations,null);
+      assert.equal(summary.executionPassed,false);
+    }finally{
+      prototype.onRayIncident=nativeIncident;
+    }
+  }
+});
