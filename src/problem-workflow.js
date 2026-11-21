@@ -6,6 +6,7 @@ import {analyzeTwoFaceQuery,twoFaceCapabilities,TWO_FACE_FACTS,TWO_FACE_QUERY} f
 import {analyzePowerQuery,powerCapabilities,POWER_FACTS,POWER_QUERY} from './coincident-optical-power.js';
 import {analyzeFocus,focusCapabilities,FOCUS_FACTS,FOCUS_QUERY} from './separated-lens-focus.js';
 import {analyzeSurfaceFocus,surfaceFocusCapabilities,SURFACE_FOCUS_FACTS,SURFACE_FOCUS_QUERY} from './two-surface-focus.js';
+import {analyzeSurfaceConjugate,surfaceConjugateCapabilities,CONJUGATE_FACTS,CONJUGATE_QUERY} from './refracting-surface-conjugate.js';
 import {analyzeFourWall,fourWallCapabilities,FOUR_WALL_FACTS,FOUR_WALL_QUERY} from './four-wall-mirror-directions.js';
 import {analyzeFiniteViewing,finiteViewingCapabilities,FINITE_VIEW_FACTS,FINITE_VIEW_QUERY} from './two-lens-finite-viewing.js';
 import {analyzeMirrorOscillation,mirrorOscillationCapabilities,OSCILLATION_FACTS,OSCILLATION_QUERY} from './axial-mirror-oscillation.js';
@@ -36,6 +37,7 @@ const prismKinds=new Set(prismAngleCapabilities().kinds);
 const twoFaceKinds=new Set(twoFaceCapabilities().kinds);
 const reducedAngularAndPowerRoutes=new Map();
 for(const [kinds,format,analyze,missing] of [
+  [surfaceConjugateCapabilities().kinds,CONJUGATE_QUERY,analyzeSurfaceConjugate,'Specify the object position, ordered surface poles, signed radii and indices.'],
   [finiteViewingCapabilities().kinds,FINITE_VIEW_QUERY,analyzeFiniteViewing,'Explicit object distance, eye offset and both lens focal lengths are required.'],
   [mirrorHeadingCapabilities().kinds,MIRROR_HEADING_QUERY,analyzeMirrorHeadingInverse,'Explicit incident and outgoing directions or crossed two-mirror line relations are required.'],
   [fourWallCapabilities().kinds,FOUR_WALL_QUERY,analyzeFourWall,'Explicit specular rectangle and symbolic or numeric endpoint facts required.'],
@@ -64,6 +66,7 @@ const mirrorKinds=new Set(mirrorAngularCapabilities().kinds);
 const observableKinds=observableCapabilities().kinds;
 // References the live fact/query formats, not a second physics validator.
 const factContracts=Object.freeze({
+ [CONJUGATE_QUERY]:[CONJUGATE_FACTS],
  [FINITE_VIEW_QUERY]:[FINITE_VIEW_FACTS],
  [MIRROR_HEADING_QUERY]:[MIRROR_HEADING_FACTS,MIRROR_LINE_RELATION_FACTS],
  [FOUR_WALL_QUERY]:[FOUR_WALL_FACTS],
@@ -90,6 +93,7 @@ const factContracts=Object.freeze({
  [MIRROR_QUERY_FORMAT]:[MIRROR_FACTS_FORMAT]
 });
 const requestKindRegistry=()=>({
+ ...Object.fromEntries(surfaceConjugateCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:CONJUGATE_QUERY}])),
  ...Object.fromEntries(finiteViewingCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:FINITE_VIEW_QUERY}])),
  ...Object.fromEntries(mirrorHeadingCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:MIRROR_HEADING_QUERY}])),
  ...Object.fromEntries(fourWallCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:FOUR_WALL_QUERY}])),
@@ -129,6 +133,7 @@ export function problemWorkflowCapabilities(){
     separatedLensFocus:focusCapabilities(),
     twoLensFiniteViewing:finiteViewingCapabilities(),
     twoSurfaceFocus:surfaceFocusCapabilities(),
+    refractingSurfaceConjugate:surfaceConjugateCapabilities(),
     planeMirrorHeadingInverse:mirrorHeadingCapabilities(),
     fourWallMirrorDirections:fourWallCapabilities(),
     mirrorOscillation:mirrorOscillationCapabilities(),
