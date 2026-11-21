@@ -1,0 +1,14 @@
+{
+  "format":"opticsim-problem-v1",
+  "physical":{
+    "format":"opticsim-planar-interface-lens-facts-v1",
+    "model":"planar-exit-before-fixed-paraxial-thin-lens",
+    "lengthUnit":"cm",
+    "objectLensDistance":45,
+    "layerDepth":40,
+    "dryImageDistance":36,
+    "filledImageDistance":48,
+    "exteriorIndex":1
+  },
+  "requests":[{"id":"liquid","kind":"layer-index-from-lens-images"}]
+}
