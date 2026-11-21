@@ -1,0 +1,15 @@
+{
+  "case": "A27",
+  "problem": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/004.png",
+  "sha256": "e0b938a74df9e6d302ee63a259164b9cfe31fe65b01a93e708774a3e5b404989",
+  "pin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "stated": "Sphere of radius 5 cm and refractive index 1.6, cut by a plane 2 cm from the centre. Use the 3 cm high cap shown, resting flat on a table. The observer is 8 cm from the table on the axis. Asked for the observer-to-apparent-table distance.",
+  "assumptions": "Treat a near-axis table point as the object of the spherical exit surface, immediately on the glass side of the base in the limit. Use exterior index one and paraxial geometrical optics. A native source may not lie on the flat interface.",
+  "cases": [
+    {"id":"a27","radiusMm":50,"heightMm":30,"insideIndex":1.6,"exteriorIndex":1,"observerXmm":80,"expectedObserverDistanceMm":74.19354838709677},
+    {"id":"shallow-control","radiusMm":80,"heightMm":20,"insideIndex":1.3,"exteriorIndex":1,"observerXmm":60,"expectedObserverDistanceMm":56.3265306122449}
+  ],
+  "prediction": "Positive x runs from the flat base toward the curved pole. The signed radius at the exit is -R. For object probe x=epsilon, local s=epsilon-height. The signed conjugate distance from the pole is nOutside / ((nOutside-nInside)/(-R) + nInside/s). Observer-to-conjugate distance is observerX - (height + local conjugate).",
+  "nativeControls": "True pinned Glass with ordered chord endpoints at x=0 and y=±sqrt(h*(2R-h)), and arc control point at the pole (h,0). Use independent native AngleSource runs with x in 1,0.25,0.0625 mm, y=0, cone 1.8 degrees centred rightward, density 1, relative brightness .04. Require native completion, three distinct rays, one transmission at the actual curved boundary and one passive Detector crossing at observerX for each ray. No flat-face encounter. Compare each downstream observed line extrapolation with the conditional result for its actual probe distance, budget 0.05 mm. The maximum discrepancy from the epsilon=0 model must shrink at each probe distance and the closest probe must lie within 0.10 mm for both caps.",
+  "scope": "Test-only geometry and evidence. The 3D table, object texture, illumination and actual visibility are outside the native model. Preserve the pinned engine, semicircular scopes and existing contact refusals."
+}

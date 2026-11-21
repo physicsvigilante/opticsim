@@ -81,7 +81,7 @@ function update() {
   const mixed = session.document?.physics.model === 'lens-mirror-return-geometric';
   const mirror = session.document?.physics.components.some(c => c.type === 'plane-mirror'||isCurved(c.type));
   const hasOptics = session.document?.physics.components.some(c =>
-    c.type==='ideal-lens'||c.type==='plane-mirror'||c.type==='line-blocker'||c.type==='circle-blocker'||c.type==='finite-aperture'||c.type==='circular-dielectric'||c.type==='semicircular-dielectric'||c.type==='triangular-prism'||c.type==='polygon-dielectric'||c.type==='spherical-lens'||c.type==='graded-index-rectangle'||isCurved(c.type));
+    c.type==='ideal-lens'||c.type==='plane-mirror'||c.type==='line-blocker'||c.type==='circle-blocker'||c.type==='finite-aperture'||c.type==='circular-dielectric'||c.type==='semicircular-dielectric'||c.type==='circular-cap-dielectric'||c.type==='triangular-prism'||c.type==='polygon-dielectric'||c.type==='spherical-lens'||c.type==='graded-index-rectangle'||isCurved(c.type));
   const partial = !['completed', 'completed-with-warnings'].includes(state);
   const perMirror = d?.reflectionsById ? Object.entries(d.reflectionsById)
     .map(([id,count])=>id+': '+count).join(' · ') : '';
@@ -222,7 +222,7 @@ function controls() {
   const general = session.document.physics.model === 'general-component-tracing';
    const hasLineBlockers = session.document.physics.components.some(c=>['line-blocker','circle-blocker','finite-aperture'].includes(c.type));
   const tracing = general || session.document.physics.model === 'mixed-lens-mirror-tracing';
-  const labels = { x1:'Vertex 1 x',y1:'Vertex 1 y',x2:'Vertex 2 x',y2:'Vertex 2 y',x3:'Vertex 3 x',y3:'Vertex 3 y',x4:'Vertex 4 x',y4:'Vertex 4 y',radius:(circular||parallelSemi||parallelCircle||curvedEntry)?'Glass radius (positive)':general?'Circle blocker radius (positive)':'Signed curvature radius',insideIndex:'Inside refractive index',outsideIndex:'Outside refractive index',normalDeg:'Normal direction',negativeIndex:'Negative-side index',positiveIndex:'Positive-side index',x: 'Position x', y: 'Position y', focalLength: 'Focal length', apertureHeight: 'Aperture height',leftX:'Left face x',axisY:'Reference axis y',spanX:'GRIN width',upHeight:'Height above axis',downHeight:'Height below axis',gradientLength:'Index gradient length',indexSquaredAtAxis:'Index squared on axis',centerThickness:'Centre thickness',frontRadius:'Front spherical radius',backRadius:'Back spherical radius', orientationDeg: 'Surface orientation', length: 'Length', openingLength:'Clear opening length',width:'Perpendicular beam width',directionDeg:'Propagation direction' };
+  const labels = { x1:'Vertex 1 x',y1:'Vertex 1 y',x2:'Vertex 2 x',y2:'Vertex 2 y',x3:'Vertex 3 x',y3:'Vertex 3 y',x4:'Vertex 4 x',y4:'Vertex 4 y',capHeight:'Cap height from base',radius:(circular||parallelSemi||parallelCircle||curvedEntry||session.document.schemaVersion===32)?'Glass radius (positive)':general?'Circle blocker radius (positive)':'Signed curvature radius',insideIndex:'Inside refractive index',outsideIndex:'Outside refractive index',normalDeg:'Normal direction',negativeIndex:'Negative-side index',positiveIndex:'Positive-side index',x: 'Position x', y: 'Position y', focalLength: 'Focal length', apertureHeight: 'Aperture height',leftX:'Left face x',axisY:'Reference axis y',spanX:'GRIN width',upHeight:'Height above axis',downHeight:'Height below axis',gradientLength:'Index gradient length',indexSquaredAtAxis:'Index squared on axis',centerThickness:'Centre thickness',frontRadius:'Front spherical radius',backRadius:'Back spherical radius', orientationDeg: 'Surface orientation', length: 'Length', openingLength:'Clear opening length',width:'Perpendicular beam width',directionDeg:'Propagation direction' };
   for (const component of session.document.physics.components) {
     const fieldset = document.createElement('fieldset');
     const legend = document.createElement('legend'); legend.textContent = component.id;
@@ -329,6 +329,11 @@ function controls() {
     $('parameter-guidance').textContent='The source is at least 1 mm below the interface. Its whole cone must lie within 75° of the upward normal.';
     $('physical-note').textContent='PhyDemo samples the cone and traces transmission and total internal reflection. Partial reflections are disabled. A single near-critical sample withholds readings for the entire fan.';
   }
+  if(session.document.schemaVersion===32){
+    $('model-label').textContent='Inside-source circular glass cap';
+    $('parameter-guidance').textContent='The base position and cap height set the curved pole. Place the source on the axis inside the cap and the detector beyond the pole.';
+    $('physical-note').textContent='An accepted run records each sampled ray crossing the curved face and then the detector. A probe near the base uses its own authored position.';
+  }
   if(session.document.schemaVersion===31){
     $('model-label').textContent='Parallel slab and spherical mirror';
     $('parameter-guidance').textContent='Place the source, two slab faces, detector and left-facing concave mirror in that order.';
@@ -373,7 +378,7 @@ function sourcePicker(component) {
     { mode: 'full-circle', title: 'Point source (360°)', description: 'Light in every direction', icon: pointSourceIcon },
     { mode: 'directional', title: 'Point source (directional)', description: 'Symmetric cone · 1–180°', icon: angleSourceIcon }
   ];
-  if([29,31].includes(session.document.schemaVersion))choices.splice(0,1);
+  if([29,31,32].includes(session.document.schemaVersion))choices.splice(0,1);
   if(session.document.schemaVersion===6)choices.push({mode:'single-ray',title:'Single ray (native)',description:'One exact direction; no cone from sampling',icon:angleSourceIcon});
   const details = document.createElement('details'); details.className = 'source-picker';
   const summary = document.createElement('summary'); summary.id = `${component.id}-mode`;

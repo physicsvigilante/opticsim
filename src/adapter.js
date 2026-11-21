@@ -1,3 +1,4 @@
+import {CAP_TYPE,CAP_VERSION,compileCircularCap,capNativeAudit} from './finite-circular-cap.js';
 import {slabArcReturnAudit} from './slab-arc-return.js';
 import {curvedEntryBeamAudit} from './curved-entry-beam.js';
 import {installRefractiveFanAudit} from './refractive-fan.js';
@@ -31,7 +32,7 @@ export function observeNativeV18ApertureCorner(doc,scene,idMap){
 }
 const compilers = {
   [PARALLEL_BEAM_TYPE]:compileParallelBeam,
-  'circular-dielectric':compileCircular,[SEMICIRCULAR_TYPE]:compileSemicircular,[PRISM_TYPE]:compilePrism,[POLYGON_TYPE]:compilePolygon,
+  'circular-dielectric':compileCircular,[SEMICIRCULAR_TYPE]:compileSemicircular,[CAP_TYPE]:compileCircularCap,[PRISM_TYPE]:compilePrism,[POLYGON_TYPE]:compilePolygon,
   [SPHERICAL_LENS_TYPE]:compileSphericalLens,[GRIN_V25_TYPE]:compileGrinV25,
   [CIRCLE_BLOCKER_TYPE]:compileCircleBlocker,
   [FINITE_APERTURE_TYPE]:c=>compileFiniteAperture(c,mirrorEndpoints),
@@ -93,6 +94,7 @@ export function loadDocument(doc, width, height) {
     endpointAudits.set(scene,{key:'v27EndpointsVerified',finish:installV27EndpointAudit(doc,scene,compiled.idMap)});
   if(doc.schemaVersion===28)
     endpointAudits.set(scene,{key:'v28EndpointsVerified',finish:installPostLensAudit(doc,scene,compiled.idMap)});
+  if(doc.schemaVersion===CAP_VERSION) endpointAudits.set(scene,capNativeAudit(doc,scene,compiled.idMap));
   if(doc.schemaVersion===31) endpointAudits.set(scene,slabArcReturnAudit(doc,scene,compiled.idMap));
   if(doc.schemaVersion===30) endpointAudits.set(scene,curvedEntryBeamAudit(doc,scene,compiled.idMap));
   if(doc.schemaVersion===29)
@@ -288,6 +290,6 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
 }
 export function classifyRun(event, data) {
   return data.errors.length ? 'failed' : event === 'simulationStop' ? 'stopped' :
-    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false || data.v28EndpointsVerified===false || data.v29FanVerified===false || data.v30CurvedBeamVerified===false || data.v31SlabArcVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
+    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false || data.v28EndpointsVerified===false || data.v29FanVerified===false || data.v30CurvedBeamVerified===false || data.v31SlabArcVerified===false || data.v32CapVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
 }
 export { Scene, Simulator };

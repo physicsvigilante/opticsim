@@ -1,0 +1,12 @@
+{
+  "source": "A27",
+  "nativeStudy": "../finite-circular-cap-v1/frozen.json",
+  "statedResult": "Distance from the on-axis observer to the paraxial apparent tabletop position through the illustrated 3 cm cap.",
+  "referenceConvention": "Positive axial distance from the flat base to the curved pole and observer. State the interior/exterior indices, nonzero radius, cap height, observer distance from base and either the explicit base-contact limit or the positive depth of an interior point.",
+  "predictions": [
+    "A27 R=50 mm, h=30 mm, exterior 1, glass 1.6, base object limit, observer x=80 mm. The curved-pole conjugate is -750/31 mm. The apparent position is 180/31 mm from the base and the observer separation is 2300/31 mm.",
+    "Keep the same cap and use an explicitly internal point at x=1 mm. The s input is -29 mm rather than -30 mm. Reuse the spherical exit query and compare with the actual finite native sample controls established by the preceding study.",
+    "At exactly equal indices the point's apparent coordinate equals its original coordinate. For a true hemisphere and central base point, the object lies at the circle centre; the apparent location is that same point for either index. Index matching and these exact identities create no native source on the boundary."
+  ],
+  "scope": "Report positions and unsigned distance to the observer on the declared axial paraxial branch. Source shape or illumination, table scattering and visibility remain unspecified."
+}
