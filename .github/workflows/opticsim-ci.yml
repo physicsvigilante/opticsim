@@ -101,6 +101,14 @@ jobs:
         run: |
           node scripts/run-problem.mjs examples/inside-cap-v32.json --out test-artifacts/llm-authoring/finite-circular-cap
           node scripts/finite-circular-cap-browser.mjs
+      - name: Entering graded slab numerical and real Chrome qualification
+        run: |
+          node scripts/run-problem.mjs examples/entering-graded-slab-v33.json --out test-artifacts/llm-authoring/entering-graded-slab
+          node scripts/entering-graded-slab-browser.mjs
+      - name: Immersed spherical mirror with a planar exit and real Chrome qualification
+        run: |
+          node scripts/run-problem.mjs examples/immersed-arc-plane-port-v34.json --out test-artifacts/llm-authoring/immersed-arc-port
+          node scripts/immersed-arc-plane-port-browser.mjs
       - name: LLM authoring CLI with real native execution and revision guards
         run: node scripts/author-scene-acceptance.mjs
       - name: Evaluate deterministic LLM pilot controls against native tracing
@@ -160,6 +168,8 @@ jobs:
             test-artifacts/browser-curved-entry-beam/
             test-artifacts/browser-slab-arc-return/
             test-artifacts/browser-finite-circular-cap/
+            test-artifacts/browser-entering-graded-slab/
+            test-artifacts/browser-immersed-arc-port/
             test-artifacts/refractive-fan-j11/
             test-artifacts/llm-authoring/native-two-plane-mirror-v27-research/
           if-no-files-found: ignore

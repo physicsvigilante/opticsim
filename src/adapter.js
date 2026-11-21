@@ -1,3 +1,4 @@
+import {IMMERSED_ARC_VERSION,immersedArcPortAudit} from './immersed-arc-plane-port.js';
 import {CAP_TYPE,CAP_VERSION,compileCircularCap,capNativeAudit} from './finite-circular-cap.js';
 import {slabArcReturnAudit} from './slab-arc-return.js';
 import {curvedEntryBeamAudit} from './curved-entry-beam.js';
@@ -9,6 +10,7 @@ import {compilePolygon,POLYGON_TYPE} from './polygon-dielectric.js';
 import {compileCircular} from './circular-dielectric.js';
 import {SEMICIRCULAR_TYPE,compileSemicircular} from './semicircular-dielectric.js';
 import {SPHERICAL_LENS_TYPE,compileSphericalLens} from './spherical-lens.js';
+import {GRIN_SLAB_VERSION,compileEnteringGradedSlab,enteringGradedSlabAudit} from './native-entering-graded-slab.js';
 import {GRIN_V25_TYPE,compileGrinV25,observeNativeGrinV25} from './native-grin-v25.js';
 export {observeNativeGrinV25};
 import {observeNativeV18ApertureCorner as nativeV18CornerObserver} from './native-v18-aperture-corner-guard.js';
@@ -33,7 +35,7 @@ export function observeNativeV18ApertureCorner(doc,scene,idMap){
 const compilers = {
   [PARALLEL_BEAM_TYPE]:compileParallelBeam,
   'circular-dielectric':compileCircular,[SEMICIRCULAR_TYPE]:compileSemicircular,[CAP_TYPE]:compileCircularCap,[PRISM_TYPE]:compilePrism,[POLYGON_TYPE]:compilePolygon,
-  [SPHERICAL_LENS_TYPE]:compileSphericalLens,[GRIN_V25_TYPE]:compileGrinV25,
+  [SPHERICAL_LENS_TYPE]:compileSphericalLens,[GRIN_V25_TYPE]:(c,doc)=>doc.schemaVersion===GRIN_SLAB_VERSION?compileEnteringGradedSlab(c):compileGrinV25(c),
   [CIRCLE_BLOCKER_TYPE]:compileCircleBlocker,
   [FINITE_APERTURE_TYPE]:c=>compileFiniteAperture(c,mirrorEndpoints),
   'ideal-curved-mirror':compileCurved,'circular-arc-mirror':compileCurved,
@@ -94,6 +96,8 @@ export function loadDocument(doc, width, height) {
     endpointAudits.set(scene,{key:'v27EndpointsVerified',finish:installV27EndpointAudit(doc,scene,compiled.idMap)});
   if(doc.schemaVersion===28)
     endpointAudits.set(scene,{key:'v28EndpointsVerified',finish:installPostLensAudit(doc,scene,compiled.idMap)});
+  if(doc.schemaVersion===IMMERSED_ARC_VERSION) endpointAudits.set(scene,immersedArcPortAudit(doc,scene,compiled.idMap));
+  if(doc.schemaVersion===GRIN_SLAB_VERSION) endpointAudits.set(scene,enteringGradedSlabAudit(doc,scene,compiled.idMap));
   if(doc.schemaVersion===CAP_VERSION) endpointAudits.set(scene,capNativeAudit(doc,scene,compiled.idMap));
   if(doc.schemaVersion===31) endpointAudits.set(scene,slabArcReturnAudit(doc,scene,compiled.idMap));
   if(doc.schemaVersion===30) endpointAudits.set(scene,curvedEntryBeamAudit(doc,scene,compiled.idMap));
@@ -290,6 +294,6 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
 }
 export function classifyRun(event, data) {
   return data.errors.length ? 'failed' : event === 'simulationStop' ? 'stopped' :
-    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false || data.v28EndpointsVerified===false || data.v29FanVerified===false || data.v30CurvedBeamVerified===false || data.v31SlabArcVerified===false || data.v32CapVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
+    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false || data.v28EndpointsVerified===false || data.v29FanVerified===false || data.v30CurvedBeamVerified===false || data.v31SlabArcVerified===false || data.v32CapVerified===false || data.v33GradedSlabVerified===false || data.v34ImmersedArcVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
 }
 export { Scene, Simulator };

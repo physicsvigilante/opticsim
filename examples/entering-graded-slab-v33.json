@@ -1,0 +1,66 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "model": "native-entering-graded-slab",
+    "lengthUnit": "mm",
+    "title": "Finite oblique entry into a native graded-index slab",
+    "components": [
+      {
+        "id": "S",
+        "type": "point-source",
+        "parameters": {
+          "x": -0.17320508075688773,
+          "y": -0.1,
+          "brightness": 0.08
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 30
+        }
+      },
+      {
+        "id": "G",
+        "type": "graded-index-rectangle",
+        "parameters": {
+          "leftX": -0.5,
+          "axisY": 0,
+          "spanX": 3.5,
+          "upHeight": 0.3,
+          "downHeight": 0,
+          "indexSquaredAtAxis": 1,
+          "gradientLength": 1,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "D",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 1.25,
+          "y": 0.5,
+          "length": 3.5,
+          "orientationDeg": 0
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "events",
+      "kind": "detector-hit-events",
+      "componentId": "D"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Measure one finite-angle sampled detector crossing after a gradual index change.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "The fixed field is a dimensional realization of a linear squared-index law, in unit-index exterior. The 60° angle from the inward normal, finite rectangle and detector are explicit synthetic control choices."
+    ],
+    "unknowns": [
+      "Original A15's physical scale and native grazing trajectory."
+    ]
+  }
+}

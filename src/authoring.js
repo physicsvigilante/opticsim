@@ -1,3 +1,4 @@
+import {IMMERSED_ARC_MODEL,IMMERSED_ARC_VERSION} from './immersed-arc-plane-port.js';
 import {CAP_TYPE,CAP_MODEL,CAP_VERSION,capExtents} from './finite-circular-cap.js';
 import {SLAB_ARC_MODEL} from './slab-arc-return.js';
 import {CURVED_BEAM_MODEL} from './curved-entry-beam.js';
@@ -25,6 +26,7 @@ import {BEAM_PLANAR_MIRROR_VERSION,BEAM_PLANAR_MIRROR_MODEL,BEAM_PLANAR_MIRROR_M
 import {BEAM_TWO_PLANE_MIRROR_VERSION,BEAM_TWO_PLANE_MIRROR_MODEL,BEAM_TWO_PLANE_MIRROR_MIN_GAP_MM} from './native-beam-two-plane-mirror-v27.js';
 import {DECENTERED_BEAM_VERSION,DECENTERED_BEAM_MODEL} from './decentered-two-lens-beam.js';
 import {curvedEntryCapabilities} from './native-curved-entry-observation.js';
+import {GRIN_SLAB_MODEL,GRIN_SLAB_VERSION,GRIN_SLAB_POLICY} from './native-entering-graded-slab.js';
 import {GRIN_V25_TYPE,GRIN_V25_VERSION,GRIN_V25_POLICY,grinV25Extents,grinV25Capabilities} from './native-grin-v25.js';
 import {isCurved,curvedPoints} from './curved-mirrors.js';
 import {validate,UPSTREAM,SAMPLING_PRESETS,COMPONENT_TYPES,componentParameterNames,
@@ -37,6 +39,8 @@ const policies=Object.freeze({
   // The deeper native limit is restricted to these two older sealed profiles.
   'native-deep-v17':Object.freeze({rayDensity:SAMPLING_PRESETS.medium,maxRayDepth:TWO_THICK_MIRROR_NATIVE_DEPTH,processedRayLimit:10000}),
   'native-deep-v18':Object.freeze({rayDensity:SAMPLING_PRESETS.medium,maxRayDepth:THICK_APERTURE_NATIVE_DEPTH,processedRayLimit:10000}),
+  'native-grin-slab-v33':Object.freeze({rayDensity:GRIN_SLAB_POLICY.rayDensity,
+    maxRayDepth:GRIN_SLAB_POLICY.maxRayDepth,processedRayLimit:GRIN_SLAB_POLICY.processedRayLimit}),
   'native-grin-fine-v25':Object.freeze({rayDensity:GRIN_V25_POLICY.rayDensity,
     maxRayDepth:GRIN_V25_POLICY.maxRayDepth,processedRayLimit:GRIN_V25_POLICY.processedRayLimit})
 });
@@ -90,6 +94,8 @@ export function capabilities() {
       geometry:'Entire emission segment lies within coordinate bounds, outside every surface/medium boundary and detector supporting line. First emitted samples near finite stop/lens endpoints are refused. Beam starting medium must be uniform.',
       execution:'Native pinned Beam emits all deterministic samples; density is numerical not a continuous source property. Brightness exceeding ray density is refused to prevent native saturation.',
       limitations:'No image reconstruction, PSF, diffraction, radiometric power, arbitrary composite optics or source-to-detector ancestry.'},
+    immersedArcPort:{schemaVersion:IMMERSED_ARC_VERSION,model:IMMERSED_ARC_MODEL,selection:'Select physical.model explicitly and use dense-v1.',scope:'One directional source inside a denser half-space, one immersed concave spherical mirror patch, one planar interface and one exterior detector.'},
+    enteringGradedSlab:{schemaVersion:GRIN_SLAB_VERSION,model:GRIN_SLAB_MODEL,selection:'Select physical.model explicitly.',scope:'One finite-angle incoming single ray, one native square-root GRIN rectangle and a horizontal passive detector after the far face.'},
     finiteCircularCap:{schemaVersion:CAP_VERSION,model:CAP_MODEL,selection:'Select physical.model explicitly and use dense-v1.',scope:'An axial directional source inside a finite circular cap and one exterior detector beyond the curved pole.'},
     slabArcReturn:{schemaVersion:31,model:SLAB_ARC_MODEL,selection:'Select physical.model explicitly and use dense-v1.',scope:'One directional fan, two parallel interfaces, a separated concave spherical mirror and one exterior detector.'},
     curvedEntryBeam:{schemaVersion:30,model:CURVED_BEAM_MODEL,selection:'Select physical.model explicitly.',scope:'One horizontal leftward Beam through a finite right semicircular dielectric. Returns sampled flat-face y extrema in mm.'},
@@ -222,7 +228,7 @@ export function inspectAuthoringRequest(request){
     try{scale=units(request.lengthUnit,'$.lengthUnit');}
     catch(error){issues.push(...error.issues);}
   }
-  if(own(request,'model')&&![POST_LENS_MODEL,REFRACTIVE_FAN_MODEL,CURVED_BEAM_MODEL,SLAB_ARC_MODEL,CAP_MODEL].includes(request.model))issues.push(issue('$.model','UNSUPPORTED_MODEL','Unknown explicit physical model'));
+  if(own(request,'model')&&![POST_LENS_MODEL,REFRACTIVE_FAN_MODEL,CURVED_BEAM_MODEL,SLAB_ARC_MODEL,CAP_MODEL,GRIN_SLAB_MODEL,IMMERSED_ARC_MODEL].includes(request.model))issues.push(issue('$.model','UNSUPPORTED_MODEL','Unknown explicit physical model'));
   if(own(request,'runPolicy')&&(typeof request.runPolicy!=='string'||!own(policies,request.runPolicy)))
     issues.push(issue('$.runPolicy','UNSUPPORTED_POLICY','Use a run policy exposed by capabilities()'));
   if(own(request,'title')&&(typeof request.title!=='string'||request.title.length>120))
@@ -320,6 +326,8 @@ function camera(components) {
     zoom:isGrinV25?80:Math.max(.03,Math.min(2,.85*1200/width,.85*700/height))};
 }
 function selectRequestComposition(request) {
+  if(request.model===IMMERSED_ARC_MODEL)return {model:IMMERSED_ARC_MODEL,schemaVersion:IMMERSED_ARC_VERSION,adapterVersion:IMMERSED_ARC_VERSION};
+  if(request.model===GRIN_SLAB_MODEL)return {model:GRIN_SLAB_MODEL,schemaVersion:GRIN_SLAB_VERSION,adapterVersion:GRIN_SLAB_VERSION};
   if(request.model===CAP_MODEL)return {model:CAP_MODEL,schemaVersion:CAP_VERSION,adapterVersion:CAP_VERSION};
   if(request.model===SLAB_ARC_MODEL)return {model:SLAB_ARC_MODEL,schemaVersion:31,adapterVersion:31};
   if(request.model===CURVED_BEAM_MODEL)return {model:CURVED_BEAM_MODEL,schemaVersion:30,adapterVersion:30};
@@ -356,12 +364,13 @@ export function prepareScene(request) {
   const {schemaVersion,adapterVersion,model}=selectedComposition;
   const policyName=requestedPolicy??(schemaVersion===TWO_THICK_MIRROR_VERSION?
     'native-deep-v17':schemaVersion===THICK_APERTURE_VERSION?'native-deep-v18':
-    schemaVersion===GRIN_V25_VERSION?'native-grin-fine-v25':'preview-v1');
+    schemaVersion===GRIN_V25_VERSION?'native-grin-fine-v25':schemaVersion===GRIN_SLAB_VERSION?'native-grin-slab-v33':'preview-v1');
   if((policyName==='native-deep-v17'&&schemaVersion!==TWO_THICK_MIRROR_VERSION)||
      (policyName==='native-deep-v18'&&schemaVersion!==THICK_APERTURE_VERSION)||
      (policyName==='native-grin-fine-v25'&&schemaVersion!==GRIN_V25_VERSION)||
-     (schemaVersion===GRIN_V25_VERSION&&policyName!=='native-grin-fine-v25'))
-    fail([issue('$.runPolicy','UNSUPPORTED_POLICY','A deeper native ray budget is admitted only for its exact v17 or v18 profile')]);
+     (schemaVersion===GRIN_V25_VERSION&&policyName!=='native-grin-fine-v25')||
+     ((schemaVersion===GRIN_SLAB_VERSION)!==(policyName==='native-grin-slab-v33')))
+    fail([issue('$.runPolicy','UNSUPPORTED_POLICY','Use the numerical policy registered for the selected profile.')]);
   const doc={
     format:'ray-optics-2d',schemaVersion,adapterVersion,upstreamCommit:UPSTREAM,
     physics:{lengthUnit:'mm',coordinates:'x-right-y-up',model,components},

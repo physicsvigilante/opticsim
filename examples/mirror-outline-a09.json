@@ -1,0 +1,36 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-mirror-image-outline-facts-v1",
+    "model": "paraxial-concave-mirror-outline",
+    "geometry": {
+      "kind": "axis-based-trapezoid-beyond-centre",
+      "farBaseId": "A",
+      "farTopId": "B",
+      "nearTopId": "E",
+      "nearBaseId": "D",
+      "upperEdgeRelation": "rises-toward-mirror"
+    }
+  },
+  "requests": [
+    {
+      "id": "outline",
+      "kind": "concave-mirror-outline-conjugate"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Describe the shape and qualitative image vertex positions for ABED.",
+    "stated": [
+      "The object ABED is beyond the centre of curvature of a concave mirror. A and D are on the axis, and the illustrated top edge rises toward the mirror."
+    ],
+    "derived": [
+      "A/B are farther from the mirror than D/E. The two end edges are transverse to the axis."
+    ],
+    "assumptions": [
+      "Use the paraxial image of each vertex and the ordered straight edges. Interpret the source drawing qualitatively."
+    ],
+    "unknowns": [
+      "Focal length and all absolute object dimensions."
+    ]
+  }
+}

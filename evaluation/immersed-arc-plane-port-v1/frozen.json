@@ -1,0 +1,11 @@
+{
+  "extends": "../silvered-curved-region-v1/frozen.json",
+  "scope": "Public candidate describes a concave spherical reflecting patch in a denser homogeneous half-space, with a planar port and one exterior detector. The patch and the plane are distinct, separated surfaces. The test does not identify this finite reflecting patch and half-space as a complete silvered hemisphere.",
+  "predictions": [
+    "On-axis direct and singly reflected finite fans can be authored with the same detector. Each direction executes as its own scene.",
+    "A28 control radius and pole depth 100 mm, depths 25,50,75 mm, unit exterior and interior 1.5. Use aperture 50 mm, detector 15 mm outside the plane, and launch cones 1.8 degrees with density 1. Expected finite and afocal limits are the frozen A28 results.",
+    "Translation by (+120,-75) mm must translate the authored port, point, mirror and detector together. Observed callback directions and relative exit/detector coordinates must agree with the original within 0.00001 mm and 1e-8 in unit direction.",
+    "Near contact, truncated or mismatched runs, extra surfaces and unsupported source directions do not qualify."
+  ],
+  "release": "Preserve the A28 native study, analytical branches, v31 return, v32 cap and v33 graded slab independently. Use exact tested head review and real Chrome."
+}
