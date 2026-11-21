@@ -1,0 +1,73 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "model": "native-inside-cap-tracing",
+    "lengthUnit": "mm",
+    "runPolicy": "dense-v1",
+    "title": "Near-base probe inside a circular glass cap",
+    "components": [
+      {
+        "id": "S",
+        "type": "point-source",
+        "parameters": {
+          "x": 0.0625,
+          "y": 0,
+          "brightness": 0.04
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 0,
+          "angleDeg": 1.8
+        }
+      },
+      {
+        "id": "C",
+        "type": "circular-cap-dielectric",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "radius": 50,
+          "capHeight": 30,
+          "insideIndex": 1.6,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "D",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 80,
+          "y": 0,
+          "length": 40,
+          "orientationDeg": 90
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "faces",
+      "kind": "interface-face-events",
+      "componentId": "C"
+    },
+    {
+      "id": "detector",
+      "kind": "detector-hit-events",
+      "componentId": "D"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Record the cap boundary and detector observations for an inside probe near the table.",
+    "stated": [
+      "A27 shows a 30 mm high cap of a sphere with radius 50 mm, glass index 1.6 and an observer 80 mm above the table on axis."
+    ],
+    "derived": [],
+    "assumptions": [
+      "Unit-index exterior. An on-axis native source is placed 0.0625 mm inside the base, with a chosen 1.8° cone and relative brightness 0.04. The real detector is placed at the stated axial distance with an assumed finite length. Partial reflection is disabled."
+    ],
+    "unknowns": [
+      "Table surface optics and original illumination."
+    ]
+  }
+}

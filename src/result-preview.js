@@ -5,6 +5,7 @@ import {SPHERICAL_LENS_TYPE,thickLensExtents} from './spherical-lens.js';
 import {GRIN_V25_TYPE,grinV25Extents} from './native-grin-v25.js';
 import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
 import {SEMICIRCULAR_TYPE,semicircularExtents} from './semicircular-dielectric.js';
+import {CAP_TYPE,capExtents} from './finite-circular-cap.js';
 import {CIRCLE_BLOCKER_TYPE,circleBlockerExtents} from './opaque-circle-blocker.js';
 import {isCurved,curvedPoints} from './curved-mirrors.js';
 import {validate,mirrorEndpoints} from './contract.js';
@@ -75,6 +76,7 @@ export function apparatusPoints(doc){
      if(c.type===POLYGON_TYPE)return polygonVertices(p);
     if(c.type===CIRCULAR_TYPE)return circularExtents(p);
     if(c.type===SEMICIRCULAR_TYPE)return semicircularExtents(p);
+    if(c.type===CAP_TYPE)return capExtents(p);
     if(c.type===SPHERICAL_LENS_TYPE)return thickLensExtents(p);
     if(c.type===GRIN_V25_TYPE)return grinV25Extents(p);
     if(c.type===CIRCLE_BLOCKER_TYPE)return circleBlockerExtents(p);
@@ -90,7 +92,7 @@ function cameraFor(points,width,height,padding,version=4){
   const clamp=(x,[lo,hi])=>Math.max(lo,Math.min(hi,x));
   // Preserve all historical camera semantics. v25 alone can magnify a real
   // 1mm GRIN region while still fitting the true passive detector endpoints.
-  const grin=version===25,zoomCap=grin?100:2,minSpan=grin?0.1:1;
+  const grin=version===25||version===33,zoomCap=grin?100:2,minSpan=grin?0.1:1;
   const view={x:clamp((minX+maxX)/2,CAMERA_BOUNDS.centerMm),
     y:clamp((minY+maxY)/2,CAMERA_BOUNDS.centerMm),
     zoom:clamp(Math.min(zoomCap,(width-2*padding)/Math.max(minSpan,maxX-minX),

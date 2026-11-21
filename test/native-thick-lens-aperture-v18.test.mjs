@@ -229,7 +229,13 @@ test('v18 browser provenance is append-only relative to reviewed v17 code, never
   assert.equal(curvedBeamFollowup.v30AppGitBlob,'15655cc6ea8a25aea7fc0758c111841fd60bee51');
   const slabArcFollowup=JSON.parse(readFileSync(new URL('./fixtures/slab-arc-return-v31-app-integration.json',import.meta.url),'utf8'));
   assert.equal(slabArcFollowup.sourceV30AppGitBlob,curvedBeamFollowup.v30AppGitBlob);
-  assert.equal(slabArcFollowup.v31AppGitBlob,sha);
+  assert.equal(slabArcFollowup.v31AppGitBlob,'64f74f2cf8bc81ad87a8b92d03612ee0975962d2');
+  const finiteCapFollowup=JSON.parse(readFileSync(new URL('./fixtures/finite-cap-v32-app-integration.json',import.meta.url),'utf8'));
+  assert.equal(finiteCapFollowup.sourceV31AppGitBlob,slabArcFollowup.v31AppGitBlob);
+  assert.equal(finiteCapFollowup.v32AppGitBlob,'34d9be9c483f694b1a7c0a80a7125edf645bfad5');
+  const enteringGrinFollowup=JSON.parse(readFileSync(new URL('./fixtures/entering-graded-slab-v33-app-integration.json',import.meta.url),'utf8'));
+  assert.equal(enteringGrinFollowup.sourceV32AppGitBlob,finiteCapFollowup.v32AppGitBlob);
+  assert.equal(enteringGrinFollowup.v33AppGitBlob,sha);
   assert.notEqual(sha,reconciliation.reconciledAppGitBlob,'New v25 UI is not the reviewed v24 browser code');
   assert.notEqual(sha,p.newV18AppGitBlob,'Do not claim new UI matches old reviewed v18 byte identity');
   assert.equal(p.originalV17AppGitBlob,'9d447af4c8fc59ec1e8fdcfbcec0c4d739fc477f');
