@@ -51,7 +51,7 @@ function candidate(geometry,[xSign,ySign]){
     const x=fold(ax*den+dx*num,den,width),y=fold(ay*den+dy*num,den,height);
     const offset=axis==='x'?y:x,span=(axis==='x'?height:width)*den;
     const nearest=offset<span-offset?offset:span-offset;
-    if(Number(nearest)<=1e-10*Number(span))return {...base,status:'numerically-indeterminate',reasonCode:'NEAR_CORNER_CONTACT'};
+    if(nearest*10_000_000_000n<=span)return {...base,status:'numerically-indeterminate',reasonCode:'NEAR_CORNER_CONTACT'};
     points.push({wall:label,x:Number(x)/Number(den)/grid,y:Number(y)/Number(den)/grid});
   }
   const x=Number(dx)/grid,y=Number(dy)/grid,norm=Math.hypot(x,y);
@@ -81,8 +81,14 @@ export function analyzeFourWall(f,q){
   fields(f,['format','model','geometry']);
   if(f.model!==model)fail('UNSUPPORTED_MODEL','Declare one reflection from each straight wall of a rectangle.');
   if(!['symbolic-rectangle','numeric-rectangle'].includes(f.geometry?.kind))fail('UNSUPPORTED_SCOPE','Supply a symbolic or fully dimensioned rectangle.');
-  return {format:'opticsim-four-wall-mirror-result-v1',kind,method:'conditional-analytical',status:'conditional',native:{status:'not-run'},
+  const value=f.geometry.kind==='numeric-rectangle'?numeric(f.geometry):symbolic(f.geometry);
+  const pending=value.branches.some(c=>c.status==='numerically-indeterminate');
+  const resolved=value.branches.some(c=>c.status==='conditional');
+  const status=value.kind==='symbolic-directions'?'conditional':
+    pending?(resolved?'partially-indeterminate':'numerically-indeterminate'):resolved?'conditional':'unavailable';
+  return {format:'opticsim-four-wall-mirror-result-v1',kind,method:'conditional-analytical',status,native:{status:'not-run'},
+    ...(pending?{reasonCode:'UNRESOLVED_CORNER_CLEARANCE',reason:'Corner proximity withholds one or more numeric branches.'}:{}),
     assumptions:['Two-dimensional ideal specular reflection with finite straight walls and both points inside.'],
     limitations:['A near or exact corner contact is withheld. Native traces and a physical absorbing target are separate evidence.'],
-    value:f.geometry.kind==='numeric-rectangle'?numeric(f.geometry):symbolic(f.geometry)};
+    value};
 }

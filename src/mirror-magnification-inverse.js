@@ -51,9 +51,13 @@ export function analyzeMirrorMagnification(f,q){
   const signs=f.target.kind==='magnitude'?[target,-target]:[target];
   const branches=signs.map(m=>pursue(f,m,scale));
   const candidates=branches.filter(b=>b.status==='conditional');
-  const status=candidates.length?'conditional':branches.some(b=>b.status==='numerically-indeterminate')?'numerically-indeterminate':'unavailable';
+  const unresolved=branches.some(b=>b.status==='numerically-indeterminate');
+  const status=unresolved?(candidates.length?'partially-indeterminate':'numerically-indeterminate'):
+    candidates.length?'conditional':'unavailable';
   return {format:'opticsim-mirror-magnification-result-v1',kind,method:'conditional-analytical',status,
     value:candidates.length?{lengthUnit:f.lengthUnit,candidates}:null,branches,native:{status:'not-run'},
+    ...(unresolved?{reasonCode:'UNRESOLVED_MAGNIFICATION_BRANCH',
+      reason:'One or more real-object placements lie outside the qualified numerical range.'}:{}),
     assumptions:['Real incident-side object, first paraxial spherical mirror conjugate.'],
     limitations:['Size ratio alone has no orientation. Aperture and visibility require separate native evidence.']};
 }

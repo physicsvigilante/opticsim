@@ -48,7 +48,12 @@ test('exact and near corner contacts differ from unqualified geometry',()=>{
   const p=numeric(200,200,{x:50,y:50},{x:150,y:150});
   assert.deepEqual(result(p).value.branches.map(b=>b.reasonCode),['CORNER_CONTACT',undefined,undefined,'CORNER_CONTACT']);
   p.physical.geometry.to.y+=1e-9;
-  assert.equal(result(p).value.branches[0].reasonCode,'NEAR_CORNER_CONTACT');
+  const partial=result(p);
+  assert.equal(partial.status,'partially-indeterminate');
+  assert.equal(partial.value.branches[0].reasonCode,'NEAR_CORNER_CONTACT');
+  const unresolved=result(numeric(200,200,{x:100,y:100},{x:100+1e-10,y:100+2e-10}));
+  assert.equal(unresolved.status,'numerically-indeterminate');
+  assert.ok(unresolved.value.branches.every(b=>b.status==='numerically-indeterminate'));
   p.physical.geometry.to.x=200;
   assert.equal(result(p).value,null);
 });
