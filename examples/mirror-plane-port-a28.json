@@ -1,0 +1,38 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-mirror-plane-port-facts-v1",
+    "model": "concave-mirror-behind-planar-exit",
+    "lengthUnit": "cm",
+    "objectDepth": 5,
+    "poleDepth": 10,
+    "curvatureRadius": 10,
+    "interiorIndex": 1.5,
+    "exteriorIndex": 1
+  },
+  "requests": [
+    {
+      "id": "direct",
+      "kind": "plane-port-direct-conjugate"
+    },
+    {
+      "id": "reflected",
+      "kind": "mirror-plane-return-conjugate"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Compare the axial image positions of the direct and singly reflected branches seen through the plane.",
+    "stated": [
+      "Glass hemisphere radius 10 cm, index 1.5, curved surface fully silvered, bubble centred on the axis 5 cm from the flat face."
+    ],
+    "derived": [
+      "The concave mirror pole is 10 cm from the plane and its paraxial focal length is 5 cm."
+    ],
+    "assumptions": [
+      "Treat the bubble as a small point scatterer, use a unit-index exterior, real axial paraxial propagation and transmission at the exit plane."
+    ],
+    "unknowns": [
+      "Bubble shape and size, illumination and observer visibility."
+    ]
+  }
+}
