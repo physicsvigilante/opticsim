@@ -1,5 +1,6 @@
 import {isRecord} from './qualified-utils.js';
 import {calculateLensTrain} from './lens-train-matrix.js';
+import {fromBinary64,add,subtract,multiply,divide,compare} from './binary64-rational.js';
 
 export const FINITE_VIEW_FACTS='opticsim-two-lens-finite-viewing-facts-v1';
 export const FINITE_VIEW_QUERY='opticsim-two-lens-finite-viewing-query-v1';
@@ -39,6 +40,32 @@ const uncertain=()=>failure('numerically-indeterminate','UNRESOLVED_VIEWING_GEOM
 const unavailable=()=>failure('unavailable','NO_FINITE_VIRTUAL_VIEWING_BRANCH',
   'The two positive lenses must produce a finite virtual final image relative to the eyepiece.');
 
+function eyeBAffine(u,e,first,second){
+  // Both coefficients share denominator first*second. Keep their exact
+  // numerators so the denominator cancels when lens order exchanges.
+  const before=subtract(first,u),after=subtract(second,e);
+  return {intercept:add(multiply(after,multiply(u,first)),multiply(multiply(e,second),before)),
+    slope:multiply(after,before)};
+}
+
+function swappedSeparation(u,e,spacing,objective,eyepiece){
+  const [object,eye,separation,first,second]=[u,e,spacing,objective,eyepiece].map(fromBinary64);
+  const before=eyeBAffine(object,eye,first,second),after=eyeBAffine(object,eye,second,first);
+  const objectAndEye=add(object,eye),total=add(objectAndEye,separation);
+  const initialB=add(before.intercept,multiply(separation,before.slope));
+  const numerator=subtract(multiply(total,after.intercept),multiply(initialB,objectAndEye));
+  const denominator=subtract(initialB,multiply(total,after.slope));
+  if(denominator.n===0n)return numerator.n===0n?
+    failure('unavailable','SEPARATION_NOT_IDENTIFIED','The equal-gain condition does not select a unique separation.'):
+    failure('unavailable','NO_EQUAL_GAIN_SEPARATION','The two affine optical relations admit no equal-gain separation.');
+  const candidate=divide(numerator,denominator);
+  if(compare(candidate,fromBinary64(1))<0||compare(candidate,fromBinary64(10000))>0)
+    return failure('unavailable','SWAPPED_SEPARATION_OUTSIDE_SCOPE',
+      'The equal-gain condition does not yield a positive separated layout within 1–10000 mm.');
+  const rounded=Number(candidate.n)/Number(candidate.d);
+  return lengthInScope(rounded)?{status:'conditional',spacing:rounded}:uncertain();
+}
+
 function geometry(u,e,spacing,objective,eyepiece){
   const {matrix:m}=calculateLensTrain(-u,[{...objective,x:0},{...eyepiece,x:spacing}]);
   const beforeEyepieceD=1-u/objective.focalLength,eyeB=m.b+e*m.d;
@@ -50,7 +77,7 @@ function geometry(u,e,spacing,objective,eyepiece){
   if(signedDistanceAtEyepiece>=0)return unavailable();
   const signedDistanceAtEye=-eyeB/m.d,total=u+spacing+e,gain=total/eyeB;
   if(!Number.isFinite(gain)||!Number.isFinite(signedDistanceAtEye)||Math.abs(signedDistanceAtEye)>1e7)return uncertain();
-  return {status:'conditional',eyeB,total,gain,spacing,signedDistanceAtEye,signedDistanceAtEyepiece};
+  return {status:'conditional',gain,spacing,signedDistanceAtEye,signedDistanceAtEyepiece};
 }
 
 export function analyzeFiniteViewing(f,q){
@@ -81,17 +108,9 @@ export function analyzeFiniteViewing(f,q){
   const value={lengthUnit:f.lengthUnit,objectDistanceFromObjective:f.objectDistanceFromObjective,
     eyeDistanceFromEyepiece:f.eyeDistanceFromEyepiece,angleReference:reference,initial:report(initial,objective,eyepiece)};
   if(q.kind===forward)return {...base,status:'conditional',value};
-  // B at the eye is affine in the lens separation. Equate B/total distance
-  // so the two arrangements have the same signed angular gain.
-  const a=1-u/eyepiece.focalLength,b=1-e/objective.focalLength;
-  const coefficient=b*a,intercept=b*u+e*a;
-  const left=initial.total*intercept,right=initial.eyeB*(u+e),linear=initial.total*coefficient;
-  const numerator=left-right,denominator=initial.eyeB-linear;
-  if(!resolved(numerator,left,right)||!resolved(denominator,initial.eyeB,linear))return {...base,...uncertain()};
-  const swappedSpacing=numerator/denominator;
-  if(!lengthInScope(swappedSpacing))return {...base,...failure('unavailable','SWAPPED_SEPARATION_OUTSIDE_SCOPE',
-    'The equal-gain condition does not yield a positive separated layout within 1–10000 mm.')};
-  const swapped=geometry(u,e,swappedSpacing,eyepiece,objective);
+  const solution=swappedSeparation(u,e,spacing,objective.focalLength,eyepiece.focalLength);
+  if(solution.status!=='conditional')return {...base,...solution};
+  const swapped=geometry(u,e,solution.spacing,eyepiece,objective);
   if(swapped.status!=='conditional')return {...base,...swapped};
   if(Math.abs(swapped.gain-initial.gain)>1e-8*Math.abs(initial.gain))return {...base,...uncertain()};
   return {...base,status:'conditional',value:{...value,swapPolicy,swapped:report(swapped,eyepiece,objective)}};

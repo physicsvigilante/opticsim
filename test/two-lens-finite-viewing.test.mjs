@@ -53,3 +53,16 @@ test('finite-viewing keeps the sign of an inverted virtual image and withholds o
   delete f.swapPolicy;
   assert.equal(planProblem(p).results[1].status,'needs-information');
 });
+
+test('exactly parallel equal-gain relations classify no solution and no unique separation',()=>{
+  const p=read('two-lens-finite-viewing'),f=p.physical;
+  f.objective.focalLength=3;
+  f.eyepiece.focalLength=4;
+  Object.assign(f,{objectDistanceFromObjective:6,eyeDistanceFromEyepiece:2,lensPlaneSeparation:7});
+  assert.equal(planProblem(p).results[0].status,'conditional');
+  assert.equal(planProblem(p).results[1].reasonCode,'NO_EQUAL_GAIN_SEPARATION');
+  f.eyepiece.focalLength=5;
+  Object.assign(f,{objectDistanceFromObjective:4,eyeDistanceFromEyepiece:4,lensPlaneSeparation:13});
+  assert.equal(planProblem(p).results[0].status,'conditional');
+  assert.equal(planProblem(p).results[1].reasonCode,'SEPARATION_NOT_IDENTIFIED');
+});
