@@ -64,5 +64,9 @@ test('exactly parallel equal-gain relations classify no solution and no unique s
   f.eyepiece.focalLength=5;
   Object.assign(f,{objectDistanceFromObjective:4,eyeDistanceFromEyepiece:4,lensPlaneSeparation:13});
   assert.equal(planProblem(p).results[0].status,'conditional');
+  assert.equal(planProblem(p).results[1].reasonCode,'NO_FINITE_VIRTUAL_SWAP');
+  f.objective.focalLength=f.eyepiece.focalLength=12;
+  Object.assign(f,{objectDistanceFromObjective:30,eyeDistanceFromEyepiece:10,lensPlaneSeparation:25});
+  close(planProblem(p).results[0].value.initial.signedAngularGain,-4);
   assert.equal(planProblem(p).results[1].reasonCode,'SEPARATION_NOT_IDENTIFIED');
 });
