@@ -1,0 +1,19 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-two-lens-finite-viewing-facts-v1",
+    "model": "two-positive-thin-lenses-in-unit-index-air",
+    "lengthUnit": "m",
+    "objective": {"id": "L1", "focalLength": 0.4},
+    "eyepiece": {"id": "L2", "focalLength": 0.3},
+    "lensPlaneSeparation": 0.2
+  },
+  "requests": [{"id": "swap", "kind": "two-lens-swap-for-angular-gain"}],
+  "interpretation": {
+    "requestedResult": "Determine the lens separation after interchanging the objective and eyepiece at the same angular magnification.",
+    "stated": ["The objective and eyepiece focal lengths are 0.4 m and 0.3 m, respectively. Their initial separation is 0.2 m."],
+    "derived": ["A relaxed microscope with a real intermediate image would require lens separation greater than 0.7 m."],
+    "assumptions": ["The reduced optical model treats the two elements as ideal thin lenses in unit-index air."],
+    "unknowns": ["Object distance. Eye offset and unaided comparison. Accommodation and the distances held fixed during the lens exchange."]
+  }
+}

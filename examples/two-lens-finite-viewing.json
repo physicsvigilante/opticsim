@@ -1,0 +1,26 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-two-lens-finite-viewing-facts-v1",
+    "model": "two-positive-thin-lenses-in-unit-index-air",
+    "lengthUnit": "mm",
+    "objective": {"id": "L1", "focalLength": 400},
+    "eyepiece": {"id": "L2", "focalLength": 300},
+    "lensPlaneSeparation": 200,
+    "objectDistanceFromObjective": 40,
+    "eyeDistanceFromEyepiece": 50,
+    "angleReference": "unaided-at-same-eye-and-object-planes",
+    "swapPolicy": "hold-object-distance-and-eye-offset"
+  },
+  "requests": [
+    {"id": "initial", "kind": "two-lens-finite-angular-gain"},
+    {"id": "swap", "kind": "two-lens-swap-for-angular-gain"}
+  ],
+  "interpretation": {
+    "requestedResult": "Compare finite virtual conjugates and verify an equal signed angular gain after a change of lens order.",
+    "stated": ["This synthetic layout uses a 40 mm object distance and 50 mm eye offset in both arrangements."],
+    "derived": ["Reference the unaided small angle to the same object and eye positions in each arrangement."],
+    "assumptions": ["Thin coaxial lenses in unit-index air. Finite virtual output and an on-axis observation plane."],
+    "unknowns": ["Finite-pupil illumination and whether a particular observer can accommodate each virtual conjugate."]
+  }
+}
