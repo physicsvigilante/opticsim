@@ -6,6 +6,7 @@ import {analyzeTwoFaceQuery,twoFaceCapabilities,TWO_FACE_FACTS,TWO_FACE_QUERY} f
 import {analyzePowerQuery,powerCapabilities,POWER_FACTS,POWER_QUERY} from './coincident-optical-power.js';
 import {analyzeFocus,focusCapabilities,FOCUS_FACTS,FOCUS_QUERY} from './separated-lens-focus.js';
 import {analyzeSurfaceFocus,surfaceFocusCapabilities,SURFACE_FOCUS_FACTS,SURFACE_FOCUS_QUERY} from './two-surface-focus.js';
+import {analyzeMirrorMagnification,mirrorMagnificationCapabilities,MIRROR_MAGNIFICATION_FACTS,MIRROR_MAGNIFICATION_QUERY} from './mirror-magnification-inverse.js';
 import {analyzeMirrorOutline,mirrorOutlineCapabilities,OUTLINE_FACTS,OUTLINE_QUERY} from './mirror-image-outline.js';
 import {analyzeGradedSlab,gradedSlabCapabilities,GRADED_SLAB_FACTS,GRADED_SLAB_QUERY} from './graded-slab-first-passage.js';
 import {analyzeCapObserver,capObserverCapabilities,CAP_OBSERVER_FACTS,CAP_OBSERVER_QUERY} from './cap-observer-conjugate.js';
@@ -30,6 +31,7 @@ const prismKinds=new Set(prismAngleCapabilities().kinds);
 const twoFaceKinds=new Set(twoFaceCapabilities().kinds);
 const reducedAngularAndPowerRoutes=new Map();
 for(const [kinds,format,analyze,missing] of [
+  [mirrorMagnificationCapabilities().kinds,MIRROR_MAGNIFICATION_QUERY,analyzeMirrorMagnification,'Explicit signed focal length and signed or magnitude-only magnification required.'],
   [mirrorOutlineCapabilities().kinds,OUTLINE_QUERY,analyzeMirrorOutline,'Explicit ordered vertices or axis-based trapezoid facts required.'],
   [gradedSlabCapabilities().kinds,GRADED_SLAB_QUERY,analyzeGradedSlab,'Explicit squared-index profile, entry angle or limit and both exterior indices required.'],
   [capObserverCapabilities().kinds,CAP_OBSERVER_QUERY,analyzeCapObserver,'Explicit cap, axial object and observer location required.'],
@@ -53,6 +55,7 @@ const mirrorKinds=new Set(mirrorAngularCapabilities().kinds);
 const observableKinds=observableCapabilities().kinds;
 // References the live fact/query formats, not a second physics validator.
 const factContracts=Object.freeze({
+ [MIRROR_MAGNIFICATION_QUERY]:[MIRROR_MAGNIFICATION_FACTS],
  [OUTLINE_QUERY]:[OUTLINE_FACTS],
  [GRADED_SLAB_QUERY]:[GRADED_SLAB_FACTS],
  [CAP_OBSERVER_QUERY]:[CAP_OBSERVER_FACTS],
@@ -74,6 +77,7 @@ const factContracts=Object.freeze({
  [MIRROR_QUERY_FORMAT]:[MIRROR_FACTS_FORMAT]
 });
 const requestKindRegistry=()=>({
+ ...Object.fromEntries(mirrorMagnificationCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:MIRROR_MAGNIFICATION_QUERY}])),
  ...Object.fromEntries(mirrorOutlineCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:OUTLINE_QUERY}])),
  ...Object.fromEntries(gradedSlabCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:GRADED_SLAB_QUERY}])),
  ...Object.fromEntries(capObserverCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:CAP_OBSERVER_QUERY}])),
@@ -107,6 +111,7 @@ export function problemWorkflowCapabilities(){
     coincidentOpticalPower:powerCapabilities(),
     separatedLensFocus:focusCapabilities(),
     twoSurfaceFocus:surfaceFocusCapabilities(),
+    mirrorMagnification:mirrorMagnificationCapabilities(),
     mirrorOutline:mirrorOutlineCapabilities(),
     gradedSlabFirstPassage:gradedSlabCapabilities(),
     capObserver:capObserverCapabilities(),
