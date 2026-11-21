@@ -1,0 +1,57 @@
+{
+  "format": "opticsim-perpendicular-faces-study-v1",
+  "base": "854e870f5a51453fa75bcc9fffbe989f53adac50",
+  "pin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "source": "Frozen Problems-only atlas v1. The two faces and an admissible meridional branch are given; finite reach is a separate condition.",
+  "cases": [
+    {
+      "id": "A17",
+      "problem": "04_Total_Internal_Reflection_TIR/Problems/003.png",
+      "sha256": "b3cdc8855fdf304efaec8a03bae1e8d928056815ca3e07c302be45821e0e91df",
+      "facts": "Symbolic glass index, grazing entrance, emergence at perpendicular adjacent face. Use explicit common exterior and relative index m>1. No numerical outside index given.",
+      "expect": "In the one-sided incident limit sin(theta)=cot(alpha)=sqrt(m^2-1). m<sqrt(2) has a non-tangent exit in the limit; equality gives grazing emergence in the limit, never a verified crossing; m>sqrt(2) gives strict TIR at that limit.",
+      "controls": [
+        {
+          "core": 1.25,
+          "angle": 75,
+          "outcome": "transmitted"
+        },
+        {
+          "core": 1.6,
+          "angle": 75,
+          "outcome": "tir"
+        }
+      ]
+    },
+    {
+      "id": "A19",
+      "problem": "04_Total_Internal_Reflection_TIR/Problems/007.png",
+      "sha256": "6f55569c754d61d285817f631a263321f9d345c2b1ae459f29e97ac4217b9cc7",
+      "facts": "Glass pipe index 1.36, air outside; model planar meridional end entry and side wall. Use an explicit air index of 1 for numerical controls.",
+      "expect": "nEntrance sin(theta_limit)=sqrt(nCore^2-nWall^2); strict wall TIR below the critical launch boundary for rays that reach the wall. Axial ray misses; grazing entry excluded. If threshold >=1 every open interior angle qualifies.",
+      "controls": [
+        {
+          "core": 1.36,
+          "angle": 50,
+          "outcome": "tir"
+        },
+        {
+          "core": 1.36,
+          "angle": 75,
+          "outcome": "transmitted"
+        }
+      ]
+    }
+  ],
+  "native": {
+    "shape": "v9 convex square Glass (0,0),(100,0),(100,100),(0,100) mm; air 1 outside; partialReflection false; single ray at x=-5 aimed to enter the left face at y=70; the top face is the adjacent wall. Surrogate section for A19. Brightness 0.08, preview-v1.",
+    "checks": "Require complete, warning-free native run and face-41 entry, face-34 target. Compare first incidence and outgoing direction/branch at wall to Snell/specular predictions; require hit point on target away from vertices. No exact grazing launch, no equality witness, no finite-path generalization.",
+    "unitVectorTolerance": 1e-7,
+    "pointToleranceMm": 0.000001
+  },
+  "guards": [
+    "symbolic exact boundary distinct from floating critical proximity",
+    "reject missing or contradictory facts and duplicate face IDs; no silent air default",
+    "preserve v29 critical-angle withholding"
+  ]
+}
