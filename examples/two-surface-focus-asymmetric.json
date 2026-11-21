@@ -1,0 +1,40 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-two-surface-focus-facts-v1",
+    "incidence": "collimated-positive-x",
+    "geometry": {
+      "kind": "two-coaxial-spherical-surfaces",
+      "lengthUnit": "mm",
+      "entranceIndex": 1,
+      "coreIndex": 1.5,
+      "exitIndex": 1,
+      "front": {
+        "id": "F",
+        "signedRadius": 120
+      },
+      "rear": {
+        "id": "B",
+        "signedRadius": -80
+      },
+      "axialThickness": 20
+    }
+  },
+  "requests": [
+    {
+      "id": "focus",
+      "kind": "two-surface-back-focus"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Rear focal distance and power of an asymmetric biconvex element.",
+    "stated": [
+      "Synthetic two-surface control with explicit indices, signed curvatures and thickness."
+    ],
+    "derived": [],
+    "assumptions": [
+      "Paraxial transmitted branch through both surfaces in stated order."
+    ],
+    "unknowns": []
+  }
+}

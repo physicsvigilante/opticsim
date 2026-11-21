@@ -8,6 +8,8 @@ For co-located ideal lenses, signed conjugates and reduced-eye power adjustments
 
 For two separated positive lenses with collimated output, use the [focus and angular magnification query](docs/SEPARATED-LENS-ANGULAR-FOCUS.md).
 
+For the rear focal distance of two coaxial refracting surfaces, use the [two-surface focus query](docs/TWO-SURFACE-FOCUS.md).
+
 For a finite parallel Beam passing through an ideal lens and then a finite aperture, see the [schema-v28 authoring contract and worked example](docs/POST-LENS-APERTURE.md).
 
 A standalone-browser-capable optical bench powered by PhyDemo Ray Optics Simulation **v5.4.0**,
