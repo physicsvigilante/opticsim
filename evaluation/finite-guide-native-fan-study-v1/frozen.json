@@ -1,0 +1,44 @@
+{
+  "format": "opticsim-finite-guide-native-fan-frozen-v1",
+  "sourceCase": "A19",
+  "sourceProblemSha256": "6f55569c754d61d285817f631a263321f9d345c2b1ae459f29e97ac4217b9cc7",
+  "sourceArchiveCommit": "d33b45226348d9b0c701f2a3e8b86dd1285de2d0",
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "purpose": "Check in a bounded two-dimensional meridional surrogate whether one real sampled AngleSource fan can contain leakage and guided exit, then replay each emitted inclination with a separate SingleRay.",
+  "explicitSyntheticGeometry": {
+    "leftRightXmm": [0,80],
+    "bottomTopYmm": [-10,10],
+    "sourceXYmm": [-1,0],
+    "coreIndex": 1.36,
+    "outsideIndex": 1,
+    "partialReflection": false,
+    "outletDetector": {"xMm": 90, "centreYmm": 0, "heightMm": 90},
+    "density": 0.1,
+    "brightness": 0.04,
+    "nativeDepth": 8
+  },
+  "upperFan": {
+    "axisDeg": 65,
+    "openingDeg": 30,
+    "sampledIncidenceDeg": [80,72.8,65.6,58.4,51.2],
+    "predicted": [
+      {"side": "top", "tirCount": 0, "exit": "top"},
+      {"side": "top", "tirCount": 0, "exit": "top"},
+      {"side": "top", "tirCount": 4, "exit": "right"},
+      {"side": "top", "tirCount": 3, "exit": "right"},
+      {"side": "top", "tirCount": 3, "exit": "right"}
+    ]
+  },
+  "lowerFan": {
+    "axisDeg": -66.2,
+    "openingDeg": 30,
+    "sampledIncidenceDeg": [-51.2,-58.4,-65.6,-72.8,-80],
+    "prediction": "The upper fan's five cases in reverse order with every side and transverse coordinate reflected. The offset axis accounts for the pinned sampler's half-open angular interval."
+  },
+  "criticalFan": {
+    "axisRule": "asin(sqrt(1.36^2-1)) in degrees minus 15 degrees",
+    "openingDeg": 30,
+    "prediction": "The first sampled ray reaches the sidewall close to critical incidence. Record the real callbacks. Withhold any validated whole-fan classification for this case."
+  },
+  "scope": "The source problem provides index and tilt facts but no guide or source dimensions. This study uses one homogeneous rectangular Glass body as a finite meridional slice. It makes no claim about skew rays, continuous acceptance, cladding, loss or power transmission, and makes no public authoring change."
+}
