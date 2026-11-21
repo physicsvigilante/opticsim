@@ -1,0 +1,11 @@
+# Paraxial focus through two refracting surfaces
+
+Request `two-surface-back-focus` with `opticsim-two-surface-focus-facts-v1` through the public problem CLI. The incident pencil is collimated and propagates toward +x. The returned axial conjugate is signed from the rear pole. Its location is conditional on a paraxial transmitted pencil meeting both surfaces.
+
+[The A29 example](../examples/two-surface-focus-a29.json) uses the declared sphere radius R as a scale. With one common exterior and m = nCore/nExterior, the rear-pole distance divided by R is (2−m)/(2(m−1)); the centre-referenced distance divided by R is m/(2(m−1)). Matching indices give zero system power, while m = 2 puts the paraxial focus at the rear pole. Specify `symbolic-relative-index` to request the relation, or `relative-index` and a numerical ratio from 0.25 to 4. Both distances retain their named origins.
+
+[The asymmetric element](../examples/two-surface-focus-asymmetric.json) supplies three absolute indices (entrance, core and exit), two signed radii with stable face IDs, and the axial thickness d. Express lengths in mm, cm or m. Positive radius places the centre downstream. With surface powers P₁ = (nCore−nEntrance)/R₁ and P₂ = (nExit−nCore)/R₂, propagation gives ray-height coefficient A = 1−d P₁/nCore and total power P = P₁+A P₂. The signed rear focal distance is nExit A/P. The public system power uses dioptres. The asymmetric example gives 2720/29 mm from the rear pole.
+
+The numerical contract bounds absolute indices to [1,4] and radii magnitudes and thickness to 1–10,000 mm. Exact zero power is afocal; an exact zero ray-height coefficient can give a rear-pole focus. The guard withholds near-cancelling states (relative band 1e−10) and general finite distances exceeding 1,000,000 m. The symbolic solution remains available for explicitly symbolic sphere facts.
+
+The [frozen protocol](../evaluation/two-surface-paraxial-focus-v1/frozen-protocol.json) separately records four-source v15 SphericalLens and v23 CircleGlass Beam controls. Their finite-height outgoing directions are native detector observations. Extrapolating those directions to the axis tests the paraxial limit with a declared finite-height tolerance; it does not establish a detected image or uniform focus over an aperture.

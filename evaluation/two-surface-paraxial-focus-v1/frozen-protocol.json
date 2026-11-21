@@ -1,0 +1,23 @@
+{
+  "format": "opticsim-two-surface-paraxial-focus-study-v1",
+  "pin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "source": {
+    "id": "A29",
+    "problem": "08_Ray_Optics_Explanations/06_Refraction_at_Curved_Surfaces/Problems/010.png",
+    "imageSha256": "d5dedd786f55af52f8b80d4296b53460cddcf2c3520dc27a9e81506bff56bbe5",
+    "facts": "Parallel near-normal beam, solid glass sphere, symbolic radius R and material index mu. Source asks for image distance in terms of R and mu.",
+    "choices": "Use axial paraxial collimated input, signed back focal distance from the rear pole and explicit relative material index m=nCore/nExterior. Also label the distance from the centre. No assumed numeric air index for the source.",
+    "expect": "In a common exterior, zRear/R=(2-m)/(2*(m-1)); zCentre/R=m/(2*(m-1)). Unit index ratio is zero system power; exact m=2 has its paraxial focus at the rear surface. A negative rear distance is possible."
+  },
+  "generalization": {
+    "scope": "Two named coaxial spherical refracting surfaces in sequence, an explicit axial material thickness and known homogeneous medium indices. Paraxial positive-x convention. Signed radii locate the centres. Support collimated input; no inferred entrance ray heights, source radiometry, finite pupil or native image detection.",
+    "reference": "In reduced-angle coordinates, phi_i=(n_after-n_before)/R_i, A=1-(d/nCore)*phi1, Phi=phi1+A*phi2. Signed rear focal distance nExit*A/Phi. Explicit zero total power, near-cancellation withholding and rear-vertex focus are distinct.",
+    "independentControl": "Asymmetric biconvex body with front radius +120 mm, rear -80 mm, thickness 20 mm, exterior index 1, inside index 1.5. A=17/18, Phi=29/2880 per mm and rear focal distance=2720/29 mm."
+  },
+  "nativeControls": [
+    "v23 CircleGlass with R=400 mm at origin, inside 1.5, outside 1, partialReflection=false. Horizontal Beam centred on axis, width 10 mm, source left of sphere, density 0.2. Downstream vertical detector 100 mm beyond rear pole. For each nonaxial outgoing event compare the axis intercept of the measured detector direction with paraxial rear distance 200 mm (within 0.2 mm), keeping finite-height departures. Require at least one event on each side of the axis, two native circle interactions per emission and complete warning-free run.",
+    "v15 biconvex native SphericalLens from the numeric control with aperture 30 mm, partialReflection=false. Four horizontal SingleRay sources at y=±0.5 and ±1 mm. Verify front and back face counts and four actual downstream detector callbacks; compare signed intercepts with 2720/29 mm within 0.10 mm. Retain original callback evidence; intercept extrapolation is derived, not a detected image."
+  ],
+  "release": "Keep historical native contracts and tolerances. The symbolic result is qualified by geometry and indices; native corroboration covers only the explicit finite controls. Test index matching, m=2, near singularities and units. Require independent final-tested-head review.",
+  "base": "43ce9d0c00d207abc4837bfa56a7e4ceb4db9f37"
+}
