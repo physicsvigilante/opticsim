@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdirSync,mkdtempSync,readFileSync} from 'node:fs';
 import {join} from 'node:path';
-import {planProblem} from '../src/problem-workflow.js';
+import {planProblem,resultCoverage} from '../src/problem-workflow.js';
 import {runProblemEvidence} from '../scripts/run-problem.mjs';
 
 const bytes=p=>readFileSync(new URL(p,import.meta.url));
@@ -30,7 +30,10 @@ test('real/virtual crossings use separate finite and unresolved phase outputs',(
   assert.equal(law.focalEvents.state,'finite-set');assert.equal(law.coincidenceEvents.state,'none');
   assert.equal(law.samples[0].state,'finite-real');assert.equal(law.samples[2].state,'finite-virtual');
   p.physical.samplePhases=law.focalEvents.phases;
-  assert.ok(r(p).value.samples.every(s=>s.state==='numerically-indeterminate'));
+  const partial=r(p);
+  assert.ok(partial.value.samples.every(s=>s.state==='numerically-indeterminate'));
+  assert.equal(partial.status,'partially-indeterminate');
+  assert.equal(resultCoverage([partial]).available,0);
   p.physical.meanDistanceOverFocalLength=1.5+1e-12;
   assert.equal(r(p).value.focalEvents.state,'numerically-indeterminate');
 });
