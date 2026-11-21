@@ -1,0 +1,13 @@
+{
+  "format":"opticsim-calibrated-lens-immersion-study-v1",
+  "sourceArchiveCommit":"d33b45226348d9b0c701f2a3e8b86dd1285de2d0",
+  "sourceArchiveSha256":"03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+  "sourceProblem":"08_Ray_Optics_Explanations/07_Lens_Formula/Problems/005.png",
+  "problemSha256":"4255a77f32ebf523e18e8960adb818ad685d8db547ce3322b97615cb1a24e70e",
+  "upstreamCommit":"811f508d2b070898c241a568b0c167dcb8645251",
+  "givens":{"materialIndex":1.6,"referenceMedium":"air","referenceFocalLengthCm":10,"requestedMediumIndices":[1.5,1.7]},
+  "assumptions":["Thin paraxial lens, with unchanged surface geometry and a homogeneous exterior on both sides.","Use unit refractive index for the stated air reference."],
+  "expected":{"focalLengthCm":[90,-102],"referenceRepeatCm":10,"atMatchingIndex":"afocal","nearMatchingIndex":"withhold numerically unresolved finite focal length","individualRadii":"undetermined by the source"},
+  "relation":"Calibrate the shared curvature factor from the reference medium and signed focal length. Transfer (nLens-nMedium) times that factor to each new exterior. The image-side focal length includes the new medium index in its numerator.",
+  "syntheticNativeControl":{"frontRadiusMm":120,"rearSignedRadiusMm":-120,"thicknessMm":5,"apertureHeightMm":20,"lensIndex":1.6,"media":[1,1.5,1.7],"singleRayHeightsMm":[-0.5,0.5],"horizontal":true,"detectorGapFromRearMm":25,"required":"One native entrance, one native exit, and a downstream detector crossing for each ray. Independently predict the rear-pole intercept of the actual finite-thickness lens; require residual less than 0.5 mm and mirrored-intercept disagreement less than 0.01 mm. The source focal lengths are separate analytical thin values."}
+}
