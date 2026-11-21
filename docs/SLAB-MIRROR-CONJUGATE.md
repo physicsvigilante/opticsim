@@ -1,0 +1,9 @@
+# First reflected conjugate with a parallel slab
+
+Give the paraxial concave mirror radius and real object distance in the same unit. Distances are positive from the mirror pole toward the object. Specify the plate thickness, both absolute indices, and either the mirror-side face distance or the interval between the centre of curvature and the object. The same exterior surrounds both sides of the parallel plate.
+
+For thickness t and index ratio m = nGlass/nExterior, propagation through the plate has exterior-equivalent length t/m. On the incoming leg the effective object distance is u′ = u − t(1 − 1/m). The reflection gives reduced image distance v′ = f u′/(u′ − f) and signed transverse magnification −v′/u′. To locate a real image, invert the reduced travel distance through the front exterior, the plate and the far exterior. A virtual conjugate behind the mirror is extrapolated from the reflected bundle at the mirror. At exact zero outgoing vergence the model returns a parallel bundle.
+
+For A12 the plate fits entirely beyond the mirror's centre of curvature. The reduced object distance is 28 cm and the real conjugate is 140/9 cm in front of the mirror, before the returning bundle reaches the plate. The original image was 15 cm away. Inserting the plate moves the image 5/9 cm farther from the pole and increases the image size by a factor of 10/9. These ratios do not require a chosen object height or exact slab position. [Worked request](../examples/slab-mirror-conjugate-a12.json)
+
+The equations assume paraxial rays, direct transmission and the first mirror encounter. Finite-angle and aperture effects are available separately through the [native v31 composition](SLAB-ARC-RETURN.md). The [frozen protocol](../evaluation/slab-mirror-conjugate-v1/frozen.json) covers images before, inside and beyond the plate as well as the afocal limit.
