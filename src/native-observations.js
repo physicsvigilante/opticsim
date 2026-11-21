@@ -11,6 +11,7 @@ export function snapshotNativeObservations(diagnostics,requests=[]){
   const parentage=requests.some(r=>r?.kind==='detector-ray-provenance');
   const finite=requests.some(r=>r?.kind==='finite-hit-numerical-diagnostic');
   return {...ordinary,
+    ...(diagnostics?.v27EndpointsVerified===true?{v27EndpointsVerified:true}:{}),
     ...(hits?{detectorHitEventsById:structuredClone(diagnostics?.detectorHitEventsById??null)}:{}),
     ...(parentage?{detectorRayProvenanceById:structuredClone(diagnostics?.detectorRayProvenanceById??null)}:{}),
     ...(finite?{finiteHitDiagnostic:structuredClone(diagnostics?.finiteHitDiagnostic??null)}:{})};

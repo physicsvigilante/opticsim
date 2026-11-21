@@ -78,6 +78,7 @@ export async function evaluateObservables(doc,requests,execution){
   const canonicalSha256=await sceneHash(doc);
   const fresh=execution?.canonicalSha256===canonicalSha256;
   const complete=fresh&&execution.executionPassed===true&&
+    (doc.schemaVersion!==27 || execution.observations?.v27EndpointsVerified===true)&&
     ['completed','completed-with-warnings'].includes(execution.native?.status);
   const warnings=[...(execution?.native?.warnings||[]),...doc.physics.components.filter(c=>['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','spherical-lens','graded-index-rectangle'].includes(c.type)&&!c.parameters.partialReflection)
     .map(c=>c.id+': explicit transmitted-only approximation omits Fresnel partial reflections; native TIR remains active.')];
@@ -92,6 +93,8 @@ export async function evaluateObservables(doc,requests,execution){
       ...(r.kind==='finite-hit-numerical-diagnostic'?{reasonCode:!fresh?
         'STALE_FINITE_HIT_DIAGNOSTIC':'NATIVE_FINITE_HIT_DIAGNOSTIC_INCOMPLETE'}:{}),
       reason:!fresh?'Execution evidence does not match the current scene hash.':
+        doc.schemaVersion===27 && execution.executionPassed===true && execution.observations?.v27EndpointsVerified!==true?
+        'The current v27 scene requires fresh native endpoint qualification.':
         'Current native run is incomplete, failed, or not yet available.'};
     if(r.kind==='ideal-image'){
       try{

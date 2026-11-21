@@ -14,6 +14,9 @@ export const BEAM_TWO_PLANE_MIRROR_VERSION=27;
 export const BEAM_TWO_PLANE_MIRROR_MODEL='native-parallel-slab-mirror-tracing';
 export const BEAM_TWO_PLANE_MIRROR_MIN_SLAB_MM=1;
 export const BEAM_TWO_PLANE_MIRROR_MIN_GAP_MM=1;
+// Agreement budget for each sorted cross-section. The actual discrepancy is
+// checked per run. This is not an assumed global error bound on native Snell.
+export const V27_SECTION_AGREEMENT_MM=0.001;
 const DEG=Math.PI/180,NO=1e-10;
 const safe=p=>Number.isFinite(p?.x)&&Number.isFinite(p?.y)&&
  Math.abs(p.x)<=10000&&Math.abs(p.y)<=10000;
@@ -115,8 +118,8 @@ export function validateBeamTwoPlaneMirror(components,model,rayDensity,mirrorEnd
    ![sample.entryY,sample.rearExitY,sample.mirrorY,
     sample.rearReturnY,sample.frontReturnY].every(y=>Math.abs(y)<=10000))
    refuse(fail,path,'A necessary two-boundary Snell/mirror checkpoint is nonfinite or outside the authored world; v27 cannot safely admit it.');
-  if(!interior(sample.mirrorY,mirror.y,half,BEAM_PLANAR_MIRROR_MIRROR_RIM_CLEARANCE_MM))
-   refuse(fail,path,'Every exact native Beam sample must meet the finite downstream mirror strictly more than 0.1 mm from each end; misses and post-refraction rim hazards are not admitted.');
+  if(!interior(sample.mirrorY,mirror.y,half,BEAM_PLANAR_MIRROR_MIRROR_RIM_CLEARANCE_MM+V27_SECTION_AGREEMENT_MM))
+   refuse(fail,path,'Every sampled mirror checkpoint needs the 0.1 mm optical endpoint clearance plus the 0.001 mm numerical agreement budget.');
  }
  const maxSourceX=Math.max(...endpoints.map(x=>x.x));
  for(const detector of detectors){
@@ -131,10 +134,10 @@ export function validateBeamTwoPlaneMirror(components,model,rayDensity,mirrorEnd
     if(!Number.isFinite(y)||Math.abs(y)>10000)
      refuse(fail,path,'Predicted necessary inbound/return detector geometry is unbounded; cannot admit v27.');
     if(Math.abs(y-(detector.y+detector.length/2))<=
-       BEAM_PLANAR_MIRROR_DETECTOR_ENDPOINT_CLEARANCE_MM||
+       BEAM_PLANAR_MIRROR_DETECTOR_ENDPOINT_CLEARANCE_MM+V27_SECTION_AGREEMENT_MM||
        Math.abs(y-(detector.y-detector.length/2))<=
-       BEAM_PLANAR_MIRROR_DETECTOR_ENDPOINT_CLEARANCE_MM)
-     refuse(fail,path,'Native sample approaches a finite detector endpoint within 0.1 mm on inbound or return leg.');
+       BEAM_PLANAR_MIRROR_DETECTOR_ENDPOINT_CLEARANCE_MM+V27_SECTION_AGREEMENT_MM)
+     refuse(fail,path,'Inbound and return detector checkpoints need the 0.1 mm optical endpoint clearance plus the 0.001 mm numerical agreement budget, including finite misses.');
    }
   }
  }

@@ -178,6 +178,76 @@ test('native depth truncation and processed-ray stop withhold ALL v27 observatio
  }
 });
 
+test('B1 translated mirror and long-slab detector are refused before native, and qualify with ample clearance',async()=>{
+ const translated=request();
+ for(const {parameters:p} of translated.components){p.x-=9000;p.y-=9000;}
+ part(translated,'B1').directionDeg=58;
+ Object.assign(part(translated,'M1'),{length:1000,y:-9217.707181881648});
+ part(translated,'D1').length=1200;
+ const long=request();
+ Object.assign(part(long,'B1'),{x:-9200,y:-9500,directionDeg:9});
+ Object.assign(part(long,'I1'),{x:-9100,y:-9500});
+ part(long,'I2').x=9000;
+ Object.assign(part(long,'M1'),{x:9001,y:-7583.479649612028,length:1000});
+ Object.assign(part(long,'D1'),{x:-9110,y:-6168.458044780914,length:1000});
+ for(const [p,id,hits] of [[translated,'M1',16],[long,'D1',8]]){
+  const target=part(p,id);
+  const samples=beamTwoPlaneMirrorSafetyWitness(p.components,.2).samples;
+  const top=Math.max(...samples.map(s=>id==='M1'?s.mirrorY:s.detectorY[0].outbound));
+  const clearance=target.y+target.length/2-top;
+  assert.ok(clearance>.1 && clearance<.101);
+  assert.throws(()=>prepareScene(p),/endpoint.*0.001 mm/);
+  target.length+=2;
+  const {native,byId}=await perform(p);
+  assert.equal(native.summary.observations.v27EndpointsVerified,true);
+  assert.equal(byId['detector-count'].value,hits);
+  assert.equal(byId.mirror.value,8);
+ }
+});
+
+test('detector admission includes finite misses on both sides of either endpoint on both legs',()=>{
+ for(const leg of ['inbound','outbound']){
+  for(const end of [-1,1]){
+   for(const offset of [-.1005,.1005]){
+    const p=request(),detector=part(p,'D1');
+    const sample=beamTwoPlaneMirrorSafetyWitness(p.components,.2).samples[0];
+    detector.y=sample.detectorY[0][leg]+offset-end*detector.length/2;
+    assert.throws(()=>prepareScene(p),/detector checkpoints/);
+   }
+  }
+ }
+});
+
+test('v27 rejects old same-scene evidence and withholds an entire run on native cross-section disagreement',async()=>{
+ const p=request();
+ // All detector samples miss this finite segment on both legs. A count-only
+ // monitor would have no positions to inspect and would accept both runs.
+ Object.assign(part(p,'D1'),{length:20,y:600});
+ const {doc,native,byId}=await perform(p);
+ assert.equal(byId['detector-count'].value,0);
+ assert.equal(native.summary.observations.v27EndpointsVerified,true);
+ delete native.summary.observations.v27EndpointsVerified;
+ const previous=await evaluateObservables(doc,fixture.requests,native.summary);
+ assert.ok(previous.results.every(r=>r.status==='suppressed'));
+ // Test-only displacement seen solely by this all-miss detector's queries.
+ // Mirror and other native queries use the ordinary rays.
+ const disturbedCore={...core,loadDocument(...args){
+  const loaded=core.loadDocument(...args);
+  const detector=loaded.scene.objs[loaded.idMap.get('D1')],query=detector.checkRayIntersects;
+  detector.checkRayIntersects=function(ray){
+   const shifted={...ray,p1:{...ray.p1,y:ray.p1.y+.002},p2:{...ray.p2,y:ray.p2.y+.002}};
+   return query.call(this,shifted);
+  };
+  return loaded;
+ }};
+ const requests=fixture.requests.filter(r=>r.kind!=='detector-hit-events');
+ const {summary}=evaluateDocument(doc,disturbedCore,requests);
+ assert.equal(summary.executionPassed,false);
+ assert.match(summary.native.errors.join(' '),/cross-sections/);
+ assert.equal(summary.observations,null);
+ assert.ok((await evaluateObservables(doc,requests,summary)).results.every(r=>r.status==='suppressed'));
+});
+
 
 test('v27 exactly-1mm rear Mirror gap is a real separate native interface, while any smaller gap is refused',async()=>{
  const valid=request();

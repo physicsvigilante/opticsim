@@ -8,6 +8,7 @@ import {mkdir,mkdtemp,readFile,readdir,writeFile,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {parseQualifiedBundle} from '../src/qualification.js';
+import {beamTwoPlaneMirrorSafetyWitness} from '../src/native-beam-two-plane-mirror-v27.js';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const base=join(root,'test-artifacts/browser-native-two-plane-mirror-v27');
 await mkdir(base,{recursive:true});
@@ -106,6 +107,17 @@ async function main(){
   assert.ok(Object.values(controls).every(Boolean),JSON.stringify(controls));
   check('Native Beam width/direction, both real glass interfaces, physical index fields, separated finite Mirror and source-side detector controls exist');
   await shot('v27-original-real-return');
+  const baseline=(await parseQualifiedBundle(await readFile(pkg,'utf8'))).scene;
+  const samples=beamTwoPlaneMirrorSafetyWitness(baseline.physics.components,baseline.simulation.rayDensity).samples;
+  for(const [id,upper] of [['M1',Math.max(...samples.map(s=>s.mirrorY))],
+    ['D1',Math.max(...samples.map(s=>s.detectorY[0].outbound))]]) {
+   const target=baseline.physics.components.find(c=>c.id===id).parameters;
+   await edit(id+'-y',upper+.1005-target.length/2);
+   await until(state,s=>s.status==='invalid' && s.results===null && s.saveDisabled && s.error.includes('0.001 mm'),id+' numerical endpoint refusal');
+   check(id+' endpoint edit inside the numerical reserve refuses and clears prior readings');
+   await upload(pkg);
+   await until(state,s=>s.status==='completed' && s.results?.[5]?.value===16,'restore baseline after endpoint refusal');
+  }
   await edit('B1-width',20);
   current=await until(state,s=>s.status==='completed'&&s.results?.[0]?.value===4&&
    s.results?.[1]?.value===8&&s.results?.[3]?.value===8&&
