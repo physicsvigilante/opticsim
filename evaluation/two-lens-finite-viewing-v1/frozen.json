@@ -1,0 +1,18 @@
+{
+  "format": "opticsim-two-lens-finite-viewing-frozen-v1",
+  "case": "A38",
+  "sourceCommit": "d33b45226348d9b0c701f2a3e8b86dd1285de2d0",
+  "sourceProblemPath": "08_Ray_Optics_Explanations/08_Aberrations_Human_Eye_Optical_Instruments/Problems/005.png",
+  "sourceProblemSha256": "71951962c0b0171a2819a8895112d6dc57bac488bad1f280ecbc5bb3efad83c1",
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "stated": "The microscope eyepiece and objective have focal lengths 0.3 m and 0.4 m. Their initial separation is 0.2 m. They are interchanged with the same angular magnification and a new separation is requested.",
+  "missing": ["Object distance from the objective", "Observation plane and unaided reference", "Accommodation and what remains fixed during interchange"],
+  "sourceDisposition": "Withhold a numerical result. The explicitly relaxed model with a real intermediate image requires spacing larger than the sum of the focal lengths, which the stated starting spacing does not meet.",
+  "nativeControl": {
+    "additionalFacts": "Synthetic explicit object 40 mm before the objective and on-axis eye plane 50 mm beyond the eyepiece. Keep both distances fixed when the lenses exchange IDs. Use an unaided comparison with the same positions of the object and observation planes for each distinct arrangement.",
+    "baseline": {"focalLengthsMm":[400,300],"separationMm":200,"signedVirtualDistanceFromEyeMm":-1370},
+    "swapped": {"focalLengthsMm":[300,400],"separationRatioMm":[26000,101],"signedVirtualDistanceFromEyeMm":-1309.399684044243},
+    "signedGainRatio":[174,137],
+    "evidence": "Launch separate genuine native SingleRay controls from transverse heights -0.8 mm and 0.8 mm. Use a ray aimed at the on-axis eye point and two small-angle flank controls per height and arrangement. Observe the two actual lens encounters, the detector crossing and its direction. Compare signed gain and backward line intersection under the paraxial model. A passive detector does not detect a native image."
+  }
+}
