@@ -329,6 +329,11 @@ function controls() {
     $('parameter-guidance').textContent='The source is at least 1 mm below the interface. Its whole cone must lie within 75° of the upward normal.';
     $('physical-note').textContent='PhyDemo samples the cone and traces transmission and total internal reflection. Partial reflections are disabled. A single near-critical sample withholds readings for the entire fan.';
   }
+  if(session.document.schemaVersion===34){
+    $('model-label').textContent='Immersed spherical mirror and planar exit';
+    $('parameter-guidance').textContent='The source lies between the left exit plane and the concave mirror. Aim the cone left for direct exit or right for one reflection.';
+    $('physical-note').textContent='Each accepted sample reaches the exterior detector after passing through the left plane.';
+  }
   if(session.document.schemaVersion===33){
     $('model-label').textContent='Native entry into a graded-index slab';
     $('parameter-guidance').textContent='Launch one finite-angle ray from below the slab and put a horizontal detector above the far face.';
@@ -383,7 +388,7 @@ function sourcePicker(component) {
     { mode: 'full-circle', title: 'Point source (360°)', description: 'Light in every direction', icon: pointSourceIcon },
     { mode: 'directional', title: 'Point source (directional)', description: 'Symmetric cone · 1–180°', icon: angleSourceIcon }
   ];
-  if([29,31,32].includes(session.document.schemaVersion))choices.splice(0,1);
+  if([29,31,32,34].includes(session.document.schemaVersion))choices.splice(0,1);
   if(session.document.schemaVersion===6)choices.push({mode:'single-ray',title:'Single ray (native)',description:'One exact direction; no cone from sampling',icon:angleSourceIcon});
   const details = document.createElement('details'); details.className = 'source-picker';
   const summary = document.createElement('summary'); summary.id = `${component.id}-mode`;

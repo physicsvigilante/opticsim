@@ -1,3 +1,4 @@
+import {IMMERSED_ARC_VERSION,immersedArcPortAudit} from './immersed-arc-plane-port.js';
 import {CAP_TYPE,CAP_VERSION,compileCircularCap,capNativeAudit} from './finite-circular-cap.js';
 import {slabArcReturnAudit} from './slab-arc-return.js';
 import {curvedEntryBeamAudit} from './curved-entry-beam.js';
@@ -95,6 +96,7 @@ export function loadDocument(doc, width, height) {
     endpointAudits.set(scene,{key:'v27EndpointsVerified',finish:installV27EndpointAudit(doc,scene,compiled.idMap)});
   if(doc.schemaVersion===28)
     endpointAudits.set(scene,{key:'v28EndpointsVerified',finish:installPostLensAudit(doc,scene,compiled.idMap)});
+  if(doc.schemaVersion===IMMERSED_ARC_VERSION) endpointAudits.set(scene,immersedArcPortAudit(doc,scene,compiled.idMap));
   if(doc.schemaVersion===GRIN_SLAB_VERSION) endpointAudits.set(scene,enteringGradedSlabAudit(doc,scene,compiled.idMap));
   if(doc.schemaVersion===CAP_VERSION) endpointAudits.set(scene,capNativeAudit(doc,scene,compiled.idMap));
   if(doc.schemaVersion===31) endpointAudits.set(scene,slabArcReturnAudit(doc,scene,compiled.idMap));
@@ -292,6 +294,6 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
 }
 export function classifyRun(event, data) {
   return data.errors.length ? 'failed' : event === 'simulationStop' ? 'stopped' :
-    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false || data.v28EndpointsVerified===false || data.v29FanVerified===false || data.v30CurvedBeamVerified===false || data.v31SlabArcVerified===false || data.v32CapVerified===false || data.v33GradedSlabVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
+    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false || data.v28EndpointsVerified===false || data.v29FanVerified===false || data.v30CurvedBeamVerified===false || data.v31SlabArcVerified===false || data.v32CapVerified===false || data.v33GradedSlabVerified===false || data.v34ImmersedArcVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
 }
 export { Scene, Simulator };
