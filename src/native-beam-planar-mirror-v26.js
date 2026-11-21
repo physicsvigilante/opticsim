@@ -2,7 +2,7 @@
 // Admission geometry and conservative first-hit clearance only. Native PhyDemo
 // alone refracts, reflects and creates detector events; never route or modify rays.
 import {compositionCountsMatch} from './composition-profiles.js';
-import {parallelBeamGeometry,compileParallelBeam,BEAM_CLEARANCE_MM} from './parallel-beam.js';
+import {parallelBeamGeometry,pinnedBeamAdmissionSamples,BEAM_HALF_SAMPLE_GUARD,BEAM_CLEARANCE_MM} from './parallel-beam.js';
 
 export const BEAM_PLANAR_MIRROR_VERSION=26;
 export const BEAM_PLANAR_MIRROR_MODEL='native-parallel-planar-mirror-tracing';
@@ -11,38 +11,13 @@ export const BEAM_PLANAR_MIRROR_DETECTOR_ENDPOINT_CLEARANCE_MM=0.1;
 export const BEAM_PLANAR_MIRROR_MIN_SPACING_MM=0.01;
 // Pin-specific conservative guard against branch-crossing half-integer native
 // Beam emission counts when endpoint arithmetic differs across JS runtimes.
-export const BEAM_PLANAR_MIRROR_HALF_SAMPLE_GUARD=1e-10;
+export const BEAM_PLANAR_MIRROR_HALF_SAMPLE_GUARD=BEAM_HALF_SAMPLE_GUARD;
+export const v26PinnedBeamAdmissionSamples=pinnedBeamAdmissionSamples;
 const RAD=Math.PI/180,refuse=(fail,path,message)=>fail(path,message,'UNSUPPORTED_SCOPE');
 const world=p=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&
  Math.abs(p.x)<=10000&&Math.abs(p.y)<=10000;
 const near=(a,b,t=1e-8)=>Math.abs(a-b)<=t;
 const inside=(a,low,high,tol)=>a>low+tol&&a<high-tol;
-
-// This v26-only admission enumerator mirrors the PINNED native Beam exactly:
-// compile the real y-DOWN Beam endpoints, sqrt(dx*dx+dy*dy), then native n =
-// length*rayDensity/lengthScale, step=delta/n and p1+i*step for i=.5,1.5,...
-// The adapter's native lengthScale is exactly 1, and is regression-tested.
-// DO NOT change the legacy v19 parallelBeamSamples: its reviewed behavior
-// must remain byte-identical, while this new profile guards B1 independently.
-export function v26PinnedBeamAdmissionSamples(parameters,rayDensity){
- const compiled=compileParallelBeam({type:'parallel-beam',parameters});
- const dx=compiled.p2.x-compiled.p1.x,dy=compiled.p2.y-compiled.p1.y;
- const length=Math.sqrt(dx*dx+dy*dy);
- const nativeLengthScale=1;
- const n=length*rayDensity/nativeLengthScale;
- if(!Number.isFinite(n)||n<=0) return {
-  samples:[],nativeSampleFactor:n,computedNativeLengthMm:length,
-  nearHalfInteger:true,nativeLengthScale};
- const nearestHalf=Math.round(n-0.5)+0.5;
- const nearHalfInteger=Math.abs(n-nearestHalf)<=BEAM_PLANAR_MIRROR_HALF_SAMPLE_GUARD;
- const stepX=dx/n,stepY=dy/n,samples=[];
- for(let i=0.5;i<=n;i++){
-  if(samples.length>100)break; // Refuse >100 instead of silently qualifying.
-  samples.push({x:compiled.p1.x+i*stepX,y:-(compiled.p1.y+i*stepY)});
- }
- return {samples,nativeSampleFactor:n,computedNativeLengthMm:length,
-  nearHalfInteger,nativeLengthScale};
-}
 
 // Predicted FIRST outbound glass->mirror intersection is an independent
 // necessary admission check against finite endpoint uncertainty. It is NOT

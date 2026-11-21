@@ -27,7 +27,7 @@ export function validateDecenteredTwoLensBeam(components,model,rayDensity,mirror
   refuse(fail,'$.simulation.rayDensity','Beam must have density .048–1 and brightness no greater than density.');
  const samples=parallelBeamSamples(beam,rayDensity);
  if(!samples.length||samples.length>100)
-  refuse(fail,path,'Only 1–100 native deterministic Beam samples are admitted.');
+  refuse(fail,path,'Native Beam requires 1–100 samples and a sample factor clear of a half-integer threshold.');
  const lenses=components.filter(c=>c.type==='ideal-lens')
    .sort((a,b)=>dir*(a.parameters.x-b.parameters.x));
  const [first,second]=lenses.map(c=>c.parameters);

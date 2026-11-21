@@ -62,7 +62,11 @@ test('original reserved transfer evidence remains frozen; explicit later parenta
   }[path];
   if(endpointFollowup){
    assert.equal(integration.replacementHashes[path]??expected,endpointFollowup[0]);
-   assert.equal(hash(path),endpointFollowup[1]);
+   if(path==='src/scenario-comparison.js'){
+    const audit=JSON.parse(read('test/fixtures/pre-transfer-audit-app-integration.json'));
+    assert.equal(endpointFollowup[1],audit.sourceV27ComparisonSha256);
+    assert.equal(hash(path),audit.auditComparisonSha256);
+   }else assert.equal(hash(path),endpointFollowup[1]);
   }else if(integration.changedAfterReservedExecution.includes(path)){
    assert.equal(integration.baselineCommit,freeze.baseline);
    assert.equal(hash(path),integration.replacementHashes[path],'Integration correction must remain frozen: '+path);

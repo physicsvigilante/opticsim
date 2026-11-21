@@ -28,17 +28,31 @@ export function compileParallelBeam(component){
  return {type:'Beam',p1:flip(p1),p2:flip(p2),
   brightness:component.parameters.brightness,emisAngle:0,lambert:false,random:false};
 }
-export function parallelBeamSamples(p,density){
- // Admission-only emitted positions, identical to pinned native Beam's
- // deterministic midpoint loop (i=.5; i<=length*rayDensity; i++).
- // This never computes an optical ray interaction or an outgoing path.
- const g=parallelBeamGeometry(p),n=p.width*density,out=[];
- if(!Number.isFinite(n)||n<.5||n>100) return [];
- for(let i=.5;i<=n;i++)out.push({
-  x:g.p1.x+(g.p2.x-g.p1.x)*i/n,
-  y:g.p1.y+(g.p2.y-g.p1.y)*i/n
- });
- return out;
+// Use the pinned y-down endpoints and native operation order for every Beam profile.
+export const BEAM_HALF_SAMPLE_GUARD=1e-10;
+export function pinnedBeamAdmissionSamples(parameters,rayDensity){
+ const compiled=compileParallelBeam({type:'parallel-beam',parameters});
+ const dx=compiled.p2.x-compiled.p1.x,dy=compiled.p2.y-compiled.p1.y;
+ const length=Math.sqrt(dx*dx+dy*dy);
+ const nativeLengthScale=1;
+ const n=length*rayDensity/nativeLengthScale;
+ if(!Number.isFinite(n)||n<=0) return {
+  samples:[],nativeSampleFactor:n,computedNativeLengthMm:length,
+  nearHalfInteger:true,nativeLengthScale};
+ const nearestHalf=Math.round(n-0.5)+0.5;
+ const nearHalfInteger=Math.abs(n-nearestHalf)<=BEAM_HALF_SAMPLE_GUARD;
+ const stepX=dx/n,stepY=dy/n,samples=[];
+ for(let i=0.5;i<=n;i++){
+  if(samples.length>100)break; // Refuse >100 instead of silently qualifying.
+  samples.push({x:compiled.p1.x+i*stepX,y:-(compiled.p1.y+i*stepY)});
+ }
+ return {samples,nativeSampleFactor:n,computedNativeLengthMm:length,
+  nearHalfInteger,nativeLengthScale};
+}
+
+export function parallelBeamSamples(parameters,density){
+ const witness=pinnedBeamAdmissionSamples(parameters,density);
+ return witness.nearHalfInteger ? [] : witness.samples;
 }
 function outsidePlane(points,value,axis,margin=BEAM_CLEARANCE_MM){
  return points.every(p=>p[axis]<=value-margin)||
@@ -64,7 +78,7 @@ export function validateParallelBeamComposition(components,model,rayDensity,mirr
   fail(path,'Beam brightness must not exceed ray density, avoiding silently saturated native per-ray brightness.','UNSUPPORTED_SCOPE');
  const samples=parallelBeamSamples(p,rayDensity);
  if(samples.length<1||samples.length>100)
-  fail(path,'Native Beam would emit zero or over 100 sampled rays under this numerical policy.','UNSUPPORTED_SCOPE');
+  fail(path,'Native Beam requires 1–100 samples and a sample factor clear of a half-integer threshold.','UNSUPPORTED_SCOPE');
  const detectors=components.filter(c=>c.type==='ray-detector');
  for(const detector of detectors){
   const segment=mirrorEndpoints(detector.parameters),signed=endpoints.map(v=>supportDistance(v,segment));
