@@ -220,7 +220,10 @@ test('v18 browser provenance is append-only relative to reviewed v17 code, never
    'The independently reviewed v24 integration app SHA is now historical');
   const grinFollowup=JSON.parse(readFileSync(new URL('./fixtures/grin-v25-app-integration-v1.json',import.meta.url),'utf8'));
   assert.equal(grinFollowup.sourceReviewedV24AppGitBlob,reconciliation.reconciledAppGitBlob);
-  assert.equal(grinFollowup.newV25AppGitBlob,sha);
+  assert.equal(grinFollowup.newV25AppGitBlob,'553c71a1393be89a30f326d366a7caae388c595e');
+  const fanFollowup=JSON.parse(readFileSync(new URL('./fixtures/refractive-fan-v29-app-integration.json',import.meta.url),'utf8'));
+  assert.equal(fanFollowup.sourceV25AppGitBlob,grinFollowup.newV25AppGitBlob);
+  assert.equal(fanFollowup.v29AppGitBlob,sha);
   assert.notEqual(sha,reconciliation.reconciledAppGitBlob,'New v25 UI is not the reviewed v24 browser code');
   assert.notEqual(sha,p.newV18AppGitBlob,'Do not claim new UI matches old reviewed v18 byte identity');
   assert.equal(p.originalV17AppGitBlob,'9d447af4c8fc59ec1e8fdcfbcec0c4d739fc477f');

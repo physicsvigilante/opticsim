@@ -1,0 +1,66 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "model": "native-refractive-fan-tracing",
+    "title": "Refraction and total internal reflection across a sampled fan",
+    "lengthUnit": "mm",
+    "runPolicy": "preview-v1",
+    "rayDensity": 0.08,
+    "components": [
+      {
+        "id": "S",
+        "type": "point-source",
+        "parameters": {
+          "x": 0,
+          "y": -100,
+          "brightness": 0.04
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 40,
+          "angleDeg": 18
+        }
+      },
+      {
+        "id": "I",
+        "type": "planar-interface",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "normalDeg": 90,
+          "negativeIndex": 1.5,
+          "positiveIndex": 1,
+          "partialReflection": false
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "emitted",
+      "kind": "source-emissions",
+      "componentId": "S"
+    },
+    {
+      "id": "interactions",
+      "kind": "interface-interactions",
+      "componentId": "I"
+    },
+    {
+      "id": "tir",
+      "kind": "interface-tir-count",
+      "componentId": "I"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Count sampled emissions, interface interactions and total internal reflections.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "All source, material, geometry and sampling values are synthetic teaching choices."
+    ],
+    "unknowns": []
+  },
+  "illustration": false,
+  "verifyNative": false
+}

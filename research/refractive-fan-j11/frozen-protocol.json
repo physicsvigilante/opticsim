@@ -1,0 +1,17 @@
+{
+  "format": "opticsim-refractive-fan-study-v1",
+  "productionBase": "916745f5f64a2a86dc234758437a5fa57d3b9753",
+  "phyDemoPin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "apparatus": {"sourceMm":[0,-100],"planeMm":[0,0],"normalDeg":90,"negativeIndex":1.5,"positiveIndex":1,"partialReflection":false,"fanBrightness":0.04,"referenceBrightness":0.08,"maxRayDepth":8,"processedRayLimit":10000},
+  "angleConvention": "Signed incidence in degrees from upward normal toward +x, in y-up coordinates. Fan axis measured in that convention. Compile one symmetric native AngleSource from the existing directional-source contract and one PlaneGlass from the J11 v5 contract. Keep combined native scene test-only. Use rays/default color mode.",
+  "sampling": "Pinned symmetric AngleSource starts at the lower signed-incidence edge and advances by 360/floor(500*density) degrees; upper edge excluded for these cases. Compare sorted actual emissions and incidents to the predeclared samples, independently of native iteration order.",
+  "cases": [
+    {"id":"all-transmit","axisIncidenceDeg":22.5,"coneDeg":45,"density":0.048,"incidencesDeg":[0,15,30],"expected":["transmission","transmission","transmission"],"caseWitness":"qualified"},
+    {"id":"straddle","axisIncidenceDeg":50,"coneDeg":18,"density":0.08,"incidencesDeg":[41,50],"expected":["transmission","TIR"],"caseWitness":"qualified"},
+    {"id":"critical-sample","axisIncidenceDeg":46.31031489577859,"coneDeg":27,"density":0.08,"incidencesDeg":[32.81031489577859,41.81031489577859,50.81031489577859],"expected":["transmission","withheld","TIR"],"caseWitness":"withheld"}
+  ],
+  "comparison": "Rerun unchanged J11 native tests. For every frozen incidence separately compile and run the J11 SingleRay geometry and brightness. Six distinct directions overlap existing J11 controls (0,15,30,41,50,critical); the two critical-case flank directions are supplemental. Compare reported hit x to 100*tan(i), y to zero, signed incident angles, and away from critical compare signed outgoing unit vectors and native outcomes in the fan and SingleRay. Check vector Snell and specular reflection separately. No brightness/power equivalence claim.",
+  "limits": {"angleToleranceDeg":1e-7,"pointToleranceMm":1e-6,"unitVectorTolerance":1e-7,"criticalSineGuard":1e-6},
+  "withholding": "Require one complete native encounter per emission and no stop, warnings, errors, truncation, absorption, child rays or undefined behavior. Withhold the entire fan optical witness if any measured incidence satisfies abs(1.5*abs(incomingUnit.x)-1)<=1e-6. Archive the raw critical callback regardless of branch, with no required outgoing branch agreement for that sample. Never infer continuous angular coverage, a 3D disc radius or visibility.",
+  "evidence": "Retain original freeze bytes, exact raw scene inputs and limits, emitted directions, actual native callback points, incoming and outgoing directions, native result shape, terminal diagnostics, separate control comparisons and SHA-256 manifest in a fresh ignored attempt directory. Record deviations separately."
+}

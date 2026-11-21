@@ -84,6 +84,11 @@ jobs:
         run: |
           node scripts/run-problem.mjs examples/native-post-lens-aperture-v28.json --out test-artifacts/llm-authoring/post-lens-aperture
           node scripts/post-lens-aperture-browser.mjs
+      - name: Frozen refractive fan controls and public v29 real Chrome qualification
+        run: |
+          node --test research/refractive-fan-j11/study.test.mjs
+          node scripts/run-problem.mjs examples/native-refractive-fan-v29.json --out test-artifacts/llm-authoring/refractive-fan
+          node scripts/refractive-fan-browser.mjs
       - name: LLM authoring CLI with real native execution and revision guards
         run: node scripts/author-scene-acceptance.mjs
       - name: Evaluate deterministic LLM pilot controls against native tracing
@@ -139,6 +144,8 @@ jobs:
             test-artifacts/llm-authoring/native-two-plane-mirror-v27/
             test-artifacts/browser-native-two-plane-mirror-v27/
             test-artifacts/browser-post-lens-aperture/
+            test-artifacts/browser-refractive-fan/
+            test-artifacts/refractive-fan-j11/
             test-artifacts/llm-authoring/native-two-plane-mirror-v27-research/
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4

@@ -1,3 +1,4 @@
+import {validateRefractiveFan} from './refractive-fan.js';
 import {validatePostLensAperture} from './post-lens-aperture.js';
 import {compositionModels,compositionSourceModes,compositionProfile,compositionCapacity,compositionCountsMatch,validateCompositionRules} from './composition-profiles.js';
 import {SPHERICAL_LENS_TYPE,SPHERICAL_PARAMETERS,validateSphericalLensTrain} from './spherical-lens.js';
@@ -138,6 +139,7 @@ function validateVersion(doc, version) {
     'native-thick-mirror':c=>validateThickLensMirrorComposition(c,mirrorEndpoints,fail),
     'native-two-thick-mirror':c=>validateTwoThickLensMirrorComposition(c,mirrorEndpoints,fail),
     'native-thick-aperture':c=>validateThickApertureComposition(c,mirrorEndpoints,fail),
+    'native-refractive-fan':c=>validateRefractiveFan(c,doc.simulation?.rayDensity,fail),
     'native-post-lens-aperture':c=>validatePostLensAperture(c,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'native-parallel-beam':c=>validateParallelBeamComposition(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'native-decentered-two-lens':c=>validateDecenteredTwoLensBeam(c,p.model,doc.simulation?.rayDensity,mirrorEndpoints,fail),
