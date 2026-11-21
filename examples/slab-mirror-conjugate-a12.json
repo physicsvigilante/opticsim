@@ -1,0 +1,39 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-slab-mirror-conjugate-facts-v1",
+    "model": "paraxial-concave-mirror-with-parallel-plate",
+    "lengthUnit": "cm",
+    "mirrorRadius": 20,
+    "objectDistance": 30,
+    "plate": {
+      "thickness": 6,
+      "exteriorIndex": 1,
+      "glassIndex": 1.5,
+      "placement": {
+        "kind": "between-centre-and-object"
+      }
+    }
+  },
+  "requests": [
+    {
+      "id": "comparison",
+      "kind": "compare-curved-mirror-conjugates-with-slab"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Compare the before/after image position and size for the same small axial object.",
+    "stated": [
+      "Concave spherical mirror radius 20 cm, object distance 30 cm, glass slab thickness 6 cm and glass index 1.5. The slab lies between the object and centre of curvature."
+    ],
+    "derived": [
+      "The paraxial focal length is 10 cm. The probe is compared before and after the insertion."
+    ],
+    "assumptions": [
+      "Use unit-index air, a stationary mirror and direct paraxial transmission at the parallel faces."
+    ],
+    "unknowns": [
+      "Slab position within the stated interval and original object height."
+    ]
+  }
+}
