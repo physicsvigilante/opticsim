@@ -2,6 +2,7 @@
 // replacement. Every arithmetic decision is exact on the already recorded
 // binary64 inputs. No tolerance means UNKNOWN, never a false "checked" result.
 import {distanceToFiniteSegment} from './finite-glass-geometry.js';
+import {fromBinary64 as bits,add,subtract as sub,multiply as mul,divide as div,compare as cmp} from './binary64-rational.js';
 export const FINITE_HIT_CAP=128;
 export const FINITE_HIT_FACE_RESIDUAL_MM=1e-5;
 export const FINITE_HIT_VERTEX_CLEARANCE_MM=.01;
@@ -13,34 +14,10 @@ export const FINITE_HIT_VERTEX_CLEARANCE_MM=.01;
 export const FINITE_HIT_MIN_CROSSING_SINE=Math.sqrt(Number.EPSILON);
 
 const finitePoint=p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y);
-const abs=a=>a<0n?-a:a;
-function rational(n,d=1n){
-  if(d===0n)throw Error('Zero rational denominator');
-  if(d<0n){n=-n;d=-d;}
-  let a=abs(n),b=d;
-  while(b){const r=a%b;a=b;b=r;}
-  return {n:n/a,d:d/a};
-}
-function bits(x){
-  if(!Number.isFinite(x))throw Error('Expected finite binary64');
-  const view=new DataView(new ArrayBuffer(8));view.setFloat64(0,x);
-  const b=view.getBigUint64(0),exp=Number(b>>52n&2047n);
-  if(exp===2047)throw Error('Nonfinite binary64');
-  let significand=b&((1n<<52n)-1n);
-  if(exp)significand+=1n<<52n;
-  if(b>>63n)significand=-significand;
-  const e=exp?exp-1075:-1074;
-  return e<0?rational(significand,1n<<BigInt(-e)):rational(significand<<BigInt(e));
-}
-const add=(a,b)=>rational(a.n*b.d+b.n*a.d,a.d*b.d);
-const sub=(a,b)=>rational(a.n*b.d-b.n*a.d,a.d*b.d);
-const mul=(a,b)=>rational(a.n*b.n,a.d*b.d);
-const div=(a,b)=>rational(a.n*b.d,a.d*b.n);
 const point=p=>({x:bits(p.x),y:bits(p.y)});
 const subtract=(a,b)=>({x:sub(a.x,b.x),y:sub(a.y,b.y)});
 const cross=(a,b)=>sub(mul(a.x,b.y),mul(a.y,b.x));
 const squared=v=>add(mul(v.x,v.x),mul(v.y,v.y));
-const cmp=(a,b)=>a.n*b.d<b.n*a.d?-1:a.n*b.d>b.n*a.d?1:0;
 const zero={n:0n,d:1n},one={n:1n,d:1n};
 const approx=x=>Number(x.n)/Number(x.d);
 const advisory=(status,reasonCode)=>({status,reasonCode});

@@ -55,12 +55,18 @@ export function analyzeMirrorOscillation(f,q){
   if(!Array.isArray(f.samplePhases)||f.samplePhases.length>16||
     !f.samplePhases.every(t=>Number.isFinite(t)&&t>=0&&t<1)||new Set(f.samplePhases).size!==f.samplePhases.length)
     fail('INVALID_MIRROR_OSCILLATION_FACTS','Use at most 16 distinct phases in [0,1).');
-  return {format:'opticsim-axial-mirror-oscillation-result-v1',kind,method:'conditional-analytical',status:'conditional',native:{status:'not-run'},
+  const focalEvents=phaseEvents(mean,amplitude,1);
+  const coincidenceEvents={...phaseEvents(mean,amplitude,2),levelDistanceOverFocalLength:2};
+  const samples=f.samplePhases.map(phase=>sample(mean,amplitude,phase));
+  const unresolved=[focalEvents,coincidenceEvents,...samples].some(result=>result.state==='numerically-indeterminate');
+  return {format:'opticsim-axial-mirror-oscillation-result-v1',kind,method:'conditional-analytical',
+    status:unresolved?'partially-indeterminate':'conditional',native:{status:'not-run'},
+    ...(unresolved?{reasonCode:'UNRESOLVED_OSCILLATION_PHASE',
+      reason:'A phase event or requested sample is too close to a limiting conjugate for a complete numerical result.'}:{}),
     assumptions:['A stationary concave mirror acts on each phase of a prescribed real axial object position.'],
     limitations:['Conjugates are instantaneous paraxial results. Optical travel time, finite-speed motion and visibility are outside this model.'],
     value:{meanDistanceOverFocalLength:mean,amplitudeOverFocalLength:amplitude,
       relations:{objectDistanceOverFocalLength:'mean + amplitude*cos(2*pi*phase)',
         signedImageDistanceOverFocalLength:'uOverF/(uOverF-1)',lateralMagnification:'-1/(uOverF-1)'},
-      focalEvents:phaseEvents(mean,amplitude,1),coincidenceEvents:{...phaseEvents(mean,amplitude,2),levelDistanceOverFocalLength:2},
-      samples:f.samplePhases.map(phase=>sample(mean,amplitude,phase))}};
+      focalEvents,coincidenceEvents,samples}};
 }

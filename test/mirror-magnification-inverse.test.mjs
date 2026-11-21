@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdirSync,mkdtempSync,readFileSync} from 'node:fs';
 import {join} from 'node:path';
-import {planProblem} from '../src/problem-workflow.js';
+import {planProblem,resultCoverage} from '../src/problem-workflow.js';
 import {runProblemEvidence} from '../scripts/run-problem.mjs';
 
 const bytes=p=>readFileSync(new URL(p,import.meta.url));
@@ -27,8 +27,11 @@ test('signed magnification isolates one branch and magnitude one does not admit 
   assert.equal(result(p).branches[0].reasonCode,'OBJECT_ON_POLE');
   assert.deepEqual(result(p).value.candidates.map(r=>r.objectDistance),[20]);
   p.physical.target={kind:'magnitude',value:1+Number.EPSILON};
-  assert.equal(result(p).branches[0].status,'numerically-indeterminate');
-  assert.equal(result(p).value.candidates.length,1);
+  const partial=result(p);
+  assert.equal(partial.status,'partially-indeterminate');
+  assert.equal(partial.branches[0].status,'numerically-indeterminate');
+  assert.equal(partial.value.candidates.length,1);
+  assert.equal(resultCoverage([partial]).available,0);
 });
 test('convex mirror from a real object supports only upright diminished images',()=>{
   const p=original();p.physical.focalLength=-10;p.physical.target.value=.5;
