@@ -1,0 +1,6 @@
+{
+  "format": "opticsim-v30-browser-app-integration-provenance-v1",
+  "sourceV29AppGitBlob": "40ac623ed20887ff44e353f74c3fedce315b1695",
+  "v30AppGitBlob": "15655cc6ea8a25aea7fc0758c111841fd60bee51",
+  "scope": "Curved-entry Beam model, physical bounds and sampled transverse range guidance."
+}

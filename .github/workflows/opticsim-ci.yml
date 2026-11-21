@@ -89,6 +89,10 @@ jobs:
           node --test research/refractive-fan-j11/study.test.mjs
           node scripts/run-problem.mjs examples/native-refractive-fan-v29.json --out test-artifacts/llm-authoring/refractive-fan
           node scripts/refractive-fan-browser.mjs
+      - name: Curved-entry Beam native span and real Chrome qualification
+        run: |
+          node scripts/run-problem.mjs examples/curved-entry-beam-v30.json --out test-artifacts/llm-authoring/curved-entry-beam
+          node scripts/curved-entry-beam-browser.mjs
       - name: LLM authoring CLI with real native execution and revision guards
         run: node scripts/author-scene-acceptance.mjs
       - name: Evaluate deterministic LLM pilot controls against native tracing
@@ -145,6 +149,7 @@ jobs:
             test-artifacts/browser-native-two-plane-mirror-v27/
             test-artifacts/browser-post-lens-aperture/
             test-artifacts/browser-refractive-fan/
+            test-artifacts/browser-curved-entry-beam/
             test-artifacts/refractive-fan-j11/
             test-artifacts/llm-authoring/native-two-plane-mirror-v27-research/
           if-no-files-found: ignore
