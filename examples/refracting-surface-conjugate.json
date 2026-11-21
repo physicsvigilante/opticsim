@@ -1,0 +1,18 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-refracting-surface-conjugate-facts-v1",
+    "model": "coaxial-paraxial-positive-x",
+    "lengthUnit": "mm",
+    "entranceIndex": 1,
+    "objectX": -190,
+    "objectHeight": 0.2,
+    "surfaces": [
+      {"id": "L1Front", "x": -10, "signedRadius": 120, "transmittedIndex": 1.5},
+      {"id": "L1Rear", "x": 10, "signedRadius": -80, "transmittedIndex": 1},
+      {"id": "L2Front", "x": 102.5, "signedRadius": 70, "transmittedIndex": 1.6},
+      {"id": "L2Rear", "x": 117.5, "signedRadius": -90, "transmittedIndex": 1}
+    ]
+  },
+  "requests": [{"id": "image", "kind": "refracting-surface-conjugate"}]
+}
