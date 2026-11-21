@@ -1,0 +1,33 @@
+{
+  "format": "opticsim-coincident-power-study-v1",
+  "base": "d9f03827b6bc91afd5760eea966ec698579a7444",
+  "pin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "cases": [
+    {
+      "id": "A32",
+      "sha256": "dc904f5e2c61de38d7c0b4926adde399d88821861625dfd18015bb4966f328ae",
+      "stated": "Converging lens f=5 cm in contact with diverging lens of focal length magnitude 10 cm.",
+      "model": "Ideal thin lenses at one plane in unit-index air; positive propagation axis.",
+      "expect": "Signed focal lengths +0.05 m and -0.10 m give +20 D and -10 D. Equivalent +10 D, focal length +0.10 m."
+    },
+    {
+      "id": "A36",
+      "sha256": "4f1989a03095631e93a853c3330c224ab72238cd0c6c2862505b0062bdbf05a5",
+      "stated": "Far point infinity, near point about 25 cm, corneal power about 40 D, least eye-lens power about 20 D.",
+      "model": "Explicit reduced co-located powers and fixed retinal conjugate (constant outgoing vergence); air on incident side. Both object distances referenced to the common plane. Fixed corneal power. No retinal distance, anatomical indices or physiology inferred.",
+      "expect": "Baseline total +60 D, near incident vergence -4 D, required eye-lens power changes from approximately +20 to +24 D, an increase of 4 D."
+    },
+    {
+      "id": "A37",
+      "sha256": "53ec9bfc9508f0c9ff05b0ca9c1130321d4aaaf7dff0d454f7af313bf932c7b0",
+      "stated": "Far point 2 m, distant object.",
+      "model": "Ideal correction plane coincident with eye reference plane (zero vertex distance); relaxed eye, collimated input in air, outgoing virtual conjugate at signed -2 m.",
+      "expect": "Required power -0.5 D. Fixed eye/retina and clinical prescription details are outside scope."
+    }
+  ],
+  "controls": [
+    "Explicit signed vergence L'=L+sum(P); common plane only. Infinity has explicit representation.",
+    "Equal opposite powers give afocal; near cancellation and reciprocal uncertainty withhold finite/zero conclusions.",
+    "An ordinary separated native IdealLens control may corroborate a forward conjugate; native contact remains rejected. Missing plane/eye assumptions never supplied silently."
+  ]
+}

@@ -4,6 +4,8 @@ Explore refraction and total internal reflection from one directional point sour
 
 For the grazing-entry emergence limit and meridional guide acceptance angle, use the [two-face dielectric query](docs/PERPENDICULAR-DIELECTRIC-FACES.md).
 
+For co-located ideal lenses, signed conjugates and reduced-eye power adjustments, use the [common-plane optical power query](docs/COINCIDENT-OPTICAL-POWER.md).
+
 For a finite parallel Beam passing through an ideal lens and then a finite aperture, see the [schema-v28 authoring contract and worked example](docs/POST-LENS-APERTURE.md).
 
 A standalone-browser-capable optical bench powered by PhyDemo Ray Optics Simulation **v5.4.0**,
