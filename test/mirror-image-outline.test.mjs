@@ -73,4 +73,12 @@ test('exactly horizontal projected edges can keep equal represented heights',()=
   const v=planProblem(p).results[0].value.vertices;
   assert.equal(v[0].height,-2);
   assert.equal(v[1].height,-2);
+  const g=p.physical.geometry;
+  g.focalLength=1;
+  g.vertices=[{id:'A',distance:22,height:.328125},{id:'B',distance:50,height:.765625},{id:'C',distance:70,height:-1}];
+  const horizontal=planProblem(p).results[0].value.vertices;
+  assert.equal(horizontal[0].height,-1/64);
+  assert.equal(horizontal[1].height,-1/64);
+  g.vertices.reverse();
+  assert.deepEqual(planProblem(p).results[0].value.vertices,[...horizontal].reverse());
 });

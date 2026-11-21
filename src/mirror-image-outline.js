@@ -56,7 +56,17 @@ function projectableLocalGeometry(inputs,outputs,f){
     const ratio=divide(focus,gap);
     return {x:multiply(fromBinary64(v.distance),ratio),y:multiply(fromBinary64(-v.height),ratio)};
   });
-  const reported=outputs.map(v=>({x:fromBinary64(v.distance),y:fromBinary64(v.height)}));
+  // Use one rounded coordinate for each exactly equal image height.
+  const heightKeys=exact.map(({y})=>y.n+'/'+y.d);
+  const equalHeights=new Map();
+  for(const [i,v] of outputs.entries()){
+    const key=heightKeys[i],previous=equalHeights.get(key);
+    equalHeights.set(key,previous===undefined?v.height:Math.min(previous,v.height));
+  }
+  const reported=outputs.map((v,i)=>{
+    v.height=equalHeights.get(heightKeys[i]);
+    return {x:fromBinary64(v.distance),y:fromBinary64(v.height)};
+  });
   const offset=(points,a,b,key)=>subtract(points[b][key],points[a][key]);
   const area=(points,a,b,c)=>subtract(
     multiply(offset(points,a,b,'x'),offset(points,a,c,'y')),
@@ -94,12 +104,12 @@ function polygon(g){
   for(const v of g.vertices){
     const gap=v.distance-f;
     if(gap<=1e-10*v.distance)return uncertain();
-    const ratio=f/gap,distance=f+f*ratio,height=-ratio*v.height;
+    const distance=f+f*(f/gap),height=(-f*v.height)/gap;
     if(!Number.isFinite(distance)||!Number.isFinite(height)||distance*scale>1e6||Math.abs(height)*scale>1e6)
       return uncertain();
     vertices.push({id:v.id,distance,height});
   }
-  if(winding(vertices)!==order||!projectableLocalGeometry(g.vertices,vertices,f))return uncertain();
+  if(!projectableLocalGeometry(g.vertices,vertices,f)||winding(vertices)!==order)return uncertain();
   return {status:'conditional',value:{kind:'ordered-real-image-outline',lengthUnit:g.lengthUnit,vertices}};
 }
 export function analyzeMirrorOutline(f,q){
