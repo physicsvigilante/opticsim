@@ -1,0 +1,16 @@
+{
+  "format":"opticsim-three-lens-relay-study-v1",
+  "upstreamCommit":"811f508d2b070898c241a568b0c167dcb8645251",
+  "sourceArchiveCommit":"d33b45226348d9b0c701f2a3e8b86dd1285de2d0",
+  "sourceArchiveSha256":"03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+  "sourcePath":"08_Ray_Optics_Explanations/07_Lens_Formula/Problems/016.png",
+  "sourceSha256":"5acc53f26dc50f64905646d868dbacce351ad65e970f9d8109d989e18e3abfa9",
+  "givens":"Three converging thin lenses with focal lengths 4a, a, 4a, each consecutive gap 4a. Determine if the system inverts every small axial object's image with unchanged size and position.",
+  "assumptions":"One positive scale a, common optical axis and homogeneous exterior. The incident object pencil propagates through all three lenses in order. Study objects are on the incident side of the first lens.",
+  "cases":[
+    {"id":"source-relay","focalScaleFactors":[4,1,4],"matrixInScaledCoordinates":[[-1,-8],[0,-1]],"expectedAxialShiftInA":0,"transverseMagnification":-1},
+    {"id":"changed-centre-lens","focalScaleFactors":[4,2,4],"matrixInScaledCoordinates":[[-1,0],[0,-1]],"expectedAxialShiftInA":8,"transverseMagnification":-1}
+  ],
+  "nativeProtocol":{"aMm":25,"lensPositionFactors":[0,4,8],"apertureMm":20,"detectorXmm":225,"detectorHeightMm":20,"objectXmm":[-50,-125],"objectHeightMm":[-0.3,0.3],"slopes":[-0.004,0.004],"brightness":0.04,"maxRayDepth":8,
+    "acceptance":"Sixteen forward native SingleRay runs. Require each actual lens in order and one downstream detector reading. For each object, intersect the two separately measured lines. Both lines must travel rightwards. Require virtual extrapolation from the last lens, axial agreement within 0.05 mm and transverse agreement within 0.001 mm. The finite controls sample the symbolic first-order identity."}
+}
