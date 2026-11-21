@@ -8,6 +8,7 @@ import {analyzeFocus,focusCapabilities,FOCUS_FACTS,FOCUS_QUERY} from './separate
 import {analyzeSurfaceFocus,surfaceFocusCapabilities,SURFACE_FOCUS_FACTS,SURFACE_FOCUS_QUERY} from './two-surface-focus.js';
 import {analyzeSurfaceConjugate,surfaceConjugateCapabilities,CONJUGATE_FACTS,CONJUGATE_QUERY} from './refracting-surface-conjugate.js';
 import {analyzeReturn,returnCapabilities,RETURN_FACTS,RETURN_QUERY} from './refracting-mirror-return.js';
+import {analyzeImmersion,immersionCapabilities,immersionKind,IMMERSION_QUERY,IMMERSION_FACTS} from './immersed-lens-transfer.js';
 import {analyzeFourWall,fourWallCapabilities,FOUR_WALL_FACTS,FOUR_WALL_QUERY} from './four-wall-mirror-directions.js';
 import {analyzeFiniteViewing,finiteViewingCapabilities,FINITE_VIEW_FACTS,FINITE_VIEW_QUERY} from './two-lens-finite-viewing.js';
 import {analyzeMirrorOscillation,mirrorOscillationCapabilities,OSCILLATION_FACTS,OSCILLATION_QUERY} from './axial-mirror-oscillation.js';
@@ -38,6 +39,7 @@ const prismKinds=new Set(prismAngleCapabilities().kinds);
 const twoFaceKinds=new Set(twoFaceCapabilities().kinds);
 const reducedAngularAndPowerRoutes=new Map();
 for(const [kinds,format,analyze,missing] of [
+  [[immersionKind],IMMERSION_QUERY,analyzeImmersion,'Supply the reference focal length, absolute indices and target medium.'],
   [returnCapabilities().kinds,RETURN_QUERY,analyzeReturn,'Supply both indices and the front refraction and rear reflection geometry.'],
   [surfaceConjugateCapabilities().kinds,CONJUGATE_QUERY,analyzeSurfaceConjugate,'Specify the object position, ordered surface poles, signed radii and indices.'],
   [finiteViewingCapabilities().kinds,FINITE_VIEW_QUERY,analyzeFiniteViewing,'Explicit object distance, eye offset and both lens focal lengths are required.'],
@@ -68,6 +70,7 @@ const mirrorKinds=new Set(mirrorAngularCapabilities().kinds);
 const observableKinds=observableCapabilities().kinds;
 // References the live fact/query formats, not a second physics validator.
 const factContracts=Object.freeze({
+ [IMMERSION_QUERY]:[IMMERSION_FACTS],
  [RETURN_QUERY]:[RETURN_FACTS],
  [CONJUGATE_QUERY]:[CONJUGATE_FACTS],
  [FINITE_VIEW_QUERY]:[FINITE_VIEW_FACTS],
@@ -96,6 +99,7 @@ const factContracts=Object.freeze({
  [MIRROR_QUERY_FORMAT]:[MIRROR_FACTS_FORMAT]
 });
 const requestKindRegistry=()=>({
+ [immersionKind]:{route:'conditional-analytical',contract:IMMERSION_QUERY},
  ...Object.fromEntries(returnCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:RETURN_QUERY}])),
  ...Object.fromEntries(surfaceConjugateCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:CONJUGATE_QUERY}])),
  ...Object.fromEntries(finiteViewingCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:FINITE_VIEW_QUERY}])),
@@ -139,6 +143,7 @@ export function problemWorkflowCapabilities(){
     twoSurfaceFocus:surfaceFocusCapabilities(),
     refractingSurfaceConjugate:surfaceConjugateCapabilities(),
     refractingMirrorReturn:returnCapabilities(),
+    calibratedLensImmersion:immersionCapabilities(),
     planeMirrorHeadingInverse:mirrorHeadingCapabilities(),
     fourWallMirrorDirections:fourWallCapabilities(),
     mirrorOscillation:mirrorOscillationCapabilities(),
@@ -177,6 +182,8 @@ function validateEnvelope(input){
       if(Object.keys(r).some(k=>!['id','kind'].includes(k)))throw Error('Unsupported perpendicular-face request field');
     }else if(prismKinds.has(r.kind)){
       if(Object.keys(r).some(k=>!['id','kind'].includes(k)))throw Error('Unsupported prism-angle request field');
+    }else if(r.kind===immersionKind){
+      if(Object.keys(r).some(k=>!['id','kind','mediumId'].includes(k)))throw Error('Unsupported immersion request field');
     }else if(reducedAngularAndPowerRoutes.has(r.kind)){
       if(Object.keys(r).some(k=>!['id','kind'].includes(k)))throw Error('Unsupported optical calculation request field');
     }else if(lensKinds.has(r.kind)){
