@@ -5,6 +5,7 @@ export const NATIVE_OBSERVATION_KEYS=Object.freeze([
 ]);
 export const MISSING_V27_ENDPOINTS='A fresh native endpoint verification is required for this profile.';
 export function hasEndpointEvidence(doc,evidence) {
+  if(doc?.schemaVersion===36)return evidence?.v36GuideFanVerified===true;
   if(doc?.schemaVersion===35)return evidence?.v35MirrorBoxVerified===true;
   if(doc?.schemaVersion===34)return evidence?.v34ImmersedArcVerified===true;
   if(doc?.schemaVersion===33)return evidence?.v33GradedSlabVerified===true;
@@ -31,6 +32,7 @@ export function snapshotNativeObservations(diagnostics,requests=[]){
   const parentage=requests.some(r=>r?.kind==='detector-ray-provenance');
   const finite=requests.some(r=>r?.kind==='finite-hit-numerical-diagnostic');
   return {...ordinary,
+    ...(diagnostics?.v36GuideFanVerified===true?{v36GuideFanVerified:true}:{}),
     ...(diagnostics?.v35MirrorBoxVerified===true?{v35MirrorBoxVerified:true}:{}),
     ...(diagnostics?.v34ImmersedArcVerified===true?{v34ImmersedArcVerified:true}:{}),
     ...(diagnostics?.v33GradedSlabVerified===true?{v33GradedSlabVerified:true}:{}),

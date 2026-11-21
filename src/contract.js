@@ -1,5 +1,6 @@
 import {validateImmersedArcPort} from './immersed-arc-plane-port.js';
 import {MIRROR_BOX_VERSION,validateMirrorBox} from './native-mirror-box.js';
+import {validateGuideFan} from './finite-guide-fan.js';
 import {CAP_TYPE,CAP_VERSION,CAP_PARAMETERS,validateCircularCap} from './finite-circular-cap.js';
 import {validateSlabArcReturn} from './slab-arc-return.js';
 import {validateCurvedEntryBeam} from './curved-entry-beam.js';
@@ -147,6 +148,7 @@ function validateVersion(doc, version) {
     'native-thick-aperture':c=>validateThickApertureComposition(c,mirrorEndpoints,fail),
     'immersed-arc-port':c=>validateImmersedArcPort(c,doc.simulation?.rayDensity,fail),
     'native-mirror-box':c=>validateMirrorBox(c,mirrorEndpoints,fail),
+    'finite-guide-fan':c=>validateGuideFan(c,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'inside-circular-cap':c=>validateCircularCap(c,doc.simulation?.rayDensity,fail),
     'slab-arc-return':c=>validateSlabArcReturn(c,doc.simulation?.rayDensity,fail),
     'curved-entry-beam':c=>validateCurvedEntryBeam(c,doc.simulation?.rayDensity,fail),

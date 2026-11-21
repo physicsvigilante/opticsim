@@ -6,6 +6,7 @@ import {predict} from './analysis.js';
 import {sceneHash,isRecord,boundedText} from './qualified-utils.js';
 import {supportsNativeRayParentage} from './native-ray-parentage.js';
 import {supportsFiniteHitDiagnostic,FINITE_DIAGNOSTIC_METHOD} from './native-finite-hit-diagnostic.js';
+import {GUIDE_FAN_VERSION} from './finite-guide-fan.js';
 const kinds=Object.freeze({
   'interface-interactions':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','circular-cap-dielectric','spherical-lens'],unit:'sampled interactions'},
   'interface-incidence-angle':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','circular-cap-dielectric','spherical-lens'],unit:'degrees from normal; first native encounter'},
@@ -15,6 +16,7 @@ const kinds=Object.freeze({
   'interface-first-event':{type:['planar-interface','circular-dielectric','triangular-prism','polygon-dielectric','semicircular-dielectric','circular-cap-dielectric','spherical-lens'],unit:'native event; directions y-up; power relative'},
   'interface-face-events':{type:['triangular-prism','polygon-dielectric','semicircular-dielectric','circular-cap-dielectric','spherical-lens'],unit:'bounded first native encounter and total count per finite face'},
   'source-emissions':{type:['point-source','parallel-beam'],unit:'sampled rays'},
+  'guide-exit-counts':{type:'polygon-dielectric',unit:'sampled rays by actual native exit branch'},
   'blocker-absorptions':{type:['line-blocker','circle-blocker','finite-aperture'],unit:'sampled absorbed rays'},
   'mirror-reflections':{type:['plane-mirror','ideal-curved-mirror','circular-arc-mirror'],unit:'sampled interactions'},
   'detector-crossings':{type:'ray-detector',unit:'sampled crossings'},
@@ -88,6 +90,8 @@ export async function evaluateObservables(doc,requests,execution){
     if(!Object.hasOwn(kinds,r.kind))return {...base,reason:'Requested quantity is not exposed by the current result contract.'};
     const spec=kinds[r.kind],component=doc.physics.components.find(c=>c.id===r.componentId);
     if(!component||!(Array.isArray(spec.type)?spec.type.includes(component.type):component.type===spec.type))return {...base,reason:'Requested component is missing or has the wrong physical type.'};
+    if(r.kind==='guide-exit-counts'&&doc.schemaVersion!==GUIDE_FAN_VERSION)
+      return {...base,reasonCode:'UNSUPPORTED_GUIDE_SCOPE',reason:'Guide exit counts require the finite guide fan profile.'};
     if(!complete)return {...base,status:'suppressed',
       ...(r.kind==='detector-ray-provenance'?{reasonCode:!fresh?
         'STALE_PROVENANCE_EXECUTION':'NATIVE_PROVENANCE_INCOMPLETE'}:{}),
@@ -106,6 +110,16 @@ export async function evaluateObservables(doc,requests,execution){
       }catch(error){return {...base,reason:'Analytical calculation unavailable: '+error.message};}
     }
     const o=execution.observations;
+    if(r.kind==='guide-exit-counts'){
+      const counts=o?.interfacesById?.[r.componentId]?.guideExits;
+      const sourceId=doc.physics.components.find(c=>c.type==='point-source').id;
+      const emitted=o?.emissionsById?.[sourceId]?.emitted;
+      if(!counts||![counts.directFarFace,counts.guidedFarFace,counts.sideLeak].every(n=>Number.isInteger(n)&&n>=0)||
+        counts.emitted!==emitted||counts.directFarFace+counts.guidedFarFace+counts.sideLeak!==emitted)
+        return {...base,reason:'No complete native exit classification for the emitted samples.'};
+      return {...base,status:'qualified',value:counts,method:'native-observation',unit:spec.unit,warnings,
+        limitation:'Sampled exits of one finite meridional guide. A detector crossing does not identify the exit branch.'};
+    }
     if(r.kind==='finite-hit-numerical-diagnostic'){
       if(!supportsFiniteHitDiagnostic(doc))
         return {...base,reasonCode:'FINITE_HIT_DIAGNOSTIC_SCOPE_UNSUPPORTED',

@@ -1,0 +1,39 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "model": "native-finite-guide-fan-tracing",
+    "lengthUnit": "mm",
+    "title": "Guided and leaked samples in a finite dielectric guide",
+    "rayDensity": 0.1,
+    "components": [
+      {
+        "id": "S",
+        "type": "point-source",
+        "parameters": {"x": -1, "y": 0, "brightness": 0.04},
+        "emission": {"mode": "directional", "directionDeg": 65, "angleDeg": 30}
+      },
+      {
+        "id": "G",
+        "type": "polygon-dielectric",
+        "parameters": {
+          "x1": 0, "y1": -10, "x2": 80, "y2": -10,
+          "x3": 80, "y3": 10, "x4": 0, "y4": 10,
+          "insideIndex": 1.36, "outsideIndex": 1, "partialReflection": false
+        }
+      },
+      {"id": "D", "type": "ray-detector", "parameters": {"x": 90, "y": 0, "orientationDeg": 90, "length": 90}}
+    ]
+  },
+  "requests": [
+    {"id": "exit-branches", "kind": "guide-exit-counts", "componentId": "G"},
+    {"id": "wall-tir", "kind": "interface-tir-count", "componentId": "G"},
+    {"id": "detector-count", "kind": "detector-crossings", "componentId": "D"}
+  ],
+  "interpretation": {
+    "requestedResult": "Observe guided, direct and leaked exit counts for this explicitly dimensioned native fan.",
+    "stated": ["A19 gives the index of a pipe in air and asks for the limiting entrance angle for total internal reflection."],
+    "derived": ["A rectangular meridional slice with explicit dimensions can distinguish far-end exit from side leakage."],
+    "assumptions": ["The drawn pipe dimensions and fan are synthetic. Use a homogeneous two-dimensional guide and omit Fresnel partial reflection."],
+    "unknowns": ["Source pipe dimensions, skew rays and continuous throughput."]
+  }
+}

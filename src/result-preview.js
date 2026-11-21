@@ -40,6 +40,9 @@ export function formatRequestedResult(r){
           'Existing native measurements are NOT independently certified by this advisory.':
           q.status==='unknown'?'NUMERICAL UNCERTAINTY: diagnostic coverage, point agreement or native conditions are unproven; existing measurements are NOT independently certified.':
             'A bounded necessary check passed. This does NOT certify optical correctness or complete ray history.');
+    }else if(r.kind==='guide-exit-counts'){
+      const q=r.value;
+      value=`${q.emitted} sampled rays. ${q.guidedFarFace} far-end exits after total internal reflection, ${q.directFarFace} direct far-end exits, ${q.sideLeak} sidewall exits.`;
     }else if(r.kind==='interface-face-events'){
       value=Object.entries(r.value).map(([id,f])=>id+': '+f.interactions+' native hits; '+(f.first?
         f.first.from+' → '+f.first.outcome+'; incidence '+number(f.first.incidentAngleDeg)+'°; transmission '+number(f.first.transmittedAngleDeg)+'°; '+
