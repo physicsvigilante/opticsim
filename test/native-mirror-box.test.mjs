@@ -25,6 +25,8 @@ for(const [tx,ty] of frozen.geometry.manyTranslationsMm)test(`v35 uses native re
       const {x,y}=source.parameters;
       Object.assign(source.parameters,{x:target.parameters.x,y:target.parameters.y});
       Object.assign(target.parameters,{x,y});
+      for(const c of p.components.slice(1))
+        c.parameters.orientationDeg=c.parameters.orientationDeg===90?-90:180;
     }
     for(const c of p.components){c.parameters.x+=tx;c.parameters.y+=ty;}
     const doc=prepareScene(p).document;
@@ -112,4 +114,29 @@ test('only the explicit v35 profile admits a SingleRay mirror box with separated
   ]){
     const p=original();change(p);assert.throws(()=>prepareScene(p));
   }
+});
+
+test('v35 withholds a collinear change to the native launch origin before the first wall',()=>{
+  const doc=prepareScene(original()).document;
+  let changed=false;
+  const movingOrigin={...core,loadDocument(...args){
+    const loaded=core.loadDocument(...args);
+    const mirror=loaded.scene.objs[loaded.idMap.get('left')],intersect=mirror.checkRayIntersects;
+    mirror.checkRayIntersects=function(ray,...rest){
+      const result=intersect.call(this,ray,...rest);
+      if(result&&!changed){
+        const dx=ray.p2.x-ray.p1.x,dy=ray.p2.y-ray.p1.y;
+        const shift=.02/Math.hypot(dx,dy);
+        ray.p1={x:ray.p1.x+dx*shift,y:ray.p1.y+dy*shift};
+        ray.p2={x:ray.p2.x+dx*shift,y:ray.p2.y+dy*shift};
+        changed=true;
+      }
+      return result;
+    };
+    return loaded;
+  }};
+  const observed=run(doc,movingOrigin);
+  assert.equal(changed,true);
+  assert.equal(observed.observations,null);
+  assert.match(observed.native.errors.join(','),/broken ray continuity/);
 });
