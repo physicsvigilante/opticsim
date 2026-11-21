@@ -109,6 +109,10 @@ jobs:
         run: |
           node scripts/run-problem.mjs examples/immersed-arc-plane-port-v34.json --out test-artifacts/llm-authoring/immersed-arc-port
           node scripts/immersed-arc-plane-port-browser.mjs
+      - name: Native rectangular mirror box and real Chrome qualification
+        run: |
+          node scripts/run-problem.mjs examples/native-mirror-box-v35.json --out test-artifacts/llm-authoring/native-mirror-box
+          node scripts/native-mirror-box-browser.mjs
       - name: LLM authoring CLI with real native execution and revision guards
         run: node scripts/author-scene-acceptance.mjs
       - name: Evaluate deterministic LLM pilot controls against native tracing
@@ -170,6 +174,7 @@ jobs:
             test-artifacts/browser-finite-circular-cap/
             test-artifacts/browser-entering-graded-slab/
             test-artifacts/browser-immersed-arc-port/
+            test-artifacts/browser-native-mirror-box/
             test-artifacts/refractive-fan-j11/
             test-artifacts/llm-authoring/native-two-plane-mirror-v27-research/
           if-no-files-found: ignore

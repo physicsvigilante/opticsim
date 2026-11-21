@@ -73,6 +73,7 @@ export function mirrorBoxAudit(doc,scene,idMap){
   };
   for(const c of doc.physics.components.filter(c=>wallTypes.includes(c.type))){
     const obj=scene.objs[idMap.get(c.id)],incident=obj.onRayIncident,p=c.parameters,vertical=isVertical(p);
+    const rimClearance=c === target ? 0.1 : 1;
     obj.onRayIncident=function(input,index,point,...rest){
       const hit={x:point.x,y:point.y},heading=direction(input);
       const dx=hit.x-input.p1.x,dy=hit.y-input.p1.y;
@@ -80,7 +81,7 @@ export function mirrorBoxAudit(doc,scene,idMap){
       if(input!==ray||absorbed||!last||!samePoint(input.p1,last.point)||!matchesDirection(heading,last.heading)||
         !hasAuthoredBrightness(input)||!near(dx*heading.y,dy*heading.x)||dx*heading.x+dy*heading.y<=1e-4||
         Math.abs(normal)<.02||!near(vertical?hit.x:hit.y,vertical?p.x:-p.y)||
-        Math.abs(vertical?hit.y+p.y:hit.x-p.x)>p.length/2-1)
+        Math.abs(vertical?hit.y+p.y:hit.x-p.x)>p.length/2-rimClearance)
         fault??=c.id+': ambiguous finite encounter or broken ray continuity';
       const result=incident.call(this,input,index,point,...rest);
       if(!samePoint(hit,point)||result?.isUndefinedBehavior||result?.newRays?.length||!hasAuthoredBrightness(input))
