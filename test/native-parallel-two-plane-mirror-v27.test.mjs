@@ -9,6 +9,11 @@ import {prepareScene,capabilities} from '../src/authoring.js';
 import {validate,parseSave,serializeSave} from '../src/contract.js';
 import {evaluateDocument} from '../scripts/author-scene.mjs';
 import {evaluateObservables} from '../src/observables.js';
+import {explorationBundle,snapshotScenario,browserExecution} from '../src/exploration.js';
+import {compareScenario} from '../src/scenario-comparison.js';
+import {createExplorationNotebook} from '../src/exploration-notebook.js';
+import {replayExplorationNotebook} from '../src/exploration-notebook-replay.js';
+import {runParameterSweep} from '../src/parameter-sweep.js';
 import {beamTwoPlaneMirrorSafetyWitness,
  BEAM_TWO_PLANE_MIRROR_VERSION,BEAM_TWO_PLANE_MIRROR_MODEL}
  from '../src/native-beam-two-plane-mirror-v27.js';
@@ -248,6 +253,50 @@ test('v27 rejects old same-scene evidence and withholds an entire run on native 
  assert.ok((await evaluateObservables(doc,requests,summary)).results.every(r=>r.status==='suppressed'));
 });
 
+
+test('v27 mixed-version execution cannot be saved, compared, replayed or counted as a successful sweep sample',async()=>{
+ const {doc,native}=await perform(request());
+ const bundle=await explorationBundle(doc,null,fixture.requests);
+ const baseline=await snapshotScenario(bundle,native,'Baseline');
+ const notebook=await createExplorationNotebook([baseline]);
+ const archived=structuredClone(native);
+ delete archived.summary.observations.v27EndpointsVerified;
+ await assert.rejects(snapshotScenario(bundle,archived,'Baseline'),/endpoint verification/);
+ const oldSnapshot={...baseline,execution:archived,results:await evaluateObservables(doc,fixture.requests,archived.summary)};
+ const compared=await compareScenario(oldSnapshot,oldSnapshot);
+ assert.equal(compared.evidenceChecks.baseline.accepted,false);
+ assert.equal(compared.evidenceChecks.scenario.accepted,false);
+ await assert.rejects(createExplorationNotebook([oldSnapshot]),/completed saved scenarios/);
+ const oldDiagnostics=structuredClone(native.report.native.diagnostics);
+ delete oldDiagnostics.v27EndpointsVerified;
+ await assert.rejects(browserExecution(doc,'completed',oldDiagnostics),/endpoint verification/);
+ const replay=await replayExplorationNotebook(notebook,{run:()=>archived});
+ assert.equal(replay.newNativeQualified,0);
+ assert.equal(replay.nativeIncomplete,1);
+ assert.equal(replay.rows[0].currentNativeSummary,undefined);
+ assert.equal(replay.rows[0].nativeStatus,'incomplete');
+ assert.match(replay.rows[0].nativeError,/endpoint verification/);
+ let retained;
+ const sweep=await runParameterSweep(bundle,{format:'opticsim-parameter-sweep-v1',
+  expectedSceneSha256:bundle.sceneSha256,parameter:{id:'B1',section:'parameters',key:'width',unit:'mm'},
+  values:[40]}, {execute:()=>archived,onSample:(_,context)=>{retained=context.execution;}});
+ assert.equal(sweep.completedSamples,0);
+ assert.equal(retained.summary.observations,null);
+ assert.equal(retained.report,undefined);
+ assert.ok(sweep.samples[0].requestedResults.results.every(r=>r.status==='suppressed'));
+ // Emulate the return shape of the genuine older injected core at its
+ // diagnostics boundary, without shipping a second upstream bundle in CI.
+ const oldCore={...core,diagnostics(...args){
+  const data=core.diagnostics(...args);
+  delete data.v27EndpointsVerified;
+  return data;
+ }};
+ const checked=evaluateDocument(doc,oldCore,fixture.requests);
+ assert.equal(checked.summary.executionPassed,false);
+ assert.equal(checked.summary.native.status,'incomplete');
+ assert.equal(checked.report.native.diagnostics,null);
+ assert.equal(checked.summary.observations,null);
+});
 
 test('v27 exactly-1mm rear Mirror gap is a real separate native interface, while any smaller gap is refused',async()=>{
  const valid=request();

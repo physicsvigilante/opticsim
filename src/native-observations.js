@@ -3,6 +3,18 @@
 export const NATIVE_OBSERVATION_KEYS=Object.freeze([
   'emissionsById','reflectionsById','detectorsById','interfacesById','blockersById'
 ]);
+export const MISSING_V27_ENDPOINTS='A fresh v27 native endpoint verification is required.';
+export function hasEndpointEvidence(doc,evidence) {
+  return doc?.schemaVersion!==27 || evidence?.v27EndpointsVerified===true;
+}
+// An injected runner can use an older core with the same upstream pin and
+// scene SHA. Do not pass its raw counters through an accepted summary.
+export function qualifyRunnerSummary(doc,summary) {
+  if (hasEndpointEvidence(doc,summary?.observations) || !summary?.executionPassed) return summary;
+  return {canonicalSha256:summary.canonicalSha256,executionPassed:false,
+    native:{status:'incomplete',error:MISSING_V27_ENDPOINTS,errors:[MISSING_V27_ENDPOINTS],warnings:[]},
+    observations:null,measurementState:'withheld-incomplete'};
+}
 export function snapshotNativeObservations(diagnostics,requests=[]){
   const ordinary=Object.fromEntries(NATIVE_OBSERVATION_KEYS.map(key=>
     [key,structuredClone(diagnostics?.[key]??null)]));

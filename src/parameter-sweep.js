@@ -1,6 +1,7 @@
 // A bounded deterministic experiment over the existing revision/result contracts.
 // Every sample is a fresh copy of ONE verified baseline, never the prior sample.
 import {LENGTH_PARAMETERS} from './contract.js';
+import {qualifyRunnerSummary} from './native-observations.js';
 import {reviseScene} from './authoring.js';
 import {validateObservables,evaluateObservables} from './observables.js';
 import {verifyQualifiedBundle,recordQualifiedEdit,createQualifiedBundle} from './qualification.js';
@@ -59,6 +60,8 @@ export async function runParameterSweep(bundle,spec,{execute,onSample=async()=>{
         recordQualifiedEdit(baseline.scene,document,baseline.qualification),requests);
       stage='execution';
       execution=await execute(structuredClone(document));
+      const summary=qualifyRunnerSummary(document,execution.summary);
+      if(summary!==execution.summary)execution={summary};
       requestedResults=await evaluateObservables(document,requests,execution.summary);
       status=execution.summary.executionPassed?'completed':'incomplete';
     }catch(e){

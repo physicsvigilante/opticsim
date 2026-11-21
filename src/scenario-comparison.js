@@ -1,6 +1,7 @@
 // Shared comparison guard. It verifies saved evidence, not source truth.
 // No native execution, new physical formula, implicit normalization or repair.
 import {verifyQualifiedBundle} from './qualification.js';
+import {hasEndpointEvidence,MISSING_V27_ENDPOINTS} from './native-observations.js';
 import {evaluateObservables} from './observables.js';
 import {canonicalJSON} from './qualified-utils.js';
 const same=(a,b)=>canonicalJSON(a)===canonicalJSON(b);
@@ -11,6 +12,7 @@ async function checked(input){
   const bundle=await verifyQualifiedBundle(input.bundle);
   if(!same(input.doc,bundle.scene))throw Error('The compared document differs from its verified package');
   const summary=input.execution?.summary;
+  if(!hasEndpointEvidence(bundle.scene,summary?.observations))throw Error(MISSING_V27_ENDPOINTS);
   if(summary?.canonicalSha256!==bundle.sceneSha256)throw Error('Native evidence is absent or bound to a different scene');
   if(summary.executionPassed!==true||!['completed','completed-with-warnings'].includes(summary.native?.status)||
      summary.native.truncation!==0||summary.native.undefinedBehavior!==0||

@@ -54,7 +54,16 @@ test('original reserved transfer evidence remains frozen; explicit later parenta
  assert.equal(notebookPostFreeze.priorFocusedUiSha256,
   focusedPostFreeze.replacementHashes['src/exploration-ui.js']);
  for(const [path,expected] of Object.entries(freeze.frozenFiles)){
-  if(integration.changedAfterReservedExecution.includes(path)){
+  // The post-v27 B1 review required these two historical consumers to reject
+  // old execution evidence. Pin both links without changing either freeze.
+  const endpointFollowup={
+   'src/exploration.js':['855f1b3dc786852f881e75c761e191515b6fefe87bdbb82dcca3711481e02dab','eadaec97de4f2a7f4780d40694bc1cce2f5a8798be62ac611097060f043f6f5d'],
+   'src/scenario-comparison.js':['7852e615d59b88ed7eba1ba9bc15e450cdfa49eda7b04f5ee2398df334452bbf','df3e8b88c40964191bae567ae3e48ec876ba64f817ef44ef02a1e30852ff58ed']
+  }[path];
+  if(endpointFollowup){
+   assert.equal(integration.replacementHashes[path]??expected,endpointFollowup[0]);
+   assert.equal(hash(path),endpointFollowup[1]);
+  }else if(integration.changedAfterReservedExecution.includes(path)){
    assert.equal(integration.baselineCommit,freeze.baseline);
    assert.equal(hash(path),integration.replacementHashes[path],'Integration correction must remain frozen: '+path);
    assert.notEqual(hash(path),expected,'Do not rewrite original freeze evidence: '+path);

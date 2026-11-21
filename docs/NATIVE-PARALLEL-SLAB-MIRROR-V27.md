@@ -30,6 +30,8 @@ An audit failure withholds all requested values even if the native simulation te
 
 ## Public use and evidence
 
+Historical v27 runs can match the current scene SHA and upstream pin while lacking the endpoint audit. Public native checking with an older core withholds these measurements. Snapshots, comparisons, sweeps, notebook export and notebook replay require the same verification before accepting a v27 execution. An input-only notebook can still be opened and retraced with the current core.
+
 An LLM or user can provide the complete physical JSON scene; no hand-placed ray trajectories are required. The ordinary Opticsim authoring pipeline selects schema 27, validates the full apparatus, invokes **unchanged pinned PhyDemo**, and produces qualified sampled observables only for a completed native run. The example requests genuine Beam emissions, real first and second interface counts, first Snell event, Mirror reflections, detector crossings and individual detector-hit positions.
 
 ```sh

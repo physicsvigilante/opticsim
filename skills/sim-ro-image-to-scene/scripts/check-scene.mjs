@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { validate, parseSave, serializeSave } from '../../../src/contract.js';
 import {createNativeRayParentage} from '../../../src/native-ray-parentage.js';
+import {hasEndpointEvidence,MISSING_V27_ENDPOINTS} from '../../../src/native-observations.js';
 import {createNativeFiniteHitDiagnostic} from '../../../src/native-finite-hit-diagnostic.js';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -55,7 +56,9 @@ export function checkCandidate(text, core,{captureDetectorHits=false,captureRayP
   }, () => {});
   session.apply(doc);
   if (session.state === 'running') session.stop(); // Never report an unobserved completion.
-  const completed = ['completed', 'completed-with-warnings'].includes(session.state);
+  const terminalComplete = ['completed', 'completed-with-warnings'].includes(session.state);
+  const missingAudit = terminalComplete && !hasEndpointEvidence(doc,session.data);
+  const completed = terminalComplete && !missingAudit;
   const expectedSources=doc.physics.components.filter(c=>c.type==='point-source');
   const sourceReadings=session.data?.emissionsById || {};
   const sourceState = !completed ? 'incomplete-or-failed' :
@@ -69,8 +72,8 @@ export function checkCandidate(text, core,{captureDetectorHits=false,captureRayP
     !completed ? 'incomplete-or-failed' :
     expectedDetectors.every(c=>Number.isFinite(readings[c.id]?.signedPower) &&
       Number.isInteger(readings[c.id]?.crossings)) ? 'complete' : 'unavailable';
-  report.native = { status: session.state, completed, diagnostics: session.data,
-    error: session.error ?? null, sourceEmissions: sourceState,
+  report.native = { status: missingAudit?'incomplete':session.state, completed, diagnostics: missingAudit?null:session.data,
+    error: missingAudit?MISSING_V27_ENDPOINTS:session.error??null, sourceEmissions: sourceState,
     detectorMeasurements: measurementState };
   report.analysis = { status: session.analysisStatus, reason: session.analysisReason, prediction: session.prediction };
   report.components = loaded ? doc.physics.components.map(c => ({ id: c.id, type: c.type, nativeIndex: loaded.idMap.get(c.id) })) : [];

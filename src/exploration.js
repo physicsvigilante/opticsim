@@ -5,7 +5,7 @@ import {prepareQualifiedStructure,qualifiedStructureCapabilities} from './qualif
 import {initialQualification,verifyQualifiedBundle,createQualifiedBundle,recordQualifiedEdit} from './qualification.js';
 import {observableCapabilities,validateObservables,evaluateObservables} from './observables.js';
 import {canonicalJSON,sceneHash,boundedText,isRecord} from './qualified-utils.js';
-import {snapshotNativeObservations} from './native-observations.js';
+import {snapshotNativeObservations,hasEndpointEvidence,MISSING_V27_ENDPOINTS} from './native-observations.js';
 import {compareScenario} from './scenario-comparison.js';
 export const EXPLORATION_PROPOSAL='opticsim-exploration-proposal-v1';
 const complete=new Set(['completed','completed-with-warnings']);
@@ -95,6 +95,7 @@ export async function prepareExplorationProposal(input,raw){
 // fields used by the CLI. Never call this with a merely prepared candidate.
 export async function browserExecution(doc,state,data,requests=[]){
  [doc,state,data]=structuredClone([doc,state,data]);
+ if(!hasEndpointEvidence(doc,data))throw Error(MISSING_V27_ENDPOINTS);
  const accepted=complete.has(state)&&data&&data.truncation===0&&data.undefinedBehavior===0&&
   Array.isArray(data.errors)&&!data.errors.length;
  if(!accepted)throw Error('Save scenario requires a complete current native run, without truncation or undefined behavior');
@@ -108,6 +109,7 @@ export async function snapshotScenario(input,execution,label,{intent=null,parent
  [input,execution]=structuredClone([input,execution]);boundedText(label,'Scenario name',80);
  if(intent!==null)boundedText(intent,'Hypothetical intent',1200);
  const bundle=await verifyQualifiedBundle(input),s=execution?.summary;
+ if(!hasEndpointEvidence(bundle.scene,s?.observations))throw Error(MISSING_V27_ENDPOINTS);
  if(s?.canonicalSha256!==bundle.sceneSha256||s.executionPassed!==true||
    !complete.has(s.native?.status)||s.native.truncation!==0||s.native.undefinedBehavior!==0||
    !Array.isArray(s.native.errors)||s.native.errors.length||s.native.error||!['complete','qualified-with-warnings','not-requested'].includes(s.measurementState))

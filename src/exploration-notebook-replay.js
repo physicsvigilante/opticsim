@@ -2,6 +2,7 @@
 // Never trust or import cached rays, detector measurements or comparisons.
 // Native engine and all physical/qualification contracts remain authoritative.
 import {verifyExplorationNotebook} from './exploration-notebook.js';
+import {qualifyRunnerSummary} from './native-observations.js';
 import {snapshotScenario,compareExplorationSnapshots} from './exploration.js';
 export const NOTEBOOK_REPLAY_FORMAT='opticsim-notebook-native-replay-v1';
 
@@ -32,7 +33,7 @@ export async function replayExplorationNotebook(input,{run,onTrial=async()=>{},o
      structuredClone(entry.bundle.observables),structuredClone(identity));
    if(!executed?.summary?.native)
     throw Error('Native runner returned no actual terminal diagnostics');
-   const summary=structuredClone(executed.summary);
+   const summary=qualifyRunnerSummary(entry.bundle.scene,structuredClone(executed.summary));
    if(nativeAccepted(summary)){
     // Existing strict snapshot checks bind actual current native hash to the
     // authored scene and reject stale or inconsistent observations.

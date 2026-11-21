@@ -2,6 +2,7 @@
 // scenes/observations and teacher labels, never cached native execution results.
 // The original exploration.js and native PhyDemo physics stay untouched.
 import {verifyQualifiedBundle} from './qualification.js';
+import {hasEndpointEvidence} from './native-observations.js';
 import {canonicalJSON,sha256Text,isRecord,boundedText} from './qualified-utils.js';
 export const EXPLORATION_NOTEBOOK_FORMAT='opticsim-exploration-notebook-v1';
 export const EXPLORATION_NOTEBOOK_MAX_BYTES=4*1024*1024;
@@ -61,6 +62,7 @@ export async function createExplorationNotebook(saved){
   const summary=item?.execution?.summary;
   if(summary?.canonicalSha256!==item?.bundle?.sceneSha256||
      summary?.executionPassed!==true||
+     !hasEndpointEvidence(item?.bundle?.scene,summary.observations)||
      !['completed','completed-with-warnings'].includes(summary?.native?.status)||
      summary?.native?.truncation!==0||summary?.native?.undefinedBehavior!==0||
      !Array.isArray(summary?.native?.errors)||summary.native.errors.length||
