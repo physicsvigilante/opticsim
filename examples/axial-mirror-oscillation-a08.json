@@ -1,0 +1,36 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-axial-mirror-oscillation-facts-v1",
+    "model": "prescribed-real-axial-cosine-motion",
+    "meanDistanceOverFocalLength": 2,
+    "amplitudeOverFocalLength": 1,
+    "samplePhases": [
+      0,
+      0.25,
+      0.5,
+      0.75
+    ]
+  },
+  "requests": [
+    {
+      "id": "phase-conjugates",
+      "kind": "cosine-axial-mirror-conjugates"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Find the image-distance law, object-image coincidence and lateral magnification at half-period.",
+    "stated": [
+      "Axial displacement f cos(omega t) about the centre of curvature of a concave mirror, with positive direction away from the pole."
+    ],
+    "derived": [
+      "Object distance from the pole is f times 2 + cos(2π times the cycle fraction)."
+    ],
+    "assumptions": [
+      "Use instantaneous paraxial conjugates of the prescribed trajectory."
+    ],
+    "unknowns": [
+      "Numerical f, period and real motion or visibility evidence."
+    ]
+  }
+}

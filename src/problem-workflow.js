@@ -6,6 +6,7 @@ import {analyzeTwoFaceQuery,twoFaceCapabilities,TWO_FACE_FACTS,TWO_FACE_QUERY} f
 import {analyzePowerQuery,powerCapabilities,POWER_FACTS,POWER_QUERY} from './coincident-optical-power.js';
 import {analyzeFocus,focusCapabilities,FOCUS_FACTS,FOCUS_QUERY} from './separated-lens-focus.js';
 import {analyzeSurfaceFocus,surfaceFocusCapabilities,SURFACE_FOCUS_FACTS,SURFACE_FOCUS_QUERY} from './two-surface-focus.js';
+import {analyzeMirrorOscillation,mirrorOscillationCapabilities,OSCILLATION_FACTS,OSCILLATION_QUERY} from './axial-mirror-oscillation.js';
 import {analyzeMirrorMagnification,mirrorMagnificationCapabilities,MIRROR_MAGNIFICATION_FACTS,MIRROR_MAGNIFICATION_QUERY} from './mirror-magnification-inverse.js';
 import {analyzeMirrorOutline,mirrorOutlineCapabilities,OUTLINE_FACTS,OUTLINE_QUERY} from './mirror-image-outline.js';
 import {analyzeGradedSlab,gradedSlabCapabilities,GRADED_SLAB_FACTS,GRADED_SLAB_QUERY} from './graded-slab-first-passage.js';
@@ -31,6 +32,7 @@ const prismKinds=new Set(prismAngleCapabilities().kinds);
 const twoFaceKinds=new Set(twoFaceCapabilities().kinds);
 const reducedAngularAndPowerRoutes=new Map();
 for(const [kinds,format,analyze,missing] of [
+  [mirrorOscillationCapabilities().kinds,OSCILLATION_QUERY,analyzeMirrorOscillation,'Explicit normalized cosine motion and requested phases required.'],
   [mirrorMagnificationCapabilities().kinds,MIRROR_MAGNIFICATION_QUERY,analyzeMirrorMagnification,'Explicit signed focal length and signed or magnitude-only magnification required.'],
   [mirrorOutlineCapabilities().kinds,OUTLINE_QUERY,analyzeMirrorOutline,'Explicit ordered vertices or axis-based trapezoid facts required.'],
   [gradedSlabCapabilities().kinds,GRADED_SLAB_QUERY,analyzeGradedSlab,'Explicit squared-index profile, entry angle or limit and both exterior indices required.'],
@@ -55,6 +57,7 @@ const mirrorKinds=new Set(mirrorAngularCapabilities().kinds);
 const observableKinds=observableCapabilities().kinds;
 // References the live fact/query formats, not a second physics validator.
 const factContracts=Object.freeze({
+ [OSCILLATION_QUERY]:[OSCILLATION_FACTS],
  [MIRROR_MAGNIFICATION_QUERY]:[MIRROR_MAGNIFICATION_FACTS],
  [OUTLINE_QUERY]:[OUTLINE_FACTS],
  [GRADED_SLAB_QUERY]:[GRADED_SLAB_FACTS],
@@ -77,6 +80,7 @@ const factContracts=Object.freeze({
  [MIRROR_QUERY_FORMAT]:[MIRROR_FACTS_FORMAT]
 });
 const requestKindRegistry=()=>({
+ ...Object.fromEntries(mirrorOscillationCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:OSCILLATION_QUERY}])),
  ...Object.fromEntries(mirrorMagnificationCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:MIRROR_MAGNIFICATION_QUERY}])),
  ...Object.fromEntries(mirrorOutlineCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:OUTLINE_QUERY}])),
  ...Object.fromEntries(gradedSlabCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:GRADED_SLAB_QUERY}])),
@@ -111,6 +115,7 @@ export function problemWorkflowCapabilities(){
     coincidentOpticalPower:powerCapabilities(),
     separatedLensFocus:focusCapabilities(),
     twoSurfaceFocus:surfaceFocusCapabilities(),
+    mirrorOscillation:mirrorOscillationCapabilities(),
     mirrorMagnification:mirrorMagnificationCapabilities(),
     mirrorOutline:mirrorOutlineCapabilities(),
     gradedSlabFirstPassage:gradedSlabCapabilities(),
