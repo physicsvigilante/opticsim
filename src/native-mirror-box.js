@@ -1,11 +1,14 @@
 import {compositionCountsMatch} from './composition-profiles.js';
+import {segmentsIntersect} from './composition-validation.js';
+import {separatedSegmentDistance} from './finite-aperture.js';
 
 export const MIRROR_BOX_VERSION=35;
 export const MIRROR_BOX_MODEL='native-rectangular-mirror-box';
 const wallTypes=['plane-mirror','line-blocker'];
+const positionTolerance=1e-7;
 const isVertical=p=>Math.abs(p.orientationDeg)===90;
 const axial=p=>[0,90,-90,180,-180].includes(p.orientationDeg);
-const near=(a,b,tolerance=1e-7)=>Number.isFinite(a)&&Math.abs(a-b)<=tolerance;
+const near=(a,b,tolerance=positionTolerance)=>Number.isFinite(a)&&Math.abs(a-b)<=tolerance;
 const inside=(p,min,max)=>p>=min+1&&p<=max-1;
 const world=p=>Math.abs(p.x)<=10000&&Math.abs(p.y)<=10000;
 const samePoint=(a,b)=>a.x===b.x&&a.y===b.y;
@@ -50,8 +53,9 @@ function direction(ray){
   return {x:dx/magnitude,y:dy/magnitude};
 }
 
-export function mirrorBoxAudit(doc,scene,idMap){
+export function mirrorBoxAudit(doc,scene,idMap,endpoints){
   const {source,mirrors,target}=parts(doc.physics.components);
+  const opaque=endpoints(target.parameters).map(p=>({x:p.x,y:-p.y}));
   const emitter=scene.objs[idMap.get(source.id)],nativeStart=emitter.onSimulationStart;
   const sourceAngle=source.emission.directionDeg*Math.PI/180;
   const expectedDirection={x:Math.cos(sourceAngle),y:-Math.sin(sourceAngle)};
@@ -81,8 +85,15 @@ export function mirrorBoxAudit(doc,scene,idMap){
       if(input!==ray||absorbed||!last||!samePoint(input.p1,last.point)||!matchesDirection(heading,last.heading)||
         !hasAuthoredBrightness(input)||!near(dx*heading.y,dy*heading.x)||dx*heading.x+dy*heading.y<=1e-4||
         Math.abs(normal)<.02||!near(vertical?hit.x:hit.y,vertical?p.x:-p.y)||
-        Math.abs(vertical?hit.y+p.y:hit.x-p.x)>p.length/2-rimClearance)
+        Math.abs(vertical?hit.y+p.y:hit.x-p.x)+rimClearance+positionTolerance>=p.length/2)
         fault??=c.id+': ambiguous finite encounter or broken ray continuity';
+      if(c!==target){
+        // Check this already observed leg. An earlier opaque contact cannot
+        // be skipped on a qualified route to the mirror.
+        const leg=[input.p1,hit];
+        if(segmentsIntersect(leg,opaque)||separatedSegmentDistance(leg,opaque)<=positionTolerance)
+          fault??=c.id+': incoming segment crossed or approached the opaque target';
+      }
       const result=incident.call(this,input,index,point,...rest);
       if(!samePoint(hit,point)||result?.isUndefinedBehavior||result?.newRays?.length||!hasAuthoredBrightness(input))
         fault??=c.id+': unexpected native continuation';
