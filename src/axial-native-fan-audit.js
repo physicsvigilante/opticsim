@@ -50,7 +50,7 @@ export function installAxialFanAudit({doc,scene,idMap,source,mirror,detector,fac
       if(c===mirror){
         const n={x:(point.x-p.x+p.radius)/p.radius,y:(point.y+p.y)/p.radius};
         const projection=before.x*n.x+before.y*n.y;
-        if(!near(Math.hypot(n.x,n.y),1,1e-8)||before.x<=0||after.x>=0||
+        if(n.x<=0||!near(Math.hypot(n.x,n.y),1,1e-8)||before.x<=0||after.x>=0||
           Math.abs(point.y+p.y)>=p.apertureHeight/2-.1||
           !near(after.x,before.x-2*projection*n.x,1e-8)||!near(after.y,before.y-2*projection*n.y,1e-8))fault??=c.id+': uncertain reflection or arc rim clearance';
       }else{

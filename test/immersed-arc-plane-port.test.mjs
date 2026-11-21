@@ -123,3 +123,32 @@ test('v34 withholds offset native detector power before or after its complete fa
   assert.equal(evaluateDocument(doc,offsetAtCompletion,fixture.requests).summary.observations,null);
   assert.equal(changed,true);
 });
+
+test('v34 withholds the opposite circle branch even if the native mirror reflects at the reported point',()=>{
+  const p=original(),mirror=p.components.find(c=>c.id==='M').parameters;
+  Object.assign(mirror,{x:200,radius:50,apertureHeight:30});
+  p.components.find(c=>c.id==='D').parameters.length=100;
+  const doc=prepareScene(p).document;
+  assert.equal(evaluateDocument(doc,core,fixture.requests).summary.observations?.v34ImmersedArcVerified,true);
+  let replaced=0;
+  const wrongBranch={...core,loadDocument(...args){
+    const loaded=core.loadDocument(...args);
+    const arc=loaded.scene.objs[loaded.idMap.get('M')],intersect=arc.checkRayIntersects;
+    arc.checkRayIntersects=function(ray){
+      const hit=intersect.call(this,ray);
+      if(!hit)return hit;
+      const dx=ray.p2.x-ray.p1.x,dy=ray.p2.y-ray.p1.y;
+      const x=ray.p1.x-(mirror.x-mirror.radius),y=ray.p1.y+mirror.y;
+      const a=dx*dx+dy*dy,b=dx*x+dy*y,c=x*x+y*y-mirror.radius*mirror.radius;
+      const time=(-b-Math.sqrt(b*b-a*c))/a;
+      assert.ok(time>0);
+      const opposite={x:ray.p1.x+time*dx,y:ray.p1.y+time*dy};
+      assert.ok(opposite.x<mirror.x-mirror.radius&&hit.x>mirror.x-mirror.radius);
+      replaced++;
+      return opposite;
+    };
+    return loaded;
+  }};
+  assert.equal(evaluateDocument(doc,wrongBranch,fixture.requests).summary.observations,null);
+  assert.equal(replaced,3);
+});
