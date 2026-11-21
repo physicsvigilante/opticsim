@@ -1,18 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {mkdirSync,mkdtempSync,readFileSync} from 'node:fs';
+import {join} from 'node:path';
 import {planProblem} from '../src/problem-workflow.js';
+import {runProblemEvidence} from '../scripts/run-problem.mjs';
 
 const read=file=>JSON.parse(readFileSync(new URL(file,import.meta.url)));
 const example=()=>read('../examples/material-lens-a34.json');
 const run=p=>planProblem(p).results[0];
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-10,JSON.stringify({a,b}));
 
-test('A34 common curvature cancels without assigning radii',()=>{
+test('A34 common curvature cancels without assigning radii',async()=>{
   const frozen=read('../evaluation/immersed-material-lens-v1/frozen-protocol.json');
   const atlas=read('../evaluation/optical-systems-atlas-v1/review.json');
   assert.equal(atlas.cases.find(c=>c.id==='A34').imageSha256,frozen.source.sha256);
-  const p=example(),r=run(p);
+  const root='test-artifacts/llm-authoring';mkdirSync(root,{recursive:true});
+  const outputPath=join(mkdtempSync(join(root,'material-lens-query-')),'a34');
+  const inputBytes=readFileSync(new URL('../examples/material-lens-a34.json',import.meta.url));
+  const {report}=await runProblemEvidence({inputBytes,outputPath});
+  assert.equal(report.native.status,'not-run');
+  assert.equal(report.portable.status,'not-created');
+  const p=example(),r=report.results[0];
   assert.equal(r.status,'conditional');assert.equal(r.nativePathVerified,false);
   const [air,liquid]=r.value.comparisons;
   near(air.firstOverSecondFocalLength,1.4);near(liquid.firstOverSecondFocalLength,-1);

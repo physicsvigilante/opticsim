@@ -1,11 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
+import {mkdirSync,mkdtempSync,writeFileSync} from 'node:fs';
+import {join} from 'node:path';
 import {prepareScene} from '../src/authoring.js';
 import {evaluateDocument} from '../scripts/author-scene.mjs';
 import {analyzeSurfaceFocus,SURFACE_FOCUS_FACTS,SURFACE_FOCUS_QUERY} from '../src/two-surface-focus.js';
 
 const core=createRequire(import.meta.url)('../dist/test-core.cjs');
+const evidenceRoot='test-artifacts/llm-authoring';
+mkdirSync(evidenceRoot,{recursive:true});
+const evidence=mkdtempSync(join(evidenceRoot,'material-lens-native-'));
 for(const outsideIndex of [1,1.6]) for(const insideIndex of [1.5,1.7])
   test('A34 finite lens native witness in index '+outsideIndex+' with material '+insideIndex,()=>{
     const sources=[-1,1].map((y,i)=>({id:'S'+i,type:'point-source',parameters:{x:-50,y,brightness:.04},
@@ -15,7 +20,8 @@ for(const outsideIndex of [1,1.6]) for(const insideIndex of [1.5,1.7])
     const detector={id:'D',type:'ray-detector',parameters:{x:30,y:0,length:30,orientationDeg:90}};
     const doc=prepareScene({lengthUnit:'mm',components:[...sources,lens,detector]}).document;
     assert.equal(doc.schemaVersion,15);
-    const {summary}=evaluateDocument(doc,core,[{id:'hits',kind:'detector-hit-events',componentId:'D'}]);
+    const requests=[{id:'hits',kind:'detector-hit-events',componentId:'D'}];
+    const {summary}=evaluateDocument(doc,core,requests);
     assert.equal(summary.native.status,'completed');
     assert.deepEqual(summary.native.warnings,[]);
     const arc=summary.observations.interfacesById.L;
@@ -31,6 +37,8 @@ for(const outsideIndex of [1,1.6]) for(const insideIndex of [1.5,1.7])
         front:{id:'front',signedRadius:200},rear:{id:'rear',signedRadius:-200}}},
       {format:SURFACE_FOCUS_QUERY,kind:'two-surface-back-focus'}).value.signedBackFocalDistance;
     const thin=outsideIndex*100/(insideIndex-outsideIndex);
+    writeFileSync(join(evidence,'exterior-'+outsideIndex+'-glass-'+insideIndex+'.json'),
+      JSON.stringify({doc,requests,summary,finiteBackFocusMm:finite,thinFocalLengthMm:thin},null,2)+'\n',{flag:'wx'});
     for(const {pointMm,incomingUnit} of hits.events){
       const z=pointMm.x-2.5-pointMm.y*incomingUnit.x/incomingUnit.y;
       assert.ok(Math.abs(z-finite)<.12,JSON.stringify({z,finite}));
