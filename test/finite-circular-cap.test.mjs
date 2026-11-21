@@ -6,6 +6,7 @@ import {prepareScene} from '../src/authoring.js';
 import {parseSave,serializeSave} from '../src/contract.js';
 import {evaluateDocument} from '../scripts/author-scene.mjs';
 import {evaluateObservables} from '../src/observables.js';
+import {apparatusPoints} from '../src/result-preview.js';
 
 const core=createRequire(import.meta.url)('../dist/test-core.cjs');
 const read=p=>JSON.parse(readFileSync(new URL(p,import.meta.url)));
@@ -24,6 +25,8 @@ test('public v32 uses a real arc and closing chord and qualifies translated nati
     assert.deepEqual(native.map(o=>o.type),['AngleSource','Glass','Detector']);
     assert.deepEqual(native[1].path.map(o=>o.arc),[false,true,false]);
     assert.deepEqual(native[1].path.map(o=>o.x),[20,20+c.heightMm,20]);
+    const top=-30+Math.sqrt(c.heightMm*(2*c.radiusMm-c.heightMm));
+    assert.ok(apparatusPoints(doc).some(p=>p.x===20&&p.y===top));
     const {summary}=evaluateDocument(doc,core,fixture.requests);
     assert.equal(summary.observations?.v32CapVerified,true);
     const {results}=await evaluateObservables(doc,fixture.requests,summary);
