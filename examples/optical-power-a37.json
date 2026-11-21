@@ -1,0 +1,38 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-coincident-power-facts-v1",
+    "model": "ideal-thin-powers-in-unit-index-air",
+    "referencePlane": "zero-vertex-relaxed-eye-plane",
+    "elements": [
+      {
+        "id": "correction",
+        "unknown": true
+      }
+    ],
+    "condition": {
+      "kind": "conjugate-pair",
+      "incoming": "infinity",
+      "outgoing": {
+        "signedDistanceM": -2
+      }
+    }
+  },
+  "requests": [
+    {
+      "id": "result",
+      "kind": "required-component-power"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Corrective optical power for distance viewing in the ideal model.",
+    "stated": [
+      "The far point is 2 m and the object is distant."
+    ],
+    "derived": [],
+    "assumptions": [
+      "Zero vertex distance between correction and eye reference planes. The relaxed eye uses a virtual object at the far point; medium is unit-index air."
+    ],
+    "unknowns": []
+  }
+}

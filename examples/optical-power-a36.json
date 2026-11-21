@@ -1,0 +1,43 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-coincident-power-facts-v1",
+    "model": "ideal-thin-powers-in-unit-index-air",
+    "referencePlane": "coincident-cornea-and-eye-lens-plane",
+    "elements": [
+      {
+        "id": "cornea",
+        "powerD": 40
+      },
+      {
+        "id": "eyeLens",
+        "powerD": 20
+      }
+    ],
+    "condition": {
+      "kind": "fixed-outgoing-vergence",
+      "initialIncoming": "infinity",
+      "finalIncoming": {
+        "signedDistanceM": -0.25
+      },
+      "adjustId": "eyeLens"
+    }
+  },
+  "requests": [
+    {
+      "id": "result",
+      "kind": "fixed-output-power-change"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Approximate range of eye-lens power.",
+    "stated": [
+      "Far point infinity, near point about 25 cm; corneal power about 40 D and minimum eye-lens power about 20 D."
+    ],
+    "derived": [],
+    "assumptions": [
+      "Co-located ideal powers. The corneal power and retinal conjugate stay fixed. Object distances use the common plane and unit-index air."
+    ],
+    "unknowns": []
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-coincident-power-facts-v1",
+    "model": "ideal-thin-powers-in-unit-index-air",
+    "referencePlane": "common-optical-plane",
+    "elements": [
+      {
+        "id": "L1",
+        "focalLengthM": 0.05
+      },
+      {
+        "id": "L2",
+        "focalLengthM": -0.1
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "result",
+      "kind": "contact-equivalent-power"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Equivalent focal length.",
+    "stated": [
+      "Converging 5 cm and diverging 10 cm lenses in contact."
+    ],
+    "derived": [],
+    "assumptions": [
+      "Ideal coaxial thin lenses in unit-index air."
+    ],
+    "unknowns": []
+  }
+}
