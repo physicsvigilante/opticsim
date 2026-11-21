@@ -146,6 +146,7 @@ define(31,'native-fan-slab-arc-return-tracing',{[source]:range(1,1),[plane]:rang
 define(32,'native-inside-cap-tracing',{[source]:range(1,1),'circular-cap-dielectric':range(1,1),[detector]:range(1,1)},[],[rule('inside-circular-cap')],['directional']);
 define(33,'native-entering-graded-slab',{[source]:range(1,1),[grin]:range(1,1),[detector]:range(1,1)},[],[rule('entering-graded-slab')],single);
 define(34,'native-immersed-arc-plane-port',{[source]:range(1,1),[plane]:range(1,1),'circular-arc-mirror':range(1,1),[detector]:range(1,1)},[],[rule('immersed-arc-port')],['directional']);
+define(35,'native-rectangular-mirror-box',{[source]:range(1,1),[mirror]:range(4,4),'line-blocker':range(1,1)},[],[rule('native-mirror-box')],single);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 

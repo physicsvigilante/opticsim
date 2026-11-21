@@ -1,0 +1,30 @@
+{
+  "format": "opticsim-native-mirror-box-frozen-v1",
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "source": "Problems-only A04 and the previously frozen four-wall directions study",
+  "sourceProblemSha256": "ec0d4946a67825e5df7df46eb97940864c4217ce38d74f0d3f1352da08d6e4db",
+  "geometry": {
+    "sizeMm": [300,180],
+    "endGapsMm": 0.2,
+    "endClearanceMm": 1,
+    "startMm": [55,140],
+    "targetMm": [200,60],
+    "targetLengthMm": 2,
+    "targetOrientationDeg": 90,
+    "manyTranslationsMm": [[0,0],[9250,-9610],[-9750,9350]]
+  },
+  "expectedForward": [
+    {"vector":[-455,-440],"wallOrder":["left","bottom","top","right"]},
+    {"vector":[-455,280],"wallOrder":["left","top","right","bottom"]},
+    {"vector":[745,-440],"wallOrder":["bottom","right","top","left"]},
+    {"vector":[745,280],"wallOrder":["top","right","left","bottom"]}
+  ],
+  "reverse": "Swap the source and absorber positions. Negate the launch vector. Actual native incidents reverse the order of the walls.",
+  "negativeControls": [
+    "A 200 mm square, ray from (50,50) at 45 degrees, with true end gaps. It exits at a corner and must withhold claims of four hits or absorption.",
+    "An early absorber placed on the launch line before the first mirror must withhold the requested completed four-reflection path.",
+    "A native callback within 1 mm of a mirror endpoint must withhold the run even if an actual reflection is computed there.",
+    "A simulated terminal target hit without genuine absorption and a terminated budget cannot qualify."
+  ],
+  "scope": "Numeric controls are synthetic and do not supply dimensions for the source problem. A single genuinely native ray, four finite axis-aligned separated plane mirrors, and one actual interior opaque line segment. No inferred route, no claim of a perfectly closed box, and no persistent ray history."
+}

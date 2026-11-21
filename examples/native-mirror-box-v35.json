@@ -1,0 +1,35 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "model": "native-rectangular-mirror-box",
+    "lengthUnit": "mm",
+    "title": "One native ray in a finite rectangular mirror box",
+    "components": [
+      {
+        "id": "S",
+        "type": "point-source",
+        "parameters": {"x": 55, "y": 140, "brightness": 0.04},
+        "emission": {"mode": "single-ray", "directionDeg": -135.96017456666635}
+      },
+      {"id": "left", "type": "plane-mirror", "parameters": {"x": 0, "y": 90, "orientationDeg": 90, "length": 179.6}},
+      {"id": "right", "type": "plane-mirror", "parameters": {"x": 300, "y": 90, "orientationDeg": 90, "length": 179.6}},
+      {"id": "bottom", "type": "plane-mirror", "parameters": {"x": 150, "y": 0, "orientationDeg": 0, "length": 299.6}},
+      {"id": "top", "type": "plane-mirror", "parameters": {"x": 150, "y": 180, "orientationDeg": 0, "length": 299.6}},
+      {"id": "B", "type": "line-blocker", "parameters": {"x": 200, "y": 60, "orientationDeg": 90, "length": 2}}
+    ]
+  },
+  "requests": [
+    {"id": "left-hit", "kind": "mirror-reflections", "componentId": "left"},
+    {"id": "right-hit", "kind": "mirror-reflections", "componentId": "right"},
+    {"id": "bottom-hit", "kind": "mirror-reflections", "componentId": "bottom"},
+    {"id": "top-hit", "kind": "mirror-reflections", "componentId": "top"},
+    {"id": "target", "kind": "blocker-absorptions", "componentId": "B"}
+  ],
+  "interpretation": {
+    "requestedResult": "Verify one native reflection per finite wall and actual absorption at the target for the given launch.",
+    "stated": ["A04 asks for launch and reverse directions between two interior points with one reflection from each wall."],
+    "derived": ["This independent numeric control launches along the unfolded displacement (-455,-440)."],
+    "assumptions": ["The dimensions, endpoints, corner gaps and finite absorbing target are explicitly chosen for this numeric control."],
+    "unknowns": ["The original A04 rectangle dimensions and point coordinates."]
+  }
+}

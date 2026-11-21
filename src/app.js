@@ -1,4 +1,5 @@
 import {ExplorationUI} from './exploration-ui.js';
+import {MIRROR_BOX_VERSION} from './native-mirror-box.js';
 import {installGrinV25DisplayScale} from './grin-v25-display.js';
 import {isCurved} from './curved-mirrors.js';
 import {QualifiedUI} from './qualified-ui.js';
@@ -313,7 +314,7 @@ function controls() {
       addNumber(sourceParent, component.id, 'emission', 'angleDeg', 'Opening angle (°)', component.emission.angleDeg, { min: 1, max: 180, step: 1 }, disabled);
       addNumber(sourceParent, component.id, 'emission', 'directionDeg', 'Direction (°)', component.emission.directionDeg, { min: -180, max: 180, step: 1 }, component.emission.mode==='full-circle');
       const note = document.createElement('p'); note.className = 'muted';
-      note.textContent = (planar||circular||prism||polygon||thick||curvedEntry||graded) ? 'One exact native ray; the cone-angle field is inactive. 0° right · +90° up · −90° down.' : (multipleSources ? 'Use the toolbar to select this source for Full-circle / Directional mode. ' : '')+
+      note.textContent = (planar||circular||prism||polygon||thick||curvedEntry||graded||session.document.schemaVersion===MIRROR_BOX_VERSION) ? 'One exact native ray; the cone-angle field is inactive. 0° right · +90° up · −90° down.' : (multipleSources ? 'Use the toolbar to select this source for Full-circle / Directional mode. ' : '')+
         '0° right · +90° up · −90° down. Opening is the full cone angle. Selecting Directional starts at Medium global sampling.';
       fieldset.append(note);
     }
@@ -328,6 +329,11 @@ function controls() {
     $('model-label').textContent='Directional fan at a horizontal dielectric interface';
     $('parameter-guidance').textContent='The source is at least 1 mm below the interface. Its whole cone must lie within 75° of the upward normal.';
     $('physical-note').textContent='PhyDemo samples the cone and traces transmission and total internal reflection. Partial reflections are disabled. A single near-critical sample withholds readings for the entire fan.';
+  }
+  if(session.document.schemaVersion===MIRROR_BOX_VERSION){
+    $('model-label').textContent='Rectangular mirror box';
+    $('parameter-guidance').textContent='Give four separated mirror walls, one interior SingleRay and one interior opaque target.';
+    $('physical-note').textContent='Results require one verified reflection on each wall followed by native absorption at the target.';
   }
   if(session.document.schemaVersion===34){
     $('model-label').textContent='Immersed spherical mirror and planar exit';
@@ -384,7 +390,7 @@ function controls() {
   syncSampling();
 }
 function sourcePicker(component) {
-  const choices = [5,7,8,9,10,11,12,13,14,15,16,17,18,24,25,33].includes(session.document.schemaVersion)?[{mode:'single-ray',title:'Single ray (native)',description:'One exact direction; sampling density does not create a cone',icon:angleSourceIcon}]:[
+  const choices = [5,7,8,9,10,11,12,13,14,15,16,17,18,24,25,33,MIRROR_BOX_VERSION].includes(session.document.schemaVersion)?[{mode:'single-ray',title:'Single ray (native)',description:'One exact direction; sampling density does not create a cone',icon:angleSourceIcon}]:[
     { mode: 'full-circle', title: 'Point source (360°)', description: 'Light in every direction', icon: pointSourceIcon },
     { mode: 'directional', title: 'Point source (directional)', description: 'Symmetric cone · 1–180°', icon: angleSourceIcon }
   ];
