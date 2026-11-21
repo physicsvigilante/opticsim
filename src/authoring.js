@@ -179,6 +179,7 @@ export function capabilities() {
       parameters:componentParameterNames(type),
       ...(type==='planar-interface'?{booleanParameters:['partialReflection'],nativeType:'PlaneGlass',normal:'negative to positive side; degrees CCW in y-up'}:{}),
       ...(type===SEMICIRCULAR_TYPE?{booleanParameters:['partialReflection'],nativeType:'Glass',faceIds:['face-flat','face-arc'],geometry:'Native Glass with right-half circular boundary and vertical flat closing segment.'}:{}),
+      ...(type===CAP_TYPE?{booleanParameters:['partialReflection'],nativeType:'Glass',faceIds:['face-flat','face-arc'],geometry:'A circular arc from an explicit base and cap height, closed by a flat chord.'}:{}),
       ...(type===CIRCULAR_TYPE?{booleanParameters:['partialReflection'],nativeType:'CircleGlass',indices:['insideIndex','outsideIndex'],geometry:'Finite 2D circle, not an ideal thin lens or a truncated sphere'}:{}),
       ...(type===PRISM_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-31'],geometry:'Three physical vertices; vertex order defines face labels, not a ray route'}:{}),
       ...(type===POLYGON_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-34','face-41'],geometry:'One strictly convex four-vertex finite region, never a ray route'}:{}),

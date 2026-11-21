@@ -1,0 +1,9 @@
+# Inside-source native circular cap
+
+Explicit `physical.model: native-inside-cap-tracing` selects v32. Give the glass component the type `circular-cap-dielectric` and specify the flat base centre, circle radius and height from the base to the curved pole. In canonical coordinates the base is vertical, the cap extends right and the pole is at x plus the height. The native `Glass` remains a closed path with one circular arc and one flat chord, with no approximation by straight segments.
+
+Choose radius 25–400 mm and height from 0.2 to 1 times radius. Supply both absolute indices, with the interior higher and the ratio at most 1.7. Partial reflection must be disabled. The dense preset samples a 1.5–2° rightward cone from an explicit point on the cap axis. The source must be at least 0.05 mm beyond the base and 1 mm before the pole. One vertical detector on the same axis is placed from 1 mm to four radii beyond the pole with a length of 20–200 mm.
+
+The actual native arc exit and detector callbacks must qualify for every emitted sample. The engine checks the retained boundary, continuity of the samples, directions, Snell consistency and detector clearance. It withholds all accepted observations for incomplete or inconsistent evidence. Request `interface-face-events` on the cap and `detector-hit-events` on the detector for bounded positions and directions.
+
+A27 motivates the geometry. Its illustrated tabletop lies at the base. The public example instead uses an explicitly displaced native probe and a passive detector at the stated axial distance. The source-labelled table-limit calculation requires its own paraxial assumptions. [Example](../examples/inside-cap-v32.json) · [Frozen controls](../evaluation/finite-circular-cap-v1/frozen.json)
