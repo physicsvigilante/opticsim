@@ -1,0 +1,14 @@
+{
+  "extends": "../graded-slab-first-passage-v1/frozen.json",
+  "scope": "Native finite rectangle with a matched planar entrance and a positive index-squared gradient directed into the medium. One true SingleRay enters and travels toward the opposite face. One horizontal passive Detector measures exterior position and direction. Use pinned GrinGlass with trusted sqrt(1-y) in local native coordinates, unit exterior, L=1 mm, no partial reflections. Exact grazing is outside this native study.",
+  "grid": {
+    "anglesFromNormalDeg": [20, 35, 60, 75, 80],
+    "thicknessMm": [0.2, 0.3, 0.4],
+    "translationsMm": [[0, 0], [116, -90]],
+    "sourceDepthMm": 0.1,
+    "detectorGapMm": 0.2,
+    "method": "Each finite rectangle extends from -0.5 to 3 along x relative to the entry point. Launch x=-0.1*tan(i) from y=-0.1. Detector spans that same interval. Trace each grid point with .00025 mm step, 8192 depth and 10000 processed cap."
+  },
+  "criteria": "Observe a completion event and one source root. Entry and exactly one far boundary on the real glass, followed by one detector. Every observed point must agree with the analytical projected path within 0.003 mm; maximum deviations are evidence for the study domain only. Outgoing x direction and detector x must agree with the conserved momentum and Snell prediction within 0.003. The detector endpoints and all rectangle corners require positive clearance. Each processed-limit stop withholds the evidence.",
+  "preservation": "v25 retains its trusted 1.5 offset field, horizontal inside source, numerical step and public contract. Do not claim exact native grazing, arbitrary index input or general error certification."
+}
