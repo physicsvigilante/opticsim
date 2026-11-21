@@ -1,0 +1,7 @@
+# Return through a curved refracting face
+
+Lens Problems 004 and 006 ask respectively for equivalent mirror focus and for the object position that is its own image. The conditional thin-element interpretation and its assumed unit-index exterior are recorded in [the frozen protocol](frozen.json). Commit `b9ace7c` fixed both source hashes, geometry, controls and tolerances before any native run.
+
+For an incident height and reduced slope (y,q), crossing the front face changes q by −(n−1)y/R. Over 20 mm inside the glass the height changes by 20q/n. Reflection changes the slope, measured along the new direction of travel, by −2ny/R for this concave patch. Repeat the translation and front refraction on return. In the zero-thickness limit the power is [2(n−1)+2n]/R. This gives a 150 mm front focus in 004 and a 125 mm nonzero self-conjugate object distance in 006. The native controls use the actual 20 mm separation.
+
+Run `node scripts/build.mjs --test` and `node --test test/refracting-face-mirror-return-study.test.mjs`. Four reflected native rays encountered the detector, front face, mirror, front face and detector in sequence. Their measured return directions crossed the axis at −139.476155 mm and −117.346270 mm for the two cases. The largest difference from the frozen finite-separation paraxial predictions was 0.000760 mm. Four mirror-removed controls traversed the glass and produced only a rightward detector crossing. Raw events are written to a fresh ignored directory per run.
