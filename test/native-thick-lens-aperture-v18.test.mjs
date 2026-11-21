@@ -238,7 +238,13 @@ test('v18 browser provenance is append-only relative to reviewed v17 code, never
   assert.equal(enteringGrinFollowup.v33AppGitBlob,'d65ed1c0a3cc34f5a7c5b83e0e4bcc8a276ac4cd');
   const immersedArcFollowup=JSON.parse(readFileSync(new URL('./fixtures/immersed-arc-port-v34-app-integration.json',import.meta.url),'utf8'));
   assert.equal(immersedArcFollowup.sourceV33AppGitBlob,enteringGrinFollowup.v33AppGitBlob);
-  assert.equal(immersedArcFollowup.v34AppGitBlob,sha);
+  assert.equal(immersedArcFollowup.v34AppGitBlob,'94e5c54e8c9076856b75ac2cce7a574d9e24b3b1');
+  const mirrorBoxFollowup=JSON.parse(readFileSync(new URL('./fixtures/native-mirror-box-v35-app-integration.json',import.meta.url),'utf8'));
+  assert.equal(mirrorBoxFollowup.sourceV34AppGitBlob,immersedArcFollowup.v34AppGitBlob);
+  assert.equal(mirrorBoxFollowup.v35AppGitBlob,'8e2d783783a5b953f58ac2264a1e0e6f7df11ce0');
+  const guideFanFollowup=JSON.parse(readFileSync(new URL('./fixtures/finite-guide-fan-v36-app-integration.json',import.meta.url),'utf8'));
+  assert.equal(guideFanFollowup.sourceV35AppGitBlob,mirrorBoxFollowup.v35AppGitBlob);
+  assert.equal(guideFanFollowup.v36AppGitBlob,sha);
   assert.notEqual(sha,reconciliation.reconciledAppGitBlob,'New v25 UI is not the reviewed v24 browser code');
   assert.notEqual(sha,p.newV18AppGitBlob,'Do not claim new UI matches old reviewed v18 byte identity');
   assert.equal(p.originalV17AppGitBlob,'9d447af4c8fc59ec1e8fdcfbcec0c4d739fc477f');

@@ -71,10 +71,12 @@ test('v35 withholds exact corner escape, a native near-endpoint reflection and e
   assert.equal(rim.observations,null);
   assert.match(rim.native.errors.join(','),/ambiguous finite encounter/);
   const targetRim=original();
-  byId(targetRim,'B').parameters.y-=.95;
-  const rimAtTarget=run(prepareScene(targetRim).document);
-  assert.equal(rimAtTarget.observations,null);
-  assert.match(rimAtTarget.native.errors.join(','),/B: ambiguous finite encounter/);
+  for(const offset of [.95,.9]){
+    byId(targetRim,'B').parameters.y=60-offset;
+    const rimAtTarget=run(prepareScene(targetRim).document);
+    assert.equal(rimAtTarget.observations,null);
+    assert.match(rimAtTarget.native.errors.join(','),/B: ambiguous finite encounter/);
+  }
   const early=original();
   byId(early,'S').emission.directionDeg=0;
   byId(early,'B').parameters.y=byId(early,'S').parameters.y;
@@ -139,4 +141,30 @@ test('v35 withholds a collinear change to the native launch origin before the fi
   assert.equal(changed,true);
   assert.equal(observed.observations,null);
   assert.match(observed.native.errors.join(','),/broken ray continuity/);
+});
+
+test('v35 withholds a route that skips an earlier genuine opaque target intersection',()=>{
+  const p=original(),source=byId(p,'S'),target=byId(p,'B');
+  Object.assign(source.parameters,{x:30,y:70});
+  source.emission.directionDeg=45;
+  Object.assign(target.parameters,{x:40,y:80,length:10});
+  for(const id of ['left','right'])Object.assign(byId(p,id).parameters,{x:id==='left'?0:100,y:50,length:99.6});
+  for(const id of ['bottom','top'])Object.assign(byId(p,id).parameters,{x:50,y:id==='bottom'?0:100,length:99.6});
+  const doc=prepareScene(p).document;
+  assert.match(run(doc).native.errors.join(','),/absorption did not follow/);
+  let omitted=0;
+  const skipsFirstHit={...core,loadDocument(...args){
+    const loaded=core.loadDocument(...args);
+    const blocker=loaded.scene.objs[loaded.idMap.get('B')],intersect=blocker.checkRayIntersects;
+    blocker.checkRayIntersects=function(ray,...rest){
+      const hit=intersect.call(this,ray,...rest);
+      if(hit&&ray.p1.x===30&&ray.p1.y===-70){omitted++;return undefined;}
+      return hit;
+    };
+    return loaded;
+  }};
+  const observed=run(doc,skipsFirstHit);
+  assert.equal(omitted,1);
+  assert.equal(observed.observations,null);
+  assert.match(observed.native.errors.join(','),/incoming segment crossed or approached the opaque target/);
 });

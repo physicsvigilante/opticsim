@@ -57,3 +57,35 @@ test('exact and near corner contacts differ from unqualified geometry',()=>{
   p.physical.geometry.to.x=200;
   assert.equal(result(p).value,null);
 });
+
+test('fractional rectangle coordinates remain exactly on the named reflecting planes',()=>{
+  const width=37.21,height=26.37;
+  const p=numeric(width,height,{x:2.017,y:4.013},{x:12.345,y:5.33});
+  const {value}=result(p);
+  for(const branch of value.branches){
+    assert.equal(branch.status,'conditional');
+    for(const {wall,x,y} of branch.reflectionPoints){
+      if(wall==='left'||wall==='right'){
+        assert.equal(x,wall==='left'?0:width);
+        assert.ok(y>0&&y<height);
+      }else{
+        assert.equal(y,wall==='bottom'?0:height);
+        assert.ok(x>0&&x<width);
+      }
+    }
+  }
+});
+
+test('rounded directions and reported contact coordinates cannot bypass the exact corner band',()=>{
+  const witnesses=[
+    numeric(90.31,90.31,{x:18.062,y:18.062},{x:27.093,y:27.092999976293616}),
+    numeric(100,100,{x:21,y:24},{x:28.999999999999996,y:24.101265796455678})
+  ];
+  for(const p of witnesses){
+    const {value}=result(p),candidate=value.branches.find(b=>b.signs.every(s=>s===1));
+    assert.equal(candidate.status,'numerically-indeterminate');
+    assert.equal(candidate.reasonCode,'NEAR_CORNER_CONTACT');
+    assert.equal(candidate.forward,undefined);
+    assert.equal(candidate.reflectionPoints,undefined);
+  }
+});
