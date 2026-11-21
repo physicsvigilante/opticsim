@@ -4,7 +4,7 @@ import {prepareScene} from '../../src/authoring.js';
 import {evaluateDocument} from '../../scripts/author-scene.mjs';
 
 const core=createRequire(import.meta.url)('../../dist/test-core.cjs');
-export function observeSphericalMirror({distance,height,detectorX,apertureHeight=40}){
+export function observeSphericalMirror({distance,height,detectorX,apertureHeight=40,measureIntersections=true}){
   const components=[
     {id:'S',type:'point-source',parameters:{x:-distance,y:height,brightness:.04},
       emission:{mode:'directional',directionDeg:0,angleDeg:1.8}},
@@ -38,6 +38,7 @@ export function observeSphericalMirror({distance,height,detectorX,apertureHeight
   assert.equal(data.status,'complete');
   const returning=data.events.filter(e=>e.incomingUnit.x<0);
   assert.equal(returning.length,3);
+  if(!measureIntersections)return {doc,summary,returning};
   const intersections=[];
   for(const [i,a] of returning.entries())for(const b of returning.slice(i+1)){
     const ma=a.incomingUnit.y/a.incomingUnit.x,mb=b.incomingUnit.y/b.incomingUnit.x;
