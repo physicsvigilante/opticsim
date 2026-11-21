@@ -1,6 +1,7 @@
 // Deterministic dispatch only. Physics, angular algebra, qualification and
 // native result gating stay in their existing implementations.
 import {analyzePrismAngleQuery,prismAngleCapabilities,PRISM_FACTS_FORMAT,PRISM_QUERY_FORMAT} from './prism-angle-queries.js';
+import {analyzeTwoFaceQuery,twoFaceCapabilities,TWO_FACE_FACTS,TWO_FACE_QUERY} from './perpendicular-dielectric-faces.js';
 import {analyzeLensTrainQuery,lensTrainCapabilities,LENS_FACTS_FORMAT,LENS_QUERY_FORMAT} from './lens-train-queries.js';
 import {analyzeCurvedMirrorQuery,curvedQueryCapabilities,CURVED_FACTS_FORMAT,CURVED_QUERY_FORMAT} from './curved-mirror-queries.js';
 import {assessMethodSuitability,METHOD_SUITABILITY_FORMAT} from './method-suitability.js';
@@ -14,6 +15,7 @@ import {canonicalJSON,isRecord,boundedText} from './qualified-utils.js';
 export const PROBLEM_FORMAT='opticsim-problem-v1';
 const own=(x,k)=>Object.hasOwn(x,k);
 const prismKinds=new Set(prismAngleCapabilities().kinds);
+const twoFaceKinds=new Set(twoFaceCapabilities().kinds);
 const lensKinds=new Set(lensTrainCapabilities().kinds);
 const curvedKinds=new Set(curvedQueryCapabilities().kinds);
 const inverseKinds=new Set(reducedInverseCapabilities().kinds);
@@ -23,6 +25,7 @@ const observableKinds=observableCapabilities().kinds;
 // References the live fact/query formats, not a second physics validator.
 const factContracts=Object.freeze({
  [PRISM_QUERY_FORMAT]:[PRISM_FACTS_FORMAT],
+ [TWO_FACE_QUERY]:[TWO_FACE_FACTS],
  [LENS_QUERY_FORMAT]:[LENS_FACTS_FORMAT],
  [CURVED_QUERY_FORMAT]:[CURVED_FACTS_FORMAT,'authoring-scene'],
  [INVERSE_QUERY_FORMAT]:[INVERSE_FACTS_FORMAT],
@@ -30,6 +33,7 @@ const factContracts=Object.freeze({
  [MIRROR_QUERY_FORMAT]:[MIRROR_FACTS_FORMAT]
 });
 const requestKindRegistry=()=>({
+ ...Object.fromEntries([...twoFaceKinds].map(k=>[k,{route:'conditional-analytical',contract:TWO_FACE_QUERY}])),
  ...Object.fromEntries(prismAngleCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:PRISM_QUERY_FORMAT}])),
  ...Object.fromEntries(lensTrainCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:LENS_QUERY_FORMAT}])),
  ...Object.fromEntries(reducedInverseCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:INVERSE_QUERY_FORMAT}])),
@@ -46,6 +50,7 @@ export function problemWorkflowCapabilities(){
     required:['format','physical','requests'],optional:['interpretation','illustration','verifyNative'],
     physical:'Existing minimal authoring request, reduced prism/lens-train/angular/mirror/inverse facts, or null. No invented apparatus fields.',
     requestKinds:requestKindRegistry(),
+    perpendicularDielectricFaces:twoFaceCapabilities(),
     methodSuitability:{format:METHOD_SUITABILITY_FORMAT,mode:'exact-typed-request-diagnostic',
       contractFamilies:structuredClone(factContracts),
       limits:['No natural-language interpretation, image parsing or automatic method aliasing.',
@@ -66,8 +71,10 @@ function validateEnvelope(input){
     if(!isRecord(r))throw Error('Invalid requested quantity');
     boundedText(r.id,'Request ID',64);boundedText(r.kind,'Request kind',80);
     if(ids.has(r.id))throw Error('Duplicate request ID');ids.add(r.id);
-    if(prismKinds.has(r.kind)||lensKinds.has(r.kind)||curvedKinds.has(r.kind)||inverseKinds.has(r.kind)||mirrorKinds.has(r.kind)||angularKinds.has(r.kind)){if(++angularCount>4)throw Error('At most four analytical calculations per problem');}
-    if(prismKinds.has(r.kind)){
+    if(twoFaceKinds.has(r.kind)||prismKinds.has(r.kind)||lensKinds.has(r.kind)||curvedKinds.has(r.kind)||inverseKinds.has(r.kind)||mirrorKinds.has(r.kind)||angularKinds.has(r.kind)){if(++angularCount>4)throw Error('At most four analytical calculations per problem');}
+    if(twoFaceKinds.has(r.kind)){
+      if(Object.keys(r).some(k=>!['id','kind'].includes(k)))throw Error('Unsupported perpendicular-face request field');
+    }else if(prismKinds.has(r.kind)){
       if(Object.keys(r).some(k=>!['id','kind'].includes(k)))throw Error('Unsupported prism-angle request field');
     }else if(lensKinds.has(r.kind)){
       if(Object.keys(r).some(k=>!['id','kind'].includes(k)))throw Error('Unsupported lens-train request field');
@@ -92,17 +99,18 @@ export function planProblem(input){
   const authoredNativeRequests=request.requests.filter(r=>own(observableKinds,r.kind));
   const needsNative=authoredNativeRequests.length>0||request.verifyNative===true;
   let preparation=null,scene=null,sceneConflict=false;
-  if(physical&&physical.format!==PRISM_FACTS_FORMAT&&physical.format!==LENS_FACTS_FORMAT&&physical.format!==ANGLE_FACTS_FORMAT&&physical.format!==MIRROR_FACTS_FORMAT&&physical.format!==CURVED_FACTS_FORMAT&&physical.format!==INVERSE_FACTS_FORMAT){
+  if(physical&&physical.format!==TWO_FACE_FACTS&&physical.format!==PRISM_FACTS_FORMAT&&physical.format!==LENS_FACTS_FORMAT&&physical.format!==ANGLE_FACTS_FORMAT&&physical.format!==MIRROR_FACTS_FORMAT&&physical.format!==CURVED_FACTS_FORMAT&&physical.format!==INVERSE_FACTS_FORMAT){
     preparation=resolveProblemRequest(physical,{illustration:request.illustration===true});
     scene=preparation.prepared?.document??null;
   }
   const calculations=[],results=[];
   for(const r of request.requests){
-    if(prismKinds.has(r.kind)){
-      if(!physical){results.push(empty(r,'needs-information','NO_PHYSICAL_FACTS','Explicit prism angle, incidence, material indices or deviation facts are required.'));continue;}
-      const {id,...fields}=r,query={format:PRISM_QUERY_FORMAT,...fields};
+    if(prismKinds.has(r.kind)||twoFaceKinds.has(r.kind)){
+      const twoFace=twoFaceKinds.has(r.kind);
+      if(!physical){results.push(empty(r,'needs-information','NO_PHYSICAL_FACTS',twoFace?'Explicit face and material facts are required.':'Explicit prism angle, incidence, material indices or deviation facts are required.'));continue;}
+      const {id,...fields}=r,query={format:twoFace?TWO_FACE_QUERY:PRISM_QUERY_FORMAT,...fields};
       try{
-        const result=analyzePrismAngleQuery(physical,query);
+        const result=twoFace?analyzeTwoFaceQuery(physical,query):analyzePrismAngleQuery(physical,query);
         calculations.push({id,query,result});
         results.push({id,kind:r.kind,status:result.status,value:result.value??null,method:result.method,
           reasonCode:result.reasonCode??null,reason:result.reason??null,
@@ -110,7 +118,7 @@ export function planProblem(input){
           ...(result.boundary?{boundary:result.boundary}:{}),assumptions:result.assumptions,
           limitations:result.limitations,nativeObservation:false,nativePathVerified:false});
       }catch(e){results.push(empty(r,e.code==='MISSING_FACTS'?'needs-information':
-        ['UNSUPPORTED_FACTS','UNSUPPORTED_MODEL','UNSUPPORTED_SCOPE'].includes(e.code)?'unavailable':'invalid-input',e.code||'INVALID_PRISM_FACTS',e.message));}
+        ['UNSUPPORTED_FACTS','UNSUPPORTED_MODEL','UNSUPPORTED_SCOPE'].includes(e.code)?'unavailable':'invalid-input',e.code||(twoFace?'INVALID_TWO_FACE_FACTS':'INVALID_PRISM_FACTS'),e.message));}
     }else if(lensKinds.has(r.kind)){
       if(!physical){results.push(empty(r,'needs-information','NO_PHYSICAL_FACTS','Explicit object position, focal lengths and lens locations are required.'));continue;}
       const {id,...fields}=r,query={format:LENS_QUERY_FORMAT,...fields};
