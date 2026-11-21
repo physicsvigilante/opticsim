@@ -26,6 +26,7 @@ For the rear focal distance of two coaxial refracting surfaces, use the [two-sur
 For a finite object's signed image distance and magnification through one to four ordered refracting surfaces, use the [surface conjugate query](docs/REFRACTING-SURFACE-CONJUGATE.md).
 For a curved entrance face with a rear reflector, use the [return-focus and self-conjugate queries](docs/REFRACTING-MIRROR-RETURN.md).
 For a lens of known focal length placed in another medium, use the [calibrated lens immersion query](docs/CALIBRATED-LENS-IMMERSION.md).
+For a flat liquid surface in front of a fixed lens, use the [image-distance and liquid-index queries](docs/PLANAR-INTERFACE-LENS-IMAGING.md).
 
 For a finite parallel Beam passing through an ideal lens and then a finite aperture, see the [schema-v28 authoring contract and worked example](docs/POST-LENS-APERTURE.md).
 
