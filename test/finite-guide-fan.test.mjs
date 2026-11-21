@@ -76,6 +76,26 @@ test('v36 withholds lost paths, changed detector power and stale proof',async()=
   assert.equal(stopped.observations,null);
 });
 
+test('v36 distinguishes finite detector misses from omitted hits and numerical endpoints',async()=>{
+  const p=original(),doc=prepareScene(p).document,detector=p.components[2].parameters;
+  const hitRequests=[...fixture.requests,{id:'positions',kind:'detector-hit-events',componentId:'D'}];
+  const events=evaluateDocument(doc,core,hitRequests).summary.observations.detectorHitEventsById.D.events;
+  detector.y=events[0].pointMm.y+detector.length/2;
+  const nearEnd=run(prepareScene(p).document);
+  assert.equal(nearEnd.observations,null);
+  assert.match(nearEnd.native.errors.join(','),/ambiguous downstream detector endpoint/);
+  const omitted={...core,loadDocument(...args){
+    const loaded=core.loadDocument(...args);
+    loaded.scene.objs[loaded.idMap.get('D')].checkRayIntersects=()=>undefined;
+    return loaded;
+  }};
+  assert.equal(run(doc,omitted).observations,null);
+  detector.y=400;
+  const missed=prepareScene(p).document;
+  const {results}=await evaluateObservables(missed,fixture.requests,run(missed));
+  assert.deepEqual(results.map(r=>r.value),[counts,10,0]);
+});
+
 test('v36 rejects unsupported material, finite geometry and legacy authoring',()=>{
   for(const edit of [
     p=>delete p.model,

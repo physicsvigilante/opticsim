@@ -82,7 +82,7 @@ export function guideFanAudit(doc,scene,idMap){
       const heading=direction(ray),origin={...ray.p1},angle=angles[i];
       if(active.has(ray)||!samePoint(origin,{x:s.x,y:-s.y})||!hasBrightness(ray)||
         !headingMatches(heading,{x:Math.cos(angle),y:Math.sin(angle)}))fault??='unexpected native fan launch';
-      active.set(ray,{origin,heading,stage:'incoming',bounces:0,detected:false});
+      active.set(ray,{origin,heading,stage:'incoming',bounces:0,expectedDetector:false,detected:false});
     }
     return result;
   };
@@ -119,6 +119,14 @@ export function guideFanAudit(doc,scene,idMap){
         if(e.faceId===farFace)counts[state.bounces?'guidedFarFace':'directFarFace']++;
         else if(side&&state.bounces===0)counts.sideLeak++;
         else fault??='unqualified exit from the guide';
+        // The remainder is free space. Check the finite detector aperture
+        // against this actual outgoing ray and require its native callback
+        // when it should cross well inside the segment.
+        const detectorY=-ray.p1.y+(d.x-ray.p1.x)*after.y/after.x;
+        const edgeGap=Math.abs(detectorY-d.y)-d.length/2;
+        if(!Number.isFinite(edgeGap)||Math.abs(edgeGap)<=clearance+1e-7)
+          fault??='ambiguous downstream detector endpoint';
+        state.expectedDetector=edgeGap<0;
         state.stage='exited';
       }
       state.origin={...ray.p1};
@@ -128,7 +136,7 @@ export function guideFanAudit(doc,scene,idMap){
   };
   gauge.onRayIncident=function(ray,index,point,...rest){
     const state=active.get(ray),before=direction(ray);
-    if(!arrives(state,ray,point,before)||state?.stage!=='exited'||state.detected||
+    if(!arrives(state,ray,point,before)||state?.stage!=='exited'||!state.expectedDetector||state.detected||
       !hasBrightness(ray)||before.x<=0||!near(point.x,d.x)||Math.abs(point.y+d.y)>=d.length/2-clearance)
       fault??='unqualified downstream detector encounter';
     const expected=expectedDetectorPassage(this,ray,point,expectedPower,detectorSign);
@@ -146,7 +154,7 @@ export function guideFanAudit(doc,scene,idMap){
       const guide=interfaces?.[glass.id],sensor=detectors?.[detector.id];
       if(fault)return 'Native finite guide: '+fault+'.';
       if(starts!==1||emitted!==angles.length||warnings.length||active.size!==emitted||
-        [...active.values()].some(ray=>ray.stage!=='exited')||
+        [...active.values()].some(ray=>ray.stage!=='exited'||ray.detected!==ray.expectedDetector)||
         counts.directFarFace+counts.guidedFarFace+counts.sideLeak!==emitted||
         guide?.interactions!==contacts||guide.transmitted!==emitted*2||
         guide.totalInternalReflections!==reflections||guide.reflected!==reflections||
