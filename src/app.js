@@ -201,7 +201,7 @@ function controls() {
   const mixed = session.document.physics.model === 'lens-mirror-return-geometric';
   const parallelLens = session.document.physics.model === 'native-parallel-lens-tracing';
   const parallelSlab = session.document.physics.model === 'native-parallel-planar-tracing';
-  const parallelSemi = session.document.physics.model === 'native-parallel-semicircular-tracing';
+  const parallelSemi = ['native-parallel-semicircular-tracing','native-curved-entry-beam-tracing'].includes(session.document.physics.model);
   const curvedEntry = session.document.physics.model === 'native-curved-entry-observation-tracing';
   const graded = session.document.physics.model === 'native-bounded-grin-tracing';
   const parallelTwoLens = session.document.physics.model === 'native-parallel-two-lens-tracing';

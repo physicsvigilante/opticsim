@@ -56,6 +56,17 @@ test('stopped or unverified runs withhold curved-entry measurements',async()=>{
     return loaded;
   }};
   assert.equal(evaluateDocument(doc,disturbed,fixture.requests).summary.observations,null);
+  const shifted={...core,loadDocument(...args){
+    const loaded=core.loadDocument(...args),glass=loaded.scene.objs[loaded.idMap.get('G')];
+    const incident=glass.onRayIncident;
+    glass.onRayIncident=function(ray,index,point,...rest){
+      const result=incident.call(this,ray,index,point,...rest);
+      if(point.x>1){ray.p1.y+=.001;ray.p2.y+=.001;}
+      return result;
+    };
+    return loaded;
+  }};
+  assert.equal(evaluateDocument(doc,shifted,fixture.requests).summary.observations,null);
   doc.simulation.processedRayLimit=1;
   assert.equal(evaluateDocument(doc,core,fixture.requests).summary.observations,null);
 });

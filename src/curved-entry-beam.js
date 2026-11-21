@@ -47,7 +47,7 @@ export function curvedEntryBeamAudit(doc, scene, idMap) {
       const d = direction(ray);
       if (paths.has(ray) || ray.p1.x !== expected[i].x || -ray.p1.y !== expected[i].y ||
           !(d.x < 0 && Math.abs(d.y) < 1e-9)) fault = true;
-      paths.set(ray,0);
+      paths.set(ray,{stage:0,x:ray.p1.x,y:ray.p1.y,direction:d});
     }
     return result;
   };
@@ -59,16 +59,18 @@ export function curvedEntryBeamAudit(doc, scene, idMap) {
     // both coordinates before Glass mutates the primary ray in place.
     const dx = point.x-ray.p1.x, dy = ray.p1.y-point.y;
     if (!(dx*before.x + dy*before.y > 0 && Math.abs(dx*before.y-dy*before.x)<1e-6)) fault = true;
-    const stage = paths.get(ray);
+    const previous = paths.get(ray);
+    if (!previous || previous.x!==ray.p1.x || previous.y!==ray.p1.y ||
+        !(Math.hypot(before.x-previous.direction.x,before.y-previous.direction.y)<1e-9)) fault = true;
     const result = incident.call(this,ray,index,point,...rest);
     const d = direction(ray), projection = d.x*event.normal.x + d.y*event.normal.y;
     const tangent = v => v.x*event.normal.y-v.y*event.normal.x;
     if (!(Math.abs(event.incidentIndex*tangent(before)-event.destinationIndex*tangent(d))<1e-7) ||
         !(Math.hypot(ray.p1.x-event.point.x,ray.p1.y+event.point.y)<1e-6)) fault = true;
     if (event.invalid || !result || result.isAbsorbed || result.isUndefinedBehavior || result.newRays?.length) fault = true;
-    if (stage === 0 && event.faceId === 'face-arc' && event.from === 'outside' && projection < -1e-5)
-      paths.set(ray,1);
-    else if (stage === 1 && event.faceId === 'face-flat' && event.from === 'inside' && projection > 1e-5) {
+    if (previous?.stage === 0 && event.faceId === 'face-arc' && event.from === 'outside' && projection < -1e-5)
+      paths.set(ray,{stage:1,x:ray.p1.x,y:ray.p1.y,direction:d});
+    else if (previous?.stage === 1 && event.faceId === 'face-flat' && event.from === 'inside' && projection > 1e-5) {
       paths.delete(ray);
       exits++;
       minY = Math.min(minY,event.point.y);
@@ -82,7 +84,7 @@ export function curvedEntryBeamAudit(doc, scene, idMap) {
       const meter = interfaces?.[g.id];
       if (fault || starts !== 1 || paths.size || warnings.length || emitted !== expected.length ||
           exits !== emitted || meter?.interactions !== 2*emitted || meter.transmitted !== meter.interactions ||
-          meter.faces['face-flat'].interactions !== exits || meter.faces['face-arc'].interactions !== exits)
+          meter.faces?.['face-flat']?.interactions !== exits || meter.faces?.['face-arc']?.interactions !== exits)
         return 'Curved-entry Beam boundary samples could not be verified.';
       return null;
     },
