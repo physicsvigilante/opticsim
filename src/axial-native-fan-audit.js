@@ -1,5 +1,5 @@
 // Observer for a bounded, explicitly qualified sequence of actual native interactions.
-import {expectedDetectorPower,preservesDetectorPassage} from './native-detector-audit.js';
+import {expectedDetectorPassage,preservesDetectorPassage} from './native-detector-audit.js';
 const rad=Math.PI/180;
 const near=(a,b,tolerance=1e-6)=>Number.isFinite(a)&&Math.abs(a-b)<=tolerance;
 export function nativeFanOffsets(cone,density){
@@ -15,6 +15,8 @@ function direction(ray){
 export function installAxialFanAudit({doc,scene,idMap,source,mirror,detector,faces,sequence,key,label}){
   const expected=nativeFanOffsets(source.emission.angleDeg,doc.simulation.rayDensity);
   const axis=source.emission.directionDeg*rad;
+  const channelBrightness=source.parameters.brightness/doc.simulation.rayDensity/2;
+  const hasAuthoredBrightness=ray=>ray.brightness_s===channelBrightness&&ray.brightness_p===channelBrightness;
   const live=new Map();
   let starts=0,finished=0,fault=null;
   const emitter=scene.objs[idMap.get(source.id)],start=emitter.onSimulationStart;
@@ -23,8 +25,9 @@ export function installAxialFanAudit({doc,scene,idMap,source,mirror,detector,fac
     if(result?.newRays?.length!==expected.length||result?.brightnessScale!==1)fault??='unexpected emission count or brightness';
     else for(const [i,ray] of result.newRays.entries()){
       const d=direction(ray),s=source.parameters;
-      if(live.has(ray)||ray.p1.x!==s.x||ray.p1.y!==-s.y||
-        !near(d.x,Math.cos(axis+expected[i]),1e-9)||!near(d.y,Math.sin(axis+expected[i]),1e-9))fault??='unexpected launch direction or position';
+      if(live.has(ray)||ray.p1.x!==s.x||ray.p1.y!==-s.y||!hasAuthoredBrightness(ray)||
+        !near(d.x,Math.cos(axis+expected[i]),1e-9)||!near(d.y,Math.sin(axis+expected[i]),1e-9))
+        fault??='unexpected launch direction, position or brightness';
       live.set(ray,{stage:0,p:{...ray.p1},d});
     }
     return result;
@@ -34,12 +37,12 @@ export function installAxialFanAudit({doc,scene,idMap,source,mirror,detector,fac
     obj.onRayIncident=function(ray,index,point,...rest){
       const state=live.get(ray),before=direction(ray),p=c.parameters;
       const dx=point.x-ray.p1.x,dy=point.y-ray.p1.y;
-      if(!state||sequence[state.stage]!==c||!near(state.p.x,ray.p1.x)||!near(state.p.y,ray.p1.y)||
+      if(!state||sequence[state.stage]!==c||!hasAuthoredBrightness(ray)||!near(state.p.x,ray.p1.x)||!near(state.p.y,ray.p1.y)||
         !near(state.d.x,before.x,1e-9)||!near(state.d.y,before.y,1e-9)||
         !(dx*before.x+dy*before.y>0)||!near(dx*before.y,dy*before.x))fault??=c.id+': unexpected incoming encounter';
-      const power=c===detector?expectedDetectorPower(this,ray,{x:before.x,y:-before.y}):null;
+      const passage=c===detector?expectedDetectorPassage(this,ray,{x:before.x,y:-before.y},point):null;
       const result=incident.call(this,ray,index,point,...rest),after=direction(ray);
-      if(!near(ray.p1.x,point.x)||!near(ray.p1.y,point.y)||result?.isAbsorbed||
+      if(!near(ray.p1.x,point.x)||!near(ray.p1.y,point.y)||!hasAuthoredBrightness(ray)||result?.isAbsorbed||
         result?.isUndefinedBehavior||result?.newRays?.length)fault??=c.id+': unexpected native outgoing branch';
       if(c===mirror){
         const n={x:(point.x-p.x+p.radius)/p.radius,y:(point.y+p.y)/p.radius};
@@ -51,7 +54,7 @@ export function installAxialFanAudit({doc,scene,idMap,source,mirror,detector,fac
         if(!near(point.x,p.x)||!(before.x*after.x>0))fault??=c.id+': unexpected plane encounter';
         if(c===detector){
           if(Math.abs(point.y+p.y)>=p.length/2-.1||!near(before.x,after.x,1e-9)||!near(before.y,after.y,1e-9)||
-            !preservesDetectorPassage(this,ray,point,result,power))fault??=c.id+': uncertain detector direction, rim clearance or signed power';
+            !preservesDetectorPassage(this,ray,point,result,passage))fault??=c.id+': uncertain detector direction, rim clearance or signed power';
         }else{
           const [from,to]=before.x>0?[p.negativeIndex,p.positiveIndex]:[p.positiveIndex,p.negativeIndex];
           if(!near(from*before.y,to*after.y,1e-8))fault??=c.id+': uncertain refraction';

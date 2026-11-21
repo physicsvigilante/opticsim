@@ -69,3 +69,26 @@ test('v34 rejects ambiguous spaces, incomplete callback paths and absent evidenc
   doc.simulation.processedRayLimit=1;
   assert.equal(evaluateDocument(doc,core,fixture.requests).summary.observations,null);
 });
+
+test('v34 withholds altered brightness at emission, reflection, refraction or detection',()=>{
+  const doc=prepareScene(original()).document;
+  const {scene}=core.loadDocument(doc);
+  for(const [i,obj] of scene.objs.entries()){
+    const name=i===0?'onSimulationStart':'onRayIncident';
+    const prototype=Object.getPrototypeOf(obj),delegate=prototype[name];
+    let changed=0;
+    prototype[name]=function(...args){
+      const result=delegate.apply(this,args);
+      const ray=i===0?result.newRays[0]:args[0];
+      ray.brightness_s*=.5;
+      changed++;
+      return result;
+    };
+    try{
+      assert.equal(evaluateDocument(doc,core,fixture.requests).summary.observations,null);
+      assert.ok(changed>0);
+    }finally{
+      prototype[name]=delegate;
+    }
+  }
+});
