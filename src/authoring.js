@@ -1,3 +1,4 @@
+import {SLAB_ARC_MODEL} from './slab-arc-return.js';
 import {CURVED_BEAM_MODEL} from './curved-entry-beam.js';
 import {REFRACTIVE_FAN_MODEL} from './refractive-fan.js';
 import {POST_LENS_MODEL} from './post-lens-aperture.js';
@@ -88,6 +89,7 @@ export function capabilities() {
       geometry:'Entire emission segment lies within coordinate bounds, outside every surface/medium boundary and detector supporting line. First emitted samples near finite stop/lens endpoints are refused. Beam starting medium must be uniform.',
       execution:'Native pinned Beam emits all deterministic samples; density is numerical not a continuous source property. Brightness exceeding ray density is refused to prevent native saturation.',
       limitations:'No image reconstruction, PSF, diffraction, radiometric power, arbitrary composite optics or source-to-detector ancestry.'},
+    slabArcReturn:{schemaVersion:31,model:SLAB_ARC_MODEL,selection:'Select physical.model explicitly and use dense-v1.',scope:'One directional fan, two parallel interfaces, a separated concave spherical mirror and one exterior detector.'},
     curvedEntryBeam:{schemaVersion:30,model:CURVED_BEAM_MODEL,selection:'Select physical.model explicitly.',scope:'One horizontal leftward Beam through a finite right semicircular dielectric. Returns sampled flat-face y extrema in mm.'},
     refractiveFan:{schemaVersion:29,model:REFRACTIVE_FAN_MODEL,selection:'Set physical.model explicitly. Optional physical.rayDensity overrides the numerical preset.',scope:'One directional fan below one horizontal interface. Partial reflection disabled. Entire fan withheld at near-critical samples.'},
     postLensAperture:{schemaVersion:28,model:POST_LENS_MODEL,selection:'Set physical.model explicitly. Historical unmarked requests keep their existing selection.',scope:'One rightward horizontal Beam, one centered ideal lens, one downstream vertical finite aperture and 0–1 farther vertical detectors. Minimum plane gap 1 mm. All emitted samples must meet the lens. Aperture and detector finite misses are allowed. Optical clearance >0.1 mm plus 0.001 mm admission reserve, checked at native completion.'},
@@ -217,7 +219,7 @@ export function inspectAuthoringRequest(request){
     try{scale=units(request.lengthUnit,'$.lengthUnit');}
     catch(error){issues.push(...error.issues);}
   }
-  if(own(request,'model')&&![POST_LENS_MODEL,REFRACTIVE_FAN_MODEL,CURVED_BEAM_MODEL].includes(request.model))issues.push(issue('$.model','UNSUPPORTED_MODEL','Unknown explicit physical model'));
+  if(own(request,'model')&&![POST_LENS_MODEL,REFRACTIVE_FAN_MODEL,CURVED_BEAM_MODEL,SLAB_ARC_MODEL].includes(request.model))issues.push(issue('$.model','UNSUPPORTED_MODEL','Unknown explicit physical model'));
   if(own(request,'runPolicy')&&(typeof request.runPolicy!=='string'||!own(policies,request.runPolicy)))
     issues.push(issue('$.runPolicy','UNSUPPORTED_POLICY','Use a run policy exposed by capabilities()'));
   if(own(request,'title')&&(typeof request.title!=='string'||request.title.length>120))
@@ -314,6 +316,7 @@ function camera(components) {
     zoom:isGrinV25?80:Math.max(.03,Math.min(2,.85*1200/width,.85*700/height))};
 }
 function selectRequestComposition(request) {
+  if(request.model===SLAB_ARC_MODEL)return {model:SLAB_ARC_MODEL,schemaVersion:31,adapterVersion:31};
   if(request.model===CURVED_BEAM_MODEL)return {model:CURVED_BEAM_MODEL,schemaVersion:30,adapterVersion:30};
   if(request.model===REFRACTIVE_FAN_MODEL)return {model:REFRACTIVE_FAN_MODEL,schemaVersion:29,adapterVersion:29};
   return request.model===POST_LENS_MODEL ? {model:POST_LENS_MODEL,schemaVersion:28,adapterVersion:28} : selectAuthoringComposition(request.components);

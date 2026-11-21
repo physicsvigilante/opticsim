@@ -1,3 +1,4 @@
+import {slabArcReturnAudit} from './slab-arc-return.js';
 import {curvedEntryBeamAudit} from './curved-entry-beam.js';
 import {installRefractiveFanAudit} from './refractive-fan.js';
 import {installPostLensAudit} from './native-post-lens-audit.js';
@@ -92,6 +93,7 @@ export function loadDocument(doc, width, height) {
     endpointAudits.set(scene,{key:'v27EndpointsVerified',finish:installV27EndpointAudit(doc,scene,compiled.idMap)});
   if(doc.schemaVersion===28)
     endpointAudits.set(scene,{key:'v28EndpointsVerified',finish:installPostLensAudit(doc,scene,compiled.idMap)});
+  if(doc.schemaVersion===31) endpointAudits.set(scene,slabArcReturnAudit(doc,scene,compiled.idMap));
   if(doc.schemaVersion===30) endpointAudits.set(scene,curvedEntryBeamAudit(doc,scene,compiled.idMap));
   if(doc.schemaVersion===29)
     endpointAudits.set(scene,{key:'v29FanVerified',finish:installRefractiveFanAudit(doc,scene,compiled.idMap)});
@@ -240,7 +242,7 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
   let endpointsVerified = false;
   if (endpointAudit && nativeEvent==='simulationComplete' && !errors.length &&
       simulator.totalTruncation===0 && simulator.totalUndefinedBehavior===0) {
-    const issue = endpointAudit.finish(meter?.emitted,interfacesById,warnings);
+    const issue = endpointAudit.finish(meter?.emitted,interfacesById,warnings,mirrorMeter?.byId,detectorMeter?.byId);
     if (issue) errors.push(issue);
     else {
       endpointsVerified = true;
@@ -286,6 +288,6 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
 }
 export function classifyRun(event, data) {
   return data.errors.length ? 'failed' : event === 'simulationStop' ? 'stopped' :
-    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false || data.v28EndpointsVerified===false || data.v29FanVerified===false || data.v30CurvedBeamVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
+    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false || data.v28EndpointsVerified===false || data.v29FanVerified===false || data.v30CurvedBeamVerified===false || data.v31SlabArcVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
 }
 export { Scene, Simulator };

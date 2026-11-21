@@ -1,0 +1,6 @@
+{
+  "format": "opticsim-v31-browser-app-integration-provenance-v1",
+  "sourceV30AppGitBlob": "15655cc6ea8a25aea7fc0758c111841fd60bee51",
+  "v31AppGitBlob": "64f74f2cf8bc81ad87a8b92d03612ee0975962d2",
+  "scope": "Directional source mode and guidance for the slab and spherical mirror return."
+}
