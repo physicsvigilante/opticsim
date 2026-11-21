@@ -1,0 +1,16 @@
+{
+  "case": "A12",
+  "problem": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/003.png",
+  "sha256": "d98c8b3aa6086b340c3d038d9821baf4be516bec27eb7892b94286bc7bed170d",
+  "pin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "stated": "Concave spherical mirror of radius 20 cm, object on the principal axis 30 cm away. Insert a 6 cm parallel glass slab of index 1.5 between the object and the centre of curvature, faces perpendicular to the axis. Asked for the changes in image position and size.",
+  "model": "Ideal homogeneous unit-index exterior and paraxial first reflected image. Origin at mirror pole, positive x right, mirror faces left, object x=-300 mm. Image falls between the mirror and the slab. Only the incoming passage through the slab precedes this image. Absolute object height is unknown; compare magnifications.",
+  "cases": [
+    {"id":"bare","facesXmm":[],"expectedXmm":-150,"expectedMagnification":-0.5},
+    {"id":"slab","facesXmm":[-285,-225],"expectedXmm":-155.55555555555554,"expectedMagnification":-0.5555555555555556},
+    {"id":"translated","facesXmm":[-275,-215],"expectedXmm":-155.55555555555554,"expectedMagnification":-0.5555555555555556}
+  ],
+  "predictions": "Reduced input distance changes from 300 to 280 mm. The image moves 50/9 mm farther from the mirror; magnitude of transverse magnification grows by factor 10/9. The two inside-the-gap placements have the same paraxial result.",
+  "nativeControls": "Compile one actual concave ArcMirror of radius 200 mm, aperture 40 mm and normal 180 degrees, and zero or two true PlaneGlass half-planes with telescoping index ratios and partial reflection disabled. Use a real horizontal symmetric AngleSource of 1.8 degree total cone at x=-300 mm with density 1 and brightness .04. Run source y=0 and y=1 mm independently to probe transverse response. Use a vertical passive Detector at x=-100 mm of length 60 mm. Require complete clean native execution, each emitted sample reaching the mirror and crossing the Detector on return, and actual crossings of both glass faces in both directions for slab runs. From returning detector callback directions, intersect distinct outgoing lines without using an analytical image to construct a ray. The observed extrapolations must be within 0.15 mm axially and 0.025 mm transversely of the paraxial control. The assumed source aperture, location within the allowed interval, sampling and 1 mm probe height are study choices.",
+  "scope": "Test-only native composition first. The slab is finite in thickness, laterally unbounded. Finite spherical aberration remains observable. No contact reflector, assumed absolute image size, detected image or changes to public authoring."
+}
