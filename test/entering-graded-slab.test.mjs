@@ -69,3 +69,62 @@ test('ambiguous placement, failed step evidence and stop withhold v33 measuremen
   const run=evaluateDocument(doc,stopped,fixture.requests).summary;
   assert.equal(run.native.status,'stopped');assert.equal(run.observations,null);
 });
+
+test('v33 withholds a nonpassive detector even if its signed reading is correct',async()=>{
+  const doc=prepareScene(original()).document;
+  const loaded=core.loadDocument(doc);
+  const detectorPrototype=Object.getPrototypeOf(loaded.scene.objs[loaded.idMap.get('D')]);
+  const nativeDetector=detectorPrototype.onRayIncident;
+  const mutations=[
+    ray=>{ray.brightness_s*=.5;ray.brightness_p*=.5;},
+    ray=>{ray.brightness_s*=2;ray.brightness_p*=2;},
+    ray=>{ray.brightness_s+=ray.brightness_p;ray.brightness_p=0;},
+    (ray,point)=>{point.x+=.01;ray.p1.x=point.x;ray.p2.x+=.01;}
+  ];
+  for(const mutate of mutations){
+    let calls=0;
+    detectorPrototype.onRayIncident=function(ray,index,point,...rest){
+      const result=nativeDetector.call(this,ray,index,point,...rest);
+      mutate(ray,point);
+      calls++;
+      return result;
+    };
+    try{
+      const {summary}=evaluateDocument(doc,core,fixture.requests);
+      assert.equal(calls,1);
+      assert.equal(summary.observations,null);
+      const {results}=await evaluateObservables(doc,fixture.requests,summary);
+      assert.ok(results.every(result=>result.value===null));
+    }finally{
+      detectorPrototype.onRayIncident=nativeDetector;
+    }
+  }
+});
+
+test('v33 withholds powered rays that disagree with the authored SingleRay across the transparent slab',()=>{
+  const doc=prepareScene(original()).document;
+  const {scene}=core.loadDocument(doc);
+  const hooks=[
+    [scene.objs[0],'onSimulationStart',(_args,result)=>{result.newRays[0].brightness_p*=2;return true;}],
+    [scene.objs[1],'onRayIncident',([ray,,point])=>{
+      if(Math.abs(point.y+.3)>1e-10)return false;
+      ray.brightness_s*=2;
+      return true;
+    }]
+  ];
+  for(const [object,name,mutate] of hooks){
+    const prototype=Object.getPrototypeOf(object),delegate=prototype[name];
+    let changed=0;
+    prototype[name]=function(...args){
+      const result=delegate.apply(this,args);
+      if(mutate(args,result))changed++;
+      return result;
+    };
+    try{
+      assert.equal(evaluateDocument(doc,core,fixture.requests).summary.observations,null);
+      assert.equal(changed,1);
+    }finally{
+      prototype[name]=delegate;
+    }
+  }
+});
