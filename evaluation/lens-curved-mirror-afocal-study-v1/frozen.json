@@ -1,0 +1,16 @@
+{
+  "format":"opticsim-lens-curved-mirror-afocal-study-v1",
+  "upstreamCommit":"811f508d2b070898c241a568b0c167dcb8645251",
+  "sourceArchiveCommit":"d33b45226348d9b0c701f2a3e8b86dd1285de2d0",
+  "sourceArchiveSha256":"03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+  "sourcePath":"08_Ray_Optics_Explanations/07_Lens_Formula/Problems/012.png",
+  "sourceSha256":"3e8a50b439fff120f7a69e0d356883aa38e91eb6423bace9091761ae20d6c9dc",
+  "givens":"An axial parallel beam passes through a biconvex lens of focal length 1 m, reflects from a concave mirror of radius 1 m, and passes back through the same lens. Find the mirror placement for parallel output and the image.",
+  "assumptions":["Ideal paraxial lens, coaxial concave reflecting face toward lens, homogeneous exterior, mirror distance measured to its axial pole.","Parallel input models an axial object at infinity. The source supplies no finite object position."],
+  "focalLengthMm":1000,"mirrorRadiusMm":1000,
+  "syntheticNativeGeometry":{"lensXmm":0,"sourceXmm":-200,"detectorXmm":-50,"lensApertureHeightMm":30,"mirrorSemiHeightMm":15,"detectorHeightMm":30,"launchHeightsMm":[-4,-2,2,4],"brightness":0.04,"maxRayDepth":8},
+  "cases":[{"id":"pole-focus","gapMm":1000,"returnHeightScaleAtLens":-1,"returnSlopePerMm":0},
+    {"id":"centre-retrace","gapMm":2000,"returnHeightScaleAtLens":1,"returnSlopePerMm":0},
+    {"id":"intermediate","gapMm":1500,"returnHeightScaleAtLens":-0.5,"returnSlopePerMm":0.0005}],
+  "acceptance":"Twelve separate horizontal native SingleRay controls. Require detector, lens, mirror, the identical lens, detector. Return slope is dy measured per unit displacement toward negative x. Compare measured slope with the paraxial coefficient times launch height to within 3e-6 and returning lens height to within 0.02 mm. Both afocal cases have their image at infinity. The finite sampled runs are evidence only at these explicit heights."
+}
