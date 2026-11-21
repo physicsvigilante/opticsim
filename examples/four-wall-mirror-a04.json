@@ -1,0 +1,31 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-four-wall-mirror-facts-v1",
+    "model": "specular-rectangle-once-per-wall",
+    "geometry": {
+      "kind": "symbolic-rectangle"
+    }
+  },
+  "requests": [
+    {
+      "id": "directions",
+      "kind": "four-wall-mirror-launch-directions"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Identify forward and reverse launch directions that visit each wall once.",
+    "stated": [
+      "A and B lie in the same 2D section of a rectangular mirror box; the selected ray must reflect from each of four walls once."
+    ],
+    "derived": [
+      "Use the images of B offset by two widths and two heights in the unfolded plane."
+    ],
+    "assumptions": [
+      "Ideal specular walls and no corner encounters. Name width W and height H and measure both point coordinates from the bottom-left corner."
+    ],
+    "unknowns": [
+      "Numeric point coordinates and box dimensions."
+    ]
+  }
+}

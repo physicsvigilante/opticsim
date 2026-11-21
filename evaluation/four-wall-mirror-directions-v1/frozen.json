@@ -1,0 +1,20 @@
+{
+  "case": "A04",
+  "problem": "08_Ray_Optics_Explanations/01_Reflection_at_Plane_Surfaces/Problems/011.png",
+  "sha256": "ec0d4946a67825e5df7df46eb97940864c4217ce38d74f0d3f1352da08d6e4db",
+  "pin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "stated": "Points A and B inside a rectangular front section of a mirror box. Send light from A to B after one reflection from each of the four walls, and give the reversed direction from B to A. The drawing supplies no dimensions.",
+  "assumptions": "Ideal planar specular walls in one 2D plane. Local origin is the bottom-left corner, x right and y up. Width W and height H are positive. Endpoints are strictly interior. No exact corner contact is admitted.",
+  "predictions": "Two reflections in each coordinate unfold the final point to B+(±2W,±2H). Each sign pair is a candidate until its four boundary crossings are ordered and every corner excluded. Reverse the sequence and the initial direction because both directional components recover their original signs after four hits.",
+  "nativeControls": {
+    "geometry": "Synthetic W=300 mm, H=180 mm, A=(55,140), B=(200,60). Four true native Mirror segments stop 0.2 mm before each authored corner. Each trial uses one native SingleRay and a 0.2 mm real vertical opaque Blocker centred at its target. Require all four native Mirror incident callbacks and true Blocker absorption in the right order, each at least 1 mm from a wall corner. The absorber and gaps qualify the chosen trajectories only. No closed-box public profile.",
+    "forward": [
+      {"vector":[-455,-440],"walls":["left","bottom","top","right"]},
+      {"vector":[-455,280],"walls":["left","top","right","bottom"]},
+      {"vector":[745,-440],"walls":["bottom","right","top","left"]},
+      {"vector":[745,280],"walls":["top","right","left","bottom"]}
+    ],
+    "reverse": "Run a genuine independent SingleRay from B with each negated vector, and a native Blocker at A. Actual confirmed incidences reverse the wall order. Keep a processed-limit stop as a negative control."
+  },
+  "scope": "Return symbolic directional formulas where dimensions are missing. Quantify angle, order and corner clearance only when dimensions and the positions are explicit. Do not read pixel ratios or infer image visibility."
+}

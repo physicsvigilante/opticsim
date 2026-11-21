@@ -6,6 +6,7 @@ import {analyzeTwoFaceQuery,twoFaceCapabilities,TWO_FACE_FACTS,TWO_FACE_QUERY} f
 import {analyzePowerQuery,powerCapabilities,POWER_FACTS,POWER_QUERY} from './coincident-optical-power.js';
 import {analyzeFocus,focusCapabilities,FOCUS_FACTS,FOCUS_QUERY} from './separated-lens-focus.js';
 import {analyzeSurfaceFocus,surfaceFocusCapabilities,SURFACE_FOCUS_FACTS,SURFACE_FOCUS_QUERY} from './two-surface-focus.js';
+import {analyzeFourWall,fourWallCapabilities,FOUR_WALL_FACTS,FOUR_WALL_QUERY} from './four-wall-mirror-directions.js';
 import {analyzeMirrorOscillation,mirrorOscillationCapabilities,OSCILLATION_FACTS,OSCILLATION_QUERY} from './axial-mirror-oscillation.js';
 import {analyzeMirrorMagnification,mirrorMagnificationCapabilities,MIRROR_MAGNIFICATION_FACTS,MIRROR_MAGNIFICATION_QUERY} from './mirror-magnification-inverse.js';
 import {analyzeMirrorOutline,mirrorOutlineCapabilities,OUTLINE_FACTS,OUTLINE_QUERY} from './mirror-image-outline.js';
@@ -32,6 +33,7 @@ const prismKinds=new Set(prismAngleCapabilities().kinds);
 const twoFaceKinds=new Set(twoFaceCapabilities().kinds);
 const reducedAngularAndPowerRoutes=new Map();
 for(const [kinds,format,analyze,missing] of [
+  [fourWallCapabilities().kinds,FOUR_WALL_QUERY,analyzeFourWall,'Explicit specular rectangle and symbolic or numeric endpoint facts required.'],
   [mirrorOscillationCapabilities().kinds,OSCILLATION_QUERY,analyzeMirrorOscillation,'Explicit normalized cosine motion and requested phases required.'],
   [mirrorMagnificationCapabilities().kinds,MIRROR_MAGNIFICATION_QUERY,analyzeMirrorMagnification,'Explicit signed focal length and signed or magnitude-only magnification required.'],
   [mirrorOutlineCapabilities().kinds,OUTLINE_QUERY,analyzeMirrorOutline,'Explicit ordered vertices or axis-based trapezoid facts required.'],
@@ -57,6 +59,7 @@ const mirrorKinds=new Set(mirrorAngularCapabilities().kinds);
 const observableKinds=observableCapabilities().kinds;
 // References the live fact/query formats, not a second physics validator.
 const factContracts=Object.freeze({
+ [FOUR_WALL_QUERY]:[FOUR_WALL_FACTS],
  [OSCILLATION_QUERY]:[OSCILLATION_FACTS],
  [MIRROR_MAGNIFICATION_QUERY]:[MIRROR_MAGNIFICATION_FACTS],
  [OUTLINE_QUERY]:[OUTLINE_FACTS],
@@ -80,6 +83,7 @@ const factContracts=Object.freeze({
  [MIRROR_QUERY_FORMAT]:[MIRROR_FACTS_FORMAT]
 });
 const requestKindRegistry=()=>({
+ ...Object.fromEntries(fourWallCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:FOUR_WALL_QUERY}])),
  ...Object.fromEntries(mirrorOscillationCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:OSCILLATION_QUERY}])),
  ...Object.fromEntries(mirrorMagnificationCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:MIRROR_MAGNIFICATION_QUERY}])),
  ...Object.fromEntries(mirrorOutlineCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:OUTLINE_QUERY}])),
@@ -115,6 +119,7 @@ export function problemWorkflowCapabilities(){
     coincidentOpticalPower:powerCapabilities(),
     separatedLensFocus:focusCapabilities(),
     twoSurfaceFocus:surfaceFocusCapabilities(),
+    fourWallMirrorDirections:fourWallCapabilities(),
     mirrorOscillation:mirrorOscillationCapabilities(),
     mirrorMagnification:mirrorMagnificationCapabilities(),
     mirrorOutline:mirrorOutlineCapabilities(),
