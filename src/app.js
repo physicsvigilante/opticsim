@@ -1,5 +1,6 @@
 import {ExplorationUI} from './exploration-ui.js';
 import {MIRROR_BOX_VERSION} from './native-mirror-box.js';
+import {GUIDE_FAN_VERSION} from './finite-guide-fan.js';
 import {installGrinV25DisplayScale} from './grin-v25-display.js';
 import {isCurved} from './curved-mirrors.js';
 import {QualifiedUI} from './qualified-ui.js';
@@ -335,6 +336,11 @@ function controls() {
     $('parameter-guidance').textContent='Give four separated mirror walls, one interior SingleRay and one interior opaque target.';
     $('physical-note').textContent='Results require one verified reflection on each wall followed by native absorption at the target.';
   }
+  if(session.document.schemaVersion===GUIDE_FAN_VERSION){
+    $('model-label').textContent='Finite dielectric guide fan';
+    $('parameter-guidance').textContent='Aim a directional fan into the left face and place the detector beyond the right face.';
+    $('physical-note').textContent='Native exit callbacks distinguish samples that reached the far face from those that leaked through a sidewall.';
+  }
   if(session.document.schemaVersion===34){
     $('model-label').textContent='Immersed spherical mirror and planar exit';
     $('parameter-guidance').textContent='The source lies between the left exit plane and the concave mirror. Aim the cone left for direct exit or right for one reflection.';
@@ -394,7 +400,7 @@ function sourcePicker(component) {
     { mode: 'full-circle', title: 'Point source (360°)', description: 'Light in every direction', icon: pointSourceIcon },
     { mode: 'directional', title: 'Point source (directional)', description: 'Symmetric cone · 1–180°', icon: angleSourceIcon }
   ];
-  if([29,31,32,34].includes(session.document.schemaVersion))choices.splice(0,1);
+  if([29,31,32,34,GUIDE_FAN_VERSION].includes(session.document.schemaVersion))choices.splice(0,1);
   if(session.document.schemaVersion===6)choices.push({mode:'single-ray',title:'Single ray (native)',description:'One exact direction; no cone from sampling',icon:angleSourceIcon});
   const details = document.createElement('details'); details.className = 'source-picker';
   const summary = document.createElement('summary'); summary.id = `${component.id}-mode`;

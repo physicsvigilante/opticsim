@@ -113,6 +113,10 @@ jobs:
         run: |
           node scripts/run-problem.mjs examples/native-mirror-box-v35.json --out test-artifacts/llm-authoring/native-mirror-box
           node scripts/native-mirror-box-browser.mjs
+      - name: Finite dielectric guide fan and real Chrome qualification
+        run: |
+          node scripts/run-problem.mjs examples/finite-guide-fan-v36.json --out test-artifacts/llm-authoring/finite-guide-fan
+          node scripts/finite-guide-fan-browser.mjs
       - name: LLM authoring CLI with real native execution and revision guards
         run: node scripts/author-scene-acceptance.mjs
       - name: Evaluate deterministic LLM pilot controls against native tracing
@@ -175,6 +179,7 @@ jobs:
             test-artifacts/browser-entering-graded-slab/
             test-artifacts/browser-immersed-arc-port/
             test-artifacts/browser-native-mirror-box/
+            test-artifacts/browser-finite-guide-fan/
             test-artifacts/refractive-fan-j11/
             test-artifacts/llm-authoring/native-two-plane-mirror-v27-research/
           if-no-files-found: ignore

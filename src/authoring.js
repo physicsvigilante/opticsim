@@ -1,5 +1,6 @@
 import {IMMERSED_ARC_MODEL,IMMERSED_ARC_VERSION} from './immersed-arc-plane-port.js';
 import {MIRROR_BOX_MODEL,MIRROR_BOX_VERSION} from './native-mirror-box.js';
+import {GUIDE_FAN_MODEL,GUIDE_FAN_VERSION} from './finite-guide-fan.js';
 import {CAP_TYPE,CAP_MODEL,CAP_VERSION,capExtents} from './finite-circular-cap.js';
 import {SLAB_ARC_MODEL} from './slab-arc-return.js';
 import {CURVED_BEAM_MODEL} from './curved-entry-beam.js';
@@ -97,6 +98,7 @@ export function capabilities() {
       limitations:'No image reconstruction, PSF, diffraction, radiometric power, arbitrary composite optics or source-to-detector ancestry.'},
     immersedArcPort:{schemaVersion:IMMERSED_ARC_VERSION,model:IMMERSED_ARC_MODEL,selection:'Select physical.model explicitly and use dense-v1.',scope:'One directional source inside a denser half-space, one immersed concave spherical mirror patch, one planar interface and one exterior detector.'},
     mirrorBox:{schemaVersion:MIRROR_BOX_VERSION,model:MIRROR_BOX_MODEL,selection:'Select physical.model explicitly.',scope:'Four separated rectangular mirror walls, one explicit SingleRay and one interior opaque target. Native qualification requires one safe reflection per wall followed by absorption.'},
+    guideFan:{schemaVersion:GUIDE_FAN_VERSION,model:GUIDE_FAN_MODEL,selection:'Set physical.model explicitly. Optional physical.rayDensity sets numerical sampling.',scope:'One directional fan through a finite rectangular Glass guide with unit exterior, partial reflection disabled and one exterior vertical detector.'},
     enteringGradedSlab:{schemaVersion:GRIN_SLAB_VERSION,model:GRIN_SLAB_MODEL,selection:'Select physical.model explicitly.',scope:'One finite-angle incoming single ray, one native square-root GRIN rectangle and a horizontal passive detector after the far face.'},
     finiteCircularCap:{schemaVersion:CAP_VERSION,model:CAP_MODEL,selection:'Select physical.model explicitly and use dense-v1.',scope:'An axial directional source inside a finite circular cap and one exterior detector beyond the curved pole.'},
     slabArcReturn:{schemaVersion:31,model:SLAB_ARC_MODEL,selection:'Select physical.model explicitly and use dense-v1.',scope:'One directional fan, two parallel interfaces, a separated concave spherical mirror and one exterior detector.'},
@@ -223,14 +225,14 @@ export function inspectAuthoringRequest(request){
     catch(error){if(!(error instanceof AuthoringError))throw error;issues.push(...error.issues);}
     return isObject(value);
   };
-  const fanFields=[REFRACTIVE_FAN_MODEL,CURVED_BEAM_MODEL].includes(request?.model)?['rayDensity']:[];
+  const fanFields=[REFRACTIVE_FAN_MODEL,CURVED_BEAM_MODEL,GUIDE_FAN_MODEL].includes(request?.model)?['rayDensity']:[];
   if(!object(request,'$',['lengthUnit','components','title','runPolicy','model',...fanFields],['lengthUnit','components']))return issues;
   let scale=null;
   if(own(request,'lengthUnit')){
     try{scale=units(request.lengthUnit,'$.lengthUnit');}
     catch(error){issues.push(...error.issues);}
   }
-  if(own(request,'model')&&![POST_LENS_MODEL,REFRACTIVE_FAN_MODEL,CURVED_BEAM_MODEL,SLAB_ARC_MODEL,CAP_MODEL,GRIN_SLAB_MODEL,IMMERSED_ARC_MODEL,MIRROR_BOX_MODEL].includes(request.model))issues.push(issue('$.model','UNSUPPORTED_MODEL','Unknown explicit physical model'));
+  if(own(request,'model')&&![POST_LENS_MODEL,REFRACTIVE_FAN_MODEL,CURVED_BEAM_MODEL,SLAB_ARC_MODEL,CAP_MODEL,GRIN_SLAB_MODEL,IMMERSED_ARC_MODEL,MIRROR_BOX_MODEL,GUIDE_FAN_MODEL].includes(request.model))issues.push(issue('$.model','UNSUPPORTED_MODEL','Unknown explicit physical model'));
   if(own(request,'runPolicy')&&(typeof request.runPolicy!=='string'||!own(policies,request.runPolicy)))
     issues.push(issue('$.runPolicy','UNSUPPORTED_POLICY','Use a run policy exposed by capabilities()'));
   if(own(request,'title')&&(typeof request.title!=='string'||request.title.length>120))
@@ -328,6 +330,7 @@ function camera(components) {
     zoom:isGrinV25?80:Math.max(.03,Math.min(2,.85*1200/width,.85*700/height))};
 }
 function selectRequestComposition(request) {
+  if(request.model===GUIDE_FAN_MODEL)return {model:GUIDE_FAN_MODEL,schemaVersion:GUIDE_FAN_VERSION,adapterVersion:GUIDE_FAN_VERSION};
   if(request.model===MIRROR_BOX_MODEL)return {model:MIRROR_BOX_MODEL,schemaVersion:MIRROR_BOX_VERSION,adapterVersion:MIRROR_BOX_VERSION};
   if(request.model===IMMERSED_ARC_MODEL)return {model:IMMERSED_ARC_MODEL,schemaVersion:IMMERSED_ARC_VERSION,adapterVersion:IMMERSED_ARC_VERSION};
   if(request.model===GRIN_SLAB_MODEL)return {model:GRIN_SLAB_MODEL,schemaVersion:GRIN_SLAB_VERSION,adapterVersion:GRIN_SLAB_VERSION};
