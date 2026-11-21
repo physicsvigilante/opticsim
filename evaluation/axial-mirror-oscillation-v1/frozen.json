@@ -1,0 +1,11 @@
+{
+  "case": "A08",
+  "problem": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/007.png",
+  "sha256": "512656b8d3711783be9bb571086609872e7618c390b296a121d8d8c50f9b9f4c",
+  "pin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "stated": "Axial ball motion x=f cos(omega t) measured from the centre of curvature with positive x away from a concave mirror. Asks image distance as a function of time, coincidence position and lateral magnification at half-period.",
+  "assumptions": "Use a stationary concave mirror and instantaneous paraxial conjugates of a prescribed real-object motion. Treat phase t/T as a dimensionless input. No assumed f or omega and no finite-speed dynamics.",
+  "scope": "Normalize the mean and amplitude of a cosine axial object distance by f. Support a whole cycle with a strictly positive object distance and explicitly distinguish finite, afocal and numerically uncertain phases.",
+  "predictions": "For A08 u/f=2+cos(2*pi*t/T). The finite values are v/f=(2+cos)/(1+cos), m=-1/(1+cos). Coincidence occurs at u=v=2f at quarter and three-quarter cycle. At exactly half-period u=f and the paraxial output is afocal, with no finite magnification. Magnification tends to negative infinity on both limiting sides.",
+  "controls": "Use the same pinned radius-200 mm spherical mirror and two-pass detector setup as A09. Independently emit a near-axis native fan at normalized phases 0, 1/4 and 1/2 (object distances 300,200,100 mm), y=0, and detector x=-30 mm. The first two settings give geometric line intercepts near 150 and 200 mm from the pole within .15 mm; at the focal setting the residual transverse slopes should be under 5e-6 and remain recorded. No real clock or motion changes ray positions during any native run."
+}
