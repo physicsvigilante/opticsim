@@ -15,6 +15,7 @@ test('v34 composes actual direct and reflected trips to the same exterior detect
     const p=original();
     p.components[0].parameters.x=depth;
     p.components[0].emission.directionDeg=heading;
+    if(heading===-180)p.components.at(-1).parameters.orientationDeg=-90;
     const reflected=heading===0;
     for(const c of p.components){c.parameters.x+=120;c.parameters.y-=75;}
     const doc=prepareScene(p).document;
@@ -22,6 +23,7 @@ test('v34 composes actual direct and reflected trips to the same exterior detect
     assert.deepEqual(core.compile(doc).native.objs.map(o=>o.type),['AngleSource','PlaneGlass','ArcMirror','Detector']);
     const {summary}=evaluateDocument(doc,core,fixture.requests);
     assert.equal(summary.observations?.v34ImmersedArcVerified,true);
+    assert.equal(Math.sign(summary.observations.detectorsById.D.signedPower),heading===-180?-1:1);
     const {results}=await evaluateObservables(doc,fixture.requests,summary);
     assert.deepEqual(results.slice(0,2).map(r=>r.value),[reflected?3:0,3]);
     for(const {pointMm,incomingUnit} of results[2].value){
@@ -91,4 +93,33 @@ test('v34 withholds altered brightness at emission, reflection, refraction or de
       prototype[name]=delegate;
     }
   }
+});
+
+test('v34 withholds offset native detector power before or after its complete fan',()=>{
+  const doc=prepareScene(original()).document;
+  const {scene,idMap}=core.loadDocument(doc);
+  const index=idMap.get('D'),prototype=Object.getPrototypeOf(scene.objs[index]);
+  const start=prototype.onSimulationStart;
+  prototype.onSimulationStart=function(...args){
+    const result=start.apply(this,args);
+    this.power+=10;
+    return result;
+  };
+  try{
+    assert.equal(evaluateDocument(doc,core,fixture.requests).summary.observations,null);
+  }finally{
+    prototype.onSimulationStart=start;
+  }
+  let changed=false;
+  const offsetAtCompletion={...core,Simulator:class extends core.Simulator{
+    emit(event,...args){
+      if(event==='simulationComplete'){
+        this.scene.objs[index].power+=10;
+        changed=true;
+      }
+      return super.emit(event,...args);
+    }
+  }};
+  assert.equal(evaluateDocument(doc,offsetAtCompletion,fixture.requests).summary.observations,null);
+  assert.equal(changed,true);
 });

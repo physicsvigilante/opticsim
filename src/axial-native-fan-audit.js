@@ -17,8 +17,9 @@ export function installAxialFanAudit({doc,scene,idMap,source,mirror,detector,fac
   const axis=source.emission.directionDeg*rad;
   const channelBrightness=source.parameters.brightness/doc.simulation.rayDensity/2;
   const hasAuthoredBrightness=ray=>ray.brightness_s===channelBrightness&&ray.brightness_p===channelBrightness;
+  const reflectedAt=sequence.indexOf(mirror),detectorOrientation=Math.sign(detector.parameters.orientationDeg);
   const live=new Map();
-  let starts=0,finished=0,fault=null;
+  let starts=0,finished=0,fault=null,expectedPower=0;
   const emitter=scene.objs[idMap.get(source.id)],start=emitter.onSimulationStart;
   emitter.onSimulationStart=function(...args){
     const result=start.apply(this,args);starts++;
@@ -36,13 +37,15 @@ export function installAxialFanAudit({doc,scene,idMap,source,mirror,detector,fac
     const obj=scene.objs[idMap.get(c.id)],incident=obj.onRayIncident;
     obj.onRayIncident=function(ray,index,point,...rest){
       const state=live.get(ray),before=direction(ray),p=c.parameters;
-      const dx=point.x-ray.p1.x,dy=point.y-ray.p1.y;
-      if(!state||sequence[state.stage]!==c||!hasAuthoredBrightness(ray)||!near(state.p.x,ray.p1.x)||!near(state.p.y,ray.p1.y)||
+      const x=point.x,y=point.y,dx=x-ray.p1.x,dy=y-ray.p1.y;
+      if(!state||sequence[state.stage]!==c||!hasAuthoredBrightness(ray)||state.p.x!==ray.p1.x||state.p.y!==ray.p1.y||
         !near(state.d.x,before.x,1e-9)||!near(state.d.y,before.y,1e-9)||
         !(dx*before.x+dy*before.y>0)||!near(dx*before.y,dy*before.x))fault??=c.id+': unexpected incoming encounter';
-      const passage=c===detector?expectedDetectorPassage(this,ray,{x:before.x,y:-before.y},point):null;
+      const directionSign=state?.stage<reflectedAt?1:-1;
+      const detectorSign=-directionSign*detectorOrientation;
+      const passage=c===detector?expectedDetectorPassage(this,ray,point,expectedPower,detectorSign):null;
       const result=incident.call(this,ray,index,point,...rest),after=direction(ray);
-      if(!near(ray.p1.x,point.x)||!near(ray.p1.y,point.y)||!hasAuthoredBrightness(ray)||result?.isAbsorbed||
+      if(point.x!==x||point.y!==y||!near(ray.p1.x,x)||!near(ray.p1.y,y)||!hasAuthoredBrightness(ray)||result?.isAbsorbed||
         result?.isUndefinedBehavior||result?.newRays?.length)fault??=c.id+': unexpected native outgoing branch';
       if(c===mirror){
         const n={x:(point.x-p.x+p.radius)/p.radius,y:(point.y+p.y)/p.radius};
@@ -53,8 +56,10 @@ export function installAxialFanAudit({doc,scene,idMap,source,mirror,detector,fac
       }else{
         if(!near(point.x,p.x)||!(before.x*after.x>0))fault??=c.id+': unexpected plane encounter';
         if(c===detector){
-          if(Math.abs(point.y+p.y)>=p.length/2-.1||!near(before.x,after.x,1e-9)||!near(before.y,after.y,1e-9)||
+          if(before.x*directionSign<=0||Math.abs(point.y+p.y)>=p.length/2-.1||
+            !near(before.x,after.x,1e-9)||!near(before.y,after.y,1e-9)||
             !preservesDetectorPassage(this,ray,point,result,passage))fault??=c.id+': uncertain detector direction, rim clearance or signed power';
+          expectedPower+=detectorSign*(channelBrightness+channelBrightness);
         }else{
           const [from,to]=before.x>0?[p.negativeIndex,p.positiveIndex]:[p.positiveIndex,p.negativeIndex];
           if(!near(from*before.y,to*after.y,1e-8))fault??=c.id+': uncertain refraction';
@@ -72,7 +77,8 @@ export function installAxialFanAudit({doc,scene,idMap,source,mirror,detector,fac
       const encounters=c=>sequence.filter(component=>component===c).length*emitted;
       if(starts!==1||live.size||warnings.length||emitted!==expected.length||finished!==emitted||
         faces.some(c=>interfaces?.[c.id]?.interactions!==encounters(c)||interfaces?.[c.id]?.transmitted!==encounters(c))||
-        reflections?.[mirror.id]!==encounters(mirror)||detectors?.[detector.id]?.crossings!==encounters(detector))
+        reflections?.[mirror.id]!==encounters(mirror)||detectors?.[detector.id]?.crossings!==encounters(detector)||
+        detectors?.[detector.id]?.signedPower!==expectedPower)
         return label+'.';
       return null;
     }
