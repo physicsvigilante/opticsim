@@ -2,7 +2,7 @@
 
 The two queries use versioned angular facts in the public problem workflow. Mirror extent and location are absent from those facts. Finite interception requires separate evidence.
 
-For one mirror, the given incoming and outgoing vectors are normalized. Their difference lies along the mirror normal. If the shortest angle between the directions is D, the unsigned incidence from the normal is (180° − D)/2. Equal and nearly equal unit directions with a chord at most 1e-9 leave the inferred normal numerically indeterminate. Opposed directions give normal incidence. [A01 request](../examples/mirror-incidence-a01.json)
+For one mirror, the direction change lies along the normal. The calculation uses a perpendicular to the sum of the unit headings when that sum is better conditioned. Exact represented dot and cross products check the grazing cutoff. A unit-direction chord at most 1e-9 leaves the inferred normal numerically indeterminate. The unsigned incidence is evaluated directly to retain a small positive angle near opposed headings. Exactly opposed directions give normal incidence. [A01 request](../examples/mirror-incidence-a01.json)
 
 For two nonparallel mirrors, the first tangent defines 0°, the second tangent is θ, and the endpoint line constraints give p and q of 0° or 90°. The incoming heading relative to the first mirror is θ + p modulo 180°. The two reflections give an outgoing heading of 3θ + p modulo 180°. Solve 3θ = q − p modulo 180°, keep both directed incident headings and withhold branches that graze either mirror. Reflector ordering is a condition of this calculation.
 
