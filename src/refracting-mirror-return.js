@@ -91,13 +91,17 @@ export function analyzeReturn(f,q) {
     limitations:['Finite aperture, native ray interception and the brightness of any return require separate evidence.']};
   const uncertain = () => ({...base,status:'numerically-indeterminate',reasonCode:'UNRESOLVED_RETURN',reason:'A cancellation or distance exceeds the numerical policy.',value:null});
   if (ill || compare(A,D)!==0) return uncertain();
-  const reference = {lengthUnit:f.lengthUnit,reference:'front pole',positiveDirection:'toward the incident object'};
+  const reference = {lengthUnit:f.lengthUnit,positiveDirection:'toward the incident object'};
   if (q.kind===focus) {
-    if (!C.n) return {...base,status:'conditional',value:{...reference,action:'afocal',effectiveFocalLength:null,signedFrontFocusDistance:null}};
+    const focusReference = {...reference,frontFocusReference:'front pole',effectiveFocalLengthBasis:'equivalent system power'};
+    if (!C.n) return {...base,status:'conditional',value:{...focusReference,equivalentPowerAction:'afocal',
+      frontFocusState:'at-infinity',effectiveFocalLength:null,signedFrontFocusDistance:null}};
     const effective = divide(neg(n0),C), axial = multiply(effective,A);
     const e = output(effective,unit), z = output(axial,unit);
     if (e===null || z===null) return uncertain();
-    return {...base,status:'conditional',value:{...reference,action:e>0?'converging':'diverging',effectiveFocalLength:e,signedFrontFocusDistance:z}};
+    return {...base,status:'conditional',value:{...focusReference,equivalentPowerAction:e>0?'converging':'diverging',
+      frontFocusState:axial.n===0n?'at-front-pole':axial.n>0n?'real-return-focus':'virtual-return-focus',
+      effectiveFocalLength:e,signedFrontFocusDistance:z}};
   }
   // Imaging to the same external object plane requires B+2At+Ct²=0,
   // t=s/n0. For this symmetric round trip, A²−BC=1 exactly.
@@ -105,5 +109,6 @@ export function analyzeReturn(f,q) {
     : [divide(multiply(neg(n0),B),multiply(two,A))];
   const distances = roots.filter(x=>x.n>0n).sort(compare).map(x=>output(x,unit));
   if (ill || distances.some(x=>x===null) || new Set(distances).size!==distances.length) return uncertain();
-  return {...base,status:'conditional',value:{...reference,objectDistances:distances,state:distances.length?'finite-real-object':'no-positive-object-distance'}};
+  return {...base,status:'conditional',value:{...reference,objectDistanceReference:'front pole',
+    objectDistances:distances,state:distances.length?'finite-real-object':'no-positive-object-distance'}};
 }

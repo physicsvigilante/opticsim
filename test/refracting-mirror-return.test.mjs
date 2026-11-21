@@ -10,7 +10,8 @@ test('conditional source examples give 15 cm of converging power-equivalent focu
   const p = example('refracting-mirror-return-focus'), a = run(p);
   assert.equal(a.status,'conditional');
   assert.equal(a.nativeObservation,false);
-  assert.equal(a.value.action,'converging');
+  assert.equal(a.value.equivalentPowerAction,'converging');
+  assert.equal(a.value.frontFocusState,'real-return-focus');
   assert.equal(a.value.signedFrontFocusDistance,15);
   assert.equal(a.value.effectiveFocalLength,15);
   assert.deepEqual(run(example('refracting-mirror-self-conjugate')).value.objectDistances,[12.5]);
@@ -39,7 +40,8 @@ test('plane, convex and matched-index mirror limits and invalid placements',()=>
   p.requests[0].kind='refracting-mirror-return-focus';
   assert.equal(run(p).value.effectiveFocalLength,-12.5);
   g.mirrorSignedRadius='infinity';
-  assert.equal(run(p).value.action,'afocal');
+  assert.equal(run(p).value.equivalentPowerAction,'afocal');
+  assert.equal(run(p).value.frontFocusState,'at-infinity');
   g.poleSeparation=-2;
   assert.equal(run(p).status,'unavailable');
 });
@@ -53,4 +55,17 @@ test('a focusing front face and plane mirror retain both positive object placeme
   assert.deepEqual(run(p).value.objectDistances,[20]);
   p.physical.geometry.poleSeparation=30.00000000001;
   assert.equal(run(p).status,'numerically-indeterminate');
+});
+
+test('positive equivalent power can have a virtual front focus for separated poles',()=>{
+  const p=example('refracting-mirror-return-focus');
+  p.physical.lengthUnit='mm';
+  p.physical.geometry={kind:'signed-poles',frontSignedRadius:10,mirrorSignedRadius:'infinity',poleSeparation:22.5};
+  const separated=run(p).value;
+  assert.equal(separated.equivalentPowerAction,'converging');
+  assert.equal(separated.effectiveFocalLength,40);
+  assert.equal(separated.frontFocusState,'virtual-return-focus');
+  assert.equal(separated.signedFrontFocusDistance,-20);
+  p.physical.geometry.poleSeparation=15;
+  assert.equal(run(p).value.frontFocusState,'at-front-pole');
 });
