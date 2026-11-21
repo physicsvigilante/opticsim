@@ -7,6 +7,8 @@ import {analyzePowerQuery,powerCapabilities,POWER_FACTS,POWER_QUERY} from './coi
 import {analyzeFocus,focusCapabilities,FOCUS_FACTS,FOCUS_QUERY} from './separated-lens-focus.js';
 import {analyzeSurfaceFocus,surfaceFocusCapabilities,SURFACE_FOCUS_FACTS,SURFACE_FOCUS_QUERY} from './two-surface-focus.js';
 import {analyzeMirrorOutline,mirrorOutlineCapabilities,OUTLINE_FACTS,OUTLINE_QUERY} from './mirror-image-outline.js';
+import {analyzeGradedSlab,gradedSlabCapabilities,GRADED_SLAB_FACTS,GRADED_SLAB_QUERY} from './graded-slab-first-passage.js';
+import {analyzeCapObserver,capObserverCapabilities,CAP_OBSERVER_FACTS,CAP_OBSERVER_QUERY} from './cap-observer-conjugate.js';
 import {analyzeMirrorPlanePort,mirrorPlanePortCapabilities,PORT_FACTS,PORT_QUERY} from './mirror-plane-port.js';
 import {analyzeSlabMirror,slabMirrorCapabilities,SLAB_MIRROR_FACTS,SLAB_MIRROR_QUERY} from './slab-mirror-conjugate.js';
 import {analyzeOffsetFocus,offsetFocusCapabilities,OFFSET_FACTS,OFFSET_QUERY} from './offset-pair-focus.js';
@@ -29,6 +31,8 @@ const twoFaceKinds=new Set(twoFaceCapabilities().kinds);
 const reducedAngularAndPowerRoutes=new Map();
 for(const [kinds,format,analyze,missing] of [
   [mirrorOutlineCapabilities().kinds,OUTLINE_QUERY,analyzeMirrorOutline,'Explicit ordered vertices or axis-based trapezoid facts required.'],
+  [gradedSlabCapabilities().kinds,GRADED_SLAB_QUERY,analyzeGradedSlab,'Explicit squared-index profile, entry angle or limit and both exterior indices required.'],
+  [capObserverCapabilities().kinds,CAP_OBSERVER_QUERY,analyzeCapObserver,'Explicit cap, axial object and observer location required.'],
   [mirrorPlanePortCapabilities().kinds,PORT_QUERY,analyzeMirrorPlanePort,'Explicit axial source, exit plane and concave mirror facts required.'],
   [prismLimitCapabilities().kinds,PRISM_LIMIT_QUERY,analyzePrismLimit,'Explicit common exterior, apex and grazing or material facts required.'],
   [slabMirrorCapabilities().kinds,SLAB_MIRROR_QUERY,analyzeSlabMirror,'Explicit curved mirror, object and slab facts required.'],
@@ -50,6 +54,8 @@ const observableKinds=observableCapabilities().kinds;
 // References the live fact/query formats, not a second physics validator.
 const factContracts=Object.freeze({
  [OUTLINE_QUERY]:[OUTLINE_FACTS],
+ [GRADED_SLAB_QUERY]:[GRADED_SLAB_FACTS],
+ [CAP_OBSERVER_QUERY]:[CAP_OBSERVER_FACTS],
  [PORT_QUERY]:[PORT_FACTS],
  [PRISM_LIMIT_QUERY]:[PRISM_LIMIT_FACTS],
  [SLAB_MIRROR_QUERY]:[SLAB_MIRROR_FACTS],
@@ -69,6 +75,8 @@ const factContracts=Object.freeze({
 });
 const requestKindRegistry=()=>({
  ...Object.fromEntries(mirrorOutlineCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:OUTLINE_QUERY}])),
+ ...Object.fromEntries(gradedSlabCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:GRADED_SLAB_QUERY}])),
+ ...Object.fromEntries(capObserverCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:CAP_OBSERVER_QUERY}])),
  ...Object.fromEntries(mirrorPlanePortCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:PORT_QUERY}])),
  ...Object.fromEntries(prismLimitCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:PRISM_LIMIT_QUERY}])),
  ...Object.fromEntries(slabMirrorCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:SLAB_MIRROR_QUERY}])),
@@ -100,6 +108,8 @@ export function problemWorkflowCapabilities(){
     separatedLensFocus:focusCapabilities(),
     twoSurfaceFocus:surfaceFocusCapabilities(),
     mirrorOutline:mirrorOutlineCapabilities(),
+    gradedSlabFirstPassage:gradedSlabCapabilities(),
+    capObserver:capObserverCapabilities(),
     mirrorPlanePort:mirrorPlanePortCapabilities(),
     prismAngularLimits:prismLimitCapabilities(),
     slabMirrorConjugate:slabMirrorCapabilities(),

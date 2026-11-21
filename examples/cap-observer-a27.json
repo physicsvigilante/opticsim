@@ -1,0 +1,37 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-cap-observer-facts-v1",
+    "model": "axial-spherical-cap-exit",
+    "lengthUnit": "cm",
+    "curvatureRadius": 5,
+    "capHeight": 3,
+    "observerDistanceFromBase": 8,
+    "interiorIndex": 1.6,
+    "exteriorIndex": 1,
+    "object": {
+      "kind": "base-contact-limit"
+    }
+  },
+  "requests": [
+    {
+      "id": "observer",
+      "kind": "cap-axial-observer-conjugate"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Find the observer's axial distance to the apparent table point.",
+    "stated": [
+      "Glass index 1.6, sphere radius 5 cm, a cut 2 cm from the centre, illustrated cap height 3 cm, and axial observer 8 cm from the table."
+    ],
+    "derived": [
+      "In the forward axis the curvature radius at the exit is signed negative. The observer is 5 cm beyond the curved pole."
+    ],
+    "assumptions": [
+      "The tabletop point is treated as the interior-side contact limit and the surrounding medium has index one. The curved exit refraction is paraxial."
+    ],
+    "unknowns": [
+      "Illumination and scattering properties of the original table."
+    ]
+  }
+}
