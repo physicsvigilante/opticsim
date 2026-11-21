@@ -1,0 +1,88 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "model": "native-immersed-arc-plane-port",
+    "runPolicy": "dense-v1",
+    "lengthUnit": "mm",
+    "title": "An immersed concave spherical patch and a planar exit",
+    "components": [
+      {
+        "id": "S",
+        "type": "point-source",
+        "parameters": {
+          "x": 50,
+          "y": 0,
+          "brightness": 0.04
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 0,
+          "angleDeg": 1.8
+        }
+      },
+      {
+        "id": "I",
+        "type": "planar-interface",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "normalDeg": 0,
+          "negativeIndex": 1,
+          "positiveIndex": 1.5,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "M",
+        "type": "circular-arc-mirror",
+        "parameters": {
+          "x": 100,
+          "y": 0,
+          "normalDeg": 180,
+          "radius": 100,
+          "apertureHeight": 50
+        }
+      },
+      {
+        "id": "D",
+        "type": "ray-detector",
+        "parameters": {
+          "x": -15,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 60
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "mirror",
+      "kind": "mirror-reflections",
+      "componentId": "M"
+    },
+    {
+      "id": "interface",
+      "kind": "interface-interactions",
+      "componentId": "I"
+    },
+    {
+      "id": "hits",
+      "kind": "detector-hit-events",
+      "componentId": "D"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Observe the finite sampled reflection, refraction and detector hits for an immersed spherical patch.",
+    "stated": [
+      "A28 gives a hemisphere radius 100 mm, glass index 1.5 and axial scatterer depth 50 mm."
+    ],
+    "derived": [],
+    "assumptions": [
+      "Unit-index exterior, a finite immersed mirror patch and a planar port, one sampled source direction per run, relative brightness, explicit detector and disabled partial reflection."
+    ],
+    "unknowns": [
+      "Illumination and visibility in the original hemisphere."
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "case": "A15",
+  "problem": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/012.png",
+  "sha256": "abb40484b40dcd9b9a4c663751cad54c00971d218eb42a018e638b66e024bca1",
+  "pin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "stated": "Ray incident at grazing incidence on a slab with refractive index sqrt(1+y) and thickness d. Asked for the internal trajectory and position of exit measured from the entry point.",
+  "assumptions": "Choose x parallel to the entrance and y positive into the gradient. The dimensions of y require an explicit length scale L, so n²=A+y/L. For A15, use A=1, unit-index exterior at both surfaces and the inward limit from non-grazing entry. A tangential external ray supplies no native boundary crossing. Assume uniformity along x to the far interface.",
+  "predictions": "The conserved transverse momentum q=nEntry sin(i) determines dy/dx at entry and the path y = sqrt(A-q²)/q * x + x²/(4q²L), for q>0. At q=0 the path is normal x=0. For a positive gradient a true inward limiting branch has immediate positive curvature even at q²=A. The first far-face point is (2q d/(sqrt(A+d/L-q²)+sqrt(A-q²)),d). At A15 the path is y=x²/(4L), first far-face x=2sqrt(dL), and the far-face exterior direction is critical. No strictly transmitted finite-angle A15 output is inferred from that limit.",
+  "controls": "Keep the reviewed v25 native field and guards. Test a separate native GrinGlass rectangle with y=0 to .3 mm, L=1 mm, A=1 and the fixed trusted expression sqrt(1-y) in native y-down. Common exterior 1. Inject one genuine SingleRay from y=-.1 mm with the geometric launch x chosen so it hits (0,0). Compare native runs at 20,60,80 degrees from the inward normal, using .001 and .00025 mm native Euler steps with an explicit 8192-depth test budget. The far-face native callback position must be within .003 mm of the analytic point, with clear mid-face geometry and one downstream detector for a complete run. Near-critical or failed native evidence remains a failed witness. The study does not simulate exact grazing.",
+  "scope": "New analytical coverage and an isolated native investigation. No general editable GRIN expressions, native numerical threshold change, 3D gradient or fabricated crossing at grazing."
+}

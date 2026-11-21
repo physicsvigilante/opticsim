@@ -1,0 +1,11 @@
+{
+  "case": "A09",
+  "problem": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/010.png",
+  "sha256": "073a971a9eaca6a664e6f509e8b3d6e4428cd736ad80fe81b0fa0bc8e2092947",
+  "pin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "stated": "An ordered object ABED beyond the center of curvature of a concave mirror. The illustrated A,D lie on the axis with A farther from the mirror, and E above D is taller than B above A. Asks image shape. The figure supplies no absolute dimensions.",
+  "assumptions": "Use the first Gaussian conjugate of a stationary concave spherical mirror at each point. Coordinates are local with positive object distance measured from the pole toward the object and transverse height positive up. Consider only paraxial rays able to reach the mirror. Reading order from the schematic is qualitative, never a pixel length measurement.",
+  "predictions": "Map (u,h) to (f*u/(u-f),-f*h/(u-f)). The map is projective and keeps line edges straight whenever the entire convex outline is on one side of the focal plane. A and D remain on the axis, and the vertical left and right edges remain parallel. E remains below its base and farther from the axis than B. The image is an inverted trapezoid between F and C, with D' farther from the mirror than A'.",
+  "syntheticControl": "Use f=100 mm and an actual radius-200 mm concave ArcMirror with 40 mm aperture normal toward negative x. In increasing object order define A=(330,0),B=(330,1),E=(280,2),D=(280,0) in positive local distance and height. Four separate native AngleSource trials centred right, 1.8 deg, dense preset, real detector at x=-100 mm. Require an actual reflection and two detector callbacks per native sampled ray, tracking per-run object identity only. Estimate each image point from distinct returning detector lines. Compare against the formula with axial error <0.15 mm and transverse error <0.025 mm. These values are synthetic exercise geometry, not authored dimensions for the original source.",
+  "scope": "No finite visibility certification, inferred pixel dimensions, image detection or claim about an outline crossing the focal plane."
+}

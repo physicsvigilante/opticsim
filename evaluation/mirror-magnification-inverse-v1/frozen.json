@@ -1,0 +1,11 @@
+{
+  "case": "A07",
+  "problem": "08_Ray_Optics_Explanations/02_Reflection_at_Curved_Surfaces/Problems/004.png",
+  "sha256": "3d32be9585d21f90c31e7ec3b70a314fba34c7c2b487ee0370127a1f0211fc88",
+  "pin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "stated": "Concave mirror focal length 10 cm. Find the object distance for fourfold image size. The source does not state image orientation.",
+  "scope": "Use a real object on the incident side of a stationary paraxial mirror. A signed transverse magnification and its unsigned magnitude are different requests. Support positive focal lengths for concave and negative for convex mirror in the real-positive-local sign convention.",
+  "predictions": "m=-f/(u-f), so u=f*(1-1/m), v=f*(1-m). A07 gives u=7.5 cm with m=+4 and v=-30 cm, and u=12.5 cm with m=-4 and v=+50 cm. At u=0 with |m|=1, that branch is a disallowed contact, not an image. For convex f<0 only upright 0<m<1 admits a real object.",
+  "nativeControls": "Use the actual native v6 spherical concave ArcMirror with radius 200 mm and aperture height 40 mm. Run independent native point fans at x=-75 and -125 mm with two transverse heights 0 and 0.1 mm, chosen synthetic .04 relative brightness, 1.8 deg cone, density 1. A real passive detector at x=-30 mm measures returning directions. Each emitted root must see detector, mirror, detector. Intersect each pair of returning directions. Require extrapolations within 0.7 mm axially and 0.012 mm in image height, with the correct sign of the conjugate and magnification.",
+  "boundaries": "Do not invent object height for the original question or default to one orientation. Do not broaden native object or mirror authoring or label the geometric extrapolation as detected image."
+}
