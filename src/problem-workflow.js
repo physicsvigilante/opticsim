@@ -11,6 +11,7 @@ import {analyzeReturn,returnCapabilities,RETURN_FACTS,RETURN_QUERY} from './refr
 import {analyzeImmersion,immersionCapabilities,immersionKind,IMMERSION_QUERY,IMMERSION_FACTS} from './immersed-lens-transfer.js';
 import {analyzeLayerLens,layerLensCapabilities,LAYER_LENS_FACTS,LAYER_LENS_QUERY} from './planar-interface-lens-imaging.js';
 import {analyzeParallelReturn,parallelReturnCapabilities,PARALLEL_RETURN_FACTS,PARALLEL_RETURN_QUERY} from './lens-mirror-parallel-return.js';
+import {analyzeAxialPreservation,axialPreservationCapabilities,AXIAL_PRESERVATION_FACTS,AXIAL_PRESERVATION_QUERY} from './lens-train-axial-preservation.js';
 import {analyzeFourWall,fourWallCapabilities,FOUR_WALL_FACTS,FOUR_WALL_QUERY} from './four-wall-mirror-directions.js';
 import {analyzeFiniteViewing,finiteViewingCapabilities,FINITE_VIEW_FACTS,FINITE_VIEW_QUERY} from './two-lens-finite-viewing.js';
 import {analyzeMirrorOscillation,mirrorOscillationCapabilities,OSCILLATION_FACTS,OSCILLATION_QUERY} from './axial-mirror-oscillation.js';
@@ -41,6 +42,7 @@ const prismKinds=new Set(prismAngleCapabilities().kinds);
 const twoFaceKinds=new Set(twoFaceCapabilities().kinds);
 const reducedAngularAndPowerRoutes=new Map();
 for(const [kinds,format,analyze,missing] of [
+  [axialPreservationCapabilities().kinds,AXIAL_PRESERVATION_QUERY,analyzeAxialPreservation,'Specify one to four separated coaxial thin lenses, unit and x-increasing convention.'],
   [parallelReturnCapabilities().kinds,PARALLEL_RETURN_QUERY,analyzeParallelReturn,'Specify the positive lens, facing concave mirror, and collimated input.'],
   [layerLensCapabilities().kinds,LAYER_LENS_QUERY,analyzeLayerLens,'Supply the dry lens conjugate, object and layer geometry, and target observation or index.'],
   [[immersionKind],IMMERSION_QUERY,analyzeImmersion,'Supply the reference focal length, absolute indices and target medium.'],
@@ -74,6 +76,7 @@ const mirrorKinds=new Set(mirrorAngularCapabilities().kinds);
 const observableKinds=observableCapabilities().kinds;
 // References the live fact/query formats, not a second physics validator.
 const factContracts=Object.freeze({
+ [AXIAL_PRESERVATION_QUERY]:[AXIAL_PRESERVATION_FACTS],
  [PARALLEL_RETURN_QUERY]:[PARALLEL_RETURN_FACTS],
  [LAYER_LENS_QUERY]:[LAYER_LENS_FACTS],
  [IMMERSION_QUERY]:[IMMERSION_FACTS],
@@ -105,6 +108,7 @@ const factContracts=Object.freeze({
  [MIRROR_QUERY_FORMAT]:[MIRROR_FACTS_FORMAT]
 });
 const requestKindRegistry=()=>({
+ ...Object.fromEntries(axialPreservationCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:AXIAL_PRESERVATION_QUERY}])),
  ...Object.fromEntries(parallelReturnCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:PARALLEL_RETURN_QUERY}])),
  ...Object.fromEntries(layerLensCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:LAYER_LENS_QUERY}])),
  [immersionKind]:{route:'conditional-analytical',contract:IMMERSION_QUERY},
@@ -153,6 +157,7 @@ export function problemWorkflowCapabilities(){
     refractingMirrorReturn:returnCapabilities(),
     calibratedLensImmersion:immersionCapabilities(),
     planarInterfaceLens:layerLensCapabilities(),
+    lensTrainAxialPreservation:axialPreservationCapabilities(),
     lensMirrorParallelReturn:parallelReturnCapabilities(),
     planeMirrorHeadingInverse:mirrorHeadingCapabilities(),
     fourWallMirrorDirections:fourWallCapabilities(),

@@ -1,0 +1,17 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-lens-train-axial-preservation-facts-v1",
+    "model": "coaxial-ideal-thin-lenses",
+    "signConvention": "x-increasing",
+    "lengthUnit": "scale-unit",
+    "lenses": [
+      {"id": "L1", "x": 0, "focalLength": 4},
+      {"id": "L2", "x": 4, "focalLength": 1},
+      {"id": "L3", "x": 8, "focalLength": 4}
+    ]
+  },
+  "requests": [
+    {"id": "relay", "kind": "lens-train-axial-preservation"}
+  ]
+}

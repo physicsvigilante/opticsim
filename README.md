@@ -28,6 +28,7 @@ For a curved entrance face with a rear reflector, use the [return-focus and self
 For a lens of known focal length placed in another medium, use the [calibrated lens immersion query](docs/CALIBRATED-LENS-IMMERSION.md).
 For a flat liquid surface in front of a fixed lens, use the [image-distance and liquid-index queries](docs/PLANAR-INTERFACE-LENS-IMAGING.md).
 For the two spacings of a lens and concave mirror that give a parallel return, use the [mirror placement query](docs/LENS-MIRROR-PARALLEL-RETURN.md).
+For testing whether a coaxial thin-lens train preserves axial image position and how it transforms transverse magnification, use the [axial-preservation query](docs/LENS-TRAIN-AXIAL-PRESERVATION.md).
 
 For a finite parallel Beam passing through an ideal lens and then a finite aperture, see the [schema-v28 authoring contract and worked example](docs/POST-LENS-APERTURE.md).
 
