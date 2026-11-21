@@ -1,0 +1,7 @@
+{
+  "format": "opticsim-v29-browser-app-integration-provenance-v1",
+  "productionBase": "916745f5f64a2a86dc234758437a5fa57d3b9753",
+  "sourceV25AppGitBlob": "553c71a1393be89a30f326d366a7caae388c595e",
+  "v29AppGitBlob": "40ac623ed20887ff44e353f74c3fedce315b1695",
+  "scope": "v29 fan controls, qualified readout and sampling guidance"
+}

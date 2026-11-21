@@ -113,6 +113,10 @@ function update() {
     `Only ${d.emitted} native ray${d.emitted===1?'':'s'} emitted. This cone is sparsely sampled and may miss the ${mixed ? 'lens or mirror' : mirror ? 'mirror' : 'lenses'}. Increase sampling or opening angle to inspect more rays.` :
     'Sampling changes the angular spacing, not the optical model.';
   if(blockerSummary)$('stats').textContent += ' · '+blockerSummary+(partial?' (partial run)':'');
+  if(session.document?.schemaVersion===29){
+    $('sampling-note').textContent='Density sets the angular spacing of the sampled fan. Changing it can change how many rays transmit or undergo total internal reflection.';
+    if(partial)$('stats').textContent='Fan readings require a complete, verified native run.';
+  }
   $('reflection-note').textContent = mirror ? !d ? state === 'running' ? 'Native reflection count pending for this revision.' : 'No current reflection count is available.' : partial ? 'Reflection counts are partial; the simulation is incomplete.' :
     d.reflections === 0 ? `No sampled rays reflected. ${session.prediction ? 'The analytical image is conditional; this run does not establish a simulated image.' : 'This run does not establish a simulated image.'}` :
     `${d.reflections} sampled ray${d.reflections === 1 ? '' : 's'} reflected. This count does not establish an image or guarantee ${mixed ? 'the lens → mirror → lens path or ' : ''}continuous-cone coverage.` : '';
