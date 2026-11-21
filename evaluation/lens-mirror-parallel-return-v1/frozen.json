@@ -1,0 +1,8 @@
+{
+  "format":"opticsim-lens-mirror-parallel-return-controls-v1",
+  "sourceStudy":"../lens-curved-mirror-afocal-study-v1/frozen.json",
+  "scope":"A positive ideal thin lens and a concave spherical mirror facing the lens in homogeneous air. Mirror radius is a positive magnitude. Distances are measured from lens plane to mirror pole.",
+  "syntheticUnequal":{"focalLengthMm":400,"mirrorRadiusMm":600,"expectedParallelGapsMm":[400,1000],"expectedReturnHeightScales":[-1,1],"intermediateGapMm":700,"intermediateHeightScale":-0.75,"intermediateSlopePerMm":0.001875},
+  "unitControl":"Equivalent inputs 40 cm / 60 cm and 0.4 m / 0.6 m give the same physical placements up to input representation.",
+  "limits":"Each optical length magnitude 1–10000 mm. Both possible positive mirror placements are reported, including a centre-retrace placement up to 20000 mm. Unknown finite object distance cannot be inferred from the source's collimated input."
+}

@@ -1,0 +1,6 @@
+{
+  "format":"opticsim-problem-v1",
+  "physical":{"format":"opticsim-lens-mirror-parallel-return-facts-v1","model":"coaxial-positive-thin-lens-and-facing-concave-mirror-in-air",
+    "incidence":"collimated-along-axis","lengthUnit":"m","lens":{"id":"L","focalLength":1},"mirror":{"id":"M","radiusMagnitude":1}},
+  "requests":[{"id":"spacings","kind":"parallel-return-mirror-placements"}]
+}
