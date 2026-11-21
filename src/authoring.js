@@ -17,6 +17,7 @@ import {CIRCLE_BLOCKER_TYPE,circleBlockerExtents} from './opaque-circle-blocker.
 import {FINITE_APERTURE_TYPE} from './finite-aperture.js';
 import {PARALLEL_BEAM_TYPE,PARALLEL_BEAM_VERSION,PARALLEL_LENS_MODEL,PARALLEL_PLANAR_MODEL,parallelBeamGeometry} from './parallel-beam.js';
 import {BEAM_PLANAR_MIRROR_VERSION,BEAM_PLANAR_MIRROR_MODEL,BEAM_PLANAR_MIRROR_MIRROR_RIM_CLEARANCE_MM,BEAM_PLANAR_MIRROR_HALF_SAMPLE_GUARD} from './native-beam-planar-mirror-v26.js';
+import {BEAM_TWO_PLANE_MIRROR_VERSION,BEAM_TWO_PLANE_MIRROR_MODEL,BEAM_TWO_PLANE_MIRROR_MIN_GAP_MM} from './native-beam-two-plane-mirror-v27.js';
 import {DECENTERED_BEAM_VERSION,DECENTERED_BEAM_MODEL} from './decentered-two-lens-beam.js';
 import {curvedEntryCapabilities} from './native-curved-entry-observation.js';
 import {GRIN_V25_TYPE,GRIN_V25_VERSION,GRIN_V25_POLICY,grinV25Extents,grinV25Capabilities} from './native-grin-v25.js';
@@ -84,6 +85,14 @@ export function capabilities() {
       geometry:'Entire emission segment lies within coordinate bounds, outside every surface/medium boundary and detector supporting line. First emitted samples near finite stop/lens endpoints are refused. Beam starting medium must be uniform.',
       execution:'Native pinned Beam emits all deterministic samples; density is numerical not a continuous source property. Brightness exceeding ray density is refused to prevent native saturation.',
       limitations:'No image reconstruction, PSF, diffraction, radiometric power, arbitrary composite optics or source-to-detector ancestry.'},
+    nativeBeamTwoPlaneMirror:{schemaVersion:BEAM_TWO_PLANE_MIRROR_VERSION,model:BEAM_TWO_PLANE_MIRROR_MODEL,
+      scope:'One finite real native Beam, exactly two vertical native PlaneGlass boundaries forming one finite homogeneous slab, one finite native vertical Mirror strictly beyond the slab, and 0–1 passive source-side detector (two full-return detectors exceed native depth 8).',
+      material:'The original outside medium on both sides of the slab must be identical and explicitly declared, with slab index >= exterior. Both planes require partialReflection=false; native TIR remains.',
+      geometry:'No touching or near-contact mirror/refracting interface: require >=1mm physical gap after rear face, slab thickness >=1mm, and >0.1mm first-mirror sample rim clearance. No other optics.',
+      numerical:'Exact compiled native Beam samples with v26 B1 half-integer withholding (1e-10), 1–100 samples, density 0.048–1 and brightness <=density, 0–60deg forward incidence and depth <=8. Mirror and both detector legs require >0.1 mm physical endpoint clearance plus 0.001 mm admission reserve. Every completed run must verify native cross-sections within 0.001 mm, including detector misses. Missing, inconsistent, stopped, incomplete or stale evidence suppresses results.',
+      limitations:'No native 3D image, continuous power, full Fresnel branches, arbitrary third medium, direct-contact mirror, original J08 complete source simulation or source-ray ancestry.',
+      minimumMirrorGapMm:BEAM_TWO_PLANE_MIRROR_MIN_GAP_MM,
+      nativeHalfIntegerSampleGuard:BEAM_PLANAR_MIRROR_HALF_SAMPLE_GUARD},
     nativeBeamPlanarMirror:{schemaVersion:BEAM_PLANAR_MIRROR_VERSION,model:BEAM_PLANAR_MIRROR_MODEL,
       scope:'One true deterministic finite Beam, one infinite vertical native PlaneGlass, one finite vertical native Mirror entirely inside the second medium and 0–2 passive detectors in the incident/source-side medium. No other optical objects.',
       geometry:'All sample mirror encounters must lie safely within the finite mirror (>0.1 mm from either endpoint), sample source must be fully before the interface; detectors are finite vertical segments between source and interface.',

@@ -1,0 +1,119 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "runPolicy": "preview-v1",
+    "title": "Synthetic finite parallel Beam traverses true slab and returns from separated finite mirror",
+    "components": [
+      {
+        "id": "B1",
+        "type": "parallel-beam",
+        "parameters": {
+          "x": -100,
+          "y": 0,
+          "width": 40,
+          "directionDeg": 30,
+          "brightness": 0.08
+        }
+      },
+      {
+        "id": "I1",
+        "type": "planar-interface",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "normalDeg": 0,
+          "negativeIndex": 1,
+          "positiveIndex": 1.5,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "I2",
+        "type": "planar-interface",
+        "parameters": {
+          "x": 60,
+          "y": 0,
+          "normalDeg": 0,
+          "negativeIndex": 1.5,
+          "positiveIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "M1",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": 90,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 420
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": -10,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 420
+        }
+      }
+    ]
+  },
+  "requests": [
+    {
+      "id": "emissions",
+      "kind": "source-emissions",
+      "componentId": "B1"
+    },
+    {
+      "id": "front",
+      "kind": "interface-interactions",
+      "componentId": "I1"
+    },
+    {
+      "id": "first-entry",
+      "kind": "interface-first-event",
+      "componentId": "I1"
+    },
+    {
+      "id": "rear",
+      "kind": "interface-interactions",
+      "componentId": "I2"
+    },
+    {
+      "id": "mirror",
+      "kind": "mirror-reflections",
+      "componentId": "M1"
+    },
+    {
+      "id": "detector-count",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "positions",
+      "kind": "detector-hit-events",
+      "componentId": "D1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Observe real PhyDemo Beam samples entering and leaving both faces of a finite slab around one reflected return from a strictly separated finite mirror.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "All indices, source coordinates and brightness, slab thickness 60 mm, exterior mirror separation 30 mm, finite mirror length 420 mm, passive source-side detector and sampling policy are synthetic teaching choices.",
+      "Two real vertical native PlaneGlass boundaries at x=0 and 60 delimit uniform refractive index 1.5 with exterior material 1 on BOTH sides; mirror at x=90 is separated from slab by 30 mm.",
+      "Both boundaries explicitly omit partial Fresnel reflections (partialReflection=false). Pinned native TIR remains; light paths are not prescribed.",
+      "The backing mirror is not in direct contact with slab; this is NOT a full simulation of original JEE J08, whose mirror rests on the plate."
+    ],
+    "unknowns": [
+      "No direct touching/co-planar mirror+glass qualification is supported by this new native profile.",
+      "No 3D observer, image reconstruction, calibrated irradiance, source-identified ray ancestry or original textbook-answer completeness is inferred."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}

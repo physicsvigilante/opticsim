@@ -1,0 +1,153 @@
+{
+  "format": "opticsim-native-parallel-two-plane-mirror-v27-research-v1",
+  "status": "frozen-before-native-execution",
+  "baselineMain": "4f81a1625cc45ce731d3ee0e286ff3173f72f4fe",
+  "pinnedPhyDemo": "811f508d2b070898c241a568b0c167dcb8645251",
+  "motivation": {
+    "nativeGap": "v19 admits real parallel Beam with two PlaneGlass boundaries but no finite Mirror; reviewed v26 admits one PlaneGlass and one Mirror but not two interfaces.",
+    "purpose": "Feasibility of one finite parallel Beam traversing a genuine finite slab (two exact native planar interfaces) and reflecting from a downstream finite mirror, with real reverse crossings.",
+    "JEEAnchor": "J08 mirror-backed plate motivates round-trip multi-boundary propagation, but an outside mirror gap is a new explicit teaching apparatus; direct touching mirror is numerically hazardous and must not be presumed supported.",
+    "safetyNonclaims": [
+      "No original J08 complete simulation, exterior index inferred, wave/Fresnel power, continuous irradiance, source ancestry or reconstructed image.",
+      "No public v27 authoring/profile/schema or native vendor/source changes on the research branch."
+    ]
+  },
+  "geometry": {
+    "coordinateSystem": "mm, x-right y-up; front plane x=0; back plane x=60; finite Mirror x=90 by default in third region.",
+    "slab": {
+      "first": {
+        "x": 0,
+        "y": 0,
+        "normalDeg": 0,
+        "negativeIndex": 1,
+        "positiveIndex": 1.5,
+        "partialReflection": false
+      },
+      "second": {
+        "x": 60,
+        "y": 0,
+        "normalDeg": 0,
+        "negativeIndex": 1.5,
+        "positiveIndex": 1,
+        "partialReflection": false
+      }
+    },
+    "beam": {
+      "x": -100,
+      "y": 0,
+      "width": 40,
+      "directionDeg": 30,
+      "brightness": 0.08
+    },
+    "mirror": {
+      "x": 90,
+      "y": 0,
+      "orientationDeg": 90,
+      "length": 420
+    },
+    "detector": {
+      "x": -10,
+      "y": 0,
+      "orientationDeg": 90,
+      "length": 420
+    },
+    "density": 0.2,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000,
+    "allNumericChoicesSynthetic": true
+  },
+  "independentGeometry": {
+    "iDeg": 30,
+    "rDeg": 19.47122063449069,
+    "slabThicknessMm": 60,
+    "mirrorGapMm": 30,
+    "frontFaceEntryToExitShiftMm": 77.06742302257038,
+    "externalDetectorRoundTripShiftMm": 88.6144284063629,
+    "expectedNativeEmission": 8,
+    "expectedGlassCallbacks": 32,
+    "expectedMirrorCallbacks": 8,
+    "expectedDetectorCallbacks": 16,
+    "note": "Reference geometry is an independently checked necessary signed Snell/specular consistency witness; it is NOT a routed native ray, per-sample identity proof or physical image."
+  },
+  "frozenCases": [
+    {
+      "id": "baseline-air-gap",
+      "gapMm": 30,
+      "expect": "complete 8 emitted, 32 native Glass, 8 finite Mirror, 16 Detector callbacks"
+    },
+    {
+      "id": "translated-gap",
+      "gapMm": 30,
+      "offset": {
+        "x": 100,
+        "y": -80
+      },
+      "expect": "same native event counts and translated positions"
+    },
+    {
+      "id": "normal-incidence",
+      "gapMm": 30,
+      "beamAngleDeg": 0,
+      "expect": "same native event counts and zero lateral shift"
+    },
+    {
+      "id": "higher-slab-index",
+      "gapMm": 30,
+      "insideIndex": 1.8,
+      "expect": "complete with changed Snell shift"
+    },
+    {
+      "id": "denser-source",
+      "gapMm": 30,
+      "rayDensity": 0.4,
+      "expect": "16 emitted, 64 Glass, 16 Mirror, 32 Detector"
+    },
+    {
+      "id": "mirror-absent",
+      "gapMm": 30,
+      "mirror": false,
+      "expect": "transmits through both planes and never returns through front"
+    },
+    {
+      "id": "coincident-mirror-contact",
+      "gapMm": 0,
+      "expect": "research-only - collision order and completeness are unsupported; NEVER qualify"
+    },
+    {
+      "id": "near-coincident-mirror",
+      "gapMm": 0.005,
+      "expect": "research-only - mirror/interface numerical proximity under 0.01mm withheld"
+    },
+    {
+      "id": "fresnel-on-first-raw",
+      "gapMm": 30,
+      "firstFresnel": true,
+      "expect": "raw incomplete/weak branch behavior, no public result"
+    },
+    {
+      "id": "max-depth-zero",
+      "gapMm": 30,
+      "maxRayDepth": 0,
+      "expect": "truncation incomplete"
+    },
+    {
+      "id": "processed-limit-one",
+      "gapMm": 30,
+      "processedRayLimit": 1,
+      "expect": "native stop"
+    }
+  ],
+  "observability": {
+    "nativeOnly": "Compile a valid v19 Beam + two parallel PlaneGlass + Detector canonical document. Clone the compiled native scene to append a real Mirror, without pretending the raw clone has a reviewed public authoring profile.",
+    "actualObservers": [
+      "real pinned Beam.onSimulationStart samples",
+      "real PlaneGlass 1 & 2 onRayIncident points and directions",
+      "real Mirror.onRayIncident hits",
+      "real Detector.onRayIncident crossings",
+      "native completion/truncation/undefined/error"
+    ],
+    "noFake": "Do not inject rays, alter collision/branch order, steer/refit return paths, synthesize detector hits or infer source image.",
+    "targetCoverage": "Native Beam freely traverses a slab twice and reaches an external finite Mirror for every sample if numerical geometry allows; no co-planar mirror assurance."
+  },
+  "qualification": "Keep research-only draft; source-pinned samples all real, full Fresnel and contact unsafe. If feasible, add a distinct v27 public profile on one final candidate with one focused independent physics/integration review; avoid repeated reviews of unchanged v19/v26."
+}
