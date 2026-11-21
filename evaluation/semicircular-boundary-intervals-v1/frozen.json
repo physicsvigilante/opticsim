@@ -1,0 +1,25 @@
+{
+  "format": "opticsim-semicircular-boundary-intervals-study-v1",
+  "pin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "cases": [
+    {
+      "id": "A14",
+      "path": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/009.png",
+      "sha256": "f4ab4b63f956986c04a17ba0c4db99b71ce75f0c86bfef86b08b5002e24aba6a",
+      "facts": "Circular beam of radius r incident symmetrically on a hemisphere of radius 2r and index 3/2. Its base is on a horizontal table. Requested luminous spot radius.",
+      "assumptions": "Collimated filled beam in unit-index air, rotational symmetry, straight primary transmission in homogeneous geometrical optics. Determine the geometric extent of first incidence at the base. Identifying it with a visible spot additionally requires a contacting surface that registers incident light throughout that footprint. Table optics and visibility are unspecified.",
+      "expectation": "For signed entrance ordinate h in units of R, the base ordinate is (h/m)/cos(asin(h)-asin(h/m)), where m is the glass/exterior ratio. It is odd and strictly increasing for m>1 in the qualified interval. With a=1/2 and m=3/2, the incident radius in units of r is (2/3)/cos(pi/6-asin(1/3)).",
+      "control": "Reuse the released v30 curved-entry Beam with the three frozen v30 configurations. Compare public native flat-face ranges against the map at the actual extreme emitted sample ordinates. The continuous full-width span strictly contains the sampled span in these cases."
+    },
+    {
+      "id": "A20",
+      "path": "08_Ray_Optics_Explanations/04_Total_Internal_Reflection_TIR/Problems/010.png",
+      "sha256": "214f77a38e222b9a520df73c6fc7194df22919b1e3ae82e436fa474955810f8e",
+      "facts": "Parallel rays at 45 degrees enter the plane surface of a half cylinder of index sqrt(2), in the plane perpendicular to the axis. Asked when the rays avoid total internal reflection.",
+      "assumptions": "Unit-index exterior on both faces; t is the signed entry coordinate on the diameter divided by the cylinder radius. Exclude both flat/arc joints. Consider the first exit encounter of the directly transmitted branch.",
+      "expectation": "Inside angle beta=30 degrees. Conservation of perpendicular distance to the circle centre gives sin(iArc)=abs(t)*cos(beta). Strict transmission requires abs(t)<sqrt(2/3); equality is the critical limiting direction. TIR occurs above that threshold inside the diameter.",
+      "control": "Public v21 right semicircle R=100 mm, inside index sqrt(2), outside 1, partialReflection false. One parallel Beam at +45 degrees, width 10 mm, density 0.1, brightness 0.04, x=-40 mm and source y=100*t-40 mm for t=-0.9,-0.7,0,0.7,0.9. Require a complete warning-free native run and compare the real first arc callback with the frozen outcome and incidence. A native refusal or truncation is recorded as a failed witness."
+    }
+  ],
+  "boundaries": "No custom native ray tracing, continuous irradiance, scattered light, Fresnel flux, repeated-ray history or native critical-incidence claim. Preserve pinned physics, historical v21/v30 and all frozen artifacts. Keep mathematical boundary, strictly transmitted and TIR branches distinct."
+}
