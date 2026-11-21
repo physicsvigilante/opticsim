@@ -62,7 +62,10 @@ export function enteringGradedSlabAudit(doc,scene,idMap){
   const start=emitter.onSimulationStart,incident=body.onRayIncident,detect=gauge.onRayIncident;
   const halfBrightness=source.parameters.brightness/2;
   const hasAuthoredBrightness=input=>input.brightness_s===halfBrightness&&input.brightness_p===halfBrightness;
+  const detectorSign=d.orientationDeg===0?1:-1;
+  const expectedSignedPower=detectorSign*source.parameters.brightness;
   let starts=0,contacts=0,entry=0,exit=0,hits=0,ray=null,last=null,fault=false;
+  const startsAtLastContact=input=>last&&input.p1.x===last.x&&input.p1.y===-last.y;
   emitter.onSimulationStart=function(...args){
     const result=start.apply(this,args);starts++;
     if(result?.newRays?.length!==1||starts!==1)fault=true;
@@ -76,18 +79,19 @@ export function enteringGradedSlabAudit(doc,scene,idMap){
   };
   body.onRayIncident=function(input,index,point,...rest){
     const before=primary(input),x=point.x,y=-point.y,arrivedWithAuthoredBrightness=hasAuthoredBrightness(input);
+    const continuous=startsAtLastContact(input);
     const result=incident.call(this,input,index,point,...rest),after=primary(input);
     contacts++;
-    if(input!==ray||contacts>GRIN_SLAB_POLICY.maxRayDepth||!arrivedWithAuthoredBrightness||!hasAuthoredBrightness(input)||
+    if(input!==ray||contacts>GRIN_SLAB_POLICY.maxRayDepth||!continuous||!arrivedWithAuthoredBrightness||!hasAuthoredBrightness(input)||
       result?.isAbsorbed||result?.isUndefinedBehavior||
-      result?.newRays?.length||!near(input.p1.x,x)||!near(input.p1.y,-y)||
+      result?.newRays?.length||point.x!==x||point.y!==-y||!near(input.p1.x,x)||!near(input.p1.y,-y)||
       !within(x,p.leftX+clearance-tolerance,p.leftX+p.spanX-clearance+tolerance)||
       !(before.x>0&&before.y>0&&after.x>0&&after.y>0))fault=true;
     const dx=x-ref.entryX,expectedY=p.axisY+dx*(ref.inward/ref.q+dx/(4*ref.q*ref.q));
     if(!near(y,expectedY,tolerance)||!last||!(x>last.x&&y>last.y)||
       !near(before.x,last.d.x,1e-9)||!near(before.y,last.d.y,1e-9)||
       !near((x-last.x)*before.y,(y-last.y)*before.x))fault=true;
-    last={x,y,d:after};
+    last={x:input.p1.x,y:-input.p1.y,d:after};
     if(contacts===1){
       if(result&&near(x,ref.entryX)&&near(y,p.axisY)&&near(after.x,ref.q,1e-8))entry++;
       else fault=true;
@@ -99,11 +103,13 @@ export function enteringGradedSlabAudit(doc,scene,idMap){
   };
   gauge.onRayIncident=function(input,index,point,...rest){
     const direction=primary(input),x=point.x,y=-point.y,arrivedWithAuthoredBrightness=hasAuthoredBrightness(input);
-    const expected=expectedDetectorPassage(this,input,direction,point);
+    const continuous=startsAtLastContact(input);
+    const expected=expectedDetectorPassage(this,input,point,0,detectorSign);
     const result=detect.call(this,input,index,point,...rest);
     const after=primary(input);
     hits++;
-    if(input!==ray||exit!==1||!arrivedWithAuthoredBrightness||!last||!near(direction.x,last.d.x,1e-9)||!near(direction.y,last.d.y,1e-9)||
+    if(input!==ray||exit!==1||!continuous||!arrivedWithAuthoredBrightness||
+      !near(direction.x,last.d.x,1e-9)||!near(direction.y,last.d.y,1e-9)||
       !near((x-last.x)*direction.y,(y-last.y)*direction.x)||!near(y,d.y)||!near(x,ref.detectorX,tolerance)||
       !near(direction.x,ref.q,tolerance)||direction.y<=0||Math.abs(x-d.x)>=d.length/2-clearance/2||
       !near(direction.x,after.x,1e-9)||!near(direction.y,after.y,1e-9)||
@@ -114,7 +120,8 @@ export function enteringGradedSlabAudit(doc,scene,idMap){
     key:'v33GradedSlabVerified',
     finish(emitted,_interfaces,warnings,_mirrors,detectors){
       if(fault||starts!==1||emitted!==1||contacts<10||entry!==1||exit!==1||hits!==1||
-        warnings.length||detectors?.[detector.id]?.crossings!==1)
+        warnings.length||detectors?.[detector.id]?.crossings!==1||
+        detectors[detector.id].signedPower!==expectedSignedPower)
         return 'Native graded-slab propagation failed its finite path and detector checks.';
       return null;
     }

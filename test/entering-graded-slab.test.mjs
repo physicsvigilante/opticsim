@@ -128,3 +128,56 @@ test('v33 withholds powered rays that disagree with the authored SingleRay acros
     }
   }
 });
+
+test('v33 withholds an offset native detector accumulator at initialization or after the last hit',()=>{
+  const doc=prepareScene(original()).document;
+  const loaded=core.loadDocument(doc);
+  const detector=loaded.scene.objs[loaded.idMap.get('D')],prototype=Object.getPrototypeOf(detector);
+  for(const name of ['onSimulationStart','checkRayIntersects']){
+    const delegate=prototype[name];
+    let changed=0;
+    prototype[name]=function(...args){
+      const result=delegate.apply(this,args);
+      if(name==='onSimulationStart'||this.power!==0){
+        this.power=10;
+        changed++;
+      }
+      return result;
+    };
+    try{
+      const {summary}=evaluateDocument(doc,core,fixture.requests);
+      assert.equal(changed,1);
+      assert.equal(summary.observations,null);
+    }finally{
+      prototype[name]=delegate;
+    }
+  }
+});
+
+test('v33 withholds a ray origin relocated along its line before a real native contact',()=>{
+  const doc=prepareScene(original()).document;
+  const loaded=core.loadDocument(doc);
+  for(const id of ['G','D']){
+    const object=loaded.scene.objs[loaded.idMap.get(id)],prototype=Object.getPrototypeOf(object);
+    const delegate=prototype.checkRayIntersects;
+    let changed=false;
+    prototype.checkRayIntersects=function(ray,...rest){
+      const point=delegate.call(this,ray,...rest);
+      if(point&&!changed){
+        const dx=ray.p2.x-ray.p1.x,dy=ray.p2.y-ray.p1.y;
+        const scale=.02/Math.hypot(dx,dy);
+        ray.p1={x:ray.p1.x+dx*scale,y:ray.p1.y+dy*scale};
+        ray.p2={x:ray.p2.x+dx*scale,y:ray.p2.y+dy*scale};
+        changed=true;
+      }
+      return point;
+    };
+    try{
+      const {summary}=evaluateDocument(doc,core,fixture.requests);
+      assert.equal(changed,true);
+      assert.equal(summary.observations,null);
+    }finally{
+      prototype.checkRayIntersects=delegate;
+    }
+  }
+});
