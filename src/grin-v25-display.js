@@ -5,7 +5,9 @@ export const GRIN_V25_DISPLAY_METHOD='v25-visual-canvas-marker-scale-only-v1';
 const finite=n=>typeof n==='number'&&Number.isFinite(n)&&n>0;
 const renderers=['canvasRendererMain','canvasRendererBelowLight','canvasRendererAboveLight'];
 export function installGrinV25DisplayScale(doc,scene,simulator){
- if(doc?.schemaVersion!==25||doc?.physics?.model!=='native-bounded-grin-tracing')return null;
+ const legacy=doc?.schemaVersion===25&&doc?.physics?.model==='native-bounded-grin-tracing';
+ const entering=doc?.schemaVersion===33&&doc?.physics?.model==='native-entering-graded-slab';
+ if(!legacy&&!entering)return null;
  if(!scene||!simulator||simulator.scene!==scene||!Array.isArray(scene.objs)||
     scene.objs.length!==3||!finite(scene.scale)||!finite(scene.lengthScale)||
     !finite(simulator.dpr))
@@ -33,7 +35,7 @@ export function installGrinV25DisplayScale(doc,scene,simulator){
    return original.apply(this,args); // delegate pinned native drawing ONCE
   };
  }
- return Object.freeze({method:GRIN_V25_DISPLAY_METHOD,
+ return Object.freeze({method:legacy?GRIN_V25_DISPLAY_METHOD:'v33-visual-canvas-marker-scale-only-v1',
   visualMarkerWorldLength:markerScale,
   originalNativeSceneLengthScale:sceneNumericalLengthScale,
   altersNativeGeometry:false,altersRayPropagation:false});
