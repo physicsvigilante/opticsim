@@ -39,7 +39,7 @@ function baseInterval(f,m){
     return (h/m)/Math.cos(incidence-beta*RAD);
   };
   const min=ordinate(lo),max=ordinate(hi);
-  return {status:'conditional',value:{face:'flat-diameter',coordinate:'signed-world-transverse-offset-over-radius',
+  return {status:'conditional',value:{face:'flat-diameter',coordinate:'signed-transverse-offset-from-axis-over-radius',
     lowerOverR:min,upperOverR:max,...(disk?{firstIncidenceRadiusOverBeamRadius:max/hi}:{})}};
 }
 function arcInterval(f,m){
