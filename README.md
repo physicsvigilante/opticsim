@@ -1,5 +1,7 @@
 # Ray Optics 2D
 
+Explore refraction and total internal reflection from one directional point source with the [schema-v29 fan contract and worked example](docs/REFRACTIVE-FAN.md).
+
 For a finite parallel Beam passing through an ideal lens and then a finite aperture, see the [schema-v28 authoring contract and worked example](docs/POST-LENS-APERTURE.md).
 
 A standalone-browser-capable optical bench powered by PhyDemo Ray Optics Simulation **v5.4.0**,

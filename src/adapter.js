@@ -1,3 +1,4 @@
+import {installRefractiveFanAudit} from './refractive-fan.js';
 import {installPostLensAudit} from './native-post-lens-audit.js';
 import {compilePrism,PRISM_TYPE} from './triangular-prism.js';
 import {PARALLEL_BEAM_TYPE,compileParallelBeam} from './parallel-beam.js';
@@ -90,6 +91,8 @@ export function loadDocument(doc, width, height) {
     endpointAudits.set(scene,{key:'v27EndpointsVerified',finish:installV27EndpointAudit(doc,scene,compiled.idMap)});
   if(doc.schemaVersion===28)
     endpointAudits.set(scene,{key:'v28EndpointsVerified',finish:installPostLensAudit(doc,scene,compiled.idMap)});
+  if(doc.schemaVersion===29)
+    endpointAudits.set(scene,{key:'v29FanVerified',finish:installRefractiveFanAudit(doc,scene,compiled.idMap)});
   return { ...compiled, scene };
 }
 export function nativeExport(doc) { return loadDocument(doc).scene.toJSON(); }
@@ -234,7 +237,7 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
   let endpointsVerified = false;
   if (endpointAudit && nativeEvent==='simulationComplete' && !errors.length &&
       simulator.totalTruncation===0 && simulator.totalUndefinedBehavior===0) {
-    const issue = endpointAudit.finish(meter?.emitted);
+    const issue = endpointAudit.finish(meter?.emitted,interfaceMeter?.byId,warnings);
     if (issue) errors.push(issue);
     else endpointsVerified = true;
   }
@@ -277,6 +280,6 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
 }
 export function classifyRun(event, data) {
   return data.errors.length ? 'failed' : event === 'simulationStop' ? 'stopped' :
-    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false || data.v28EndpointsVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
+    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false || data.v28EndpointsVerified===false || data.v29FanVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
 }
 export { Scene, Simulator };
