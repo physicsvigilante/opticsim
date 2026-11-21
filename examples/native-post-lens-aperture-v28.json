@@ -1,0 +1,87 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "lengthUnit": "mm",
+    "title": "Finite aperture after a centered ideal lens",
+    "runPolicy": "preview-v1",
+    "components": [
+      {
+        "id": "B1",
+        "type": "parallel-beam",
+        "parameters": {
+          "x": -100,
+          "y": 0,
+          "width": 40,
+          "directionDeg": 0,
+          "brightness": 0.08
+        }
+      },
+      {
+        "id": "A1",
+        "type": "finite-aperture",
+        "parameters": {
+          "x": 50,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 100,
+          "openingLength": 12
+        }
+      },
+      {
+        "id": "L1",
+        "type": "ideal-lens",
+        "parameters": {
+          "x": 0,
+          "focalLength": 100,
+          "apertureHeight": 100
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 200,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 200
+        }
+      }
+    ],
+    "model": "native-post-lens-aperture-tracing"
+  },
+  "requests": [
+    {
+      "id": "emitted",
+      "kind": "source-emissions",
+      "componentId": "B1"
+    },
+    {
+      "id": "absorbed",
+      "kind": "blocker-absorptions",
+      "componentId": "A1"
+    },
+    {
+      "id": "detected",
+      "kind": "detector-crossings",
+      "componentId": "D1"
+    },
+    {
+      "id": "hits",
+      "kind": "detector-hit-events",
+      "componentId": "D1"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Measure native absorptions and detector crossings as the downstream aperture samples a converging or diverging beam.",
+    "stated": [],
+    "derived": [],
+    "assumptions": [
+      "All geometry, finite lengths, focal length, source brightness and sampling are explicitly synthetic teaching choices."
+    ],
+    "unknowns": [
+      "Rays reaching the detector may pass through the opening or beyond the outer edges. Counts do not measure continuous throughput."
+    ]
+  },
+  "illustration": false,
+  "verifyNative": false
+}

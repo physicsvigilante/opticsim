@@ -1,0 +1,25 @@
+{
+  "format": "opticsim-native-post-lens-aperture-feasibility-v1",
+  "productionBase": "54006f12175074a0a5aed3ef464280e419fbc927",
+  "phyDemoPin": "811f508d2b070898c241a568b0c167dcb8645251",
+  "source": "Explicit synthetic variations of examples/jee-parallel-lens-v19.json. No source question is interpreted or graded.",
+  "gap": "The v19 ideal-lens Beam contract refuses an aperture downstream of the lens. These are raw native research runs only.",
+  "units": "mm, world y-up",
+  "baseline": {"beamX":-100,"beamY":0,"beamWidth":40,"directionDeg":0,"brightness":0.08,"density":0.2,"lensX":0,"focalLength":100,"lensHeight":100,"stopX":50,"stopY":0,"orientationDeg":90,"length":100,"openingLength":12,"detectorX":200,"detectorY":0,"detectorLength":200,"maxRayDepth":8,"processedRayLimit":10000},
+  "method": "Compile canonical v19 Beam, ideal lens and downstream detector. Add only the existing compiled finite Aperture to a raw clone. Observe actual source starts, lens incidents and outgoing geometry, native isAbsorbed arm callbacks, and detector points. No hand-routed rays. On safe lens-hit controls compare sorted native sections to independent y_at_plane = y_at_lens * (1 - signed_distance/f).",
+  "qualification": "A positive research witness requires all samples meeting the lens, completed native execution, zero warnings/errors/truncation/undefined, cross-section agreement to 1e-6 mm, and all four aperture endpoints farther than 0.1 mm from the projected actual outgoing section. Boundary, partial-lens, stopped and truncated scenes are retained without positive witness. No public schema, image detection, continuous transmitted power, 3D visibility or diffraction.",
+  "cases": [
+    {"id":"converging","expectedAbsorbed":4,"expectedDetector":4},
+    {"id":"diverging","focalLength":-100,"expectedAbsorbed":6,"expectedDetector":2},
+    {"id":"at-focus","stopX":100,"expectedAbsorbed":0,"expectedDetector":8},
+    {"id":"past-focus","stopX":150,"expectedAbsorbed":4,"expectedDetector":4},
+    {"id":"outside-finite-arms","length":12,"openingLength":6,"expectedAbsorbed":2,"expectedDetector":6},
+    {"id":"translated","translateX":5500,"expectedAbsorbed":4,"expectedDetector":4},
+    {"id":"denser","density":0.4,"expectedAbsorbed":6,"expectedDetector":10},
+    {"id":"inner-endpoint","openingLength":12.5,"withhold":"endpoint"},
+    {"id":"outer-endpoint","length":17.5,"openingLength":6,"withhold":"endpoint"},
+    {"id":"partial-lens","lensHeight":20,"withhold":"finite-lens-miss"},
+    {"id":"depth-zero","maxRayDepth":0,"withhold":"incomplete"},
+    {"id":"processed-limit","processedRayLimit":1,"withhold":"stopped"}
+  ]
+}

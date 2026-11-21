@@ -1,3 +1,4 @@
+import {installPostLensAudit} from './native-post-lens-audit.js';
 import {compilePrism,PRISM_TYPE} from './triangular-prism.js';
 import {PARALLEL_BEAM_TYPE,compileParallelBeam} from './parallel-beam.js';
 import {compilePolygon,POLYGON_TYPE} from './polygon-dielectric.js';
@@ -9,7 +10,7 @@ export {observeNativeGrinV25};
 import {observeNativeV18ApertureCorner as nativeV18CornerObserver} from './native-v18-aperture-corner-guard.js';
 import {installV27EndpointAudit} from './native-v27-endpoint-audit.js';
 import {BEAM_TWO_PLANE_MIRROR_VERSION} from './native-beam-two-plane-mirror-v27.js';
-const v27EndpointAudits = new WeakMap();
+const endpointAudits = new WeakMap();
 import {CIRCLE_BLOCKER_TYPE,compileCircleBlocker} from './opaque-circle-blocker.js';
 import {FINITE_APERTURE_TYPE,compileFiniteAperture} from './finite-aperture.js';
 import {compileCurved,isCurved} from './curved-mirrors.js';
@@ -86,7 +87,9 @@ export function loadDocument(doc, width, height) {
   const compiled = compile(doc, width, height);
   const scene = loadNative(compiled.native, width, height);
   if (doc.schemaVersion===BEAM_TWO_PLANE_MIRROR_VERSION)
-    v27EndpointAudits.set(scene,installV27EndpointAudit(doc,scene,compiled.idMap));
+    endpointAudits.set(scene,{key:'v27EndpointsVerified',finish:installV27EndpointAudit(doc,scene,compiled.idMap)});
+  if(doc.schemaVersion===28)
+    endpointAudits.set(scene,{key:'v28EndpointsVerified',finish:installPostLensAudit(doc,scene,compiled.idMap)});
   return { ...compiled, scene };
 }
 export function nativeExport(doc) { return loadDocument(doc).scene.toJSON(); }
@@ -227,13 +230,13 @@ export function observeBlockerSet(doc, scene, idMap) {
 export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, detectorMeter = null, interfaceMeter = null, blockerMeter = null, {detectorHitEvents=false,nativeEvent=null,parentage=null,finiteDiagnostic=null,apertureCornerGuard=null,grinNumericalGuard=null}={}) {
   const errors = [...(interfaceMeter?.errors||[]),...(blockerMeter?.errors||[]),...(apertureCornerGuard?.errors||[]),...(grinNumericalGuard?.errors||[]),scene.error, simulator.error, ...scene.objs.map(o => o.getError())].filter(Boolean);
   const warnings = [scene.warning, simulator.warning, ...scene.objs.map(o => o.getWarning())].filter(Boolean);
-  const endpointAudit = v27EndpointAudits.get(scene);
-  let v27EndpointsVerified = false;
+  const endpointAudit = endpointAudits.get(scene);
+  let endpointsVerified = false;
   if (endpointAudit && nativeEvent==='simulationComplete' && !errors.length &&
       simulator.totalTruncation===0 && simulator.totalUndefinedBehavior===0) {
-    const issue = endpointAudit();
+    const issue = endpointAudit.finish(meter?.emitted);
     if (issue) errors.push(issue);
-    else v27EndpointsVerified = true;
+    else endpointsVerified = true;
   }
   const emissionsById=meter?.byId ?? null;
   const sourceCount=emissionsById ? Object.keys(emissionsById).length : 0;
@@ -251,7 +254,7 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
       conflicting:0,limit:128,nativeMeasurementQualificationUnchanged:true};
   }
   return { errors, warnings, processed: simulator.processedRayCount, truncation: simulator.totalTruncation,
-    ...(endpointAudit?{v27EndpointsVerified}:{}),
+    ...(endpointAudit?{[endpointAudit.key]:endpointsVerified}:{}),
     undefinedBehavior: simulator.totalUndefinedBehavior, emitted: meter?.emitted ?? null,
     // There is no meaningful single scale for multiple independently emitting
     // sources; keep source-specific scaling in emissionsById instead.
@@ -274,6 +277,6 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
 }
 export function classifyRun(event, data) {
   return data.errors.length ? 'failed' : event === 'simulationStop' ? 'stopped' :
-    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
+    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false || data.v28EndpointsVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
 }
 export { Scene, Simulator };

@@ -33,9 +33,9 @@ test('separate v14–v21 apparatuses choose only their declared schema and origi
   'All 31 reviewed v1-v25 profiles remain unchanged and present');
  assert.equal(catalogue.profiles.filter(p=>p.schemaVersion<=26).length,32,
   'Exactly one isolated reviewed v26 augments the original 31 profiles');
- assert.equal(catalogue.profiles.length,33,
+ assert.equal(catalogue.profiles.filter(p=>p.schemaVersion<=27).length,33,
   'One isolated v27 augments the original 32 reviewed profiles');
- assert.deepEqual(catalogue.profiles.filter(p=>p.schemaVersion>25).map(p=>p.id).sort(),
+ assert.deepEqual(catalogue.profiles.filter(p=>p.schemaVersion>25&&p.schemaVersion<=27).map(p=>p.id).sort(),
   ['native-parallel-planar-mirror-tracing@26','native-parallel-slab-mirror-tracing@27']);
  for(const [version,path,model,types] of examples){
   const f=load(path),before=JSON.stringify(f),d=prepareScene(f.physical).document;
