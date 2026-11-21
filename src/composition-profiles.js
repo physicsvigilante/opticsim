@@ -143,6 +143,7 @@ define(28,'native-post-lens-aperture-tracing',{[beam]:range(1,1),[lens]:range(1,
 define(29,'native-refractive-fan-tracing',{[source]:range(1,1),[plane]:range(1,1)},[],[rule('native-refractive-fan')],['directional']);
 define(30,'native-curved-entry-beam-tracing',{[beam]:range(1,1),[semicircle]:range(1,1)},[],[rule('curved-entry-beam')],[]);
 define(31,'native-fan-slab-arc-return-tracing',{[source]:range(1,1),[plane]:range(2,2),'circular-arc-mirror':range(1,1),[detector]:range(1,1)},[],[rule('slab-arc-return')],['directional']);
+define(34,'native-immersed-arc-plane-port',{[source]:range(1,1),[plane]:range(1,1),'circular-arc-mirror':range(1,1),[detector]:range(1,1)},[],[rule('immersed-arc-port')],['directional']);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 

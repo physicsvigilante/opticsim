@@ -1,3 +1,4 @@
+import {validateImmersedArcPort} from './immersed-arc-plane-port.js';
 import {validateSlabArcReturn} from './slab-arc-return.js';
 import {validateCurvedEntryBeam} from './curved-entry-beam.js';
 import {validateRefractiveFan} from './refractive-fan.js';
@@ -141,6 +142,7 @@ function validateVersion(doc, version) {
     'native-thick-mirror':c=>validateThickLensMirrorComposition(c,mirrorEndpoints,fail),
     'native-two-thick-mirror':c=>validateTwoThickLensMirrorComposition(c,mirrorEndpoints,fail),
     'native-thick-aperture':c=>validateThickApertureComposition(c,mirrorEndpoints,fail),
+    'immersed-arc-port':c=>validateImmersedArcPort(c,doc.simulation?.rayDensity,fail),
     'slab-arc-return':c=>validateSlabArcReturn(c,doc.simulation?.rayDensity,fail),
     'curved-entry-beam':c=>validateCurvedEntryBeam(c,doc.simulation?.rayDensity,fail),
     'native-refractive-fan':c=>validateRefractiveFan(c,doc.simulation?.rayDensity,fail),
