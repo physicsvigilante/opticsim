@@ -1,0 +1,17 @@
+{
+  "format": "opticsim-refracting-face-mirror-return-study-v1",
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "sourceArchiveCommit": "d33b45226348d9b0c701f2a3e8b86dd1285de2d0",
+  "sourceArchiveSha256": "03fa29dc8a09f157692ea389354bc7393a96e49f792b60329164c03e56bc5939",
+  "problems": [
+    {"path":"08_Ray_Optics_Explanations/07_Lens_Formula/Problems/004.png","sha256":"f26b8374f0bd334d9c0dc20b4cf2c0a1adacd1ad52e6b309ef7bff4b05da0dab","givens":"Equiconvex lens, index 1.5, focal length 60 cm, one face silvered.","assumptions":"Thin lens in unit-index air, with the quoted focal length measured in air. Orient the unsilvered face toward the source.","conditional":"Equal radius magnitudes 600 mm. In the zero-thickness limit the returning pencil focuses 150 mm before the pole, equivalent to a concave mirror."},
+    {"path":"08_Ray_Optics_Explanations/07_Lens_Formula/Problems/006.png","sha256":"cc731e23171c515bea95c236474b2077c9634bd881e3a2b54aaee1226d9cb15d","givens":"Thin equiconvex lens, index 1.5, equal radius magnitudes 25 cm, one face silvered, real object in front required to coincide with its image.","assumptions":"Unit-index air outside. Orient the unsilvered face toward the object.","conditional":"The nonzero object distance is 125 mm from the thin element."}
+  ],
+  "syntheticNativeGeometry":{"outsideIndex":1,"insideIndex":1.5,"frontPoleXmm":0,"mirrorPoleXmm":20,"mirrorSemiHeightMm":12,"detectorXmm":-5,"detectorSemiHeightMm":10,"maxRayDepth":8,"brightness":0.04,
+    "scope":"Use the left surface of one CircleGlass with centre (R,0) and radius R, and a separate immersed ArcMirror patch of radius R with centre (20-R,0). All lengths in mm. The mirror patch lies strictly inside the glass. The positive separation is synthetic. No touching native surfaces or coincident-element run."},
+  "cases":[
+    {"id":"collimated-reflection","radiusMm":600,"sourceXmm":-100,"heightsMm":[-0.5,0.5],"slopes":[0],"expectedAxisXmm":-139.47691436125012},
+    {"id":"self-conjugate-return","radiusMm":250,"sourceXmm":-117.3469387755102,"heightsMm":[0],"slopes":[-0.002,0.002],"expectedAxisXmm":-117.3469387755102}
+  ],
+  "acceptance":{"maxAxisResidualMm":0.05,"maxMirrorSymmetryResidualMm":0.002,"requiredCallbackOrder":["detector","glass","mirror","glass","detector"],"negativeControl":"With the mirror removed, the ray may transmit across the far side of the circle but must never give a leftward detector crossing.","interpretation":"Intersect measured return directions with the axis. Exact first-order reference uses refraction, positive translation in glass, spherical reflection, the return translation and exit refraction. Synthetic finite separations have distinct predictions from the thin-source limits."}
+}
