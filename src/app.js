@@ -329,6 +329,11 @@ function controls() {
     $('parameter-guidance').textContent='The source is at least 1 mm below the interface. Its whole cone must lie within 75° of the upward normal.';
     $('physical-note').textContent='PhyDemo samples the cone and traces transmission and total internal reflection. Partial reflections are disabled. A single near-critical sample withholds readings for the entire fan.';
   }
+  if(session.document.schemaVersion===33){
+    $('model-label').textContent='Native entry into a graded-index slab';
+    $('parameter-guidance').textContent='Launch one finite-angle ray from below the slab and put a horizontal detector above the far face.';
+    $('physical-note').textContent='The fixed gradient bends the ray inside the slab. Each native run must pass coordinate and direction checks before the detector result appears.';
+  }
   if(session.document.schemaVersion===32){
     $('model-label').textContent='Inside-source circular glass cap';
     $('parameter-guidance').textContent='The base position and cap height set the curved pole. Place the source on the axis inside the cap and the detector beyond the pole.';
@@ -368,13 +373,13 @@ function controls() {
   $('grid-toggle').checked = session.document.presentation.grid;
   // Only v25 receives magnification suitable for 1mm-scale physical GRIN
   // geometry. Restoring an older scene restores its original slider range.
-  $('zoom').max=graded?'100':'2';
+  $('zoom').max=graded||session.document.schemaVersion===33?'100':'2';
   $('zoom').step='0.01';
   $('zoom').value = session.document.presentation.view.zoom;
   syncSampling();
 }
 function sourcePicker(component) {
-  const choices = [5,7,8,9,10,11,12,13,14,15,16,17,18,24,25].includes(session.document.schemaVersion)?[{mode:'single-ray',title:'Single ray (native)',description:'One exact direction; sampling density does not create a cone',icon:angleSourceIcon}]:[
+  const choices = [5,7,8,9,10,11,12,13,14,15,16,17,18,24,25,33].includes(session.document.schemaVersion)?[{mode:'single-ray',title:'Single ray (native)',description:'One exact direction; sampling density does not create a cone',icon:angleSourceIcon}]:[
     { mode: 'full-circle', title: 'Point source (360°)', description: 'Light in every direction', icon: pointSourceIcon },
     { mode: 'directional', title: 'Point source (directional)', description: 'Symmetric cone · 1–180°', icon: angleSourceIcon }
   ];
@@ -559,7 +564,7 @@ for (const mode of ['rays', 'extended']) $(`mode-${mode}`).onchange = e => {
 $('grid-toggle').onchange = e => viewChange(p => { p.grid = e.target.checked; });
 $('zoom').oninput = e => viewChange(p => { p.view.zoom = Number(e.target.value); });
 for (const [id, dx] of [['pan-left', -100], ['pan-right', 100]]) $(id).onclick = () =>
-  viewChange(p => { p.view.x += session.document.schemaVersion===25?Math.sign(dx)*.25:dx; });
+  viewChange(p => { p.view.x += [25,33].includes(session.document.schemaVersion)?Math.sign(dx)*.25:dx; });
 function resize() {
   const rect = $('stage').getBoundingClientRect();
   const nextSize = { width: Math.max(200, Math.round(rect.width)), height: Math.max(200, Math.round(rect.height)) };
