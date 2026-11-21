@@ -51,8 +51,9 @@ export function analyzeCapObserver(f,q){
   const denominator=interiorIndex*radius-contrast*fromPole;
   // Stable form of height + signedImageDistance, including the exact
   // hemispherical centre and matched-medium identities.
-  const apparent=(interiorIndex*radius*objectDepth+contrast*fromPole*(radius-height))/denominator;
+  const apparent=contrast===0?objectDepth:
+    (interiorIndex*radius*objectDepth+contrast*fromPole*(radius-height))/denominator;
   return {...base,status:'conditional',value:{lengthUnit:f.lengthUnit,objectModel:object.kind,
-    apparentPositionFromBase:apparent,signedImageDistanceFromPole:surface.value.signedImageDistance,
-    distanceFromObserver:observer-height-surface.value.signedImageDistance}};
+    apparentPositionFromBase:apparent,signedImageDistanceFromPole:apparent-height,
+    distanceFromObserver:observer-apparent}};
 }
