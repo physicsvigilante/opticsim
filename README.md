@@ -2,6 +2,8 @@
 
 Measure the sampled transverse extent of a parallel beam on a hemisphere’s flat face with the [curved-entry Beam contract](docs/CURVED-ENTRY-BEAM.md).
 
+For continuous first-incidence bounds and critical entry positions on the same geometry, use the [semicircular boundary interval queries](docs/SEMICIRCULAR-BOUNDARY-INTERVALS.md).
+
 Explore refraction and total internal reflection from one directional point source with the [schema-v29 fan contract and worked example](docs/REFRACTIVE-FAN.md).
 
 For the grazing-entry emergence limit and meridional guide acceptance angle, use the [two-face dielectric query](docs/PERPENDICULAR-DIELECTRIC-FACES.md).

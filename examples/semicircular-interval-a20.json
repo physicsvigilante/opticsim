@@ -1,0 +1,32 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-semicircular-boundary-facts-v1",
+    "geometry": "meridional-half-disk",
+    "glassIndex": 1.4142135623730951,
+    "exteriorIndex": 1,
+    "launch": {
+      "kind": "parallel-at-flat-face",
+      "angleFromFlatNormalDeg": 45
+    }
+  },
+  "requests": [
+    {
+      "id": "interval",
+      "kind": "flat-entry-arc-transmission-interval"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Entry coordinates on the plane face giving a strictly transmitted first arc encounter, and the critical limit.",
+    "stated": [
+      "Parallel incidence at 45 degrees in the section perpendicular to the half-cylinder axis. Glass index is the square root of two."
+    ],
+    "derived": [],
+    "assumptions": [
+      "Unit-index exterior at both faces. Entry offset is measured along the diameter from its midpoint in units of radius."
+    ],
+    "unknowns": [
+      "Absolute radius."
+    ]
+  }
+}
