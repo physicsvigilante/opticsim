@@ -1,0 +1,31 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-offset-pair-facts-v1",
+    "model": "parallel-axes-ideal-thin-pair",
+    "input": "collimated-along-positive-x",
+    "frontLensId": "L1",
+    "rearLensId": "L2",
+    "gapOverFrontFocalLength": 3,
+    "rearOverFrontFocalLength": 1
+  },
+  "requests": [
+    {
+      "id": "focus",
+      "kind": "offset-pair-collimated-focus"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Final focus coordinates from the first lens centre, in terms of focal length f and signed transverse displacement d.",
+    "stated": [
+      "Two equal positive thin lenses separated by 3f, with the second axis above the first by d, d much smaller than f. The incident beam is horizontal."
+    ],
+    "derived": [],
+    "assumptions": [
+      "Paraxial rays in the branch transmitted by both finite lenses."
+    ],
+    "unknowns": [
+      "Absolute focal lengths, displacement, apertures and beam width."
+    ]
+  }
+}
