@@ -1,0 +1,44 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-separated-lens-focus-facts-v1",
+    "model": "positive-thin-lens-pair-in-air",
+    "lengthUnit": "mm",
+    "objective": {
+      "id": "objective",
+      "focalLength": 4
+    },
+    "eyepiece": {
+      "id": "eyepiece",
+      "focalLength": 25
+    },
+    "output": "collimated",
+    "given": {
+      "kind": "lens-plane-separation",
+      "value": 160
+    },
+    "angleReference": {
+      "kind": "specified-viewing-distance",
+      "distance": 250
+    }
+  },
+  "requests": [
+    {
+      "id": "focus",
+      "kind": "two-lens-angular-focus"
+    }
+  ],
+  "interpretation": {
+    "requestedResult": "Magnifying power of the compound microscope.",
+    "stated": [
+      "Focal lengths 4 mm and 25 mm, 16 cm tube, final image at infinity, least distance 25 cm."
+    ],
+    "derived": [],
+    "assumptions": [
+      "Tube length interpreted as lens-plane spacing; paraxial thin lenses in air."
+    ],
+    "unknowns": [
+      "Tube-length convention is not explicit in the source."
+    ]
+  }
+}

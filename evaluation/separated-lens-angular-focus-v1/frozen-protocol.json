@@ -1,0 +1,27 @@
+{
+  "format": "opticsim-separated-lens-afocal-output-study-v1",
+  "scope": "Two stationary separated positive thin lenses with stable IDs in unit-index air; paraxial propagation toward +x. Request focus under collimated output and a signed angular gain with an explicit unaided reference. Preparatory protocol only.",
+  "cases": [
+    {
+      "id": "A39",
+      "sourceImageSha256": "6796e7f7b92bf1a5f10c6823ad44c459c18f72309eb5a5ba7ac0d2768ce04a81",
+      "facts": "Objective 4 mm and eyepiece 25 mm, tube length 160 mm, output at infinity, least distinct-vision distance 250 mm.",
+      "interpretation": "Require tube-length convention. In the ideal model a mechanical lens-to-lens separation and a focal-plane interval are distinct. Return conditionally labelled signed gain, magnitude and the implied real object position. Do not choose a convention from the expected answer.",
+      "expect": "With mechanical separation 160 mm, objective image distance 135 mm and signed angular magnification -327.5 relative to unaided viewing at 250 mm (objective magnification -131/4, eyepiece factor 250/25). With optical focal-plane interval 160 mm, separation 189 mm and signed gain -400."
+    },
+    {
+      "id": "A40",
+      "sourceImageSha256": "e219a0b0ea4c2cdab09a1565d77e9c1d2cd3d53bc3819bb0142484299f7ab912",
+      "facts": "Positive objective 0.50 m, positive eyepiece 0.05 m; Moon then object 10 m away; unchanged accommodation.",
+      "interpretation": "Treat the Moon as collimated input and explicitly assume relaxed/parallel output for both settings. For the finite case declare distance measured from objective. Specify reference for unaided angle; eye at eyepiece and objective-plane reference differ at finite distance.",
+      "expect": "Initial spacing 0.55 m, signed angular gain -10. Near spacing 10/19 + 1/20 m, outward shift 1/38 m, objective-referenced angular gain -200/19. For the same object referred to an eye at the eyepiece, multiply that last gain by (10 m + near spacing)/(10 m)."
+    }
+  ],
+  "controls": [
+    "No signed angular gain without defined comparison angle and conjugate condition. Preserve real-positive objective image and separated lens admissibility.",
+    "Test exact finite and infinite conjugates, near singular inputs, mechanically impossible branches and unit/reference changes.",
+    "Use two actual pinned IdealLens instances at separated planes for off-axis, finite-height control bundles. Measure outgoing directions at native callbacks after both lenses. Do not equate sampled rays with a continuous image or silently assume pupil geometry.",
+    "Preserve public common-plane power and source/provenance contracts. No native core changes."
+  ],
+  "base": "7c18b46c05cc49b9a39642619abaae6979c71595"
+}
