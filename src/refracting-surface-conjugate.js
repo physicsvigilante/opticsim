@@ -7,6 +7,9 @@ const kind = 'refracting-surface-conjugate';
 const model = 'coaxial-paraxial-positive-x';
 const scales = {mm: 1, cm: 10, m: 1000};
 const zero = fromBinary64(0), one = fromBinary64(1);
+const maxPositionMm = fromBinary64(10000), maxDistanceMm = fromBinary64(1e9);
+const cancellationThreshold = fromBinary64(1e-10);
+const magnitude = value => value.n < 0n ? {n:-value.n,d:value.d} : value;
 
 export function surfaceConjugateCapabilities() {
   return {format: CONJUGATE_QUERY, factsFormat: CONJUGATE_FACTS, kinds: [kind], model,
@@ -18,10 +21,12 @@ function fields(value, required, optional = []) {
     fail('INVALID_SURFACE_FACTS', 'Unexpected field in refracting surface contract.');
   for (const key of required) if (!Object.hasOwn(value, key)) fail('MISSING_FACTS', 'Supply '+key+'.');
 }
-function length(value, scale) {
-  if (!Number.isFinite(value) || Math.abs(value)*scale > 10000)
+function length(value, unit) {
+  if (!Number.isFinite(value)) fail('INVALID_SURFACE_FACTS', 'Length must be finite.');
+  const exact = fromBinary64(value);
+  if (compare(multiply(magnitude(exact), unit), maxPositionMm) > 0)
     fail('INVALID_SURFACE_FACTS', 'Supply a finite length within 10000 mm of the origin.');
-  return fromBinary64(value);
+  return exact;
 }
 function index(value) {
   if (!Number.isFinite(value) || value < 1 || value > 4) fail('INVALID_SURFACE_FACTS', 'Use absolute indices in [1,4].');
@@ -43,9 +48,9 @@ export function analyzeSurfaceConjugate(f, q) {
   if (typeof f.lengthUnit !== 'string' || !Object.hasOwn(scales, f.lengthUnit)) fail('INVALID_SURFACE_FACTS', 'Use mm, cm or m.');
   if (!Array.isArray(f.surfaces) || f.surfaces.length < 1 || f.surfaces.length > 4)
     fail('UNSUPPORTED_SCOPE', 'Supply one to four ordered refracting surfaces.');
-  const scale = scales[f.lengthUnit], unit = fromBinary64(scale);
-  let position = length(f.objectX, scale), medium = index(f.entranceIndex);
-  const height = Object.hasOwn(f, 'objectHeight') ? length(f.objectHeight, scale) : null;
+  const unit = fromBinary64(scales[f.lengthUnit]);
+  let position = length(f.objectX, unit), medium = index(f.entranceIndex);
+  const height = Object.hasOwn(f, 'objectHeight') ? length(f.objectHeight, unit) : null;
   const ids = new Set();
   // The second column maps an initial reduced slope into height and reduced slope.
   // Unit determinant then gives finite conjugate magnification 1/D.
@@ -56,15 +61,15 @@ export function analyzeSurfaceConjugate(f, q) {
     if (typeof face.id !== 'string' || !/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(face.id) || ids.has(face.id))
       fail('INVALID_SURFACE_FACTS', 'Require unique stable surface IDs.');
     ids.add(face.id);
-    const x = length(face.x, scale), gap = subtract(x, position), after = index(face.transmittedIndex);
+    const x = length(face.x, unit), gap = subtract(x, position), after = index(face.transmittedIndex);
     if (compare(multiply(gap, unit), one) < 0) fail('UNSUPPORTED_SCOPE', 'Separate successive poles and the incident object by at least 1 mm.');
     const drift = multiply(divide(gap, medium), D);
     const nextB = add(B, drift);
     if (nearCancellation(nextB, B, drift)) unresolved = true;
     B = nextB;
     if (face.signedRadius !== 'infinity') {
-      const radius = length(face.signedRadius, scale);
-      if (Math.abs(face.signedRadius)*scale < 1) fail('UNSUPPORTED_SCOPE', 'Finite radius magnitude must be at least 1 mm.');
+      const radius = length(face.signedRadius, unit);
+      if (compare(multiply(magnitude(radius), unit), one) < 0) fail('UNSUPPORTED_SCOPE', 'Finite radius magnitude must be at least 1 mm.');
       const bend = multiply(divide(subtract(after, medium), radius), B);
       const nextD = subtract(D, bend);
       if (nearCancellation(nextD, D, bend)) unresolved = true;
@@ -83,15 +88,17 @@ export function analyzeSurfaceConjugate(f, q) {
   if (D.n === 0n) return {...result, status:'conditional', value:{...reference, state:'at-infinity',
     signedDistanceFromLastPole:null, transverseMagnification:null}};
   const m = divide(one, D), z = divide(subtract(zero, multiply(medium, B)), D);
+  if (compare(multiply(magnitude(z), unit), maxDistanceMm) > 0) return uncertain();
   const distance = rounded(z), magnification = rounded(m);
   const imageHeight = height && rounded(multiply(height, m));
-  if (!Number.isFinite(distance) || Math.abs(distance)*scale > 1e9 || !Number.isFinite(magnification) ||
+  if (!Number.isFinite(distance) || !Number.isFinite(magnification) ||
       (height && !Number.isFinite(imageHeight))) return uncertain();
   return {...result, status:'conditional', value:{...reference, state:z.n === 0n ? 'at-last-pole' : z.n > 0n ? 'real' : 'virtual',
     signedDistanceFromLastPole:distance, transverseMagnification:magnification, ...(height ? {imageHeight} : {})}};
 }
 function nearCancellation(result, a, b) {
   if (result.n === 0n) return false;
-  const remaining = Math.abs(rounded(result)), scale = Math.max(Math.abs(rounded(a)), Math.abs(rounded(b)));
-  return !Number.isFinite(remaining) || !Number.isFinite(scale) || remaining <= 1e-10*scale;
+  const left = magnitude(a), right = magnitude(b);
+  const largest = compare(left, right) >= 0 ? left : right;
+  return compare(magnitude(result), multiply(cancellationThreshold, largest)) <= 0;
 }

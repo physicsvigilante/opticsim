@@ -7,6 +7,27 @@ import {analyzeSurfaceConjugate, CONJUGATE_FACTS, CONJUGATE_QUERY} from '../src/
 const frozen = JSON.parse(readFileSync(new URL('../evaluation/thick-lens-finite-conjugate-study-v1/frozen.json', import.meta.url)));
 const face = (id, x, signedRadius, transmittedIndex) => ({id, x, signedRadius, transmittedIndex});
 const query = {format: CONJUGATE_QUERY, kind: 'refracting-surface-conjugate'};
+test('exact cancellation band withholds the inner witness and admits the outer witness', () => {
+  const inner = facts(-4.25,[face('first',-3.1875,1.0625,3),face('plane',3.18750000031875e-10,'infinity',1)]);
+  assert.equal(analyzeSurfaceConjugate(inner,query).status,'numerically-indeterminate');
+  const outer = facts(-1,[face('first',1.0000000001000001e-10,1,2),face('second',2,1,1)]);
+  assert.equal(analyzeSurfaceConjugate(outer,query).status,'conditional');
+});
+test('distance policy applies to the exact signed conjugate before report rounding', () => {
+  const witness = facts(-25.06250181529254, [face('F',0,25.0625,2),face('P',1.25,'infinity',2.88999979501524)]);
+  assert.equal(analyzeSurfaceConjugate(witness, query).status, 'numerically-indeterminate');
+  const exitIndex = 3, intermediate = exitIndex*(1-1/131072);
+  for (const sign of [-1,1]) {
+    const radius = 1e9/131072;
+    const last = face('exit',100,sign*radius,exitIndex);
+    const system = facts(-100,[face('collimator',0,100,intermediate),last],{entranceIndex:intermediate/2});
+    assert.equal(analyzeSurfaceConjugate(system,query).value.signedDistanceFromLastPole,sign*1e9);
+    last.signedRadius = sign*(radius+2**-40);
+    assert.equal(analyzeSurfaceConjugate(system,query).status,'numerically-indeterminate');
+    last.signedRadius = sign*(radius-2**-40);
+    assert.equal(analyzeSurfaceConjugate(system,query).status,'conditional');
+  }
+});
 test('problem workflow qualifies only complete separated surfaces and withholds near collimation', () => {
   const problem = JSON.parse(readFileSync(new URL('../examples/refracting-surface-conjugate.json', import.meta.url)));
   const run = () => planProblem(problem).results[0];
