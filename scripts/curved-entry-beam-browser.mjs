@@ -20,7 +20,8 @@ await runQualifiedChrome({name:'browser-curved-entry-beam',format:'opticsim-curv
     await edit('B-y',20);
     await until(state,s=>s.status==='invalid'&&s.results===null&&s.saveDisabled,'invalid source offset');
     check('Invalid offset withholds readings');
-    await upload(pkg);await edit('B-width',40);
+    await upload(pkg);await verify(20,32.14512591,'Original restored after the invalid offset');
+    await edit('B-width',40);
     const label='Narrower beam re-executes';
     const narrow=await until(state,s=>s.status==='completed'&&s.results?.[0]?.value?.['face-flat']?.sampledYRangeMm?.count===8,label);
     const maximum=narrow.results[0].value['face-flat'].sampledYRangeMm.max;
