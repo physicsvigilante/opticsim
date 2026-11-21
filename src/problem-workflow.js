@@ -241,7 +241,8 @@ export function planProblem(input){
           reasonCode:result.reasonCode??null,reason:result.reason??null,
           ...(result.candidates?{candidates:result.candidates}:{}),...(result.branches?{branches:result.branches}:{}),
           ...(result.boundary?{boundary:result.boundary}:{}),assumptions:result.assumptions,
-          limitations:result.limitations,nativeObservation:false,nativePathVerified:false});
+          limitations:result.limitations,nativeObservation:false,nativePathVerified:false,
+          ...(own(result,'nativeImageDetected')?{nativeImageDetected:result.nativeImageDetected}:{})});
       }catch(e){results.push(empty(r,e.code==='MISSING_FACTS'?'needs-information':
         ['UNSUPPORTED_FACTS','UNSUPPORTED_MODEL','UNSUPPORTED_SCOPE'].includes(e.code)?'unavailable':'invalid-input',e.code||'INVALID_ANALYTICAL_FACTS',e.message));}
     }else if(lensKinds.has(r.kind)){

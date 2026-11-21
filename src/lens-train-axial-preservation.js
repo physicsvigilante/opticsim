@@ -70,7 +70,7 @@ export function axialPreservationCapabilities(){
     numericalPolicy:{
       exactArithmetic:'binary64-rational exact ABCD propagation from first lens plane to last lens plane',
       relativeIndeterminacyTolerance:1e-10,
-      boundaries:'Nonzero optical power C, unit-magnification residual A^2-1, or constant axial shift L-A*B within 1e-10 of its scale-invariant monomial bound returns numerically-indeterminate rather than a brittle boolean.'
+      boundaries:'Nonzero optical power C (bound sc), non-afocal orientation coefficient D (bound sd), unit-magnification residual A^2-1 (bound sa^2+1), or constant axial shift L-A*B (expanded monomial bound L+sa*sb) within 1e-10 of its scale-invariant positive-monomial bound returns numerically-indeterminate rather than a brittle classification.'
     },
     limits:[
       'Conditional first-order ideal thin-lens transfer for finite axial objects preceding the first lens.',
@@ -185,10 +185,15 @@ export function analyzeAxialPreservation(f,q){
   };
 
   // 2. Non-afocal lens train (C != 0): neither magnification nor axial shift is constant across object positions.
+  // For objects preceding the first lens (s = x1 - x_obj > 0), m(s) = 1 / (C*s + D):
+  // sign is always upright if C>0, D>=0; always inverted if C<0, D<=0; object-dependent if C*D<0.
   if(c.n!==0n){
+    if(nearZero(d,sd))return indeterminate('NEAR_FRONT_FOCUS_AT_FIRST_LENS',
+      'The matrix coefficient D is nonzero yet within the relative numerical cancellation band; non-afocal orientation for objects preceding the first lens cannot be reliably classified.');
     const powerNum=toBinary64(negR(c)),focalNum=toBinary64(divide(NEG_ONE,c));
     if(!Number.isFinite(powerNum)||!Number.isFinite(focalNum))
       return indeterminate('UNRELIABLE_LENS_MATRIX','Equivalent power or focal length exceeds finite binary64 representation.');
+    const orientation=c.n>0n&&d.n>=0n?'upright':c.n<0n&&d.n<=0n?'inverted':'object-dependent';
     return {...base,status:'conditional',reasonCode:null,value:{
       ...common,
       isAfocal:false,
@@ -197,7 +202,7 @@ export function analyzeAxialPreservation(f,q){
       constantTransverseMagnification:false,
       transverseMagnification:null,
       transverseMagnificationMagnitude:null,
-      imageOrientation:'object-dependent',
+      imageOrientation:orientation,
       preservesTransverseSize:false,
       longitudinalMagnification:null,
       constantAxialShift:false,
@@ -219,11 +224,13 @@ export function analyzeAxialPreservation(f,q){
     return indeterminate('UNRELIABLE_LENS_MATRIX','Afocal magnification exceeds finite binary64 representation.');
 
   // 4. Afocal with |m| = 1 (A = +1 or A = -1): constant axial shift deltaX = L_span - A*B.
+  // Guard with the fully expanded positive-monomial bound L_span + sa*sb so
+  // upstream cancellation in A is retained alongside B.
   let deltaX=null,deltaXNum=null;
   if(unitMag){
     deltaX=subtract(span,multiply(a,b));
-    if(nearZero(deltaX,add(span,sb)))return indeterminate('NEAR_ZERO_AXIAL_SHIFT',
-      'This unit-magnification afocal train has a nonzero axial shift within the relative numerical band; exact axial position preservation cannot be reliably classified.');
+    if(nearZero(deltaX,add(span,multiply(sa,sb))))return indeterminate('NEAR_ZERO_AXIAL_SHIFT',
+      'This unit-magnification afocal train has a nonzero axial shift within the expanded relative monomial band; exact axial position preservation cannot be reliably classified.');
     deltaXNum=toBinary64(deltaX);
     if(!Number.isFinite(deltaXNum))
       return indeterminate('UNRELIABLE_LENS_MATRIX','Computed constant axial shift exceeds finite binary64 representation.');

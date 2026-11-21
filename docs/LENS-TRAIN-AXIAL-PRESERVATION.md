@@ -8,7 +8,7 @@ It uses the separate `opticsim-lens-train-axial-preservation-facts-v1` fact cont
 
 Let $M = \begin{pmatrix} A & B \\ C & D \end{pmatrix}$ ($AD - BC = 1$) be the paraxial transfer matrix from immediately before the first lens ($x_1$) to immediately after the last lens ($x_N$), with train span $L = x_N - x_1$. For any finite axial object at $x_{\text{obj}} < x_1$ whose paraxial pencil passes through every lens in order:
 
-- **Non-afocal ($C \neq 0$):** Neither transverse magnification nor axial image shift is constant across object positions (`isAfocal: false`, `constantTransverseMagnification: false`, `imageOrientation: "object-dependent"`, `preservesAxialImagePosition: false`).
+- **Non-afocal ($C \neq 0$):** Neither transverse magnification nor axial image shift is constant across object positions (`isAfocal: false`, `constantTransverseMagnification: false`, `preservesAxialImagePosition: false`). For all finite objects preceding the first lens ($s = x_1 - x_{\text{obj}} > 0$), $m(s) = (C s + D)^{-1}$, so `imageOrientation` is `"upright"` when $C > 0, D \ge 0$ (e.g., a single diverging lens), `"inverted"` when $C < 0, D \le 0$, and `"object-dependent"` when $C$ and $D$ have opposite signs (front focal plane at $s_F = -D/C > 0$).
 - **Afocal ($C = 0$, $D = 1/A$):** Every finite axial object has constant transverse magnification $m = A$ (`upright` for $A > 0$, `inverted` for $A < 0$) and constant longitudinal magnification $m_{\text{long}} = A^2$.
   - When $|A| \neq 1$, the axial shift varies linearly with object position (`constantAxialShift: false`, `preservesAxialImagePosition: false`).
   - When $|A| = 1$ ($A = D = \pm 1$), every finite axial object experiences the constant axial shift $\Delta x = x_{\text{img}} - x_{\text{obj}} = L - A B$ (`constantAxialShift: true`, `preservesTransverseSize: true`). Axial position is preserved identically if and only if $\Delta x = 0$ (`preservesAxialImagePosition: true`).
@@ -17,7 +17,7 @@ Let $M = \begin{pmatrix} A & B \\ C & D \end{pmatrix}$ ($AD - BC = 1$) be the pa
 
 Declare `lengthUnit` as `mm`, `cm`, `m`, or `scale-unit` (dimensionless multiples of one unspecified positive common length scale, without inventing a millimetre value). Physical units enforce coordinates in `[-10000, 10000]` mm, focal-length magnitudes in `[1, 10000]` mm, and consecutive separations `>= 0.01` mm; `scale-unit` enforces coordinates in `[-10000, 10000]`, focal-length magnitudes in `[0.001, 10000]`, and separations `>= 0.001`.
 
-The ABCD transfer matrix is computed in exact `binary64-rational` arithmetic from the supplied finite inputs. Nonzero optical power $C$, unit-magnification residual $A^2 - 1$, or constant axial shift $L - A B$ within $10^{-10}$ of its scale-invariant positive monomial bound returns `status: "numerically-indeterminate"` rather than a brittle boolean.
+The ABCD transfer matrix is computed in exact `binary64-rational` arithmetic from the supplied finite inputs. Nonzero optical power $C$ (bound $s_c$), non-afocal orientation coefficient $D$ (bound $s_d$), unit-magnification residual $A^2 - 1$ (bound $s_a^2 + 1$), or constant axial shift $L - A B$ (fully expanded positive-monomial bound $L + s_a s_b$) within $10^{-10}$ of its scale-invariant positive-monomial bound returns `status: "numerically-indeterminate"` rather than a brittle classification.
 
 ## Examples and native evidence
 

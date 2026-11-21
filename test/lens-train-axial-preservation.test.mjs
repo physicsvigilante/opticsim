@@ -33,6 +33,8 @@ test('frozen PR 239 source relay and changed-middle-lens counterexample match in
   const r0=run(base);
   assert.equal(r0.status,'conditional');
   assert.equal(r0.nativeObservation,false);
+  assert.equal(Object.hasOwn(r0,'nativeImageDetected'),true);
+  assert.equal(r0.nativeImageDetected,false);
   assert.equal(r0.value.isAfocal,true);
   assert.equal(r0.value.equivalentPower,0);
   assert.equal(r0.value.equivalentFocalLength,null);
@@ -136,13 +138,28 @@ test('afocal telescopes, shifted relays, and non-afocal trains agree with calcul
       expected:{isAfocal:true,m:-1,mLong:1,orient:'inverted',unitSize:true,constShift:true,shift:600,preserves:false}
     },
     {
-      name:'single-lens-non-afocal',
+      name:'single-converging-lens-non-afocal',
       lenses:[{id:'L1',x:0,focalLength:100}],
       expected:{isAfocal:false,m:null,mLong:null,orient:'object-dependent',unitSize:false,constShift:false,shift:null,preserves:false}
     },
     {
-      name:'two-lens-non-afocal',
+      name:'single-diverging-lens-always-upright',
+      lenses:[{id:'L1',x:0,focalLength:-100}],
+      expected:{isAfocal:false,m:null,mLong:null,orient:'upright',unitSize:false,constShift:false,shift:null,preserves:false}
+    },
+    {
+      name:'two-lens-non-afocal-always-inverted',
       lenses:[{id:'L1',x:0,focalLength:100},{id:'L2',x:150,focalLength:100}],
+      expected:{isAfocal:false,m:null,mLong:null,orient:'inverted',unitSize:false,constShift:false,shift:null,preserves:false}
+    },
+    {
+      name:'two-lens-non-afocal-exact-zero-D-always-inverted',
+      lenses:[{id:'L1',x:0,focalLength:50},{id:'L2',x:100,focalLength:100}],
+      expected:{isAfocal:false,m:null,mLong:null,orient:'inverted',unitSize:false,constShift:false,shift:null,preserves:false}
+    },
+    {
+      name:'two-lens-non-afocal-object-dependent',
+      lenses:[{id:'L1',x:0,focalLength:100},{id:'L2',x:50,focalLength:100}],
       expected:{isAfocal:false,m:null,mLong:null,orient:'object-dependent',unitSize:false,constShift:false,shift:null,preserves:false}
     }
   ];
@@ -172,6 +189,11 @@ test('afocal telescopes, shifted relays, and non-afocal trains agree with calcul
       }
     }else{
       assert.ok(Math.abs(probes[0].pred.magnification-probes[1].pred.magnification)>1e-3,tc.name+' varying mag');
+      if(tc.expected.orient==='upright'){
+        for(const {ox,pred} of probes)assert.ok(pred.magnification>0,tc.name+' always upright at '+ox);
+      }else if(tc.expected.orient==='inverted'){
+        for(const {ox,pred} of probes)assert.ok(pred.magnification<0,tc.name+' always inverted at '+ox);
+      }
     }
   }
 });
@@ -234,6 +256,28 @@ test('near-afocal, near-unit-magnification, and near-zero-shift boundaries retur
   assert.equal(nearZeroShift.status,'numerically-indeterminate');
   assert.equal(nearZeroShift.reasonCode,'NEAR_ZERO_AXIAL_SHIFT');
   assert.equal(nearZeroShift.value,null);
+
+  // 3b. Exact-dyadic four-lens cancellation-heavy A=D=1, C=0 train where deltaX != 0
+  // lies inside the fully expanded positive-monomial bound EPS*(L + sa*sb) (PR #241 Round 1 P2 regression).
+  const g=1/512,f=g*(1+2**-10),u=f+g,t=2*g*(f+g)/(f-g)+1000;
+  const heavyCancellationShift=run(makeProblem([
+    {id:'L1',x:0,focalLength:f},
+    {id:'L2',x:u,focalLength:g},
+    {id:'L3',x:u+t,focalLength:g},
+    {id:'L4',x:2*u+t,focalLength:f}
+  ],'scale-unit'));
+  assert.equal(heavyCancellationShift.status,'numerically-indeterminate');
+  assert.equal(heavyCancellationShift.reasonCode,'NEAR_ZERO_AXIAL_SHIFT');
+  assert.equal(heavyCancellationShift.value,null);
+
+  // 4. Non-afocal train with D != 0 inside relative 1e-10 band (front focal plane near first lens).
+  const nearZeroD=run(makeProblem([
+    {id:'L1',x:0,focalLength:50},
+    {id:'L2',x:100,focalLength:100+epsDyadic}
+  ],'mm'));
+  assert.equal(nearZeroD.status,'numerically-indeterminate');
+  assert.equal(nearZeroD.reasonCode,'NEAR_FRONT_FOCUS_AT_FIRST_LENS');
+  assert.equal(nearZeroD.value,null);
 });
 
 test('strict validation, refusal of historical per-object facts, verifyNative gate, CLI, and historical preservation',()=>{
@@ -294,6 +338,8 @@ test('strict validation, refusal of historical per-object facts, verifyNative ga
   try{
     const pre=JSON.parse(execFileSync(process.execPath,['scripts/preflight-problem.mjs','examples/lens-train-axial-preservation.json'],{encoding:'utf8'}));
     assert.equal(pre.results[0].status,'conditional');
+    assert.equal(Object.hasOwn(pre.results[0],'nativeImageDetected'),true);
+    assert.equal(pre.results[0].nativeImageDetected,false);
     assert.equal(pre.results[0].value.preservesAxialImagePosition,true);
     assert.equal(pre.results[0].value.transverseMagnification,-1);
     const cliSummary=JSON.parse(execFileSync(process.execPath,['scripts/run-problem.mjs','examples/lens-train-axial-preservation.json','--out',outDir],{encoding:'utf8'}));
@@ -301,6 +347,8 @@ test('strict validation, refusal of historical per-object facts, verifyNative ga
     assert.equal(cliSummary.native.status,'not-run');
     const cliReport=JSON.parse(readFileSync(cliSummary.report,'utf8'));
     assert.equal(cliReport.results[0].status,'conditional');
+    assert.equal(Object.hasOwn(cliReport.results[0],'nativeImageDetected'),true);
+    assert.equal(cliReport.results[0].nativeImageDetected,false);
     assert.equal(cliReport.results[0].value.preservesAxialImagePosition,true);
     assert.equal(cliReport.portable.status,'not-created');
     assert.equal(cliReport.dispatch.nativeCalls,0);
