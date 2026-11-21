@@ -1,0 +1,17 @@
+{
+  "sourceCase": "A14",
+  "sourcePath": "08_Ray_Optics_Explanations/03_General_Refraction/Problems/009.png",
+  "upstream": "811f508d2b070898c241a568b0c167dcb8645251",
+  "scope": "Test-only meridional section of a parallel beam entering the curved face of a hemisphere. Observe sampled positions on the actual flat Glass face. The table material, continuous spot radius and 3D illumination are outside the study.",
+  "assumptions": "Rotate the meridional section to put the flat face at x=0. Choose R=100 mm as the scale. Beam travels left from x=200 mm. Exterior index 1, glass index 1.5, transmitted-only approximation, brightness 0.08. No detector or table at the boundary.",
+  "cases": [
+    {"name":"centred", "radius":100, "width":100, "beamY":0, "density":0.2},
+    {"name":"finer sampling", "radius":100, "width":100, "beamY":0, "density":0.4},
+    {"name":"offset narrow beam", "radius":100, "width":40, "beamY":20, "density":0.2}
+  ],
+  "predictions": [
+    "Every observed emitted ray has one curved entry and one flat exit, in that order, without branch creation or absorption. Missing or ambiguous callbacks fail qualification.",
+    "Signed flat-face hit ordinates agree within 0.00001 mm with independent Snell propagation from each observed launch ordinate. Both centred samples have symmetric extrema within the incident beam.",
+    "Finer midpoint sampling reaches farther from the axis. The displaced narrow control has only positive flat-face hits. A stopped run does not qualify."
+  ]
+}
