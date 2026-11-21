@@ -98,7 +98,7 @@ export function loadDocument(doc, width, height) {
   if(doc.schemaVersion===28)
     endpointAudits.set(scene,{key:'v28EndpointsVerified',finish:installPostLensAudit(doc,scene,compiled.idMap)});
   if(doc.schemaVersion===IMMERSED_ARC_VERSION) endpointAudits.set(scene,immersedArcPortAudit(doc,scene,compiled.idMap));
-  if(doc.schemaVersion===MIRROR_BOX_VERSION) endpointAudits.set(scene,mirrorBoxAudit(doc,scene,compiled.idMap));
+  if(doc.schemaVersion===MIRROR_BOX_VERSION) endpointAudits.set(scene,mirrorBoxAudit(doc,scene,compiled.idMap,mirrorEndpoints));
   if(doc.schemaVersion===GRIN_SLAB_VERSION) endpointAudits.set(scene,enteringGradedSlabAudit(doc,scene,compiled.idMap));
   if(doc.schemaVersion===CAP_VERSION) endpointAudits.set(scene,capNativeAudit(doc,scene,compiled.idMap));
   if(doc.schemaVersion===31) endpointAudits.set(scene,slabArcReturnAudit(doc,scene,compiled.idMap));
