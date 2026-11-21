@@ -1,3 +1,4 @@
+import {absolute,fromBinary64,add,subtract,multiply,compare} from './binary64-rational.js';
 // Bounded plane-mirror angular relations, separate from finite native tracing.
 // Mirror tangent angles are specified by unsigned consecutive inclinations;
 // the first tangent is the angular coordinate gauge (0°), not authored geometry.
@@ -129,18 +130,51 @@ function unitDirection(v){
   for(const a of [v.x,v.y])boundedFinite(a,-1e9,1e9,'Direction component');
   const norm=Math.hypot(v.x,v.y);
   if(norm<1e-9)fail('Direction must have a norm of at least 1e-9');
-  return {x:v.x/norm,y:v.y/norm};
+  return {x:v.x/norm,y:v.y/norm,rawX:fromBinary64(v.x),rawY:fromBinary64(v.y)};
+}
+
+const square=value=>multiply(value,value);
+const grazingCosineSquared=square(subtract(fromBinary64(1),multiply(fromBinary64(.5),square(fromBinary64(eps)))));
+function unresolvedHeadings(){
+  return {status:'numerically-indeterminate',value:null,reasonCode:'DIRECTIONS_UNRESOLVED_AT_GRAZING'};
+}
+function scaledRatio(numerator,denominator){
+  if(numerator===0n)return 0;
+  const nShift=Math.max(0,numerator.toString(2).length-56);
+  const dShift=Math.max(0,denominator.toString(2).length-56);
+  const leading=Number(numerator>>BigInt(nShift))/Number(denominator>>BigInt(dShift));
+  const exponent=nShift-dShift;
+  return exponent< -1022?leading*2**(exponent+1022)*2**-1022:leading*2**exponent;
+}
+function approximateAngularPair(cross,dot){
+  // Cancel the common denominator and scale the larger atan2 input to one.
+  const y=absolute(cross.n)*dot.d,x=absolute(dot.n)*cross.d;
+  const sign=dot.n<0n?-1:1;
+  return y>x?{y:1,x:sign*scaledRatio(x,y)}:{y:scaledRatio(y,x),x:sign};
 }
 function fromHeadings(facts){
   exactObject(facts,['format','mirrorId','incoming','outgoing'],['format','mirrorId','incoming','outgoing'],'plane-mirror heading facts');
   if(facts.format!==MIRROR_HEADING_FACTS)fail('Expected single-plane-mirror heading facts');
   id(facts.mirrorId);
   const a=unitDirection(facts.incoming), b=unitDirection(facts.outgoing);
-  const dx=b.x-a.x,dy=b.y-a.y,change=Math.hypot(dx,dy);
-  if(change<=eps)return {status:'numerically-indeterminate',value:null,reasonCode:'DIRECTIONS_UNRESOLVED_AT_GRAZING'};
-  const turn=Math.atan2(Math.abs(a.x*b.y-a.y*b.x),a.x*b.x+a.y*b.y)*180/Math.PI;
+  const cross=subtract(multiply(a.rawX,b.rawY),multiply(a.rawY,b.rawX));
+  const dot=add(multiply(a.rawX,b.rawX),multiply(a.rawY,b.rawY));
+  const dotSquared=square(dot);
+  if(dot.n>0n&&compare(dotSquared,multiply(add(dotSquared,square(cross)),grazingCosineSquared))>=0)
+    return unresolvedHeadings();
+  const pair=approximateAngularPair(cross,dot);
+  const incidenceAngleDeg=Math.atan2(pair.y,-pair.x)*90/Math.PI;
+  if(dot.n<0n&&cross.n!==0n&&pair.y<2**-1022)
+    return {status:'numerically-indeterminate',value:null,reasonCode:'DIRECTION_RESOLUTION_EXCEEDED'};
+  const turn=Math.atan2(pair.y,pair.x)*180/Math.PI;
+  // The normal follows B-A. For almost parallel headings use the normal to
+  // their large sum, orienting it with the exact sign of the cross product.
+  const crossSign=cross.n<0n?-1:1;
+  const dx=dot.n>=0n?-crossSign*(a.y+b.y):b.x-a.x;
+  const dy=dot.n>=0n?crossSign*(a.x+b.x):b.y-a.y;
+  const change=Math.hypot(dx,dy);
   return {status:'conditional',reasonCode:null,value:{mirrorId:facts.mirrorId,
-    incidenceAngleDeg:(180-turn)/2,principalDeviationMagnitudeDeg:turn,
+    incidenceAngleDeg,principalDeviationMagnitudeDeg:turn,
     normalLineDirection:{x:dx/change,y:dy/change}}};
 }
 function crossedLineRelations(facts){
