@@ -32,6 +32,7 @@ For testing whether a coaxial thin-lens train preserves axial image position and
 For the back focal point, effective focal length, rear principal plane, or afocal emergence of an axial parallel beam through 1–4 coaxial thin lenses, use the [collimated-focus query](docs/LENS-TRAIN-COLLIMATED-FOCUS.md).
 For reconstructing a single thin lens's type, optical centre, focal length, and focal points from an off-axis real object and its conjugate image, use the [conjugate-reconstruction query](docs/THIN-LENS-CONJUGATE-RECONSTRUCTION.md).
 For composing 1–8 ordered coaxial paraxial elements (thin lenses, planar or spherical refracting surfaces, homogeneous media, and an optional terminal mirror) under one contract, use the [coaxial paraxial stack](docs/COAXIAL-PARAXIAL-STACK.md).
+For SHA-guarded parameter revisions, atomic structural element add/remove, bounded 1–25 value sweeps, and guarded baseline-vs-variant comparisons over that stack, use the [coaxial stack exploration engine](docs/COAXIAL-STACK-EXPLORATION.md).
 
 For a finite parallel Beam passing through an ideal lens and then a finite aperture, see the [schema-v28 authoring contract and worked example](docs/POST-LENS-APERTURE.md).
 
