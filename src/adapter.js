@@ -1,5 +1,6 @@
 import {IMMERSED_ARC_VERSION,immersedArcPortAudit} from './immersed-arc-plane-port.js';
 import {GENERAL_BENCH_VERSION,installGeneralBenchEndpointAudit} from './native-general-optical-bench.js';
+import {HYBRID_BENCH_VERSION,installGeneralHybridBenchAudit} from './native-general-hybrid-bench.js';
 import {REFRACTIVE_BENCH_VERSION,installGeneralRefractiveBenchAudit} from './native-general-refractive-bench.js';
 import {MIRROR_BOX_VERSION,mirrorBoxAudit} from './native-mirror-box.js';
 import {GUIDE_FAN_VERSION,guideFanAudit} from './finite-guide-fan.js';
@@ -113,6 +114,8 @@ export function loadDocument(doc, width, height) {
     endpointAudits.set(scene,installGeneralBenchEndpointAudit(doc,scene,compiled.idMap,mirrorEndpoints));
   if(doc.schemaVersion===REFRACTIVE_BENCH_VERSION)
     endpointAudits.set(scene,installGeneralRefractiveBenchAudit(doc,scene,compiled.idMap,mirrorEndpoints));
+  if(doc.schemaVersion===HYBRID_BENCH_VERSION)
+    endpointAudits.set(scene,installGeneralHybridBenchAudit(doc,scene,compiled.idMap,mirrorEndpoints));
   return { ...compiled, scene };
 }
 export function nativeExport(doc) { return loadDocument(doc).scene.toJSON(); }
@@ -305,6 +308,6 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
 }
 export function classifyRun(event, data) {
   return data.errors.length ? 'failed' : event === 'simulationStop' ? 'stopped' :
-    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false || data.v28EndpointsVerified===false || data.v29FanVerified===false || data.v30CurvedBeamVerified===false || data.v31SlabArcVerified===false || data.v32CapVerified===false || data.v33GradedSlabVerified===false || data.v34ImmersedArcVerified===false || data.v35MirrorBoxVerified===false || data.v36GuideFanVerified===false || data.v37EndpointsVerified===false || data.v38EndpointsVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
+    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false || data.v28EndpointsVerified===false || data.v29FanVerified===false || data.v30CurvedBeamVerified===false || data.v31SlabArcVerified===false || data.v32CapVerified===false || data.v33GradedSlabVerified===false || data.v34ImmersedArcVerified===false || data.v35MirrorBoxVerified===false || data.v36GuideFanVerified===false || data.v37EndpointsVerified===false || data.v38EndpointsVerified===false || data.v39EndpointsVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
 }
 export { Scene, Simulator };

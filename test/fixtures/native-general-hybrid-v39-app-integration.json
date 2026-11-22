@@ -1,0 +1,6 @@
+{
+  "format": "opticsim-native-general-hybrid-v39-app-integration-v1",
+  "sourceAuditF4AppGitBlob": "81317c6f35b02f6a59e42b9ee8d5e8776fd9b946",
+  "v39AppGitBlob": "a427f6c8d5833668f8366ab3d4b86023fcc7fa51",
+  "note": "Append-only provenance for schema-v39 native-general-hybrid-bench: admit HYBRID_BENCH_VERSION in single-ray sourcePicker."
+}
