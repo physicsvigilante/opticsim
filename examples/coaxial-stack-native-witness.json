@@ -1,0 +1,25 @@
+{
+  "description": "Worked verification bridge example: coaxial thin-lens + concave spherical terminal mirror return stack paired with an explicit v37 witness specification.",
+  "stackFacts": {
+    "format": "opticsim-coaxial-paraxial-stack-facts-v1",
+    "model": "coaxial-paraxial-optical-stack",
+    "signConvention": "x-increasing",
+    "lengthUnit": "mm",
+    "incidentIndex": 1,
+    "object": { "x": -180, "y": 10 },
+    "elements": [
+      { "id": "L1", "type": "thin-lens", "x": 0, "focalLength": 120 },
+      { "id": "M1", "type": "terminal-mirror", "x": 200, "signedRadius": -240 }
+    ]
+  },
+  "witnessSpec": {
+    "format": "opticsim-coaxial-stack-native-witness-v1",
+    "title": "Lens + concave mirror return witness",
+    "query": { "format": "opticsim-coaxial-paraxial-stack-query-v1", "kind": "coaxial-stack-conjugate" },
+    "aperturesById": { "L1": 120, "M1": 120 },
+    "mirrorModel": "ideal-curved-mirror",
+    "emitter": { "mode": "directional", "directionDeg": -3, "angleDeg": 10, "brightness": 0.2 },
+    "detector": { "id": "D1", "x": -90, "y": 0, "orientationDeg": 90, "length": 160 },
+    "runPolicy": "preview-v1"
+  }
+}

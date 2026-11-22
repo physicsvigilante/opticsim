@@ -207,11 +207,15 @@ export function validateGeneralOpticalBench(components,rayDensity,mirrorEndpoint
 }
 
 // Route-independent observed native endpoint audit for v37: delegates every
-// pinned PhyDemo onRayIncident callback exactly once and fails closed if any
-// observed native encounter lands within 0.01 mm of a finite component endpoint.
+// pinned PhyDemo onRayIncident callback exactly once, counts actual native
+// optical encounters per stable element ID, and fails closed if any observed
+// native encounter lands within 0.01 mm of a finite component endpoint.
 export function installGeneralBenchEndpointAudit(doc,scene,idMap,mirrorEndpoints){
   let fault=null;
+  const opticalIncidentsById={};
   for(const c of doc.physics.components){
+    const isOptical=c.type==='ideal-lens'||c.type==='plane-mirror'||isCurved(c.type);
+    if(isOptical)opticalIncidentsById[c.id]=0;
     const eps=componentFiniteEndpoints(c,mirrorEndpoints);
     if(!eps.length)continue;
     const nativeObj=scene.objs[idMap.get(c.id)];
@@ -220,6 +224,7 @@ export function installGeneralBenchEndpointAudit(doc,scene,idMap,mirrorEndpoints
     nativeObj.onRayIncident=function(...args){
       const incidentPoint=args[2];
       const result=original.apply(this,args);
+      if(isOptical)opticalIncidentsById[c.id]++;
       if(!fault){
         if(!incidentPoint||!Number.isFinite(incidentPoint.x)||!Number.isFinite(incidentPoint.y)){
           fault=c.id+': native ray incident point was non-finite.';
@@ -232,5 +237,9 @@ export function installGeneralBenchEndpointAudit(doc,scene,idMap,mirrorEndpoints
       return result;
     };
   }
-  return ()=>fault;
+  return {
+    key:'v37EndpointsVerified',
+    finish:()=>fault,
+    extra:()=>({v37OpticalIncidentsById:{...opticalIncidentsById}})
+  };
 }
