@@ -34,6 +34,7 @@ export function snapshotNativeObservations(diagnostics,requests=[]){
   const finite=requests.some(r=>r?.kind==='finite-hit-numerical-diagnostic');
   return {...ordinary,
     ...(diagnostics?.v37EndpointsVerified===true?{v37EndpointsVerified:true}:{}),
+    ...(diagnostics?.v37OpticalIncidentsById?{v37OpticalIncidentsById:structuredClone(diagnostics.v37OpticalIncidentsById)}:{}),
     ...(diagnostics?.v36GuideFanVerified===true?{v36GuideFanVerified:true}:{}),
     ...(diagnostics?.v35MirrorBoxVerified===true?{v35MirrorBoxVerified:true}:{}),
     ...(diagnostics?.v34ImmersedArcVerified===true?{v34ImmersedArcVerified:true}:{}),

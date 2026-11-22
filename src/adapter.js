@@ -109,7 +109,7 @@ export function loadDocument(doc, width, height) {
   if(doc.schemaVersion===29)
     endpointAudits.set(scene,{key:'v29FanVerified',finish:installRefractiveFanAudit(doc,scene,compiled.idMap)});
   if(doc.schemaVersion===GENERAL_BENCH_VERSION)
-    endpointAudits.set(scene,{key:'v37EndpointsVerified',finish:installGeneralBenchEndpointAudit(doc,scene,compiled.idMap,mirrorEndpoints)});
+    endpointAudits.set(scene,installGeneralBenchEndpointAudit(doc,scene,compiled.idMap,mirrorEndpoints));
   return { ...compiled, scene };
 }
 export function nativeExport(doc) { return loadDocument(doc).scene.toJSON(); }
@@ -279,6 +279,7 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
   }
   return { errors, warnings, processed: simulator.processedRayCount, truncation: simulator.totalTruncation,
     ...(endpointAudit?{[endpointAudit.key]:endpointsVerified}:{}),
+    ...(endpointAudit?.extra&&endpointsVerified?endpointAudit.extra():{}),
     undefinedBehavior: simulator.totalUndefinedBehavior, emitted: meter?.emitted ?? null,
     // There is no meaningful single scale for multiple independently emitting
     // sources; keep source-specific scaling in emissionsById instead.

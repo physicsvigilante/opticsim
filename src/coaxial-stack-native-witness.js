@@ -21,7 +21,7 @@ import {
   verifyCoaxialStackPackage
 } from './coaxial-stack-exploration.js';
 import {prepareScene} from './authoring.js';
-import {divide,fromBinary64,toBinary64} from './binary64-rational.js';
+import {absolute,add,divide,fromBinary64,multiply,subtract,toBinary64} from './binary64-rational.js';
 import {GENERAL_BENCH_MODEL,GENERAL_BENCH_VERSION} from './native-general-optical-bench.js';
 import {qualifyRunnerSummary} from './native-observations.js';
 import {evaluateObservables} from './observables.js';
@@ -39,6 +39,7 @@ const STABLE_ID_RE=/^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
 const own=(o,k)=>Object.hasOwn(o,k);
 const fail=(code,message)=>{throw Object.assign(new Error(message),{code});};
 const isPlainObject=v=>isRecord(v)&&Object.getPrototypeOf(v)===Object.prototype;
+const absR=q=>({n:absolute(q.n),d:q.d});
 const negR=q=>({n:-q.n,d:q.d});
 const TWO=fromBinary64(2);
 
@@ -313,15 +314,67 @@ export async function buildCoaxialStackNativeWitness(input,spec){
   };
 }
 
-function compareOutgoingHits(paraxialResult,events,exitPlaneX){
+// Exact binary64-rational ray-line geometry on represented binary64 inputs,
+// eliminating product-difference cancellation up to the 1e9 mm target ceiling.
+export function computeWitnessRayMetrics(pointMm,incomingUnit,targetPointMm){
+  const xh=fromBinary64(pointMm.x),yh=fromBinary64(pointMm.y);
+  const ux=fromBinary64(incomingUnit.x),uy=fromBinary64(incomingUnit.y);
+  const tx=fromBinary64(targetPointMm.x),ty=fromBinary64(targetPointMm.y);
+  const dx=subtract(tx,xh),dy=subtract(ty,yh);
+  const perpMiss=toBinary64(absR(subtract(multiply(dx,uy),multiply(dy,ux))));
+  const yAtTargetXR=add(yh,divide(multiply(dx,uy),ux));
+  const yAtTargetX=toBinary64(yAtTargetXR);
+  const deltaY=toBinary64(subtract(yAtTargetXR,ty));
+  let xAtTargetY=null,deltaX=null;
+  if(Math.abs(incomingUnit.y)>1e-12){
+    const xAtTargetYR=add(xh,divide(multiply(dy,ux),uy));
+    const xNum=toBinary64(xAtTargetYR);
+    const dxNum=toBinary64(subtract(xAtTargetYR,tx));
+    if(Number.isFinite(xNum)&&Number.isFinite(dxNum)){xAtTargetY=xNum;deltaX=dxNum;}
+  }
+  return {
+    perpendicularMissMm:Number.isFinite(perpMiss)?perpMiss:null,
+    yAtTargetXMm:Number.isFinite(yAtTargetX)?yAtTargetX:null,
+    deltaYAtTargetXMm:Number.isFinite(deltaY)?deltaY:null,
+    xAtTargetYMm:xAtTargetY,
+    deltaXAtTargetYMm:deltaX
+  };
+}
+
+function summarizeStackEncounters(elements,propagationMode,emitted,outgoingHitCount,opticalIncidentsById){
+  const byElementId={};
+  const zeroEncounterElementIds=[];
+  let allMatch=Number.isSafeInteger(emitted)&&emitted>0&&outgoingHitCount===emitted;
+  for(const el of elements){
+    const expectedPerFullStackRay=el.stackType==='thin-lens'&&propagationMode==='return'?2:1;
+    const expectedForAllEmittedRays=Number.isSafeInteger(emitted)?emitted*expectedPerFullStackRay:null;
+    const observedCount=opticalIncidentsById&&own(opticalIncidentsById,el.id)&&Number.isSafeInteger(opticalIncidentsById[el.id])
+      ?opticalIncidentsById[el.id]:0;
+    if(observedCount===0)zeroEncounterElementIds.push(el.id);
+    const matchesAllEmittedRays=expectedForAllEmittedRays!==null&&observedCount===expectedForAllEmittedRays;
+    if(!matchesAllEmittedRays)allMatch=false;
+    byElementId[el.id]={observedCount,expectedPerFullStackRay,expectedForAllEmittedRays,matchesAllEmittedRays};
+  }
+  return {
+    emitted:Number.isSafeInteger(emitted)?emitted:null,
+    outgoingHitCount,
+    byElementId,
+    zeroEncounterElementIds,
+    allElementsEncounteredByAllEmittedRays:allMatch
+  };
+}
+
+function compareOutgoingHits(paraxialResult,events,exitPlaneX,elements,emitted,opticalIncidentsById){
   const pv=paraxialResult.value;
   if(paraxialResult.status!=='conditional'||!pv){
     return {
       status:'paraxial-not-conditional',
+      routeQualification:'not-applicable',
       reason:'Paraxial prediction is '+paraxialResult.status+' ('+(paraxialResult.reasonCode||'no finite value')+').',
       exitDirection:null,
       outgoingHitCount:0,
       nonExitDirectionHitCount:events.length,
+      stackEncounters:null,
       targetPointMm:null,
       hits:[]
     };
@@ -333,45 +386,86 @@ function compareOutgoingHits(paraxialResult,events,exitPlaneX){
     :(ev.incomingUnit.x<-1e-12&&ev.pointMm.x<exitPlaneX);
   const outgoing=events.filter(isPostExitOutgoing);
   const nonExitCount=events.length-outgoing.length;
+  const stackEncounters=summarizeStackEncounters(elements,pv.propagationMode,emitted,outgoing.length,opticalIncidentsById);
 
   if(outgoing.length===0){
     return {
       status:'no-outgoing-detector-hits',
+      routeQualification:'no-outgoing-hits',
       reason:'No observed detector hits lay in the post-stack exit half-space travelling along exitDirection ('+exitDirection+').',
       exitDirection,
       outgoingHitCount:0,
       nonExitDirectionHitCount:nonExitCount,
+      stackEncounters,
       targetPointMm:null,
       hits:[]
     };
   }
 
-  // Handle collimated/afocal paraxial output explicitly (no finite target point).
-  if(paraxialResult.kind==='coaxial-stack-collimated-focus'&&pv.isAfocal){
-    const hitRows=outgoing.map((ev,i)=>({
-      index:i,
-      pointMm:ev.pointMm,
-      incomingUnit:ev.incomingUnit,
-      slope:ev.incomingUnit.y/ev.incomingUnit.x,
-      absSlope:Math.abs(ev.incomingUnit.y/ev.incomingUnit.x)
-    }));
+  if(stackEncounters.zeroEncounterElementIds.length>0){
     return {
-      status:'observed-afocal-collimation-compared',
+      status:'stack-optics-not-encountered',
+      routeQualification:'zero-encounters-on-declared-optics',
+      reason:'Declared stack element(s) recorded zero native ray encounters ('+stackEncounters.zeroEncounterElementIds.join(', ')+'); outgoing detector hits bypassed the declared stack and cannot corroborate it.',
       exitDirection,
       outgoingHitCount:outgoing.length,
       nonExitDirectionHitCount:nonExitCount,
+      stackEncounters,
       targetPointMm:null,
-      maxAbsOutgoingSlope:Math.max(...hitRows.map(h=>h.absSlope)),
+      hits:[]
+    };
+  }
+
+  if(!stackEncounters.allElementsEncounteredByAllEmittedRays){
+    return {
+      status:'partial-stack-encounters-route-unverified',
+      routeQualification:'partial-or-unverified',
+      reason:'Observed per-element native encounter counts do not match full-stack traversal by all emitted rays (partial aperture clipping or bypassed rays); aggregate stack corroboration metrics are withheld.',
+      exitDirection,
+      outgoingHitCount:outgoing.length,
+      nonExitDirectionHitCount:nonExitCount,
+      stackEncounters,
+      targetPointMm:null,
+      hits:outgoing.map((ev,i)=>({index:i,pointMm:ev.pointMm,incomingUnit:ev.incomingUnit,routeVerified:false}))
+    };
+  }
+
+  // Handle collimated/afocal paraxial output explicitly (no finite target point).
+  if(paraxialResult.kind==='coaxial-stack-collimated-focus'&&pv.isAfocal){
+    const hitRows=outgoing.map((ev,i)=>{
+      const slopeR=divide(fromBinary64(ev.incomingUnit.y),fromBinary64(ev.incomingUnit.x));
+      const slope=toBinary64(slopeR);
+      const absSlope=toBinary64(absR(slopeR));
+      return {
+        index:i,
+        pointMm:ev.pointMm,
+        incomingUnit:ev.incomingUnit,
+        slope:Number.isFinite(slope)?slope:null,
+        absSlope:Number.isFinite(absSlope)?absSlope:null
+      };
+    });
+    const finiteSlopes=hitRows.map(h=>h.absSlope).filter(v=>typeof v==='number'&&Number.isFinite(v));
+    return {
+      status:'observed-afocal-collimation-compared',
+      routeQualification:'all-emitted-rays-encountered-every-element',
+      exitDirection,
+      outgoingHitCount:outgoing.length,
+      nonExitDirectionHitCount:nonExitCount,
+      stackEncounters,
+      targetPointMm:null,
+      maxAbsOutgoingSlope:finiteSlopes.length===hitRows.length?Math.max(...finiteSlopes):null,
       hits:hitRows
     };
   }
   if(paraxialResult.kind==='coaxial-stack-conjugate'&&pv.imageKind==='at-infinity'){
     return {
       status:'paraxial-at-infinity',
+      routeQualification:'all-emitted-rays-encountered-every-element',
       reason:'Paraxial image lies at infinity; outgoing native ray directions are reported without a finite target coordinate.',
       exitDirection,
       outgoingHitCount:outgoing.length,
       nonExitDirectionHitCount:nonExitCount,
+      stackEncounters,
       targetPointMm:null,
       hits:outgoing.map((ev,i)=>({index:i,pointMm:ev.pointMm,incomingUnit:ev.incomingUnit}))
     };
@@ -379,35 +473,28 @@ function compareOutgoingHits(paraxialResult,events,exitPlaneX){
 
   const targetX=paraxialResult.kind==='coaxial-stack-conjugate'?pv.imageX:pv.backFocusX;
   const targetY=paraxialResult.kind==='coaxial-stack-conjugate'?(own(pv,'imageY')?pv.imageY:0):0;
+  const targetPointMm={x:targetX,y:targetY};
 
-  const hitRows=outgoing.map((ev,i)=>{
-    const {x:xh,y:yh}=ev.pointMm;
-    const {x:ux,y:uy}=ev.incomingUnit;
-    const perpMissMm=Math.abs((targetX-xh)*uy-(targetY-yh)*ux);
-    const yAtTargetXMm=yh+((targetX-xh)/ux)*uy;
-    const deltaYMm=yAtTargetXMm-targetY;
-    const xAtTargetYMm=Math.abs(uy)>1e-12?xh+((targetY-yh)/uy)*ux:null;
-    const deltaXMm=xAtTargetYMm===null?null:xAtTargetYMm-targetX;
-    return {
-      index:i,
-      pointMm:ev.pointMm,
-      incomingUnit:ev.incomingUnit,
-      perpendicularMissMm:perpMissMm,
-      yAtTargetXMm,
-      deltaYAtTargetXMm:deltaYMm,
-      xAtTargetYMm,
-      deltaXAtTargetYMm:deltaXMm
-    };
-  });
+  const hitRows=outgoing.map((ev,i)=>({
+    index:i,
+    pointMm:ev.pointMm,
+    incomingUnit:ev.incomingUnit,
+    ...computeWitnessRayMetrics(ev.pointMm,ev.incomingUnit,targetPointMm)
+  }));
+
+  const misses=hitRows.map(h=>h.perpendicularMissMm).filter(v=>typeof v==='number'&&Number.isFinite(v));
+  const deltaYs=hitRows.map(h=>h.deltaYAtTargetXMm).filter(v=>typeof v==='number'&&Number.isFinite(v)).map(Math.abs);
 
   return {
     status:'observed-ray-geometry-compared',
+    routeQualification:'all-emitted-rays-encountered-every-element',
     exitDirection,
     outgoingHitCount:outgoing.length,
     nonExitDirectionHitCount:nonExitCount,
-    targetPointMm:{x:targetX,y:targetY},
-    maxPerpendicularMissMm:Math.max(...hitRows.map(h=>h.perpendicularMissMm)),
-    maxAbsDeltaYAtTargetXMm:Math.max(...hitRows.map(h=>Math.abs(h.deltaYAtTargetXMm))),
+    stackEncounters,
+    targetPointMm,
+    maxPerpendicularMissMm:misses.length===hitRows.length?Math.max(...misses):null,
+    maxAbsDeltaYAtTargetXMm:deltaYs.length===hitRows.length?Math.max(...deltaYs):null,
     hits:hitRows
   };
 }
@@ -453,7 +540,14 @@ export async function runCoaxialStackNativeWitness(input,spec,{execute}={}){
       hits:[]
     };
   }else{
-    comparison=compareOutgoingHits(plan.paraxialResult,byId['witness-detector-hits'].value,exitPlaneX);
+    comparison=compareOutgoingHits(
+      plan.paraxialResult,
+      byId['witness-detector-hits'].value,
+      exitPlaneX,
+      plan.mapping.elements,
+      byId['witness-emissions']?.value??null,
+      summary?.observations?.v37OpticalIncidentsById??null
+    );
   }
 
   return {

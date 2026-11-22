@@ -18,6 +18,7 @@ import {
   COAXIAL_WITNESS_SPEC,
   buildCoaxialStackNativeWitness,
   coaxialStackNativeWitnessCapabilities,
+  computeWitnessRayMetrics,
   runCoaxialStackNativeWitness
 } from '../src/coaxial-stack-native-witness.js';
 import {evaluateDocument} from '../scripts/author-scene.mjs';
@@ -248,6 +249,62 @@ test('honest failure modes: endpoint suppression, zero outgoing hits, and strict
   assert.equal(interiorRep.native.executionPassed,true);
   assert.equal(interiorRep.comparison.status,'no-outgoing-detector-hits');
   assert.equal(interiorRep.comparison.nonExitDirectionHitCount,4);
+
+  // 2c. Astra P2 regression: horizontal beam completely bypassing an afocal 2-lens stack
+  // must NOT falsely corroborate afocal collimation (zero encounters on L1 & L2).
+  const afocalStack={
+    format:COAXIAL_STACK_FACTS,
+    model:'coaxial-paraxial-optical-stack',
+    signConvention:'x-increasing',
+    lengthUnit:'mm',
+    incidentIndex:1,
+    elements:[
+      {id:'L1',type:'thin-lens',x:0,focalLength:100},
+      {id:'L2',type:'thin-lens',x:150,focalLength:50}
+    ]
+  };
+  const bypassRep=await runCoaxialStackNativeWitness(afocalStack,{
+    format:COAXIAL_WITNESS_SPEC,
+    query:{format:COAXIAL_STACK_QUERY,kind:'coaxial-stack-collimated-focus'},
+    aperturesById:{L1:10,L2:10},
+    emitter:{mode:'parallel-beam',x:-100,y:100,width:10,brightness:0.2},
+    detector:{id:'D_bypass',x:220,y:100,orientationDeg:90,length:20},
+    runPolicy:'preview-v1'
+  },{execute});
+  assert.equal(bypassRep.native.executionPassed,true);
+  assert.equal(bypassRep.comparison.status,'stack-optics-not-encountered');
+  assert.equal(bypassRep.comparison.routeQualification,'zero-encounters-on-declared-optics');
+  assert.deepEqual(bypassRep.comparison.stackEncounters.zeroEncounterElementIds,['L1','L2']);
+  assert.equal('maxAbsOutgoingSlope' in bypassRep.comparison,false);
+
+  // 2d. Partially clipped multi-element stack (all rays hit L1, only inner rays hit narrow L2)
+  // returns partial-stack-encounters-route-unverified and withholds aggregate corroboration.
+  const partialRep=await runCoaxialStackNativeWitness(afocalStack,{
+    format:COAXIAL_WITNESS_SPEC,
+    query:{format:COAXIAL_STACK_QUERY,kind:'coaxial-stack-collimated-focus'},
+    aperturesById:{L1:80,L2:12},
+    emitter:{mode:'parallel-beam',x:-100,y:0,width:60,brightness:0.2},
+    detector:{id:'D_part',x:220,y:0,orientationDeg:90,length:120},
+    runPolicy:'preview-v1'
+  },{execute});
+  assert.equal(partialRep.native.executionPassed,true);
+  assert.equal(partialRep.comparison.status,'partial-stack-encounters-route-unverified');
+  assert.equal(partialRep.comparison.routeQualification,'partial-or-unverified');
+  assert.equal(partialRep.comparison.stackEncounters.byElementId.L1.observedCount,12);
+  assert.ok(partialRep.comparison.stackEncounters.byElementId.L2.observedCount>0&&
+            partialRep.comparison.stackEncounters.byElementId.L2.observedCount<12);
+  assert.equal('maxAbsOutgoingSlope' in partialRep.comparison,false);
+
+  // 2e. Astra P3 regression: exact binary64-rational perpendicular miss avoids cancellation at 1e9 mm.
+  const exactCancel=computeWitnessRayMetrics(
+    {x:0,y:0},
+    {x:0.7071067811865476,y:0.7071067811865476},
+    {x:1e9,y:999999999.9999986}
+  );
+  // Naive float Math.abs((1e9)*u - (999999999.9999986)*u) gives ~9.536743e-7 (< 1e-6);
+  // exact rational on the represented binary64 operands gives ~1.011524e-6 (> 1e-6).
+  assert.ok(exactCancel.perpendicularMissMm>1e-6);
+  assert.ok(Math.abs(exactCancel.perpendicularMissMm-1.011524e-6)<1e-8);
 
   // 3. Strict scope rejections: refracting-surface, non-mm unit, incidentIndex != 1, missing aperture, missing/extra mirrorModel.
   const slabStack={
