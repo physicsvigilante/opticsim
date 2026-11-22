@@ -29,7 +29,7 @@ All elements propagate in exact `binary64-rational` reduced-slope coordinates $(
 
 ## Numerical guards and scope limits
 
-Every boundary classification (`C`, `A`, `D`, `D_full`, `B_full`, transverse/longitudinal unit-magnification residuals, expanded axial shift `L + n_out*sa*sb`, and return self-conjugate roots) is guarded by a `1e-10` relative scale-invariant positive-monomial bound, returning `status: "numerically-indeterminate"` rather than a brittle classification.
+Every boundary classification (`C`, `A`, `D`, `D_full`, `B_full`, transverse/longitudinal unit-magnification residuals, expanded axial shift `L + n_out*sa*sb`, and return self-conjugate roots) is guarded by a `1e-10` relative scale-invariant positive-monomial bound. Published return self-conjugate roots additionally require well-conditioned `D_full`/`B_full` and binary64 round-trip self-conjugacy plus resolvable root separation, returning `status: "numerically-indeterminate"` rather than publishing indistinguishable or contradictory roots.
 
 See [examples/coaxial-paraxial-stack.json](../examples/coaxial-paraxial-stack.json) for a multi-query glass-slab + thin-lens stack. `test/coaxial-paraxial-stack.test.mjs` cross-checks composed stacks (slab + lens, planar liquid surface + lens, lens + concave return mirror, co-located silvered lenses, water-filled concave mirror, 3-lens relay, and thick curved glass + thin lens) against existing modules and pinned native PhyDemo `SingleRay` controls.
 

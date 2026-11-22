@@ -77,7 +77,7 @@ export function coaxialStackCapabilities(){
     numericalPolicy:{
       exactArithmetic:'binary64-rational exact reduced-slope (y, n*u) unimodular ABCD propagation (det=1 identically; A=D identically for return stacks)',
       relativeIndeterminacyTolerance:1e-10,
-      boundaries:'Nonzero boundary residuals (C, A, D, D_full, B_full, longitudinal magnification residual, expanded axial shift L-n_out*A*B, or return self-conjugate numerators A+-1 / B) within 1e-10 of their scale-invariant positive-monomial bounds return numerically-indeterminate.'
+      boundaries:'Nonzero boundary residuals (C, A, D, D_full, B_full, longitudinal magnification residual, expanded axial shift L-n_out*A*B, or return self-conjugate numerators A+-1 / B) within 1e-10 of their scale-invariant positive-monomial bounds, or return self-conjugate roots that are ill-conditioned in D_full/B_full or indistinguishable after binary64 rounding, return numerically-indeterminate.'
     },
     limits:[
       'Conditional first-order coaxial paraxial stack only; no native scene, finite aperture, brightness, Fresnel reflection loss, aberration, or detected image is created or certified.',
@@ -443,25 +443,61 @@ export function analyzeCoaxialStack(f,q){
     'The optical power C is nonzero yet within the relative numerical cancellation band; afocal transfer invariance cannot be reliably classified.');
 
   // Helper for symmetric return self-conjugate real objects (C*t^2 + 2*A*t + B = 0, t = s/n0 > 0).
+  // Every published root must be well-conditioned in D_full/B_full, preserve
+  // self-conjugacy after binary64 rounding, and remain distinct from any second root.
+  const ROUNDTRIP_TOL=divide(ONE,fromBinary64(1e7));
+  function qualifySelfConjugateRoot(s,exactMag){
+    if(compare(multiply(s,stack.unitScale),stack.minSep)<0)
+      return {ok:false,code:'NEAR_SELF_CONJUGATE_AT_ENTRANCE_PLANE',
+        reason:'A positive self-conjugate object distance lies below the minimum qualified axial separation.'};
+    const sRed=divide(s,entranceIndex);
+    const dFull=add(multiply(c,sRed),d),sdFull=add(multiply(sc,sRed),sd);
+    const bFull=add(multiply(a,sRed),b),sbFull=add(multiply(sa,sRed),sb);
+    if(nearZero(dFull,sdFull)||dFull.n===0n||nearZero(bFull,sbFull))
+      return {ok:false,code:'ILL_CONDITIONED_SELF_CONJUGATE_ROOT',
+        reason:'A return self-conjugate root suffers severe cancellation in D_full or B_full relative to its positive-monomial bound.'};
+    const objX=subtract(entranceElement.x,s);
+    const sNum=toSafeNum(s),xNum=toSafeNum(objX),mNum=toBinary64(exactMag);
+    if(sNum===null||xNum===null||!Number.isFinite(mNum))
+      return {ok:false,code:'DERIVED_COORDINATE_OUT_OF_RANGE',
+        reason:'A self-conjugate object distance exceeds the qualified numerical magnitude ceiling.'};
+    // Verify the published rounded binary64 objectX remains well-conditioned and
+    // self-conjugate when re-evaluated by coaxial-stack-conjugate.
+    const xRounded=fromBinary64(xNum);
+    const sRounded=subtract(entranceElement.x,xRounded);
+    if(sRounded.n<=0n||compare(multiply(sRounded,stack.unitScale),stack.minSep)<0)
+      return {ok:false,code:'ILL_CONDITIONED_SELF_CONJUGATE_ROOT',
+        reason:'Binary64 rounding pushes a self-conjugate root onto or past the entrance plane.'};
+    const sRedR=divide(sRounded,entranceIndex);
+    const dFullR=add(multiply(c,sRedR),d),sdFullR=add(multiply(sc,sRedR),sd);
+    const bFullR=add(multiply(a,sRedR),b),sbFullR=add(multiply(sa,sRedR),sb);
+    if(nearZero(dFullR,sdFullR)||dFullR.n===0n||nearZero(bFullR,sbFullR))
+      return {ok:false,code:'ILL_CONDITIONED_SELF_CONJUGATE_ROOT',
+        reason:'The rounded binary64 self-conjugate coordinate is numerically indeterminate under conjugate evaluation.'};
+    const zR=divide(multiply(negR(exitIndex),bFullR),dFullR);
+    const imgXR=subtract(exitElement.x,zR);
+    const magR=divide(ONE,dFullR);
+    const posScale=add(add(absR(sRounded),absR(xRounded)),divide(ONE,stack.unitScale));
+    if(compare(absR(subtract(imgXR,xRounded)),multiply(ROUNDTRIP_TOL,posScale))>0||
+       compare(absR(subtract(magR,exactMag)),multiply(ROUNDTRIP_TOL,absR(exactMag)))>0)
+      return {ok:false,code:'ILL_CONDITIONED_SELF_CONJUGATE_ROOT',
+        reason:'Binary64 rounding destroys self-conjugacy or magnification stability for this return root.'};
+    return {ok:true,entry:{s,objectDistanceFromEntrance:sNum,objectX:xNum,magnification:mNum}};
+  }
   function computeReturnSelfConjugates(){
     if(!isReturn)return {ok:true,items:null};
     const candidates=[];
     if(c.n!==0n){
-      for(const [sign,magVal] of [[ONE,-1],[NEG_ONE,1]]){
+      for(const [sign,exactMag] of [[ONE,NEG_ONE],[NEG_ONE,ONE]]){
         const num=add(a,sign);
         if(nearZero(num,add(sa,ONE)))return {ok:false,code:'NEAR_SELF_CONJUGATE_AT_ENTRANCE_PLANE',
           reason:'A self-conjugate root lies within the relative numerical band of the entrance plane.'};
         if(num.n===0n)continue;
         const s=divide(multiply(negR(entranceIndex),num),c);
         if(s.n<=0n)continue;
-        if(compare(multiply(s,stack.unitScale),stack.minSep)<0)
-          return {ok:false,code:'NEAR_SELF_CONJUGATE_AT_ENTRANCE_PLANE',
-            reason:'A positive self-conjugate object distance lies below the minimum qualified axial separation.'};
-        const objX=subtract(entranceElement.x,s);
-        const sNum=toSafeNum(s),xNum=toSafeNum(objX);
-        if(sNum===null||xNum===null)return {ok:false,code:'DERIVED_COORDINATE_OUT_OF_RANGE',
-          reason:'A self-conjugate object distance exceeds the qualified numerical magnitude ceiling.'};
-        candidates.push({s,objectDistanceFromEntrance:sNum,objectX:xNum,magnification:magVal});
+        const qualified=qualifySelfConjugateRoot(s,exactMag);
+        if(!qualified.ok)return qualified;
+        candidates.push(qualified.entry);
       }
     }else{
       if(nearZero(b,sb))return {ok:false,code:'NEAR_SELF_CONJUGATE_AT_ENTRANCE_PLANE',
@@ -469,18 +505,21 @@ export function analyzeCoaxialStack(f,q){
       if(b.n!==0n){
         const s=divide(multiply(negR(entranceIndex),b),multiply(TWO,a));
         if(s.n>0n){
-          if(compare(multiply(s,stack.unitScale),stack.minSep)<0)
-            return {ok:false,code:'NEAR_SELF_CONJUGATE_AT_ENTRANCE_PLANE',
-              reason:'The afocal return self-conjugate object distance lies below the minimum qualified axial separation.'};
-          const objX=subtract(entranceElement.x,s);
-          const sNum=toSafeNum(s),xNum=toSafeNum(objX),mNum=toBinary64(a);
-          if(sNum===null||xNum===null||!Number.isFinite(mNum))return {ok:false,code:'DERIVED_COORDINATE_OUT_OF_RANGE',
-            reason:'The afocal return self-conjugate object distance exceeds the qualified numerical magnitude ceiling.'};
-          candidates.push({s,objectDistanceFromEntrance:sNum,objectX:xNum,magnification:mNum});
+          const qualified=qualifySelfConjugateRoot(s,a);
+          if(!qualified.ok)return qualified;
+          candidates.push(qualified.entry);
         }
       }
     }
     candidates.sort((u,v)=>compare(u.s,v.s));
+    if(candidates.length===2){
+      const [r0,r1]=candidates;
+      if(r0.objectDistanceFromEntrance===r1.objectDistanceFromEntrance||
+         r0.objectX===r1.objectX||
+         Math.abs(r1.objectDistanceFromEntrance-r0.objectDistanceFromEntrance)<=1e-10*Math.max(r0.objectDistanceFromEntrance,r1.objectDistanceFromEntrance))
+        return {ok:false,code:'UNRESOLVABLE_SELF_CONJUGATE_ROOTS',
+          reason:'Distinct exact return self-conjugate roots collapse within binary64 resolution.'};
+    }
     return {ok:true,items:candidates.map(({objectDistanceFromEntrance,objectX,magnification})=>({objectDistanceFromEntrance,objectX,magnification}))};
   }
 

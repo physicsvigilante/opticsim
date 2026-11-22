@@ -326,6 +326,86 @@ test('numerical indeterminacy guards catch cancellation across conjugate, focus,
   ],['coaxial-stack-collimated-focus'],{incidentIndex:1.5})).results[0];
   assert.equal(exactMatched.status,'conditional');
   assert.equal(exactMatched.value.state,'afocal');
+
+  // 8. PR #244 Round 1 P2 regression: 3-lens + plane-mirror return stack whose two exact
+  // self-conjugate roots are only 3.12e-17 mm apart and collapse to one binary64 coordinate.
+  const collapsedRoots=planProblem(makeProblem([
+    {id:'L1',type:'thin-lens',x:0,focalLength:1},
+    {id:'L2',type:'thin-lens',x:2000,focalLength:-1},
+    {id:'L3',type:'thin-lens',x:4000,focalLength:-1},
+    {id:'M',type:'terminal-mirror',x:6000,signedRadius:'infinity'}
+  ],['coaxial-stack-transfer'])).results[0];
+  assert.equal(collapsedRoots.status,'numerically-indeterminate');
+  assert.equal(collapsedRoots.reasonCode,'ILL_CONDITIONED_SELF_CONJUGATE_ROOT');
+  assert.equal(collapsedRoots.value,null);
+});
+
+test('cross-index afocal unit-longitudinal-mag and 8-element mixed stacks satisfy invariants and self-conjugate round-trips',()=>{
+  // 1. Cross-index afocal transmission (n_in=1 -> n_out=4) with A=-1/2 -> m_long = (4/1)*(1/4) = 1, constant shift 465/2 mm.
+  const crossAfocal=planProblem(makeProblem([
+    {id:'W',type:'refracting-surface',x:0,signedRadius:'infinity',downstreamIndex:4},
+    {id:'L1',type:'thin-lens',x:10,focalLength:100},
+    {id:'L2',type:'thin-lens',x:160,focalLength:50}
+  ],['coaxial-stack-transfer','coaxial-stack-collimated-focus'],{incidentIndex:1}));
+  const [cTr,cFoc]=crossAfocal.results.map(r=>r.value);
+  assert.equal(cTr.isAfocal,true);
+  assert.equal(cTr.transverseMagnification,-0.5);
+  assert.equal(cTr.preservesTransverseSize,false);
+  assert.equal(cTr.longitudinalMagnification,1);
+  assert.equal(cTr.constantAxialShift,true);
+  assert.equal(cTr.axialShift,232.5);
+  assert.equal(cTr.preservesAxialImagePosition,false);
+  assert.equal(cFoc.state,'afocal');
+  assert.equal(cFoc.beamHeightScale,-0.5);
+  assert.equal(cFoc.angularScale,-0.5);
+
+  // 2. Deterministic 8-element mixed stacks (transmission & return) verifying det=1, return A=D,
+  // and exact round-trip agreement between emitted selfConjugateObjects and coaxial-stack-conjugate.
+  const mixedStacks=[
+    [
+      {id:'S1',type:'refracting-surface',x:0,signedRadius:120,downstreamIndex:1.5},
+      {id:'S2',type:'refracting-surface',x:15,signedRadius:-180,downstreamIndex:1},
+      {id:'L1',type:'thin-lens',x:50,focalLength:90},
+      {id:'S3',type:'refracting-surface',x:80,signedRadius:'infinity',downstreamIndex:1.25},
+      {id:'S4',type:'refracting-surface',x:105,signedRadius:'infinity',downstreamIndex:1},
+      {id:'L2',type:'thin-lens',x:140,focalLength:-120},
+      {id:'L3',type:'thin-lens',x:190,focalLength:110},
+      {id:'M',type:'terminal-mirror',x:240,signedRadius:-200}
+    ],
+    [
+      {id:'S1',type:'refracting-surface',x:0,signedRadius:'infinity',downstreamIndex:1.5},
+      {id:'S2',type:'refracting-surface',x:20,signedRadius:'infinity',downstreamIndex:1},
+      {id:'L1',type:'thin-lens',x:60,focalLength:100},
+      {id:'L2',type:'thin-lens',x:130,focalLength:80},
+      {id:'M',type:'terminal-mirror',x:190,signedRadius:'infinity'}
+    ],
+    [
+      {id:'S1',type:'refracting-surface',x:0,signedRadius:200,downstreamIndex:1.5},
+      {id:'S2',type:'refracting-surface',x:10,signedRadius:-200,downstreamIndex:1},
+      {id:'L1',type:'thin-lens',x:40,focalLength:150},
+      {id:'S3',type:'refracting-surface',x:70,signedRadius:'infinity',downstreamIndex:1.4},
+      {id:'S4',type:'refracting-surface',x:90,signedRadius:'infinity',downstreamIndex:1},
+      {id:'L2',type:'thin-lens',x:120,focalLength:75},
+      {id:'L3',type:'thin-lens',x:180,focalLength:-90},
+      {id:'L4',type:'thin-lens',x:230,focalLength:120}
+    ]
+  ];
+  for(const elements of mixedStacks){
+    const trRes=planProblem(makeProblem(elements,['coaxial-stack-transfer'])).results[0];
+    assert.equal(trRes.status,'conditional');
+    const {a,b,c,d}=trRes.value.reducedSystemMatrix;
+    assert.ok(Math.abs((a*d-b*c)-1)<1e-10,'symplectic det=1');
+    if(trRes.value.propagationMode==='return'){
+      assert.ok(Math.abs(a-d)<1e-12,'palindromic return A=D');
+      assert.ok(trRes.value.selfConjugateObjects.length>=1);
+      for(const root of trRes.value.selfConjugateObjects){
+        const check=planProblem(makeProblem(elements,['coaxial-stack-conjugate'],{object:{x:root.objectX,y:1}})).results[0];
+        assert.equal(check.status,'conditional','emitted self-conjugate root must round-trip cleanly');
+        assert.ok(Math.abs(check.value.imageX-root.objectX)<1e-6,'round-trip imageX matches objectX');
+        assert.ok(Math.abs(check.value.magnification-root.magnification)<1e-6,'round-trip magnification matches');
+      }
+    }
+  }
 });
 
 test('strict validation, element ordering, verifyNative gate, CLI workflow, and contract preservation',()=>{
