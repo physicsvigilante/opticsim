@@ -1,6 +1,6 @@
 # Which Model / Which Result? (Quick Guide for Teachers, Students & LLMs)
 
-Opticsim separates **native 2D ray tracing** (pinned PhyDemo `811f508d2b070898c241a568b0c167dcb8645251`, sampled observations with `nativeObservation: true`) from **conditional analytical mathematics** (exact `binary64-rational` paraxial/angular equations with `nativeObservation: false` and `nativeImageDetected: false`).
+Opticsim separates **native 2D ray tracing** (pinned PhyDemo `811f508d2b070898c241a568b0c167dcb8645251`, sampled observations with `nativeObservation: true`) from **conditional analytical mathematics** (including exact `binary64-rational` coaxial paraxial propagation and numerically guarded angular/Snell calculations, with `nativeObservation: false` and `nativeImageDetected: false`).
 
 Use this chooser to pick the right starting point without learning schema history.
 
