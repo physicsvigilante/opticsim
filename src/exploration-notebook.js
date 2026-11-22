@@ -13,7 +13,8 @@ const exactly=(value,keys)=>{
  if(!isRecord(value)||Object.keys(value).sort().join('|')!==keys.slice().sort().join('|'))
   throw Error('Invalid exploration notebook fields; unexpected or missing data');
 };
-const fileSize=value=>new TextEncoder().encode(JSON.stringify(value)).length;
+export const serializeExplorationNotebook=value=>JSON.stringify(value)+'\n';
+const fileSize=value=>new TextEncoder().encode(serializeExplorationNotebook(value)).length;
 function limit(value){
  if(fileSize(value)>EXPLORATION_NOTEBOOK_MAX_BYTES)
   throw Error('Exploration notebook exceeds 4 MiB; export smaller qualified scenes');

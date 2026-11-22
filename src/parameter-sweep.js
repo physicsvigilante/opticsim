@@ -1,7 +1,7 @@
 // A bounded deterministic experiment over the existing revision/result contracts.
 // Every sample is a fresh copy of ONE verified baseline, never the prior sample.
 import {LENGTH_PARAMETERS} from './contract.js';
-import {qualifyRunnerSummary} from './native-observations.js';
+import {qualifyRunnerSummary,isAcceptedExecutionSummary} from './native-observations.js';
 import {reviseScene} from './authoring.js';
 import {validateObservables,evaluateObservables} from './observables.js';
 import {verifyQualifiedBundle,recordQualifiedEdit,createQualifiedBundle} from './qualification.js';
@@ -59,11 +59,16 @@ export async function runParameterSweep(bundle,spec,{execute,onSample=async()=>{
       qualified=await createQualifiedBundle(document,
         recordQualifiedEdit(baseline.scene,document,baseline.qualification),requests);
       stage='execution';
-      execution=await execute(structuredClone(document));
-      const summary=qualifyRunnerSummary(document,execution.summary);
-      if(summary!==execution.summary)execution={summary};
-      requestedResults=await evaluateObservables(document,requests,execution.summary);
-      status=execution.summary.executionPassed?'completed':'incomplete';
+      execution=await execute(structuredClone(document),structuredClone(requests));
+      const rawSummary=execution?.summary;
+      const summary=qualifyRunnerSummary(document,rawSummary);
+      if(summary!==rawSummary)execution={summary};
+      requestedResults=await evaluateObservables(document,requests,summary);
+      const accepted=isAcceptedExecutionSummary(document,qualified.sceneSha256,summary);
+      status=accepted?'completed':'incomplete';
+      if(!accepted&&summary?.canonicalSha256!==qualified.sceneSha256){
+        error={message:'Execution evidence does not match the current sample scene hash.',issues:[]};
+      }
     }catch(e){
       error={message:e.message,issues:e.issues||[]};
       status=stage==='validation'?'invalid-input':'execution-failed';

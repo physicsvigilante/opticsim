@@ -3,7 +3,7 @@
 import {explorationBundle,explorationContext,parseExplorationProposal,prepareExplorationProposal,
  browserExecution,snapshotScenario,compareExplorationSnapshots,nativeComparisonReadouts} from './exploration.js';
 import {focusedExplorationContext} from './focused-exploration-context.js';
-import {createExplorationNotebook,parseExplorationNotebook,EXPLORATION_NOTEBOOK_MAX_BYTES} from './exploration-notebook.js';
+import {createExplorationNotebook,parseExplorationNotebook,serializeExplorationNotebook,EXPLORATION_NOTEBOOK_MAX_BYTES} from './exploration-notebook.js';
 import {verifyQualifiedBundle} from './qualification.js';
 import {canonicalJSON} from './qualified-utils.js';
 const same=(a,b)=>canonicalJSON(a)===canonicalJSON(b);
@@ -98,14 +98,15 @@ export class ExplorationUI {
   const doc=structuredClone(this.session.document),q=structuredClone(this.qualified.qualification),requests=structuredClone(this.qualified.requests);
   const bundle=await explorationBundle(doc,q,requests);this.guard(token);return {bundle,token};
  }
- async currentSnapshot(label,seedReadouts=false){
+ async currentSnapshot(label,seedReadouts=false,{preserveIntent=true}={}){
   this.requireCurrent();const token=this.token(),doc=structuredClone(this.session.document),data=structuredClone(this.session.data),state=this.session.state;
   const q=structuredClone(this.qualified.qualification),requests=structuredClone(this.qualified.requests);
   const selected=seedReadouts&&!requests.length?nativeComparisonReadouts(doc):requests;
   const bundle=await explorationBundle(doc,q,selected);
   const execution=await browserExecution(doc,state,data,selected);
-  const match=this.intent?.childIntegritySha256===bundle.integritySha256;
-  const snapshot=await snapshotScenario(bundle,execution,label,match?this.intent:{});
+  const match=preserveIntent&&this.intent?.childIntegritySha256===bundle.integritySha256;
+  const snapshot=await snapshotScenario(bundle,execution,label,
+   match?{intent:this.intent.intent??null,parentIntegritySha256:this.intent.parentIntegritySha256??null}:{});
   this.guard(token);return snapshot;
  }
  setOptions(index){
@@ -114,7 +115,7 @@ export class ExplorationUI {
   });this.select.value=String(index);
  }
  async start(){
-  const first=await this.currentSnapshot('Baseline',true);
+  const first=await this.currentSnapshot('Baseline',true,{preserveIntent:false});
   // Only qualification/readout selection changes, not physical apparatus or rays.
   this.qualified.commit({qualification:first.bundle.qualification,requests:first.bundle.observables});
   this.saved=[first];this.intent=null;this.comparison=null;delete this.comparisonText.dataset.report;this.invalidatePreview();this.setOptions(0);
@@ -167,8 +168,12 @@ export class ExplorationUI {
  selected(){const s=this.saved[Number(this.select.value)];if(!s)throw Error('Select a saved scenario.');return structuredClone(s);}
  async restore(){
   const selected=this.selected(),token=this.token(),bundle=await verifyQualifiedBundle(selected.bundle);this.guard(token);
-  this.intent=null;this.invalidatePreview();
+  this.invalidatePreview();
   if(!this.applyBundle(bundle))throw Error('Saved scene could not be loaded; native results remain withheld.');
+  this.intent=selected.intent!==null||selected.parentIntegritySha256!==null
+   ?{intent:selected.intent??null,parentIntegritySha256:selected.parentIntegritySha256??null,childIntegritySha256:bundle.integritySha256}
+   :null;
+  this.name.value=selected.label;
   this.status.textContent='Loaded '+selected.label+' and started a fresh native run. Stored results were not reused.';
  }
  exportScene(){const s=this.selected();this.download(json(s.bundle),'exploration-scene.qualified.json');}
@@ -187,7 +192,7 @@ export class ExplorationUI {
  async exportNotebook(){
   this.requireCurrent();const token=this.token(),saved=structuredClone(this.saved);
   const notebook=await createExplorationNotebook(saved);this.guard(token);
-  this.download(json(notebook),'opticsim-exploration-notebook.json');
+  this.download(serializeExplorationNotebook(notebook),'opticsim-exploration-notebook.json');
   this.status.textContent='Portable notebook downloaded: '+notebook.entries.length+
    ' qualified scenes, no cached native results or certified source claims.';
  }
@@ -214,8 +219,12 @@ export class ExplorationUI {
   const selected=this.importedNotebook?.entries[Number(this.notebookSelect.value)];
   if(!selected)throw Error('Import and select a valid notebook scene first.');
   const token=this.token(),bundle=await verifyQualifiedBundle(selected.bundle);
-  this.guard(token);this.intent=null;this.invalidatePreview();
+  this.guard(token);this.invalidatePreview();
   if(!this.applyBundle(bundle))throw Error('Imported scene failed native setup; no current results accepted.');
+  this.intent=selected.intent!==null||selected.parentIntegritySha256!==null
+   ?{intent:selected.intent??null,parentIntegritySha256:selected.parentIntegritySha256??null,childIntegritySha256:bundle.integritySha256}
+   :null;
+  this.name.value=selected.label;
   this.notebookStatus.textContent='Loaded '+selected.label+
    ' as an imported teacher scene and started a NEW native trace. Old results were not reused. For comparisons, rebuild the saved baseline and variants after completion.';
  }

@@ -7,6 +7,7 @@ import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
 import {SEMICIRCULAR_TYPE,semicircularExtents} from './semicircular-dielectric.js';
 import {CAP_TYPE,capExtents} from './finite-circular-cap.js';
 import {CIRCLE_BLOCKER_TYPE,circleBlockerExtents} from './opaque-circle-blocker.js';
+import {PARALLEL_BEAM_TYPE,parallelBeamGeometry} from './parallel-beam.js';
 import {isCurved,curvedPoints} from './curved-mirrors.js';
 import {validate,mirrorEndpoints} from './contract.js';
 import {sceneHash} from './qualified-utils.js';
@@ -83,6 +84,7 @@ export function apparatusPoints(doc){
     if(c.type===SPHERICAL_LENS_TYPE)return thickLensExtents(p);
     if(c.type===GRIN_V25_TYPE)return grinV25Extents(p);
     if(c.type===CIRCLE_BLOCKER_TYPE)return circleBlockerExtents(p);
+    if(c.type===PARALLEL_BEAM_TYPE){const g=parallelBeamGeometry(p);return [g.p1,g.p2];}
     if(isCurved(c.type))return curvedPoints(c);
     if(c.type==='ideal-lens')return [{x:p.x,y:(p.y??0)-p.apertureHeight/2},{x:p.x,y:(p.y??0)+p.apertureHeight/2}];
     if(c.type==='plane-mirror'||c.type==='ray-detector'||c.type==='line-blocker'||c.type==='finite-aperture')return mirrorEndpoints(p);
