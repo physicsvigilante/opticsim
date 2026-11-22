@@ -305,10 +305,18 @@ function componentTangentCircles(c){
   return [];
 }
 
+function componentDielectricCorners(c){
+  const p=c.parameters;
+  if(c.type===PRISM_TYPE)return prismVertices(p);
+  if(c.type===POLYGON_TYPE)return polygonVertices(p);
+  if(c.type===SPHERICAL_LENS_TYPE)return thickLensGeometry(p).corners;
+  return [];
+}
+
 // Route-independent observed native endpoint and tangency audit for v38.
 // Wraps instance-local methods once, delegates pinned PhyDemo first without
-// altering ray routing, and fails closed on initial/secondary endpoint near-misses,
-// circular/spherical/circle-blocker near-tangencies (< 0.01 mm), or audit faults.
+// altering ray routing, and fails closed on initial/secondary endpoint/corner
+// near-misses, circular/spherical/circle-blocker near-tangencies (< 0.01 mm), or audit faults.
 export function installGeneralRefractiveBenchAudit(doc,scene,idMap,mirrorEndpoints){
   let fault=null;
   let checkedStates=0;
@@ -316,6 +324,7 @@ export function installGeneralRefractiveBenchAudit(doc,scene,idMap,mirrorEndpoin
   const endpointById=new Map();
   const circleTargets=[];
   const circleById=new Map();
+  const cornerTargets=[];
   for(const c of doc.physics.components){
     const eps=externalComponentEndpoints(c,mirrorEndpoints);
     if(eps.length){
@@ -329,6 +338,8 @@ export function installGeneralRefractiveBenchAudit(doc,scene,idMap,mirrorEndpoin
       circleTargets.push(target);
       circleById.set(c.id,target);
     }
+    const corners=componentDielectricCorners(c);
+    if(corners.length)cornerTargets.push({id:c.id,type:c.type,corners});
   }
 
   function auditRayState(ray,sourceCompId){
@@ -353,6 +364,21 @@ export function installGeneralRefractiveBenchAudit(doc,scene,idMap,mirrorEndpoin
         }
         if(ahead>0&&perp<REFRACTIVE_BENCH_CLEARANCE_MM){
           fault=target.id+': observed native ray passes within 0.01 mm of a finite external endpoint; measurements withheld.';
+          return;
+        }
+      }
+    }
+    for(const target of cornerTargets){
+      if(target.id===sourceCompId)continue;
+      for(const corner of target.corners){
+        const offset=delta(state.origin,corner);
+        const ahead=dot(offset,state.dir),perp=Math.abs(cross(offset,state.dir));
+        if(!Number.isFinite(ahead)||!Number.isFinite(perp)){
+          fault=target.id+': v38 native dielectric corner proximity check was non-finite; measurements withheld.';
+          return;
+        }
+        if(ahead>0&&perp<REFRACTIVE_BENCH_CLEARANCE_MM){
+          fault=target.id+': observed native ray passes within 0.01 mm of a finite dielectric corner/vertex; measurements withheld.';
           return;
         }
       }
