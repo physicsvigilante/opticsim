@@ -1,5 +1,7 @@
 # Ray Optics 2D
 
+**New to Opticsim?** Start with [Which Model / Which Result?](docs/WHICH-MODEL.md) for a 1-page chooser across the composable native benches (`v37` optical, `v38` refractive, `v39` hybrid — all available in the browser **Scene** dropdown), the coaxial paraxial stack, and the native witness bridges.
+
 Trace an axial inside source through the curved face of a finite [circular dielectric cap](docs/FINITE-CIRCULAR-CAP.md).
 
 Compose a parallel slab and a finite spherical mirror with the [native slab return contract](docs/SLAB-ARC-RETURN.md).

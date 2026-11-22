@@ -63,7 +63,9 @@ const stateExpression=[
  'sourceHidden:q("source-emissions")?.hidden,activeSource:q("active-source")?.value,',
  'revision:q("revision")?.textContent,source2X:q("source-2-x")?.value,',
  'source2Brightness:q("source-2-brightness")?.value,source3Direction:q("source-3-directionDeg")?.value,',
- 'source4Brightness:q("source-4-brightness")?.value,sourceMode:document.querySelector("#source-tools .source-picker summary")?.textContent};})()'
+ 'source4Brightness:q("source-4-brightness")?.value,sourceMode:document.querySelector("#source-tools .source-picker summary")?.textContent,',
+ 'modelLabel:q("model-label")?.textContent,samplingNote:q("sampling-note")?.textContent,',
+ 'sourceChoices:[...document.querySelectorAll("#source-tools .source-picker button strong")].map(x=>x.textContent)};})()'
 ].join('\n');
 
 async function main(){
@@ -369,7 +371,70 @@ async function main(){
     assert.match(twoSourceLens.sourceReadout,/S2: [0-9]+ native rays/);
     await shot('general-two-source-lens-rays');
     await general('general-mirror-pair','General tracing: plane mirrors without a lens',3);
+    async function assertSelectorBounds(label){
+      const b=await evaluate('(() => {const a=document.querySelector("aside").getBoundingClientRect();const s=document.getElementById("examples").getBoundingClientRect();const t=document.getElementById("title").getBoundingClientRect();return {aside:{left:a.left,right:a.right},select:{left:s.left,right:s.right,width:s.width},title:{left:t.left,right:t.right},viewport:window.innerWidth};})()');
+      assert.ok(b.select.width>0,label+': #examples must have positive width');
+      assert.ok(b.select.left>=b.aside.left-0.5,label+': #examples left overflows aside');
+      assert.ok(b.select.right<=b.aside.right+0.5,label+': #examples right ('+b.select.right+') overflows aside ('+b.aside.right+')');
+      assert.ok(b.select.right<=b.title.left+0.5,label+': #examples right ('+b.select.right+') overlaps #title left ('+b.title.left+')');
+      return b;
+    }
+    await assertSelectorBounds('general-mirror-pair@1440');
     await shot('general-mirror-pair-rays');
+
+    // Modern composable native bench starters (v37, v38, v39) + v39 single-ray UI guidance/picker check.
+    async function composableStarter(name,expectedLabel,expectedStatuses){
+      await evaluate('(() => {const e=document.getElementById("examples");e.value='+JSON.stringify(name)+';e.dispatchEvent(new Event("change",{bubbles:true}));})()');
+      const s=await until(state,x=>x?.modelLabel===expectedLabel&&expectedStatuses.includes(x.status)&&x.painted>0,name+' starter');
+      assert.equal(s.error,'');
+      assert.equal(s.saveDisabled,false);
+      assert.match(s.detectorReadouts,/D1: [0-9]+ native crossings/);
+      await assertSelectorBounds(name+'@1440');
+      report.checks.push({name:'composable starter '+name,result:'pass',status:s.status,stats:s.stats});
+      return s;
+    }
+    await composableStarter('native-general-optical-bench','Composable native optical bench · v37',['completed']);
+    await shot('v37-optical-bench-starter');
+    await composableStarter('native-general-refractive-bench','Composable native refractive bench · v38',['completed','completed-with-warnings']);
+    await shot('v38-refractive-bench-starter');
+    const v39Starter=await composableStarter('native-general-hybrid-bench','Composable hybrid optical & refractive bench · v39',['completed','completed-with-warnings']);
+    assert.match(v39Starter.detectorReadouts,/D1: 4 native crossings/);
+    await shot('v39-hybrid-bench-starter');
+
+    // Load a v39 single-ray scene via #load to verify single-ray sourcePicker isolation and sampling-note guidance.
+    const v39SinglePath=join(profile,'v39-single-ray.json');
+    await writeFile(v39SinglePath,JSON.stringify({
+      format:'ray-optics-2d',schemaVersion:39,adapterVersion:39,
+      upstreamCommit:'811f508d2b070898c241a568b0c167dcb8645251',
+      physics:{lengthUnit:'mm',coordinates:'x-right-y-up',model:'native-general-hybrid-bench',components:[
+        {id:'S1',type:'point-source',parameters:{x:-120,y:0,brightness:0.5},emission:{mode:'single-ray',directionDeg:0,angleDeg:30}},
+        {id:'L1',type:'ideal-lens',parameters:{x:-60,focalLength:120,apertureHeight:60}},
+        {id:'C1',type:'circular-dielectric',parameters:{x:10,y:0,radius:20,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+        {id:'D1',type:'ray-detector',parameters:{x:80,y:0,orientationDeg:90,length:80}}
+      ]},
+      presentation:{title:'v39 single-ray UI check',view:{x:0,y:0,zoom:1.5},mode:'rays',grid:false},
+      simulation:{rayDensity:0.2,maxRayDepth:8,processedRayLimit:10000}
+    },null,2));
+    const domV39=await cdp.send('DOM.getDocument',{depth:-1});
+    const loadV39=await cdp.send('DOM.querySelector',{nodeId:domV39.root.nodeId,selector:'#load'});
+    await cdp.send('DOM.setFileInputFiles',{nodeId:loadV39.nodeId,files:[v39SinglePath]});
+    const v39Single=await until(state,x=>x?.title==='v39 single-ray UI check'&&['completed','completed-with-warnings'].includes(x.status)&&x.detectorReadouts?.includes('D1: 1 native crossings'),'v39 single-ray load');
+    assert.deepEqual(v39Single.sourceChoices,['Single ray (native)']);
+    assert.match(v39Single.samplingNote,/Each single-ray source emits one exact native ray/);
+    assert.doesNotMatch(v39Single.samplingNote,/sparsely sampled/);
+    await assertSelectorBounds('v39-single-ray-loaded@1440');
+    report.checks.push({name:'v39 single-ray sourcePicker and sampling-note guidance',result:'pass'});
+    await shot('v39-single-ray-ui');
+
+    // Verify scene selector stays inside sidebar at a narrower desktop width (860px triggers @media(max-width:900px)).
+    await cdp.send('Emulation.setDeviceMetricsOverride',{width:860,height:960,deviceScaleFactor:1,mobile:false});
+    const narrowImported=await assertSelectorBounds('v39-single-ray-loaded@860');
+    await evaluate('(() => {const e=document.getElementById("examples");e.value="native-general-hybrid-bench";e.dispatchEvent(new Event("change",{bubbles:true}));})()');
+    await until(state,x=>x?.modelLabel==='Composable hybrid optical & refractive bench · v39'&&['completed','completed-with-warnings'].includes(x.status),'v39 narrow reload');
+    const narrowV39=await assertSelectorBounds('native-general-hybrid-bench@860');
+    report.checks.push({name:'scene selector bounds at 1440px and 860px',result:'pass',narrowImported,narrowV39});
+    await cdp.send('Emulation.setDeviceMetricsOverride',{width:1440,height:960,deviceScaleFactor:1,mobile:false});
+
     console.log('Browser acceptance PASS: '+report.checks.length+' checks; '+report.screenshots.length+' screenshots; '+version);
   }catch(err){
     report.errors.push(err.message);

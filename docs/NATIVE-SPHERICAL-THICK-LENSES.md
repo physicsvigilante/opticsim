@@ -1,5 +1,8 @@
 # Native spherical thick lenses — proposed v15 physical capability
 
+> [!NOTE]
+> **Historical milestone record (v15).** The draft-PR status line below is preserved verbatim from the original v15 proposal. `spherical-lens` is released on `main` across `v15`–`v18`, `v38` (`native-general-refractive-bench`), and `v39` (`native-general-hybrid-bench`). For current model selection, see [docs/WHICH-MODEL.md](WHICH-MODEL.md).
+
 **Status: independent R2 physics review pending. Draft PR #110; NOT released to `main`.**
 
 This milestone adds an explicit, bounded **physical thick-lens** model, distinct from the ideal thin-lens abstraction. It reuses pinned upstream PhyDemo commit `811f508d2b070898c241a568b0c167dcb8645251` and its original `SphericalLens` implementation, without introducing another optical propagation solver or altering numerical cutoffs.
