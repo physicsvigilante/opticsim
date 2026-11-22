@@ -1,11 +1,12 @@
-// Reviewed schema-v37 composable native optical bench admission and geometry.
+// Reviewed schema-v37 composable native optical bench admission, geometry, and
+// route-independent observed native endpoint qualification.
 // Unifies already-compiled PhyDemo reflective, thin-lens, opaque-stop, passive
 // detector, point-source, and finite parallel-beam primitives under one strict
 // non-intersection and clearance contract. Pinned PhyDemo alone traces all rays.
 import {compositionCountsMatch} from './composition-profiles.js';
 import {finiteSurfaceGeometry,pointWithinSupportingLineClearance,segmentsIntersect} from './composition-validation.js';
 import {curvedPoints,isCurved} from './curved-mirrors.js';
-import {FINITE_APERTURE_TYPE,separatedSegmentDistance} from './finite-aperture.js';
+import {FINITE_APERTURE_TYPE,apertureGeometry,separatedSegmentDistance} from './finite-aperture.js';
 import {CIRCLE_BLOCKER_TYPE} from './opaque-circle-blocker.js';
 import {
   BEAM_CLEARANCE_MM,
@@ -34,6 +35,25 @@ function signedSupportDistance(point,[a,b]){
   return (dx*(point.y-a.y)-dy*(point.x-a.x))/len;
 }
 
+function componentFiniteEndpoints(c,mirrorEndpoints){
+  const p=c.parameters;
+  if(c.type==='ideal-lens'){
+    const h=p.apertureHeight/2;
+    return [{x:p.x,y:-h},{x:p.x,y:h}];
+  }
+  if(c.type===FINITE_APERTURE_TYPE){
+    const g=apertureGeometry(p,mirrorEndpoints);
+    return [g.p1,g.p2,g.p3,g.p4];
+  }
+  if(['plane-mirror','line-blocker','ray-detector'].includes(c.type))
+    return mirrorEndpoints(p);
+  if(isCurved(c.type)){
+    const pts=curvedPoints(c);
+    return [pts[0],pts[1]];
+  }
+  return [];
+}
+
 export function validateGeneralOpticalBench(components,rayDensity,mirrorEndpoints,fail){
   const path='$.physics.components';
   if(!compositionCountsMatch(components,GENERAL_BENCH_MODEL,GENERAL_BENCH_VERSION)||
@@ -50,10 +70,11 @@ export function validateGeneralOpticalBench(components,rayDensity,mirrorEndpoint
     if(Math.hypot(points[i].x-points[j].x,points[i].y-points[j].y)<GENERAL_BENCH_CLEARANCE_MM)
       fail(path,'distinct point sources must be separated by at least 0.01 mm','UNSUPPORTED_SCOPE');
 
-  let beamSeg=null;
+  let beamSeg=null,beamDir=null,beamSamples=null;
   if(beams.length===1){
     const beam=beams[0],p=beam.parameters,g=parallelBeamGeometry(p);
     beamSeg=[g.p1,g.p2];
+    beamDir=g.direction;
     if(!(p.width>=10&&p.width<=100&&beamSeg.every(e=>allowed(e.x,e.y))))
       fail(path,'The complete finite emitting segment must fit within +/-10000 mm; width 10–100 mm.','UNSUPPORTED_SCOPE');
     if(!Number.isFinite(rayDensity)||rayDensity<0.048||rayDensity>1)
@@ -63,6 +84,7 @@ export function validateGeneralOpticalBench(components,rayDensity,mirrorEndpoint
     const witness=pinnedBeamAdmissionSamples(p,rayDensity);
     if(witness.nearHalfInteger||witness.samples.length<1||witness.samples.length>100)
       fail(path,'Native Beam requires 1–100 samples and a sample factor clear of a half-integer threshold.','UNSUPPORTED_SCOPE');
+    beamSamples=witness.samples;
   }
 
   // Coaxial vertical ideal thin lenses.
@@ -78,7 +100,7 @@ export function validateGeneralOpticalBench(components,rayDensity,mirrorEndpoint
       fail(path,'entire parallel emitter must lie at least 0.01 mm on one side of every lens plane','UNSUPPORTED_SCOPE');
   }
 
-  // Curved mirror conservative bounding disks.
+  // Curved mirror conservative bounding disks (>= 0.01 mm clearance).
   const curveDisks=[];
   for(const [index,c] of components.entries()){
     if(!isCurved(c.type))continue;
@@ -93,30 +115,30 @@ export function validateGeneralOpticalBench(components,rayDensity,mirrorEndpoint
   for(let i=0;i<curveDisks.length;i++){
     const d=curveDisks[i];
     for(const e of curveDisks.slice(i+1))
-      if(Math.hypot(d.center.x-e.center.x,d.center.y-e.center.y)<=d.radius+e.radius+GENERAL_BENCH_CLEARANCE_MM)
-        fail(path,'Curved aperture bounding disks must not overlap ('+d.id+' and '+e.id+').','UNSUPPORTED_SCOPE');
-    if(points.some(s=>Math.hypot(s.x-d.center.x,s.y-d.center.y)<=d.radius+GENERAL_BENCH_CLEARANCE_MM))
-      fail(path,'Point source must lie outside curved aperture bounding disk ('+d.id+').','UNSUPPORTED_SCOPE');
-    if(beamSeg&&pointSegmentDistance(d.center,beamSeg)<=d.radius+GENERAL_BENCH_CLEARANCE_MM)
-      fail(path,'Parallel emitter must lie outside curved aperture bounding disk ('+d.id+').','UNSUPPORTED_SCOPE');
+      if(Math.hypot(d.center.x-e.center.x,d.center.y-e.center.y)<d.radius+e.radius+GENERAL_BENCH_CLEARANCE_MM)
+        fail(path,'Curved aperture bounding disks must be separated by at least 0.01 mm ('+d.id+' and '+e.id+').','UNSUPPORTED_SCOPE');
+    if(points.some(s=>Math.hypot(s.x-d.center.x,s.y-d.center.y)<d.radius+GENERAL_BENCH_CLEARANCE_MM))
+      fail(path,'Point source must lie at least 0.01 mm outside curved aperture bounding disk ('+d.id+').','UNSUPPORTED_SCOPE');
+    if(beamSeg&&pointSegmentDistance(d.center,beamSeg)<d.radius+GENERAL_BENCH_CLEARANCE_MM)
+      fail(path,'Parallel emitter must lie at least 0.01 mm outside curved aperture bounding disk ('+d.id+').','UNSUPPORTED_SCOPE');
   }
 
-  // Opaque circle blockers.
+  // Opaque circle blockers (>= 0.01 mm clearance).
   const circleDisks=[];
   for(const [index,c] of components.entries()){
     if(c.type!==CIRCLE_BLOCKER_TYPE)continue;
     const p=c.parameters,cPath=`${path}[${index}].parameters`;
     if(Math.abs(p.x)+p.radius>10000||Math.abs(p.y)+p.radius>10000)
       fail(cPath,'entire opaque circle must remain within +/-10000 mm','UNSUPPORTED_SCOPE');
-    if(points.some(s=>Math.hypot(s.x-p.x,s.y-p.y)-p.radius<GENERAL_BENCH_CLEARANCE_MM))
+    if(points.some(s=>Math.hypot(s.x-p.x,s.y-p.y)<p.radius+GENERAL_BENCH_CLEARANCE_MM))
       fail(cPath,'each source must be outside opaque circle by at least 0.01 mm','UNSUPPORTED_SCOPE');
-    if(beamSeg&&pointSegmentDistance(p,beamSeg)-p.radius<GENERAL_BENCH_CLEARANCE_MM)
+    if(beamSeg&&pointSegmentDistance(p,beamSeg)<p.radius+GENERAL_BENCH_CLEARANCE_MM)
       fail(cPath,'parallel emitter must be outside opaque circle by at least 0.01 mm','UNSUPPORTED_SCOPE');
     for(const other of circleDisks)
-      if(Math.hypot(other.center.x-p.x,other.center.y-p.y)-(other.radius+p.radius)<GENERAL_BENCH_CLEARANCE_MM)
+      if(Math.hypot(other.center.x-p.x,other.center.y-p.y)<other.radius+p.radius+GENERAL_BENCH_CLEARANCE_MM)
         fail(cPath,'opaque circles overlap or touch ('+other.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
     for(const d of curveDisks)
-      if(Math.hypot(d.center.x-p.x,d.center.y-p.y)<=d.radius+p.radius+GENERAL_BENCH_CLEARANCE_MM)
+      if(Math.hypot(d.center.x-p.x,d.center.y-p.y)<d.radius+p.radius+GENERAL_BENCH_CLEARANCE_MM)
         fail(cPath,'opaque circle overlaps curved mirror bounding disk ('+d.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
     circleDisks.push({id:c.id,center:{x:p.x,y:p.y},radius:p.radius});
   }
@@ -145,12 +167,70 @@ export function validateGeneralOpticalBench(components,rayDensity,mirrorEndpoint
           fail(cPath,'optical or detector segments intersect or nearly touch ('+other.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
       }
       for(const d of curveDisks)
-        if(pointSegmentDistance(d.center,arm)<=d.radius+GENERAL_BENCH_CLEARANCE_MM)
+        if(pointSegmentDistance(d.center,arm)<d.radius+GENERAL_BENCH_CLEARANCE_MM)
           fail(cPath,'finite segment enters curved mirror bounding disk ('+d.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
       for(const circle of circleDisks)
-        if(pointSegmentDistance(circle.center,arm)-circle.radius<GENERAL_BENCH_CLEARANCE_MM)
+        if(pointSegmentDistance(circle.center,arm)<circle.radius+GENERAL_BENCH_CLEARANCE_MM)
           fail(cPath,'finite segment intersects or nearly touches opaque circle ('+circle.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
       segments.push({id:c.id,line:arm});
     }
   }
+
+  // Direct Beam -> finite endpoint rim guard (perpendicular and oblique incidence).
+  if(beamSamples){
+    for(const c of components){
+      const eps=componentFiniteEndpoints(c,mirrorEndpoints);
+      if(!eps.length)continue;
+      const isLens=c.type==='ideal-lens';
+      const lensX=isLens?c.parameters.x:0;
+      const lensHalf=isLens?c.parameters.apertureHeight/2:0;
+      for(const origin of beamSamples){
+        for(const ep of eps){
+          const dx=ep.x-origin.x,dy=ep.y-origin.y;
+          const forward=dx*beamDir.x+dy*beamDir.y;
+          if(forward<=0)continue;
+          const perp=Math.abs(beamDir.x*dy-beamDir.y*dx);
+          if(perp<=GENERAL_BENCH_CLEARANCE_MM)
+            fail(path,'A native beam sample passes within 0.01 mm of a finite component endpoint ('+c.id+').','UNSUPPORTED_SCOPE');
+        }
+        if(isLens&&Math.abs(beamDir.x)>1e-12){
+          const tPlane=(lensX-origin.x)/beamDir.x;
+          if(tPlane>0){
+            const yHit=origin.y+tPlane*beamDir.y;
+            if(Math.abs(Math.abs(yHit)-lensHalf)<=GENERAL_BENCH_CLEARANCE_MM)
+              fail(path,'A native beam sample meets finite lens rim within 0.01 mm ('+c.id+').','UNSUPPORTED_SCOPE');
+          }
+        }
+      }
+    }
+  }
+}
+
+// Route-independent observed native endpoint audit for v37: delegates every
+// pinned PhyDemo onRayIncident callback exactly once and fails closed if any
+// observed native encounter lands within 0.01 mm of a finite component endpoint.
+export function installGeneralBenchEndpointAudit(doc,scene,idMap,mirrorEndpoints){
+  let fault=null;
+  for(const c of doc.physics.components){
+    const eps=componentFiniteEndpoints(c,mirrorEndpoints);
+    if(!eps.length)continue;
+    const nativeObj=scene.objs[idMap.get(c.id)];
+    if(!nativeObj||typeof nativeObj.onRayIncident!=='function')continue;
+    const original=nativeObj.onRayIncident;
+    nativeObj.onRayIncident=function(...args){
+      const incidentPoint=args[2];
+      const result=original.apply(this,args);
+      if(!fault){
+        if(!incidentPoint||!Number.isFinite(incidentPoint.x)||!Number.isFinite(incidentPoint.y)){
+          fault=c.id+': native ray incident point was non-finite.';
+        }else{
+          const x=incidentPoint.x,y=-incidentPoint.y;
+          if(eps.some(ep=>Math.hypot(x-ep.x,y-ep.y)<=GENERAL_BENCH_CLEARANCE_MM))
+            fault=c.id+': native ray struck within 0.01 mm of a finite component endpoint; measurements withheld.';
+        }
+      }
+      return result;
+    };
+  }
+  return ()=>fault;
 }

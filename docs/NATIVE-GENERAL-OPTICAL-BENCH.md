@@ -16,15 +16,16 @@ Select explicitly via `model: "native-general-optical-bench"` in `prepareScene` 
   - `0–2` opaque stops (`line-blocker`, `circle-blocker`, and/or `finite-aperture`)
   - `0–2` passive `ray-detector` segments
 
-## Pairwise geometry & clearance rules
+## Pairwise geometry, clearance & endpoint qualification
 
-Every pair of distinct components must maintain at least `0.01 mm` physical clearance:
+Every pair of distinct components must maintain at least `0.01 mm` physical clearance (`>= 0.01 mm`):
 
-- All derived endpoints and disks must lie within `[-10000, 10000]` mm.
+- All derived physical endpoints (lenses, plane mirrors, line blockers, finite-aperture arms, detectors, curved-mirror vertices/endpoints, and parallel-beam emitters) and opaque circles must lie within `[-10000, 10000]` mm. The conservative curved-mirror vertex clearance disk (`radius = hypot(endpoint - vertex)`) is a separation envelope and may extend beyond `±10000` mm when the physical mirror points remain in bounds.
 - Distinct point sources must be `>= 0.01 mm` apart; every point source must stay `>= 0.01 mm` from every lens plane, finite-surface supporting line, opaque circle, and curved-mirror vertex bounding disk.
-- A `parallel-beam` emitting segment must lie completely on one safe side (`>= 0.01 mm`) of every lens plane and every finite-surface supporting line, and outside every opaque circle and curved-mirror bounding disk.
-- Finite segments (lenses, plane mirrors, line blockers, finite-aperture opaque arms, and detectors) from distinct components must not intersect or come within `0.01 mm` of each other, and must lie outside every opaque circle and curved-mirror bounding disk.
-- Curved-mirror bounding disks (`radius = hypot(endpoint - vertex)` about the mirror vertex) and opaque circles must not overlap each other by `0.01 mm`.
+- A `parallel-beam` emitting segment must lie completely on one safe side (`>= 0.01 mm`) of every lens plane and every finite-surface supporting line, and `>= 0.01 mm` outside every opaque circle and curved-mirror bounding disk. In addition, every initial deterministic beam sample must clear every finite component endpoint (and every vertical lens rim, including oblique incidence) by `> 0.01 mm`.
+- Finite segments (lenses, plane mirrors, line blockers, finite-aperture opaque arms, and detectors) from distinct components must not intersect or come within `0.01 mm` of each other, and must lie `>= 0.01 mm` outside every opaque circle and curved-mirror bounding disk.
+- Curved-mirror bounding disks and opaque circles must be separated by `>= 0.01 mm`.
+- **Route-independent native endpoint audit (`v37EndpointsVerified`):** Every `v37` native run wraps `onRayIncident` once on each finite optical, stop, and detector object (delegating pinned PhyDemo untouched). Any observed native encounter landing within `0.01 mm` of a finite component endpoint fails closed and withholds all accepted measurements—even on arbitrary multi-bounce paths.
 
 ## Native execution, revisions & sweeps
 

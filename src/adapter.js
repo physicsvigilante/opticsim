@@ -1,4 +1,5 @@
 import {IMMERSED_ARC_VERSION,immersedArcPortAudit} from './immersed-arc-plane-port.js';
+import {GENERAL_BENCH_VERSION,installGeneralBenchEndpointAudit} from './native-general-optical-bench.js';
 import {MIRROR_BOX_VERSION,mirrorBoxAudit} from './native-mirror-box.js';
 import {GUIDE_FAN_VERSION,guideFanAudit} from './finite-guide-fan.js';
 import {CAP_TYPE,CAP_VERSION,compileCircularCap,capNativeAudit} from './finite-circular-cap.js';
@@ -107,6 +108,8 @@ export function loadDocument(doc, width, height) {
   if(doc.schemaVersion===30) endpointAudits.set(scene,curvedEntryBeamAudit(doc,scene,compiled.idMap));
   if(doc.schemaVersion===29)
     endpointAudits.set(scene,{key:'v29FanVerified',finish:installRefractiveFanAudit(doc,scene,compiled.idMap)});
+  if(doc.schemaVersion===GENERAL_BENCH_VERSION)
+    endpointAudits.set(scene,{key:'v37EndpointsVerified',finish:installGeneralBenchEndpointAudit(doc,scene,compiled.idMap,mirrorEndpoints)});
   return { ...compiled, scene };
 }
 export function nativeExport(doc) { return loadDocument(doc).scene.toJSON(); }

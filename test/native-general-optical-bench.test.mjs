@@ -254,6 +254,74 @@ test('v37 enforces strict pairwise geometry, clearance, emitter exclusivity, and
     {id:'L1',type:'ideal-lens',parameters:{x:0,focalLength:100,apertureHeight:100}},
     {id:'A1',type:'finite-aperture',parameters:{x:0.005,y:0,orientationDeg:90,length:120,openingLength:20}}
   ])),/intersect or nearly touch/);
+
+  // Astra P2 regression: exact Beam -> lens rim encounter and +/-epsilon perturbations are refused.
+  for(const apertureHeight of [15,15+0.01,15-0.01]){
+    assert.throws(()=>prepareScene(benchReq([
+      {id:'B1',type:'parallel-beam',parameters:{x:-100,y:0,width:20,directionDeg:0,brightness:0.2}},
+      {id:'L1',type:'ideal-lens',parameters:{x:0,focalLength:100,apertureHeight}}
+    ])),/within 0\.01 mm/);
+  }
+  // Safe clearance (>0.01 mm) is admitted cleanly.
+  const safeRim=prepareScene(benchReq([
+    {id:'B1',type:'parallel-beam',parameters:{x:-100,y:0,width:20,directionDeg:0,brightness:0.2}},
+    {id:'L1',type:'ideal-lens',parameters:{x:0,focalLength:100,apertureHeight:15.04}}
+  ]));
+  assert.equal(safeRim.document.schemaVersion,GENERAL_BENCH_VERSION);
+
+  // Oblique Beam sample hitting a finite lens rim -> refused.
+  // B1 width=10, density=0.2 -> 2 samples at ±2.5 perpendicular; at directionDeg=45,
+  // choose B1 centre so one sample at (-50, -42.5) travels along (1,1)/sqrt(2) straight to (0, 7.5).
+  assert.throws(()=>prepareScene(benchReq([
+    {id:'B1',type:'parallel-beam',parameters:{x:-50+2.5/Math.SQRT2,y:-42.5-2.5/Math.SQRT2,width:10,directionDeg:45,brightness:0.2}},
+    {id:'L1',type:'ideal-lens',parameters:{x:0,focalLength:100,apertureHeight:15}}
+  ])),/within 0\.01 mm/);
+
+  // Astra P3 #1 regression: exact 0.01 mm clearance on curved bounding disk is admitted; 0.009 mm is refused.
+  const exactDiskClearance=prepareScene(benchReq([
+    {id:'S1',type:'point-source',parameters:{x:-10.01,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'M1',type:'ideal-curved-mirror',parameters:{x:0,y:0,normalDeg:180,focalLength:20,apertureHeight:20}}
+  ]));
+  assert.equal(exactDiskClearance.document.schemaVersion,GENERAL_BENCH_VERSION);
+  assert.throws(()=>prepareScene(benchReq([
+    {id:'S1',type:'point-source',parameters:{x:-10.009,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'M1',type:'ideal-curved-mirror',parameters:{x:0,y:0,normalDeg:180,focalLength:20,apertureHeight:20}}
+  ])),/curved aperture bounding disk/);
+
+  // Astra P3 #2: physical curved mirror points in [-10000,10000] are admitted even when clearance disk extends beyond 10000.
+  const nearWorldEdge=prepareScene(benchReq([
+    {id:'S1',type:'point-source',parameters:{x:9900,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'M1',type:'ideal-curved-mirror',parameters:{x:9995,y:0,normalDeg:180,focalLength:20,apertureHeight:20}}
+  ]));
+  assert.equal(nearWorldEdge.document.schemaVersion,GENERAL_BENCH_VERSION);
+});
+
+test('v37 route-independent native endpoint audit fails closed and suppresses measurements on finite endpoint hits',async()=>{
+  // Point source aimed straight at plane mirror M1 top endpoint (0, 50):
+  // admitted geometrically, but observed native endpoint hit suppresses measurements.
+  const {document:edgeDoc}=prepareScene(benchReq([
+    {id:'S1',type:'point-source',parameters:{x:-100,y:50,brightness:0.5},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'M1',type:'plane-mirror',parameters:{x:0,y:0,orientationDeg:90,length:100}}
+  ]));
+  const reqs=[{id:'refl',kind:'mirror-reflections',componentId:'M1'}];
+  const edgeRun=await evaluateDocument(edgeDoc,core,reqs);
+  assert.equal(edgeRun.summary.executionPassed,false);
+  assert.notEqual(edgeRun.summary.observations?.v37EndpointsVerified,true);
+  assert.ok(edgeRun.summary.native.errors.some(e=>/finite component endpoint/.test(e)));
+  const edgeObs=await evaluateObservables(edgeDoc,reqs,edgeRun.summary);
+  assert.equal(edgeObs.results[0].status,'suppressed');
+
+  // Shifting S1.y to 49.9 (0.1 mm inside mirror) passes endpoint audit and qualifies reflection count.
+  const {document:safeDoc}=prepareScene(benchReq([
+    {id:'S1',type:'point-source',parameters:{x:-100,y:49.9,brightness:0.5},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'M1',type:'plane-mirror',parameters:{x:0,y:0,orientationDeg:90,length:100}}
+  ]));
+  const safeRun=await evaluateDocument(safeDoc,core,reqs);
+  assert.equal(safeRun.summary.executionPassed,true);
+  assert.equal(safeRun.summary.observations?.v37EndpointsVerified,true);
+  const safeObs=await evaluateObservables(safeDoc,reqs,safeRun.summary);
+  assert.equal(safeObs.results[0].status,'available');
+  assert.equal(safeObs.results[0].value,1);
 });
 
 test('historical v4, v6, and v19 profile selection and isolation remain completely unchanged',()=>{
