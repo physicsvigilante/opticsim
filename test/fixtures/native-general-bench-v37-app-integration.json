@@ -1,0 +1,6 @@
+{
+  "format": "opticsim-v37-browser-app-integration-provenance-v1",
+  "sourceAuditAppGitBlob": "641960864663c4ed3fde16888a79a33719eb0daa",
+  "v37AppGitBlob": "112dd139847679ad09ed2818a46471a6b3d46fc8",
+  "scope": "Composable v37 native optical bench: adds single-ray mode choice in sourcePicker for v37 and per-component circle-blocker radius label when coexisting with curved mirrors."
+}

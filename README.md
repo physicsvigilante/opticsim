@@ -35,6 +35,7 @@ For composing 1–8 ordered coaxial paraxial elements (thin lenses, planar or sp
 For SHA-guarded parameter revisions, atomic structural element add/remove, bounded 1–25 value sweeps, and guarded baseline-vs-variant comparisons over that stack, use the [coaxial stack exploration engine](docs/COAXIAL-STACK-EXPLORATION.md).
 
 For a finite parallel Beam passing through an ideal lens and then a finite aperture, see the [schema-v28 authoring contract and worked example](docs/POST-LENS-APERTURE.md).
+For composing either 1–4 point sources or 1 finite parallel Beam with coaxial ideal lenses, plane mirrors, curved mirrors, opaque stops, and passive detectors under one native PhyDemo schema, see the [schema-v37 composable native optical bench](docs/NATIVE-GENERAL-OPTICAL-BENCH.md).
 
 A standalone-browser-capable optical bench powered by PhyDemo Ray Optics Simulation **v5.4.0**,
 pinned to **811f508d2b070898c241a568b0c167dcb8645251**. Browser runtime resources
