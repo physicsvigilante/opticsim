@@ -196,6 +196,21 @@ function parseStack(f){
   };
 }
 
+export function validateCoaxialStackFacts(f){
+  const stack=parseStack(f);
+  const ambientIndicesById={};
+  for(const el of stack.elements){
+    ambientIndicesById[el.id]=toBinary64(el.type==='refracting-surface'?el.upstreamIndex:el.ambientIndex);
+  }
+  return {
+    lengthUnit:stack.lengthUnit,
+    elementIds:stack.elements.map(e=>e.id),
+    hasTerminalMirror:stack.hasTerminalMirror,
+    hasObject:stack.object!==null,
+    ambientIndicesById
+  };
+}
+
 function propagateStack(stack){
   // Exact unimodular propagation in reduced-slope (y, q = n*u) coordinates
   // alongside scale-invariant positive-monomial upper bounds (sa..sd).
