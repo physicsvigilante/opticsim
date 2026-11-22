@@ -33,6 +33,7 @@ For the back focal point, effective focal length, rear principal plane, or afoca
 For reconstructing a single thin lens's type, optical centre, focal length, and focal points from an off-axis real object and its conjugate image, use the [conjugate-reconstruction query](docs/THIN-LENS-CONJUGATE-RECONSTRUCTION.md).
 For composing 1–8 ordered coaxial paraxial elements (thin lenses, planar or spherical refracting surfaces, homogeneous media, and an optional terminal mirror) under one contract, use the [coaxial paraxial stack](docs/COAXIAL-PARAXIAL-STACK.md).
 For SHA-guarded parameter revisions, atomic structural element add/remove, bounded 1–25 value sweeps, and guarded baseline-vs-variant comparisons over that stack, use the [coaxial stack exploration engine](docs/COAXIAL-STACK-EXPLORATION.md).
+For cross-checking supported coaxial paraxial stacks side-by-side against pinned PhyDemo `v37` finite-aperture ray traces, use the [paraxial stack ↔ native v37 verification bridge](docs/COAXIAL-STACK-NATIVE-WITNESS.md).
 
 For a finite parallel Beam passing through an ideal lens and then a finite aperture, see the [schema-v28 authoring contract and worked example](docs/POST-LENS-APERTURE.md).
 For composing either 1–4 point sources or 1 finite parallel Beam with coaxial ideal lenses, plane mirrors, curved mirrors, opaque stops, and passive detectors under one native PhyDemo schema, see the [schema-v37 composable native optical bench](docs/NATIVE-GENERAL-OPTICAL-BENCH.md).

@@ -301,6 +301,6 @@ export function diagnostics(scene, simulator, meter = null, mirrorMeter = null, 
 }
 export function classifyRun(event, data) {
   return data.errors.length ? 'failed' : event === 'simulationStop' ? 'stopped' :
-    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false || data.v28EndpointsVerified===false || data.v29FanVerified===false || data.v30CurvedBeamVerified===false || data.v31SlabArcVerified===false || data.v32CapVerified===false || data.v33GradedSlabVerified===false || data.v34ImmersedArcVerified===false || data.v35MirrorBoxVerified===false || data.v36GuideFanVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
+    data.truncation > 0 || data.undefinedBehavior > 0 || data.v27EndpointsVerified===false || data.v28EndpointsVerified===false || data.v29FanVerified===false || data.v30CurvedBeamVerified===false || data.v31SlabArcVerified===false || data.v32CapVerified===false || data.v33GradedSlabVerified===false || data.v34ImmersedArcVerified===false || data.v35MirrorBoxVerified===false || data.v36GuideFanVerified===false || data.v37EndpointsVerified===false ? 'incomplete' : data.warnings.length ? 'completed-with-warnings' : 'completed';
 }
 export { Scene, Simulator };
