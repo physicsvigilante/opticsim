@@ -1,5 +1,6 @@
 import {validateImmersedArcPort} from './immersed-arc-plane-port.js';
 import {GENERAL_BENCH_VERSION,validateGeneralOpticalBench} from './native-general-optical-bench.js';
+import {REFRACTIVE_BENCH_VERSION,validateGeneralRefractiveBench} from './native-general-refractive-bench.js';
 import {MIRROR_BOX_VERSION,validateMirrorBox} from './native-mirror-box.js';
 import {validateGuideFan} from './finite-guide-fan.js';
 import {CAP_TYPE,CAP_VERSION,CAP_PARAMETERS,validateCircularCap} from './finite-circular-cap.js';
@@ -111,7 +112,7 @@ function validateVersion(doc, version) {
     object(c, ['id', 'type', 'parameters', ...(version >= 2 && c?.type === 'point-source' ? ['emission'] : [])], path);
     if (typeof c.id !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(c.id) || ids.has(c.id)) fail(`${path}.id`, 'expected a unique stable ID (letters, digits, underscores, hyphens)');
     ids.add(c.id);
-    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version===CAP_VERSION||t!==CAP_TYPE)&&(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(t!==SPHERICAL_LENS_TYPE||[15,16,17,18].includes(version))&&(t!==GRIN_V25_TYPE||[GRIN_V25_VERSION,GRIN_SLAB_VERSION].includes(version))&&(version===4||version===GENERAL_BENCH_VERSION||([13,CURVED_ENTRY_VERSION,MIRROR_BOX_VERSION].includes(version)&&t==='line-blocker')||(version===THICK_APERTURE_VERSION&&t===FINITE_APERTURE_TYPE)||([PARALLEL_BEAM_VERSION,28].includes(version)&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||[PARALLEL_BEAM_VERSION,DECENTERED_BEAM_VERSION,SEMICIRCULAR_VERSION,PRISM_BEAM_VERSION,CIRCLE_BEAM_VERSION,BEAM_PLANAR_MIRROR_VERSION,BEAM_TWO_PLANE_MIRROR_VERSION,28,30,GENERAL_BENCH_VERSION].includes(version))&&(t!==SEMICIRCULAR_TYPE||[SEMICIRCULAR_VERSION,CURVED_ENTRY_VERSION,30].includes(version))) :
+    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version===CAP_VERSION||t!==CAP_TYPE)&&(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(t!==SPHERICAL_LENS_TYPE||[15,16,17,18,REFRACTIVE_BENCH_VERSION].includes(version))&&(t!==GRIN_V25_TYPE||[GRIN_V25_VERSION,GRIN_SLAB_VERSION].includes(version))&&(version===4||version===GENERAL_BENCH_VERSION||version===REFRACTIVE_BENCH_VERSION||([13,CURVED_ENTRY_VERSION,MIRROR_BOX_VERSION].includes(version)&&t==='line-blocker')||(version===THICK_APERTURE_VERSION&&t===FINITE_APERTURE_TYPE)||([PARALLEL_BEAM_VERSION,28].includes(version)&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||[PARALLEL_BEAM_VERSION,DECENTERED_BEAM_VERSION,SEMICIRCULAR_VERSION,PRISM_BEAM_VERSION,CIRCLE_BEAM_VERSION,BEAM_PLANAR_MIRROR_VERSION,BEAM_TWO_PLANE_MIRROR_VERSION,28,30,GENERAL_BENCH_VERSION,REFRACTIVE_BENCH_VERSION].includes(version))&&(t!==SEMICIRCULAR_TYPE||[SEMICIRCULAR_VERSION,CURVED_ENTRY_VERSION,30].includes(version))) :
       version >= 3 ? ['point-source', 'ideal-lens', 'plane-mirror'] :
       ['point-source', 'ideal-lens'], `${path}.type`);
     object(c.parameters, componentParameterNames(c.type,version), `${path}.parameters`);
@@ -149,6 +150,7 @@ function validateVersion(doc, version) {
     'native-thick-aperture':c=>validateThickApertureComposition(c,mirrorEndpoints,fail),
     'immersed-arc-port':c=>validateImmersedArcPort(c,doc.simulation?.rayDensity,fail),
     'native-general-bench':c=>validateGeneralOpticalBench(c,doc.simulation?.rayDensity,mirrorEndpoints,fail),
+    'native-general-refractive':c=>validateGeneralRefractiveBench(c,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'native-mirror-box':c=>validateMirrorBox(c,mirrorEndpoints,fail),
     'finite-guide-fan':c=>validateGuideFan(c,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'inside-circular-cap':c=>validateCircularCap(c,doc.simulation?.rayDensity,fail),

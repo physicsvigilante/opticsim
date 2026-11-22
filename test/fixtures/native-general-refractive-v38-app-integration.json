@@ -1,0 +1,6 @@
+{
+  "format": "opticsim-v38-browser-app-integration-provenance-v1",
+  "sourceV37AppGitBlob": "112dd139847679ad09ed2818a46471a6b3d46fc8",
+  "v38AppGitBlob": "8876639c1c2e09411fc20e5054e48db3217d2f32",
+  "scope": "Composable v38 native refractive bench: adds v38 to single-ray sourcePicker list and per-component circular-dielectric radius label when coexisting with circle-blocker."
+}

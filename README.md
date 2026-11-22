@@ -37,6 +37,7 @@ For cross-checking supported coaxial paraxial stacks side-by-side against pinned
 
 For a finite parallel Beam passing through an ideal lens and then a finite aperture, see the [schema-v28 authoring contract and worked example](docs/POST-LENS-APERTURE.md).
 For composing either 1–4 point sources or 1 finite parallel Beam with coaxial ideal lenses, plane mirrors, curved mirrors, opaque stops, and passive detectors under one native PhyDemo schema, see the [schema-v37 composable native optical bench](docs/NATIVE-GENERAL-OPTICAL-BENCH.md).
+For composing either 1–4 exact single-ray sources or 1 finite parallel Beam with 1–2 disjoint finite dielectrics (prism, convex quadrilateral, circle, or spherical thick lens), plane mirrors, opaque stops, and passive detectors under one native PhyDemo schema, see the [schema-v38 composable native refractive bench](docs/NATIVE-GENERAL-REFRACTIVE-BENCH.md).
 
 A standalone-browser-capable optical bench powered by PhyDemo Ray Optics Simulation **v5.4.0**,
 pinned to **811f508d2b070898c241a568b0c167dcb8645251**. Browser runtime resources
