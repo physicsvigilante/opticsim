@@ -59,7 +59,7 @@ function buildDielectricBody(c,cPath,fail){
     const twiceArea=Math.abs(cross(delta(v[0],v[1]),delta(v[0],v[2])));
     if(faces.some(f=>f.length<1||twiceArea/f.length<1))
       fail(cPath,'Prism edges and altitudes must be at least 1 mm; collinear or repeated vertices are invalid.','UNSUPPORTED_SCOPE');
-    return {kind:'poly',id:c.id,type:c.type,outsideIndex:p.outsideIndex,vertices:v,faces,corners:v};
+    return {kind:'poly',id:c.id,type:c.type,outsideIndex:p.outsideIndex,vertices:v,faces,corners:v,tangentCircles:[]};
   }
   if(c.type===POLYGON_TYPE){
     const v=polygonVertices(p);
@@ -73,14 +73,16 @@ function buildDielectricBody(c,cPath,fail){
     if(faces.some((f,i)=>f.length<1||v.some((q,j)=>j!==i&&j!==(i+1)%4&&
          Math.abs(cross(delta(f.a,f.b),delta(f.a,q)))/f.length<1)))
       fail(cPath,'All polygon edges and opposite-vertex altitudes must be at least 1 mm.','UNSUPPORTED_SCOPE');
-    return {kind:'poly',id:c.id,type:c.type,outsideIndex:p.outsideIndex,vertices:v,faces,corners:v};
+    return {kind:'poly',id:c.id,type:c.type,outsideIndex:p.outsideIndex,vertices:v,faces,corners:v,tangentCircles:[]};
   }
   if(c.type===CIRCULAR_TYPE){
     if(p.radius<2||circularExtents(p).some(q=>!allowed(q.x,q.y)))
       fail(cPath,'Circular dielectric requires radius >= 2 mm and must fit within +/-10000 mm.','UNSUPPORTED_SCOPE');
-    return {kind:'circle',id:c.id,type:c.type,outsideIndex:p.outsideIndex,center:{x:p.x,y:p.y},radius:p.radius,corners:[]};
+    const center={x:p.x,y:p.y};
+    return {kind:'circle',id:c.id,type:c.type,outsideIndex:p.outsideIndex,center,radius:p.radius,corners:[],tangentCircles:[{center,radius:p.radius}]};
   }
-  // SPHERICAL_LENS_TYPE: conservative convex AABB contains the complete physical biconvex lens.
+  // SPHERICAL_LENS_TYPE: conservative convex AABB contains the complete physical biconvex lens;
+  // both native generating circles are retained for tangency admission and runtime qualification.
   const half=p.apertureHeight/2;
   if(!(p.apertureHeight>=4&&p.centerThickness>=2&&p.frontRadius>=half+1&&p.backRadius>=half+1))
     fail(cPath,'Spherical lens requires aperture >= 4 mm, thickness >= 2 mm and each radius >= half-aperture + 1 mm.','UNSUPPORTED_SCOPE');
@@ -95,7 +97,11 @@ function buildDielectricBody(c,cPath,fail){
   ];
   return {
     kind:'poly',id:c.id,type:c.type,outsideIndex:p.outsideIndex,
-    vertices:boxVertices,faces:finiteGlassFaces(boxVertices),corners:g.corners
+    vertices:boxVertices,faces:finiteGlassFaces(boxVertices),corners:g.corners,
+    tangentCircles:[
+      {center:g.frontCenter,radius:p.frontRadius},
+      {center:g.backCenter,radius:p.backRadius}
+    ]
   };
 }
 
@@ -248,53 +254,199 @@ export function validateGeneralRefractiveBench(components,rayDensity,mirrorEndpo
     }
   }
 
-  // Initial forward ray corner/vertex, circle-tangency, and external-endpoint guards.
+  // Initial forward ray corner/vertex, circle/lens/blocker-tangency, and external-endpoint guards.
   for(const {origin,dir} of initialRays){
     for(const body of bodies){
       for(const corner of body.corners){
         const offset=delta(origin,corner);
-        if(dot(offset,dir)>0&&Math.abs(cross(offset,dir))<=REFRACTIVE_BENCH_CLEARANCE_MM)
+        if(dot(offset,dir)>0&&Math.abs(cross(offset,dir))<REFRACTIVE_BENCH_CLEARANCE_MM)
           fail(path,'Initial forward ray passes within 0.01 mm of a dielectric corner/vertex ('+body.id+').','UNSUPPORTED_SCOPE');
       }
-      if(body.kind==='circle'){
-        const offset=delta(origin,body.center);
-        if(dot(offset,dir)>0&&Math.abs(Math.abs(cross(offset,dir))-body.radius)<=REFRACTIVE_BENCH_CLEARANCE_MM)
-          fail(path,'Initial forward ray is within 0.01 mm of tangency to circular dielectric ('+body.id+').','UNSUPPORTED_SCOPE');
+      for(const tc of body.tangentCircles){
+        const offset=delta(origin,tc.center);
+        if(dot(offset,dir)>0&&Math.abs(Math.abs(cross(offset,dir))-tc.radius)<REFRACTIVE_BENCH_CLEARANCE_MM)
+          fail(path,'Initial forward ray is within 0.01 mm of tangency to a dielectric circular/spherical surface ('+body.id+').','UNSUPPORTED_SCOPE');
       }
+    }
+    for(const circle of circleDisks){
+      const offset=delta(origin,circle.center);
+      if(dot(offset,dir)>0&&Math.abs(Math.abs(cross(offset,dir))-circle.radius)<REFRACTIVE_BENCH_CLEARANCE_MM)
+        fail(path,'Initial forward ray is within 0.01 mm of tangency to opaque circle blocker ('+circle.id+').','UNSUPPORTED_SCOPE');
     }
     for(const c of components){
       const eps=externalComponentEndpoints(c,mirrorEndpoints);
       for(const ep of eps){
         const offset=delta(origin,ep);
-        if(dot(offset,dir)>0&&Math.abs(cross(offset,dir))<=REFRACTIVE_BENCH_CLEARANCE_MM)
+        if(dot(offset,dir)>0&&Math.abs(cross(offset,dir))<REFRACTIVE_BENCH_CLEARANCE_MM)
           fail(path,'Initial forward ray passes within 0.01 mm of a finite external endpoint ('+c.id+').','UNSUPPORTED_SCOPE');
       }
     }
   }
 }
 
-// Route-independent observed native endpoint audit for v38 external finite
-// segments (dielectric corners/tangencies are independently guarded by
-// observeInterfaceSet in planar-media.js). Delegates pinned PhyDemo once.
+export const V38_NATIVE_STATE_LIMIT=10000;
+
+function extractNativeRay(ray){
+  const p=ray?.p1,q=ray?.p2;
+  if(!p||!q||![p.x,p.y,q.x,q.y].every(Number.isFinite))return null;
+  const vx=q.x-p.x,vy=-(q.y-p.y),len=Math.hypot(vx,vy);
+  if(!(len>1e-12&&Number.isFinite(len)))return null;
+  return {origin:{x:p.x,y:-p.y},dir:{x:vx/len,y:vy/len}};
+}
+
+function componentTangentCircles(c){
+  const p=c.parameters;
+  if(c.type===CIRCULAR_TYPE||c.type===CIRCLE_BLOCKER_TYPE)
+    return [{center:{x:p.x,y:p.y},radius:p.radius}];
+  if(c.type===SPHERICAL_LENS_TYPE){
+    const g=thickLensGeometry(p);
+    return [{center:g.frontCenter,radius:p.frontRadius},{center:g.backCenter,radius:p.backRadius}];
+  }
+  return [];
+}
+
+// Route-independent observed native endpoint and tangency audit for v38.
+// Wraps instance-local methods once, delegates pinned PhyDemo first without
+// altering ray routing, and fails closed on initial/secondary endpoint near-misses,
+// circular/spherical/circle-blocker near-tangencies (< 0.01 mm), or audit faults.
 export function installGeneralRefractiveBenchAudit(doc,scene,idMap,mirrorEndpoints){
   let fault=null;
+  let checkedStates=0;
+  const endpointTargets=[];
+  const endpointById=new Map();
+  const circleTargets=[];
+  const circleById=new Map();
   for(const c of doc.physics.components){
     const eps=externalComponentEndpoints(c,mirrorEndpoints);
-    if(!eps.length)continue;
+    if(eps.length){
+      const target={id:c.id,type:c.type,endpoints:eps};
+      endpointTargets.push(target);
+      endpointById.set(c.id,target);
+    }
+    const circles=componentTangentCircles(c);
+    if(circles.length){
+      const target={id:c.id,type:c.type,circles};
+      circleTargets.push(target);
+      circleById.set(c.id,target);
+    }
+  }
+
+  function auditRayState(ray,sourceCompId){
+    if(++checkedStates>V38_NATIVE_STATE_LIMIT){
+      fault??=sourceCompId+': v38 native ray-state audit exceeded bounded state limit; measurements withheld.';
+      return;
+    }
+    const state=extractNativeRay(ray);
+    if(!state){
+      fault??=sourceCompId+': v38 native ray state was non-finite or degenerate; measurements withheld.';
+      return;
+    }
+    if(fault)return;
+    for(const target of endpointTargets){
+      if(target.id===sourceCompId)continue;
+      for(const ep of target.endpoints){
+        const offset=delta(state.origin,ep);
+        const ahead=dot(offset,state.dir),perp=Math.abs(cross(offset,state.dir));
+        if(!Number.isFinite(ahead)||!Number.isFinite(perp)){
+          fault=target.id+': v38 native endpoint proximity check was non-finite; measurements withheld.';
+          return;
+        }
+        if(ahead>0&&perp<REFRACTIVE_BENCH_CLEARANCE_MM){
+          fault=target.id+': observed native ray passes within 0.01 mm of a finite external endpoint; measurements withheld.';
+          return;
+        }
+      }
+    }
+    for(const target of circleTargets){
+      if(target.id===sourceCompId)continue;
+      for(const tc of target.circles){
+        const offset=delta(state.origin,tc.center);
+        const ahead=dot(offset,state.dir),perp=Math.abs(cross(offset,state.dir));
+        if(!Number.isFinite(ahead)||!Number.isFinite(perp)){
+          fault=target.id+': v38 native circular/spherical tangency check was non-finite; measurements withheld.';
+          return;
+        }
+        if(ahead>0&&Math.abs(perp-tc.radius)<REFRACTIVE_BENCH_CLEARANCE_MM){
+          fault=target.id+': observed native ray approaches within 0.01 mm of tangency to a circular/spherical surface; measurements withheld.';
+          return;
+        }
+      }
+    }
+  }
+
+  for(const c of doc.physics.components){
     const nativeObj=scene.objs[idMap.get(c.id)];
-    if(!nativeObj||typeof nativeObj.onRayIncident!=='function')continue;
+    if(c.type==='point-source'||c.type===PARALLEL_BEAM_TYPE){
+      if(!nativeObj||typeof nativeObj.onSimulationStart!=='function'){
+        fault??=c.id+': native emitter method unavailable for v38 audit.';
+        continue;
+      }
+      const originalStart=nativeObj.onSimulationStart;
+      nativeObj.onSimulationStart=function(...args){
+        const result=originalStart.apply(this,args);
+        try{
+          if(!result||!Array.isArray(result.newRays)){
+            fault??=c.id+': native emitter did not return an inspectable ray list; measurements withheld.';
+          }else{
+            for(const ray of result.newRays)auditRayState(ray,c.id);
+          }
+        }catch{
+          fault??=c.id+': v38 native emitter audit failed; measurements withheld.';
+        }
+        return result;
+      };
+      continue;
+    }
+
+    const epTarget=endpointById.get(c.id)||null;
+    const cTarget=circleById.get(c.id)||null;
+    const isRedirector=REFRACTIVE_BODY_TYPES.includes(c.type)||c.type==='plane-mirror';
+    if(!epTarget&&!cTarget&&!isRedirector)continue;
+    if(!nativeObj||typeof nativeObj.onRayIncident!=='function'){
+      fault??=c.id+': native incident method unavailable for v38 audit.';
+      continue;
+    }
     const original=nativeObj.onRayIncident;
     nativeObj.onRayIncident=function(...args){
+      // Snapshot incoming ray state BEFORE pinned PhyDemo mutates ray.p1/p2.
+      const inRay=cTarget?extractNativeRay(args[0]):null;
       const incidentPoint=args[2];
       const result=original.apply(this,args);
-      if(!fault){
-        if(!incidentPoint||!Number.isFinite(incidentPoint.x)||!Number.isFinite(incidentPoint.y)){
-          fault=c.id+': native ray incident point was non-finite.';
-        }else{
-          const x=incidentPoint.x,y=-incidentPoint.y;
-          if(eps.some(ep=>Math.hypot(x-ep.x,y-ep.y)<=REFRACTIVE_BENCH_CLEARANCE_MM))
-            fault=c.id+': native ray struck within 0.01 mm of a finite external endpoint; measurements withheld.';
+      try{
+        if(!fault&&epTarget){
+          if(!incidentPoint||!Number.isFinite(incidentPoint.x)||!Number.isFinite(incidentPoint.y)){
+            fault=c.id+': native ray incident point was non-finite.';
+          }else{
+            const x=incidentPoint.x,y=-incidentPoint.y;
+            if(epTarget.endpoints.some(ep=>Math.hypot(x-ep.x,y-ep.y)<REFRACTIVE_BENCH_CLEARANCE_MM))
+              fault=c.id+': native ray struck within 0.01 mm of a finite external endpoint; measurements withheld.';
+          }
         }
+        if(!fault&&cTarget){
+          if(!inRay){
+            fault=c.id+': native incident ray state was non-finite or degenerate; measurements withheld.';
+          }else{
+            for(const tc of cTarget.circles){
+              const b=Math.abs(cross(delta(inRay.origin,tc.center),inRay.dir));
+              if(!Number.isFinite(b)||Math.abs(b-tc.radius)<REFRACTIVE_BENCH_CLEARANCE_MM){
+                fault=c.id+': native incident ray struck within 0.01 mm of tangency to a circular/spherical surface; measurements withheld.';
+                break;
+              }
+            }
+          }
+        }
+        if(isRedirector){
+          if(!result?.isAbsorbed)auditRayState(args[0],c.id);
+          if(result?.newRays!==undefined){
+            if(!Array.isArray(result.newRays)){
+              fault??=c.id+': native incident returned non-array newRays; measurements withheld.';
+            }else{
+              for(const child of result.newRays)auditRayState(child,c.id);
+            }
+          }
+        }
+      }catch{
+        fault??=c.id+': v38 native incident audit failed; measurements withheld.';
       }
       return result;
     };

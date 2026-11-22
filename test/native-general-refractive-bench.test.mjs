@@ -291,3 +291,176 @@ test('historical v7, v8, v9, v14, v15, and v22 profile selection remains unchang
   assert.equal(v8.document.schemaVersion,8);
   assert.equal(v8.document.physics.model,'triangular-prism-tracing');
 });
+
+test('v38 P2-1: secondary aperture-gap near miss (no arm callback) fails closed; >=0.01 mm gap clearance passes',async()=>{
+  const yHit=140/Math.sqrt(3)+60/Math.sqrt(8);
+  const reqs=[
+    {id:'slab',kind:'interface-interactions',componentId:'G1'},
+    {id:'absA',kind:'blocker-absorptions',componentId:'A1'}
+  ];
+  // Refracted ray passes 0.005 mm below upper inner aperture endpoint (y = yHit + 0.005)
+  // through the transparent gap with NO Aperture.onRayIncident callback.
+  const {document:nearDoc}=prepareScene(refrReq([
+    {id:'S1',type:'point-source',parameters:{x:-100,y:0,brightness:0.5},emission:{mode:'single-ray',directionDeg:30}},
+    {id:'G1',type:'polygon-dielectric',parameters:{x1:-40,y1:-20,x2:20,y2:-20,x3:20,y3:100,x4:-40,y4:100,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'A1',type:'finite-aperture',parameters:{x:100,y:yHit+0.005-20,orientationDeg:90,length:100,openingLength:40}}
+  ]));
+  const nearRun=await evaluateDocument(nearDoc,core,reqs);
+  assert.equal(nearRun.summary.executionPassed,false);
+  assert.equal(nearRun.summary.observations,null);
+  assert.equal(nearRun.report.native.diagnostics.v38EndpointsVerified,false);
+  assert.equal(nearRun.report.native.diagnostics.blockersById.A1.absorptions,0);
+  assert.ok(nearRun.summary.native.errors.some(e=>/A1.*finite external endpoint/.test(e)));
+  const nearObs=await evaluateObservables(nearDoc,reqs,nearRun.summary);
+  assert.ok(nearObs.results.every(r=>r.status==='suppressed'));
+
+  // Safe >= 0.01 mm variant: shift aperture up by 0.03 mm (perp clearance ~0.0303 mm >= 0.01 mm).
+  const {document:safeDoc}=prepareScene(refrReq([
+    {id:'S1',type:'point-source',parameters:{x:-100,y:0,brightness:0.5},emission:{mode:'single-ray',directionDeg:30}},
+    {id:'G1',type:'polygon-dielectric',parameters:{x1:-40,y1:-20,x2:20,y2:-20,x3:20,y3:100,x4:-40,y4:100,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'A1',type:'finite-aperture',parameters:{x:100,y:yHit+0.035-20,orientationDeg:90,length:100,openingLength:40}}
+  ]));
+  const safeRun=await evaluateDocument(safeDoc,core,reqs);
+  assert.equal(safeRun.summary.executionPassed,true);
+  assert.equal(safeRun.summary.observations.v38EndpointsVerified,true);
+  const safeObs=await evaluateObservables(safeDoc,reqs,safeRun.summary);
+  assert.ok(safeObs.results.every(r=>r.status==='qualified'));
+  assert.equal(safeObs.results[1].value,0);
+});
+
+test('v38 P2-2: spherical-lens generating-circle tangency fails at admission and on secondary rays; >=0.01 mm clears',async()=>{
+  const lens={id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:60,centerThickness:14,frontRadius:80,backRadius:80,insideIndex:1.5,outsideIndex:1,partialReflection:false}};
+
+  // Initial-ray witness: front generating circle center is (73, 0), r = 80;
+  // x = -6.995 is 0.005 mm inside tangency -> rejected at admission.
+  assert.throws(()=>prepareScene(refrReq([
+    {id:'S1',type:'point-source',parameters:{x:-6.995,y:-100,brightness:0.5},emission:{mode:'single-ray',directionDeg:90}},
+    lens
+  ])),/tangency/);
+
+  // Safe >= 0.01 mm initial-ray variant: x = -6.98 (0.02 mm inside tangency).
+  const {document:safeInit}=prepareScene(refrReq([
+    {id:'S1',type:'point-source',parameters:{x:-6.98,y:-100,brightness:0.5},emission:{mode:'single-ray',directionDeg:90}},
+    lens
+  ]));
+  const safeInitRun=await evaluateDocument(safeInit,core,[{id:'tl',kind:'interface-interactions',componentId:'TL1'}]);
+  assert.equal(safeInitRun.summary.executionPassed,true);
+  assert.equal(safeInitRun.summary.observations.v38EndpointsVerified,true);
+
+  // Secondary-ray witness: horizontal ray reflects off 45-deg mirror onto x = -6.995
+  // (passes admission, fails closed at runtime on generating-circle near-tangency).
+  const reqs=[{id:'refl',kind:'mirror-reflections',componentId:'M1'}];
+  const {document:secNear}=prepareScene(refrReq([
+    {id:'S1',type:'point-source',parameters:{x:-100,y:-100,brightness:0.5},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'M1',type:'plane-mirror',parameters:{x:-6.995,y:-100,orientationDeg:45,length:20}},
+    lens
+  ]));
+  const secNearRun=await evaluateDocument(secNear,core,reqs);
+  assert.equal(secNearRun.summary.executionPassed,false);
+  assert.equal(secNearRun.summary.observations,null);
+  assert.equal(secNearRun.report.native.diagnostics.v38EndpointsVerified,false);
+  assert.ok(secNearRun.summary.native.errors.some(e=>/TL1.*tangency/.test(e)));
+  const secNearObs=await evaluateObservables(secNear,reqs,secNearRun.summary);
+  assert.equal(secNearObs.results[0].status,'suppressed');
+
+  // Safe secondary-ray variant: mirror at x = -6.98 (0.02 mm >= 0.01 mm clear).
+  const {document:secSafe}=prepareScene(refrReq([
+    {id:'S1',type:'point-source',parameters:{x:-100,y:-100,brightness:0.5},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'M1',type:'plane-mirror',parameters:{x:-6.98,y:-100,orientationDeg:45,length:20}},
+    lens
+  ]));
+  const secSafeRun=await evaluateDocument(secSafe,core,reqs);
+  assert.equal(secSafeRun.summary.executionPassed,true);
+  assert.equal(secSafeRun.summary.observations.v38EndpointsVerified,true);
+  const secSafeObs=await evaluateObservables(secSafe,reqs,secSafeRun.summary);
+  assert.equal(secSafeObs.results[0].status,'qualified');
+  assert.equal(secSafeObs.results[0].value,1);
+});
+
+test('v38 P2-3: secondary circular-dielectric near-tangency (hit and no-callback miss) fails closed at 0.01 mm; safe variant qualifies',async()=>{
+  const yHit=140/Math.sqrt(3)+60/Math.sqrt(8);
+  const nx=0.5,ny=-Math.sqrt(3)/2; // unit normal to 30-deg outgoing ray
+  const reqs=[{id:'cHits',kind:'interface-interactions',componentId:'C1'}];
+  const makeCircleScene=impact=>prepareScene(refrReq([
+    {id:'S1',type:'point-source',parameters:{x:-100,y:0,brightness:0.5},emission:{mode:'single-ray',directionDeg:30}},
+    {id:'G1',type:'polygon-dielectric',parameters:{x1:-40,y1:-20,x2:20,y2:-20,x3:20,y3:100,x4:-40,y4:100,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'C1',type:'circular-dielectric',parameters:{x:100+impact*nx,y:yHit+impact*ny,radius:15,insideIndex:1.4,outsideIndex:1,partialReflection:false}}
+  ])).document;
+
+  // 1. Hitting near-tangency (impact = 14.995 mm, 0.005 mm inside r = 15).
+  const hitDoc=makeCircleScene(14.995);
+  const hitRun=await evaluateDocument(hitDoc,core,reqs);
+  assert.equal(hitRun.summary.executionPassed,false);
+  assert.equal(hitRun.summary.observations,null);
+  assert.equal(hitRun.report.native.diagnostics.v38EndpointsVerified,false);
+  assert.ok(hitRun.summary.native.errors.some(e=>/C1.*tangency/.test(e)));
+  assert.equal((await evaluateObservables(hitDoc,reqs,hitRun.summary)).results[0].status,'suppressed');
+
+  // 2. No-callback near-miss (impact = 15.005 mm, 0.005 mm outside r = 15).
+  const missDoc=makeCircleScene(15.005);
+  const missRun=await evaluateDocument(missDoc,core,reqs);
+  assert.equal(missRun.summary.executionPassed,false);
+  assert.equal(missRun.summary.observations,null);
+  assert.equal(missRun.report.native.diagnostics.v38EndpointsVerified,false);
+  assert.equal(missRun.report.native.diagnostics.interfacesById.C1.interactions,0);
+  assert.ok(missRun.summary.native.errors.some(e=>/C1.*tangency/.test(e)));
+  assert.equal((await evaluateObservables(missDoc,reqs,missRun.summary)).results[0].status,'suppressed');
+
+  // 3. Safe >= 0.01 mm variant (impact = 14.5 mm).
+  const safeDoc=makeCircleScene(14.5);
+  const safeRun=await evaluateDocument(safeDoc,core,reqs);
+  assert.equal(safeRun.summary.executionPassed,true);
+  assert.equal(safeRun.summary.observations.v38EndpointsVerified,true);
+  const safeObs=await evaluateObservables(safeDoc,reqs,safeRun.summary);
+  assert.equal(safeObs.results[0].status,'qualified');
+  assert.equal(safeObs.results[0].value,2);
+});
+
+test('v38 P2-4: opaque circle-blocker tangency fails at admission and on secondary no-callback near-miss; safe variants pass',async()=>{
+  const farPrism={id:'PR1',type:'triangular-prism',parameters:{x1:-20,y1:-120,x2:20,y2:-120,x3:0,y3:-80,insideIndex:1.5,outsideIndex:1,partialReflection:false}};
+  const blocker={id:'K1',type:'circle-blocker',parameters:{x:0,y:0,radius:10}};
+
+  // Admission negative: exact tangent horizontal ray at y = 10.
+  assert.throws(()=>prepareScene(refrReq([
+    {id:'S1',type:'point-source',parameters:{x:-100,y:10,brightness:0.5},emission:{mode:'single-ray',directionDeg:0}},
+    blocker,farPrism
+  ])),/opaque circle blocker/);
+
+  // Admission safe >= 0.01 mm variant: y = 10.02 (0.02 mm clear).
+  const {document:safeInit}=prepareScene(refrReq([
+    {id:'S1',type:'point-source',parameters:{x:-100,y:10.02,brightness:0.5},emission:{mode:'single-ray',directionDeg:0}},
+    blocker,farPrism
+  ]));
+  const safeInitRun=await evaluateDocument(safeInit,core,[{id:'absK',kind:'blocker-absorptions',componentId:'K1'}]);
+  assert.equal(safeInitRun.summary.executionPassed,true);
+  assert.equal(safeInitRun.summary.observations.v38EndpointsVerified,true);
+  assert.equal(safeInitRun.summary.observations.blockersById.K1.absorptions,0);
+
+  // Secondary no-callback near-miss: refracted ray passes 0.005 mm outside circle-blocker (r = 15).
+  const yHit=140/Math.sqrt(3)+60/Math.sqrt(8);
+  const nx=0.5,ny=-Math.sqrt(3)/2;
+  const reqs=[{id:'absK',kind:'blocker-absorptions',componentId:'K1'}];
+  const makeBlockerScene=impact=>prepareScene(refrReq([
+    {id:'S1',type:'point-source',parameters:{x:-100,y:0,brightness:0.5},emission:{mode:'single-ray',directionDeg:30}},
+    {id:'G1',type:'polygon-dielectric',parameters:{x1:-40,y1:-20,x2:20,y2:-20,x3:20,y3:100,x4:-40,y4:100,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'K1',type:'circle-blocker',parameters:{x:100+impact*nx,y:yHit+impact*ny,radius:15}}
+  ])).document;
+
+  const nearMissDoc=makeBlockerScene(15.005);
+  const nearMissRun=await evaluateDocument(nearMissDoc,core,reqs);
+  assert.equal(nearMissRun.summary.executionPassed,false);
+  assert.equal(nearMissRun.summary.observations,null);
+  assert.equal(nearMissRun.report.native.diagnostics.v38EndpointsVerified,false);
+  assert.equal(nearMissRun.report.native.diagnostics.blockersById.K1.absorptions,0);
+  assert.ok(nearMissRun.summary.native.errors.some(e=>/K1.*tangency/.test(e)));
+  assert.equal((await evaluateObservables(nearMissDoc,reqs,nearMissRun.summary)).results[0].status,'suppressed');
+
+  // Safe secondary variant: impact = 15.05 mm (0.05 mm >= 0.01 mm clear).
+  const safeSecDoc=makeBlockerScene(15.05);
+  const safeSecRun=await evaluateDocument(safeSecDoc,core,reqs);
+  assert.equal(safeSecRun.summary.executionPassed,true);
+  assert.equal(safeSecRun.summary.observations.v38EndpointsVerified,true);
+  const safeSecObs=await evaluateObservables(safeSecDoc,reqs,safeSecRun.summary);
+  assert.equal(safeSecObs.results[0].status,'qualified');
+  assert.equal(safeSecObs.results[0].value,0);
+});
