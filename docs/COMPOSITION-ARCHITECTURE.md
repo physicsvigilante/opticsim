@@ -1,5 +1,8 @@
 # Composition architecture: apparatus data, shared contracts, native physics
 
+> [!NOTE]
+> **Historical milestone snapshot (v1–v12).** This document preserves the original v1–v12 profile-catalog architecture note. Opticsim now spans `v1`–`v39`, including composable optical (`v37`), refractive (`v38`), and hybrid (`v39`) benches plus the coaxial paraxial stack. For current model selection and capabilities, see [docs/WHICH-MODEL.md](WHICH-MODEL.md).
+
 Opticsim must not require a new controller for every optical apparatus. Components
 and physical parameters are authored as data; reviewed whole-system compatibility
 rules determine admission; pinned PhyDemo determines every actual ray encounter.

@@ -1,0 +1,81 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 37,
+  "adapterVersion": 37,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "native-general-optical-bench",
+    "components": [
+      {
+        "id": "B1",
+        "type": "parallel-beam",
+        "parameters": {
+          "x": -220,
+          "y": 0,
+          "width": 60,
+          "directionDeg": 0,
+          "brightness": 0.2
+        }
+      },
+      {
+        "id": "A1",
+        "type": "finite-aperture",
+        "parameters": {
+          "x": -120,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 120,
+          "openingLength": 36
+        }
+      },
+      {
+        "id": "L1",
+        "type": "ideal-lens",
+        "parameters": {
+          "x": 0,
+          "focalLength": 160,
+          "apertureHeight": 120
+        }
+      },
+      {
+        "id": "M1",
+        "type": "circular-arc-mirror",
+        "parameters": {
+          "x": 220,
+          "y": 0,
+          "normalDeg": 180,
+          "radius": 240,
+          "apertureHeight": 120
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": -60,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 140
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "Composable v37 bench: parallel beam, lens, aperture, concave arc mirror and detector",
+    "view": {
+      "x": 0,
+      "y": 0,
+      "zoom": 1.8214285714285714
+    },
+    "mode": "rays",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 8,
+    "processedRayLimit": 10000
+  }
+}
+
