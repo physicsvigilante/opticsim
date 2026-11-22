@@ -157,6 +157,16 @@ define(37,'native-general-optical-bench',{
   ...Object.fromEntries(stops.map(t=>[t,range(0,2)])),
   [detector]:range(0,2)
 },[group(curves,0,2),group(stops,0,2)],[rule('native-general-bench')],['single-ray',...fan]);
+// v38 unifies already-compiled finite dielectric bodies (prism, convex polygon,
+// circle, spherical thick lens) with external plane mirrors, opaque stops,
+// detectors, single-ray sources, and finite parallel beams under one contract.
+define(38,'native-general-refractive-bench',{
+  [source]:range(0,4),[beam]:range(0,1),
+  [prism]:range(0,2),[polygon]:range(0,2),[circle]:range(0,2),[thick]:range(0,2),
+  [mirror]:range(0,2),
+  ...Object.fromEntries(stops.map(t=>[t,range(0,2)])),
+  [detector]:range(0,2)
+},[group([prism,polygon,circle,thick],1,2),group(stops,0,2)],[rule('native-general-refractive')],single);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 
@@ -273,6 +283,11 @@ const guidanceByProfile=freeze({
   label:'Composable native optical bench · v37',
   geometry:'Combine either 1–4 point sources or 1 finite parallel Beam with 0–4 coaxial ideal lenses, 0–4 plane mirrors, 0–2 curved mirrors, 0–2 opaque stops and 0–2 passive detectors (max 16 components). Keep at least 0.01 mm clearance between all surfaces, emitters and bounding disks.',
   scope:'Pinned PhyDemo traces every actual intersection, reflection, absorption and detector crossing. Counts and signed detector power are sampled native observations, not image detection or continuous irradiance.'
+ },
+ 'native-general-refractive-bench@38':{
+  label:'Composable native refractive bench · v38',
+  geometry:'Combine either 1–4 exact single-ray sources or 1 finite parallel Beam with 1–2 disjoint finite dielectrics (prism, convex quadrilateral, circle, or spherical thick lens sharing one explicit outsideIndex), 0–2 plane mirrors, 0–2 opaque stops and 0–2 passive detectors (max 12 components). Keep at least 0.01 mm clearance everywhere.',
+  scope:'Pinned PhyDemo traces all finite refractions, Fresnel branches (when enabled), total internal reflection, reflections, absorptions and detector crossings. Incomplete, truncated, corner-ambiguous or endpoint-grazing runs withhold accepted measurements.'
  }
 });
 export function compositionGuidance(model,version){

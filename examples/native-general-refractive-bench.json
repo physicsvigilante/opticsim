@@ -1,0 +1,66 @@
+{
+  "title": "Composable v38 refractive bench: parallel beam, prism, plane mirror, circular dielectric and detector",
+  "model": "native-general-refractive-bench",
+  "lengthUnit": "mm",
+  "runPolicy": "preview-v1",
+  "components": [
+    {
+      "id": "B1",
+      "type": "parallel-beam",
+      "parameters": {
+        "x": -180,
+        "y": 0,
+        "width": 20,
+        "directionDeg": 0,
+        "brightness": 0.2
+      }
+    },
+    {
+      "id": "PR1",
+      "type": "triangular-prism",
+      "parameters": {
+        "x1": -60,
+        "y1": -45,
+        "x2": 20,
+        "y2": -45,
+        "x3": -20,
+        "y3": 45,
+        "insideIndex": 1.5,
+        "outsideIndex": 1,
+        "partialReflection": false
+      }
+    },
+    {
+      "id": "M1",
+      "type": "plane-mirror",
+      "parameters": {
+        "x": 95,
+        "y": -55,
+        "orientationDeg": 20,
+        "length": 110
+      }
+    },
+    {
+      "id": "C1",
+      "type": "circular-dielectric",
+      "parameters": {
+        "x": 160,
+        "y": 65,
+        "radius": 30,
+        "insideIndex": 1.4,
+        "outsideIndex": 1,
+        "partialReflection": false
+      }
+    },
+    {
+      "id": "D1",
+      "type": "ray-detector",
+      "parameters": {
+        "x": 230,
+        "y": 40,
+        "orientationDeg": 90,
+        "length": 220
+      }
+    }
+  ]
+}

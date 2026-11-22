@@ -1,5 +1,6 @@
 import {IMMERSED_ARC_MODEL,IMMERSED_ARC_VERSION} from './immersed-arc-plane-port.js';
 import {GENERAL_BENCH_MODEL,GENERAL_BENCH_VERSION} from './native-general-optical-bench.js';
+import {REFRACTIVE_BENCH_MODEL,REFRACTIVE_BENCH_VERSION} from './native-general-refractive-bench.js';
 import {MIRROR_BOX_MODEL,MIRROR_BOX_VERSION} from './native-mirror-box.js';
 import {GUIDE_FAN_MODEL,GUIDE_FAN_VERSION} from './finite-guide-fan.js';
 import {CAP_TYPE,CAP_MODEL,CAP_VERSION,capExtents} from './finite-circular-cap.js';
@@ -99,6 +100,7 @@ export function capabilities() {
       limitations:'No image reconstruction, PSF, diffraction, radiometric power, arbitrary composite optics or source-to-detector ancestry.'},
     immersedArcPort:{schemaVersion:IMMERSED_ARC_VERSION,model:IMMERSED_ARC_MODEL,selection:'Select physical.model explicitly and use dense-v1.',scope:'One directional source inside a denser half-space, one immersed concave spherical mirror patch, one planar interface and one exterior detector.'},
     generalOpticalBench:{schemaVersion:GENERAL_BENCH_VERSION,model:GENERAL_BENCH_MODEL,selection:'Set physical.model explicitly to native-general-optical-bench. Unmarked historical requests keep their existing profile selection.',scope:'Either 1–4 point sources (full-circle, directional, or single-ray) OR 1 finite parallel Beam, combined with 0–4 coaxial ideal lenses, 0–4 plane mirrors, 0–2 curved mirrors (ideal-curved-mirror / circular-arc-mirror), 0–2 opaque stops (line-blocker / circle-blocker / finite-aperture), and 0–2 passive ray detectors (max 16 components total). Strict 0.01 mm clearance across all surfaces, emitters, and bounding disks. Pinned PhyDemo traces all rays; no route-independent image prediction or source-specific detector provenance.'},
+    generalRefractiveBench:{schemaVersion:REFRACTIVE_BENCH_VERSION,model:REFRACTIVE_BENCH_MODEL,selection:'Set physical.model explicitly to native-general-refractive-bench. Unmarked historical requests keep their existing profile selection.',scope:'Either 1–4 exact single-ray point sources OR 1 finite parallel Beam, combined with 1–2 disjoint finite dielectric bodies (triangular-prism, polygon-dielectric, circular-dielectric, or spherical-lens sharing one explicit outsideIndex), 0–2 plane mirrors, 0–2 opaque stops (line-blocker / circle-blocker / finite-aperture), and 0–2 passive ray detectors (max 12 components total). Strict 0.01 mm clearance, initial corner/tangency/endpoint guards, and observed native endpoint audit (v38EndpointsVerified).'},
     mirrorBox:{schemaVersion:MIRROR_BOX_VERSION,model:MIRROR_BOX_MODEL,selection:'Select physical.model explicitly.',scope:'Four separated rectangular mirror walls, one explicit SingleRay and one interior opaque target. Native qualification requires one safe reflection per wall followed by absorption.'},
     guideFan:{schemaVersion:GUIDE_FAN_VERSION,model:GUIDE_FAN_MODEL,selection:'Set physical.model explicitly. Optional physical.rayDensity sets numerical sampling.',scope:'One directional fan through a finite rectangular Glass guide with unit exterior, partial reflection disabled and one exterior vertical detector.'},
     enteringGradedSlab:{schemaVersion:GRIN_SLAB_VERSION,model:GRIN_SLAB_MODEL,selection:'Select physical.model explicitly.',scope:'One finite-angle incoming single ray, one native square-root GRIN rectangle and a horizontal passive detector after the far face.'},
@@ -234,7 +236,7 @@ export function inspectAuthoringRequest(request){
     try{scale=units(request.lengthUnit,'$.lengthUnit');}
     catch(error){issues.push(...error.issues);}
   }
-  if(own(request,'model')&&![POST_LENS_MODEL,REFRACTIVE_FAN_MODEL,CURVED_BEAM_MODEL,SLAB_ARC_MODEL,CAP_MODEL,GRIN_SLAB_MODEL,IMMERSED_ARC_MODEL,MIRROR_BOX_MODEL,GUIDE_FAN_MODEL,GENERAL_BENCH_MODEL].includes(request.model))issues.push(issue('$.model','UNSUPPORTED_MODEL','Unknown explicit physical model'));
+  if(own(request,'model')&&![POST_LENS_MODEL,REFRACTIVE_FAN_MODEL,CURVED_BEAM_MODEL,SLAB_ARC_MODEL,CAP_MODEL,GRIN_SLAB_MODEL,IMMERSED_ARC_MODEL,MIRROR_BOX_MODEL,GUIDE_FAN_MODEL,GENERAL_BENCH_MODEL,REFRACTIVE_BENCH_MODEL].includes(request.model))issues.push(issue('$.model','UNSUPPORTED_MODEL','Unknown explicit physical model'));
   if(own(request,'runPolicy')&&(typeof request.runPolicy!=='string'||!own(policies,request.runPolicy)))
     issues.push(issue('$.runPolicy','UNSUPPORTED_POLICY','Use a run policy exposed by capabilities()'));
   if(own(request,'title')&&(typeof request.title!=='string'||request.title.length>120))
@@ -332,6 +334,7 @@ function camera(components) {
     zoom:isGrinV25?80:Math.max(.03,Math.min(2,.85*1200/width,.85*700/height))};
 }
 function selectRequestComposition(request) {
+  if(request.model===REFRACTIVE_BENCH_MODEL)return {model:REFRACTIVE_BENCH_MODEL,schemaVersion:REFRACTIVE_BENCH_VERSION,adapterVersion:REFRACTIVE_BENCH_VERSION};
   if(request.model===GENERAL_BENCH_MODEL)return {model:GENERAL_BENCH_MODEL,schemaVersion:GENERAL_BENCH_VERSION,adapterVersion:GENERAL_BENCH_VERSION};
   if(request.model===GUIDE_FAN_MODEL)return {model:GUIDE_FAN_MODEL,schemaVersion:GUIDE_FAN_VERSION,adapterVersion:GUIDE_FAN_VERSION};
   if(request.model===MIRROR_BOX_MODEL)return {model:MIRROR_BOX_MODEL,schemaVersion:MIRROR_BOX_VERSION,adapterVersion:MIRROR_BOX_VERSION};
