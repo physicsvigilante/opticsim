@@ -4,7 +4,7 @@
 
 ## Explicit-input bridge contract
 
-The bridge **never invents** apertures, ray angles, beam widths, mirror models, or detector placements. Callers supply an explicit `opticsim-coaxial-stack-native-witness-v1` specification alongside a validated stack in `mm` with `incidentIndex === 1`, composed of `0–4 thin-lens` elements and/or one optional `terminal-mirror` (plane or spherical; `refracting-surface` elements are refused because `v37` is homogeneous unit-index air):
+The bridge **never invents** apertures, ray angles, beam widths, mirror models, or detector placements. Callers supply an explicit `opticsim-coaxial-stack-native-witness-v1` specification alongside a validated stack in `mm` with `incidentIndex === 1`, composed of `1–4 thin-lens` elements in transmission or `0–3 thin-lens` elements + `1 terminal-mirror` (plane or spherical) in return (`4 thin-lens` + `terminal-mirror` returns require `>= 10` native encounters including the detector, exceeding the `v37` `maxRayDepth = 8` budget, and fail closed at build time with `UNSUPPORTED_WITNESS_SCOPE`; `refracting-surface` elements are refused because `v37` is homogeneous unit-index air):
 
 - **`aperturesById`**: explicit finite aperture/length in `[1, 10000]` mm for every element ID in the stack.
 - **`mirrorModel`** *(required iff the stack has a spherical `terminal-mirror`)*:

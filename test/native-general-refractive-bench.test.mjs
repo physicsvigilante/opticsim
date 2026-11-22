@@ -532,3 +532,32 @@ test('v38 Round 3 P2: same-prism refracted-exit near-corner no-callback witness 
   assert.equal(safeObs.results[0].status,'qualified');
   assert.equal(safeObs.results[0].value,2);
 });
+
+test('v38 F2 audit: same-body critical departure grazing on circular-dielectric fails closed; safe control qualifies',async()=>{
+  const reqs=[{id:'first',kind:'interface-first-event',componentId:'C1'}];
+  const circle={id:'C1',type:'circular-dielectric',parameters:{x:0,y:0,radius:10,insideIndex:1,outsideIndex:1.25,partialReflection:false}};
+
+  // Exact critical entry at y = 8 (sin(theta_i) = 0.8, n_out/n_in = 1.25 -> Snell discriminant = 0,
+  // outgoing ray departs tangent at (-6, 8) with ahead = 0 and impact parameter = radius = 10).
+  const {document:grazingDoc}=prepareScene(refrReq([
+    {id:'S1',type:'point-source',parameters:{x:-20,y:8,brightness:0.5},emission:{mode:'single-ray',directionDeg:0}},
+    circle
+  ]));
+  const grazingRun=await evaluateDocument(grazingDoc,core,reqs);
+  assert.equal(grazingRun.summary.executionPassed,false);
+  assert.equal(grazingRun.summary.observations,null);
+  assert.equal(grazingRun.report.native.diagnostics.v38EndpointsVerified,false);
+  assert.ok(grazingRun.summary.native.errors.some(e=>/C1.*tangency/.test(e)));
+  assert.equal((await evaluateObservables(grazingDoc,reqs,grazingRun.summary)).results[0].status,'suppressed');
+
+  // Safe control at y = 7.5 (sin(theta_t) = 0.9375, outgoing impact parameter = 9.375, 0.625 mm clear of tangency).
+  const {document:safeDoc}=prepareScene(refrReq([
+    {id:'S1',type:'point-source',parameters:{x:-20,y:7.5,brightness:0.5},emission:{mode:'single-ray',directionDeg:0}},
+    circle
+  ]));
+  const safeRun=await evaluateDocument(safeDoc,core,reqs);
+  assert.equal(safeRun.summary.executionPassed,true);
+  assert.equal(safeRun.summary.observations.v38EndpointsVerified,true);
+  const safeObs=await evaluateObservables(safeDoc,reqs,safeRun.summary);
+  assert.equal(safeObs.results[0].status,'qualified');
+});

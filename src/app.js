@@ -111,8 +111,10 @@ function update() {
       (r.signedPower===null?'unavailable':format(r.signedPower))+' (relative native units)').join('  |  ');
   const blockerSummary=d?.blockersById&&blockers?Object.entries(d.blockersById).map(([id,r])=>
     id+': '+r.absorptions+' absorbed native ray'+(r.absorptions===1?'':'s')).join(' · '):'';
+  const pointSources=session.document?.physics.components.filter(c=>c.type==='point-source')||[];
+  const allSingleRay=pointSources.length>0&&pointSources.every(c=>c.emission?.mode==='single-ray');
   $('sampling-note').textContent = session.document?.physics.components.some(c=>c.type==='parallel-beam') ?
-    'Native Beam emits deterministic parallel rays from separate positions along its finite width. Density changes spatial sample count and positions, not source divergence, continuous power or a detected image.' : ['planar-media-tracing','circular-dielectric-tracing','triangular-prism-tracing','polygon-dielectric-tracing','finite-dielectric-composition','two-separated-dielectrics-tracing','native-thick-lens-tracing','native-thick-lens-mirror-tracing','native-two-thick-lens-mirror-tracing','native-two-thick-lens-mirror-aperture-tracing','native-bounded-grin-tracing'].includes(session.document?.physics.model) ?
+    'Native Beam emits deterministic parallel rays from separate positions along its finite width. Density changes spatial sample count and positions, not source divergence, continuous power or a detected image.' : allSingleRay ?
     'Each single-ray source emits one exact native ray. Sampling density does not widen it into a cone; change its explicit direction to investigate incidence.' : d && d.emitted < 3 ?
     !hasOptics ? `Only ${d.emitted} native ray${d.emitted===1?'':'s'} emitted; increase sampling to inspect free-space propagation.` :
     `Only ${d.emitted} native ray${d.emitted===1?'':'s'} emitted. This cone is sparsely sampled and may miss the ${mixed ? 'lens or mirror' : mirror ? 'mirror' : 'lenses'}. Increase sampling or opening angle to inspect more rays.` :
@@ -318,7 +320,7 @@ function controls() {
       addNumber(sourceParent, component.id, 'emission', 'angleDeg', 'Opening angle (°)', component.emission.angleDeg, { min: 1, max: 180, step: 1 }, disabled);
       addNumber(sourceParent, component.id, 'emission', 'directionDeg', 'Direction (°)', component.emission.directionDeg, { min: -180, max: 180, step: 1 }, component.emission.mode==='full-circle');
       const note = document.createElement('p'); note.className = 'muted';
-      note.textContent = (planar||circular||prism||polygon||thick||curvedEntry||graded||session.document.schemaVersion===MIRROR_BOX_VERSION) ? 'One exact native ray; the cone-angle field is inactive. 0° right · +90° up · −90° down.' : (multipleSources ? 'Use the toolbar to select this source for Full-circle / Directional mode. ' : '')+
+      note.textContent = (component.emission.mode==='single-ray'||planar||circular||prism||polygon||thick||curvedEntry||graded||session.document.schemaVersion===MIRROR_BOX_VERSION) ? 'One exact native ray; the cone-angle field is inactive. 0° right · +90° up · −90° down.' : (multipleSources ? 'Use the toolbar to select this source for Full-circle / Directional mode. ' : '')+
         '0° right · +90° up · −90° down. Opening is the full cone angle. Selecting Directional starts at Medium global sampling.';
       fieldset.append(note);
     }

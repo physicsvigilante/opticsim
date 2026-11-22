@@ -1,0 +1,6 @@
+{
+  "format": "opticsim-audit-hardening-f4-app-integration-v1",
+  "sourceV38AppGitBlob": "8876639c1c2e09411fc20e5054e48db3217d2f32",
+  "auditF4AppGitBlob": "81317c6f35b02f6a59e42b9ee8d5e8776fd9b946",
+  "note": "Append-only provenance for Issue #250 F4: derive sampling-note and per-source help from actual point-source emission.mode === 'single-ray' across v37, v38, and historical single-ray profiles."
+}

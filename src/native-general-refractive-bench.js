@@ -382,7 +382,7 @@ export function installGeneralRefractiveBenchAudit(doc,scene,idMap,mirrorEndpoin
       }
     }
     for(const target of circleTargets){
-      if(target.id===sourceCompId)continue;
+      const sameBody=target.id===sourceCompId;
       for(const tc of target.circles){
         const offset=delta(state.origin,tc.center);
         const ahead=dot(offset,state.dir),perp=Math.abs(cross(offset,state.dir));
@@ -390,7 +390,7 @@ export function installGeneralRefractiveBenchAudit(doc,scene,idMap,mirrorEndpoin
           fault=target.id+': v38 native circular/spherical tangency check was non-finite; measurements withheld.';
           return;
         }
-        if(ahead>0&&Math.abs(perp-tc.radius)<REFRACTIVE_BENCH_CLEARANCE_MM){
+        if((sameBody||ahead>0)&&Math.abs(perp-tc.radius)<REFRACTIVE_BENCH_CLEARANCE_MM){
           fault=target.id+': observed native ray approaches within 0.01 mm of tangency to a circular/spherical surface; measurements withheld.';
           return;
         }

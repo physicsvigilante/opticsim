@@ -355,3 +355,101 @@ test('historical v4, v6, and v19 profile selection and isolation remain complete
   assert.equal(v19.document.schemaVersion,19);
   assert.equal(v19.document.physics.model,'native-parallel-lens-tracing');
 });
+
+test('v37 F1 audit parity: emitted and outgoing no-callback endpoint/tangency misses fail closed; >=0.01 mm controls pass',async()=>{
+  const reqs=[{id:'det',kind:'detector-crossings',componentId:'D1'}];
+  const arc={id:'CM1',type:'circular-arc-mirror',parameters:{x:0,y:0,normalDeg:0,radius:20,apertureHeight:20}};
+
+  const cases=[
+    {
+      name:'transparent aperture gap',
+      near:[
+        {id:'S1',type:'point-source',parameters:{x:-20,y:4.995,brightness:0.5},emission:{mode:'single-ray',directionDeg:0}},
+        {id:'A1',type:'finite-aperture',parameters:{x:0,y:0,orientationDeg:90,length:40,openingLength:10}},
+        {id:'D1',type:'ray-detector',parameters:{x:20,y:4.995,orientationDeg:90,length:10}}
+      ],
+      safe:[
+        {id:'S1',type:'point-source',parameters:{x:-20,y:4.95,brightness:0.5},emission:{mode:'single-ray',directionDeg:0}},
+        {id:'A1',type:'finite-aperture',parameters:{x:0,y:0,orientationDeg:90,length:40,openingLength:10}},
+        {id:'D1',type:'ray-detector',parameters:{x:20,y:4.95,orientationDeg:90,length:10}}
+      ],
+      errRe:/A1.*endpoint/
+    },
+    {
+      name:'redirected mirror->aperture gap',
+      near:[
+        {id:'S1',type:'point-source',parameters:{x:-20,y:0,brightness:0.5},emission:{mode:'single-ray',directionDeg:0}},
+        {id:'M1',type:'plane-mirror',parameters:{x:0,y:0,orientationDeg:45,length:10}},
+        {id:'A1',type:'finite-aperture',parameters:{x:-4.995,y:20,orientationDeg:0,length:40,openingLength:10}},
+        {id:'D1',type:'ray-detector',parameters:{x:0,y:40,orientationDeg:0,length:10}}
+      ],
+      safe:[
+        {id:'S1',type:'point-source',parameters:{x:-20,y:0,brightness:0.5},emission:{mode:'single-ray',directionDeg:0}},
+        {id:'M1',type:'plane-mirror',parameters:{x:0,y:0,orientationDeg:45,length:10}},
+        {id:'A1',type:'finite-aperture',parameters:{x:-4.95,y:20,orientationDeg:0,length:40,openingLength:10}},
+        {id:'D1',type:'ray-detector',parameters:{x:0,y:40,orientationDeg:0,length:10}}
+      ],
+      errRe:/A1.*endpoint/
+    },
+    {
+      name:'circle-blocker tangency miss',
+      near:[
+        {id:'S1',type:'point-source',parameters:{x:-20,y:10.005,brightness:0.5},emission:{mode:'single-ray',directionDeg:0}},
+        {id:'K1',type:'circle-blocker',parameters:{x:0,y:0,radius:10}},
+        {id:'D1',type:'ray-detector',parameters:{x:20,y:10.005,orientationDeg:90,length:10}}
+      ],
+      safe:[
+        {id:'S1',type:'point-source',parameters:{x:-20,y:10.05,brightness:0.5},emission:{mode:'single-ray',directionDeg:0}},
+        {id:'K1',type:'circle-blocker',parameters:{x:0,y:0,radius:10}},
+        {id:'D1',type:'ray-detector',parameters:{x:20,y:10.05,orientationDeg:90,length:10}}
+      ],
+      errRe:/K1.*tangency/
+    },
+    {
+      name:'circular-arc endpoint miss',
+      near:[
+        {id:'S1',type:'point-source',parameters:{x:-20,y:10.005,brightness:0.5},emission:{mode:'single-ray',directionDeg:0}},
+        arc,
+        {id:'D1',type:'ray-detector',parameters:{x:20,y:10.005,orientationDeg:90,length:10}}
+      ],
+      safe:[
+        {id:'S1',type:'point-source',parameters:{x:-20,y:10.05,brightness:0.5},emission:{mode:'single-ray',directionDeg:0}},
+        arc,
+        {id:'D1',type:'ray-detector',parameters:{x:20,y:10.05,orientationDeg:90,length:10}}
+      ],
+      errRe:/CM1.*endpoint/
+    },
+    {
+      name:'circular-arc vertex tangency miss',
+      near:[
+        {id:'S1',type:'point-source',parameters:{x:-0.005,y:-20,brightness:0.5},emission:{mode:'single-ray',directionDeg:90}},
+        arc,
+        {id:'D1',type:'ray-detector',parameters:{x:-0.005,y:20,orientationDeg:0,length:10}}
+      ],
+      safe:[
+        {id:'S1',type:'point-source',parameters:{x:-0.05,y:-20,brightness:0.5},emission:{mode:'single-ray',directionDeg:90}},
+        arc,
+        {id:'D1',type:'ray-detector',parameters:{x:-0.05,y:20,orientationDeg:0,length:10}}
+      ],
+      errRe:/CM1.*tangency/
+    }
+  ];
+
+  for(const tc of cases){
+    const {document:nearDoc}=prepareScene(benchReq(tc.near));
+    const nearRun=await evaluateDocument(nearDoc,core,reqs);
+    assert.equal(nearRun.summary.executionPassed,false,tc.name+' should fail closed');
+    assert.equal(nearRun.summary.observations,null,tc.name+' should withhold observations');
+    assert.equal(nearRun.report.native.diagnostics.v37EndpointsVerified,false,tc.name+' v37EndpointsVerified false');
+    assert.ok(nearRun.summary.native.errors.some(e=>tc.errRe.test(e)),tc.name+' expected error match');
+    assert.equal((await evaluateObservables(nearDoc,reqs,nearRun.summary)).results[0].status,'suppressed');
+
+    const {document:safeDoc}=prepareScene(benchReq(tc.safe));
+    const safeRun=await evaluateDocument(safeDoc,core,reqs);
+    assert.equal(safeRun.summary.executionPassed,true,tc.name+' safe control should pass');
+    assert.equal(safeRun.summary.observations.v37EndpointsVerified,true,tc.name+' safe v37EndpointsVerified true');
+    const safeObs=await evaluateObservables(safeDoc,reqs,safeRun.summary);
+    assert.equal(safeObs.results[0].status,'available');
+    assert.equal(safeObs.results[0].value,1);
+  }
+});
