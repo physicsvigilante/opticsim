@@ -1,0 +1,34 @@
+{
+  "stack": {
+    "format": "opticsim-coaxial-paraxial-stack-facts-v1",
+    "model": "coaxial-paraxial-optical-stack",
+    "signConvention": "x-increasing",
+    "lengthUnit": "mm",
+    "incidentIndex": 1,
+    "elements": [
+      { "id": "F1", "type": "refracting-surface", "x": -10, "signedRadius": 100, "downstreamIndex": 1.5 },
+      { "id": "B1", "type": "refracting-surface", "x": 10, "signedRadius": -100, "downstreamIndex": 1 }
+    ]
+  },
+  "spec": {
+    "format": "opticsim-refractive-stack-native-witness-v1",
+    "title": "Thick biconvex lens paraxial vs marginal spherical aberration witness",
+    "query": {
+      "format": "opticsim-coaxial-paraxial-stack-query-v1",
+      "kind": "coaxial-stack-collimated-focus"
+    },
+    "bodies": [
+      { "id": "L1", "frontSurfaceId": "F1", "backSurfaceId": "B1", "apertureHeight": 60 }
+    ],
+    "partialReflection": false,
+    "emitter": {
+      "mode": "single-ray",
+      "rays": [
+        { "id": "S_paraxial", "x": -80, "y": 2, "brightness": 0.5 },
+        { "id": "S_marginal", "x": -80, "y": 24, "brightness": 0.5 }
+      ]
+    },
+    "detector": { "id": "D_exit", "x": 40, "y": 0, "orientationDeg": 90, "length": 120 },
+    "runPolicy": "preview-v1"
+  }
+}
