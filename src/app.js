@@ -2,6 +2,7 @@ import {compositionGuidance} from './composition-profiles.js';
 import {ExplorationUI} from './exploration-ui.js';
 import {MIRROR_BOX_VERSION} from './native-mirror-box.js';
 import {GUIDE_FAN_VERSION} from './finite-guide-fan.js';
+import {GENERAL_BENCH_VERSION} from './native-general-optical-bench.js';
 import {installGrinV25DisplayScale} from './grin-v25-display.js';
 import {isCurved} from './curved-mirrors.js';
 import {QualifiedUI} from './qualified-ui.js';
@@ -247,7 +248,7 @@ function controls() {
       const fixed = mixed && component.type === 'plane-mirror' && ['y', 'orientationDeg'].includes(key);
       addNumber(component.type === 'point-source' && key === 'brightness' && !multipleSources ?
         $('source-parameters') : fieldset, component.id, 'parameters', key,
-        key === 'brightness' ? 'Brightness (relative)' : `${labels[key]} (${['orientationDeg','normalDeg','directionDeg'].includes(key) ? '°' : ['negativeIndex','positiveIndex','insideIndex','outsideIndex','indexSquaredAtAxis'].includes(key)?'dimensionless':'mm'})`, value, slider, fixed);
+        key === 'brightness' ? 'Brightness (relative)' : `${key === 'radius' && component.type === 'circle-blocker' ? 'Circle blocker radius (positive)' : labels[key]} (${['orientationDeg','normalDeg','directionDeg'].includes(key) ? '°' : ['negativeIndex','positiveIndex','insideIndex','outsideIndex','indexSquaredAtAxis'].includes(key)?'dimensionless':'mm'})`, value, slider, fixed);
     }
     if (['line-blocker','circle-blocker','finite-aperture'].includes(component.type)) {
       const note=document.createElement('p');note.className='muted';
@@ -408,7 +409,7 @@ function sourcePicker(component) {
     { mode: 'directional', title: 'Point source (directional)', description: 'Symmetric cone · 1–180°', icon: angleSourceIcon }
   ];
   if([29,31,32,34,GUIDE_FAN_VERSION].includes(session.document.schemaVersion))choices.splice(0,1);
-  if(session.document.schemaVersion===6)choices.push({mode:'single-ray',title:'Single ray (native)',description:'One exact direction; no cone from sampling',icon:angleSourceIcon});
+  if([6,GENERAL_BENCH_VERSION].includes(session.document.schemaVersion))choices.push({mode:'single-ray',title:'Single ray (native)',description:'One exact direction; no cone from sampling',icon:angleSourceIcon});
   const details = document.createElement('details'); details.className = 'source-picker';
   const summary = document.createElement('summary'); summary.id = `${component.id}-mode`;
   const heading = document.createElement('span');

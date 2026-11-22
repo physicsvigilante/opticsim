@@ -246,7 +246,9 @@ test('v18 browser provenance is append-only relative to reviewed v17 code, never
   assert.equal(guideFanFollowup.sourceV35AppGitBlob,mirrorBoxFollowup.v35AppGitBlob);
   const audit=JSON.parse(readFileSync(new URL('./fixtures/pre-transfer-audit-app-integration.json',import.meta.url),'utf8'));
   assert.equal(guideFanFollowup.v36AppGitBlob,audit.sourceV36AppGitBlob);
-  assert.equal(audit.auditAppGitBlob,sha);
+  const generalBenchFollowup=JSON.parse(readFileSync(new URL('./fixtures/native-general-bench-v37-app-integration.json',import.meta.url),'utf8'));
+  assert.equal(audit.auditAppGitBlob,generalBenchFollowup.sourceAuditAppGitBlob);
+  assert.equal(generalBenchFollowup.v37AppGitBlob,sha);
   assert.notEqual(sha,reconciliation.reconciledAppGitBlob,'New v25 UI is not the reviewed v24 browser code');
   assert.notEqual(sha,p.newV18AppGitBlob,'Do not claim new UI matches old reviewed v18 byte identity');
   assert.equal(p.originalV17AppGitBlob,'9d447af4c8fc59ec1e8fdcfbcec0c4d739fc477f');

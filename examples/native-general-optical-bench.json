@@ -1,0 +1,60 @@
+{
+  "title": "Composable v37 bench: parallel beam, lens, aperture, concave arc mirror and detector",
+  "model": "native-general-optical-bench",
+  "lengthUnit": "mm",
+  "runPolicy": "preview-v1",
+  "components": [
+    {
+      "id": "B1",
+      "type": "parallel-beam",
+      "parameters": {
+        "x": -220,
+        "y": 0,
+        "width": 60,
+        "directionDeg": 0,
+        "brightness": 0.2
+      }
+    },
+    {
+      "id": "A1",
+      "type": "finite-aperture",
+      "parameters": {
+        "x": -120,
+        "y": 0,
+        "orientationDeg": 90,
+        "length": 120,
+        "openingLength": 36
+      }
+    },
+    {
+      "id": "L1",
+      "type": "ideal-lens",
+      "parameters": {
+        "x": 0,
+        "focalLength": 160,
+        "apertureHeight": 120
+      }
+    },
+    {
+      "id": "M1",
+      "type": "circular-arc-mirror",
+      "parameters": {
+        "x": 220,
+        "y": 0,
+        "normalDeg": 180,
+        "radius": 240,
+        "apertureHeight": 120
+      }
+    },
+    {
+      "id": "D1",
+      "type": "ray-detector",
+      "parameters": {
+        "x": -60,
+        "y": 0,
+        "orientationDeg": 90,
+        "length": 140
+      }
+    }
+  ]
+}

@@ -148,6 +148,15 @@ define(33,'native-entering-graded-slab',{[source]:range(1,1),[grin]:range(1,1),[
 define(34,'native-immersed-arc-plane-port',{[source]:range(1,1),[plane]:range(1,1),'circular-arc-mirror':range(1,1),[detector]:range(1,1)},[],[rule('immersed-arc-port')],['directional']);
 define(35,'native-rectangular-mirror-box',{[source]:range(1,1),[mirror]:range(4,4),'line-blocker':range(1,1)},[],[rule('native-mirror-box')],single);
 define(36,'native-finite-guide-fan-tracing',{[source]:range(1,1),[polygon]:range(1,1),[detector]:range(1,1)},[],[rule('finite-guide-fan')],['directional']);
+// v37 unifies already-compiled reflective, thin-lens, opaque-stop, passive
+// detector, point-source, and parallel-beam primitives under one explicit
+// whole-system bench contract. Historical v1-v36 profiles remain frozen.
+define(37,'native-general-optical-bench',{
+  [source]:range(0,4),[beam]:range(0,1),[lens]:range(0,4),[mirror]:range(0,4),
+  ...Object.fromEntries(curves.map(t=>[t,range(0,2)])),
+  ...Object.fromEntries(stops.map(t=>[t,range(0,2)])),
+  [detector]:range(0,2)
+},[group(curves,0,2),group(stops,0,2)],[rule('native-general-bench')],['single-ray',...fan]);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 
@@ -259,6 +268,11 @@ const guidanceByProfile=freeze({
   label:'Finite parallel Beam · ideal lens and downstream aperture',
   geometry:'Place the finite aperture downstream of the ideal lens. Specify the opening and both opaque arms.',
   scope:'Native samples can pass the opening or strike an arm. Counts describe sampled rays.'
+ },
+ 'native-general-optical-bench@37':{
+  label:'Composable native optical bench · v37',
+  geometry:'Combine either 1–4 point sources or 1 finite parallel Beam with 0–4 coaxial ideal lenses, 0–4 plane mirrors, 0–2 curved mirrors, 0–2 opaque stops and 0–2 passive detectors (max 16 components). Keep at least 0.01 mm clearance between all surfaces, emitters and bounding disks.',
+  scope:'Pinned PhyDemo traces every actual intersection, reflection, absorption and detector crossing. Counts and signed detector power are sampled native observations, not image detection or continuous irradiance.'
  }
 });
 export function compositionGuidance(model,version){
