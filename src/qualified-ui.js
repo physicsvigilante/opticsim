@@ -39,8 +39,15 @@ export class QualifiedUI {
       recordQualifiedEdit(this.session.document,doc,this.qualification):null,requests:this.requests};
   }
   commit(next){
+    const prev={qualification:this.qualification,requests:this.requests};
     this.qualification=next.qualification;this.requests=next.requests;
-    $('qualification-error').textContent='';this.refresh();
+    $('qualification-error').textContent='';
+    try{
+      this.refresh();
+    }catch(error){
+      this.qualification=prev.qualification;this.requests=prev.requests;
+      throw error;
+    }
     // Scene execution may have finished synchronously before its imported
     // qualification was committed. Re-render scope labels without rerunning
     // native physics so calculated results cannot appear contradicted by the
@@ -110,8 +117,9 @@ export class QualifiedUI {
           lines.push('Calculated target critical incidence: '+computed.criticalIncidenceAngleDeg+
             ' degrees from normal'+(historical?' (historical after physical edit)':'')+'.');
       }
-      if(calc.kind==='branch-angles'){
-        for(const branch of computed?.branches||[]){
+      if(calc.kind==='branch-angles'&&Array.isArray(computed?.branches)){
+        for(const branch of computed.branches){
+          if(!branch||typeof branch!=='object')continue;
           lines.push((historical?'Historical calculated':'Calculated')+' branch '+branch.id+
             ': '+(Number.isFinite(branch.value?.exitAngleDeg)?
               branch.value.exitAngleDeg+' degrees from normal':

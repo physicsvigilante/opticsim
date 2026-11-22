@@ -15,6 +15,7 @@ const freeze=JSON.parse(read('test/fixtures/detector-hit-transfer-freeze.json'))
 const integration=JSON.parse(read('test/fixtures/detector-hit-integration-rebase.json'));
 const focusedPostFreeze=JSON.parse(read('test/fixtures/focused-exploration-postfreeze.json'));
 const notebookPostFreeze=JSON.parse(read('test/fixtures/portable-notebook-postfreeze-v1.json'));
+const sliceCPostFreeze=JSON.parse(read('test/fixtures/slice-c-hardening-postfreeze-v1.json'));
 // Historical SHA-256 values remain immutable evidence of the earlier R1 run.
 // The NEW parentage milestone intentionally modifies these current production
 // paths, and does not retroactively make the old transfer a newly blind test.
@@ -77,8 +78,17 @@ test('original reserved transfer evidence remains frozen; explicit later parenta
    assert.equal(notebookPostFreeze.priorFocusedUiSha256,
     focusedPostFreeze.replacementHashes[path],
     'Previously reviewed focused UI SHA is still immutable');
-   assert.equal(hash(path),notebookPostFreeze.portableNotebookUiSha256,
-    'Exact later portable-notebook UI version must remain pinned: '+path);
+   assert.equal(sliceCPostFreeze.priorHashes[path],
+    notebookPostFreeze.portableNotebookUiSha256,
+    'Previously reviewed portable-notebook UI SHA is still immutable');
+   assert.equal(hash(path),sliceCPostFreeze.replacementHashes[path],
+    'Exact Slice C hardened UI version must remain pinned: '+path);
+   assert.notEqual(hash(path),expected,'Do not relabel the old reserve test as newly blind: '+path);
+  }else if(Object.hasOwn(sliceCPostFreeze.replacementHashes,path)){
+   assert.equal(sliceCPostFreeze.priorHashes[path],expected,
+    'Original reserved transfer SHA must remain immutable: '+path);
+   assert.equal(hash(path),sliceCPostFreeze.replacementHashes[path],
+    'Exact Slice C hardened UI version must remain pinned: '+path);
    assert.notEqual(hash(path),expected,'Do not relabel the old reserve test as newly blind: '+path);
   }else if(parentageFeaturePaths.has(path)){
    assert.notEqual(hash(path),expected,'New parentage feature modifies this formerly frozen source path: '+path);

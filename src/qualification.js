@@ -71,6 +71,40 @@ function validateQualification(q){
         throw Error('Unsupported calculation method or status');
       if(!isRecord(c.query)||c.query.kind!==c.kind||!isRecord(c.sourceRequest))
         throw Error('Calculation must preserve the original physical request and typed query');
+      if(c.resultValue!==null){
+        if(!isRecord(c.resultValue))throw Error('Calculation resultValue must be an object or null');
+        if(c.kind==='branch-angles'){
+          if(!Array.isArray(c.resultValue.branches)||c.resultValue.branches.length>32)
+            throw Error('Calculated branch-angles resultValue.branches must be a bounded array');
+          for(const b of c.resultValue.branches){
+            if(!isRecord(b))throw Error('Calculated branch entry must be an object');
+            boundedText(b.id,'Calculated branch ID',64);
+            boundedText(b.status,'Calculated branch status',64);
+            if(b.value!==null&&b.value!==undefined&&!isRecord(b.value))
+              throw Error('Calculated branch value must be an object or null');
+            if(b.reasonCode!==null&&b.reasonCode!==undefined)
+              boundedText(b.reasonCode,'Calculated branch reasonCode',128);
+          }
+        }else if(c.kind==='critical-input-angle'){
+          for(const k of ['initialIncidenceAngleDeg','criticalIncidenceAngleDeg']){
+            if(c.resultValue[k]!==undefined&&c.resultValue[k]!==null&&
+               (typeof c.resultValue[k]!=='number'||!Number.isFinite(c.resultValue[k])))
+              throw Error('Calculated critical-input-angle field must be a finite number or null');
+          }
+        }else if(c.kind==='curved-mirror-image'||c.kind==='curved-mirror-image-velocity'){
+          boundedText(c.resultValue.imageKind,'Calculated imageKind',64);
+          if(c.resultValue.globalPositionMm!==undefined&&c.resultValue.globalPositionMm!==null&&
+             (!isRecord(c.resultValue.globalPositionMm)||
+              typeof c.resultValue.globalPositionMm.x!=='number'||!Number.isFinite(c.resultValue.globalPositionMm.x)||
+              typeof c.resultValue.globalPositionMm.y!=='number'||!Number.isFinite(c.resultValue.globalPositionMm.y)))
+            throw Error('Calculated curved-mirror globalPositionMm must have finite x and y');
+          if(c.resultValue.velocity!==undefined&&c.resultValue.velocity!==null&&
+             (!isRecord(c.resultValue.velocity)||
+              typeof c.resultValue.velocity.axial!=='number'||!Number.isFinite(c.resultValue.velocity.axial)||
+              typeof c.resultValue.velocity.transverse!=='number'||!Number.isFinite(c.resultValue.velocity.transverse)))
+            throw Error('Calculated curved-mirror velocity must have finite axial and transverse values');
+        }
+      }
       if(!Array.isArray(c.computedFields)||c.computedFields.length>8)
         throw Error('Calculated fields must be a bounded array');
       if(!Array.isArray(c.conditions)||c.conditions.length>16)

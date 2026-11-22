@@ -19,6 +19,17 @@ export function hasEndpointEvidence(doc,evidence) {
   if(doc?.schemaVersion===28)return evidence?.v28EndpointsVerified===true;
   return doc?.schemaVersion!==27 || evidence?.v27EndpointsVerified===true;
 }
+export function isAcceptedExecutionSummary(doc,expectedSceneSha256,summary){
+  return summary?.canonicalSha256===expectedSceneSha256&&
+    summary.executionPassed===true&&
+    hasEndpointEvidence(doc,summary.observations)&&
+    ['completed','completed-with-warnings'].includes(summary.native?.status)&&
+    summary.native.truncation===0&&
+    summary.native.undefinedBehavior===0&&
+    Array.isArray(summary.native.errors)&&!summary.native.errors.length&&
+    !summary.native.error&&
+    ['complete','qualified-with-warnings','not-requested'].includes(summary.measurementState);
+}
 // An injected runner can use an older core with the same upstream pin and
 // scene SHA. Do not pass its raw counters through an accepted summary.
 export function qualifyRunnerSummary(doc,summary) {

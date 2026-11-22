@@ -1,0 +1,16 @@
+{
+  "format": "opticsim-slice-c-hardening-postfreeze-v1",
+  "historicalFreezeFile": "test/fixtures/detector-hit-transfer-freeze.json",
+  "priorNotebookPostfreezeFile": "test/fixtures/portable-notebook-postfreeze-v1.json",
+  "issue": 255,
+  "priorHashes": {
+    "src/qualified-ui.js": "1855c2412adba45230458c84440e6d94bcaa85333d2208518382e39550bcf235",
+    "src/exploration-ui.js": "d6be4107b8432a8c737a4c93cfcb350345a386009c829f3e9a45a40de2ac6fb5"
+  },
+  "replacementHashes": {
+    "src/qualified-ui.js": "d8a8348adbbf73878746f158b028c59420c552fc67c221a3c23f0dd480565ce3",
+    "src/exploration-ui.js": "822042687c069caf00cd432f968433ac2bb30b1bc042b7ef7b72708c10339536"
+  },
+  "kind": "Post-exposure Slice C hardening (GitHub Issue #255 C1–C4): atomic QualifiedUI.commit rollback & defensive branch-angles rendering; explicit null-intent Baseline on ExplorationUI.start; variant metadata preservation on restore/loadNotebookScene; exact compact notebook serialization. Never reclassified as originally blind detector-transfer evidence.",
+  "boundary": "No native runtime, upstream PhyDemo core, or historical freeze record modified."
+}

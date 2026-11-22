@@ -27,7 +27,7 @@ async function main(){
   execFileSync(process.execPath,[resolve(root,'scripts/build.mjs'),'--test'],{cwd:root,stdio:['ignore','pipe','pipe']});
   const core=createRequire(import.meta.url)(resolve(root,'dist/test-core.cjs'));
   const report=await runParameterSweep(bundle,spec,{
-    execute:doc=>evaluateDocument(doc,core),
+    execute:(doc,requests)=>evaluateDocument(doc,core,requests),
     onSample:async(sample,{bundle:qualified,execution})=>{
       const name='sample-'+String(sample.index+1).padStart(3,'0'),dir=resolve(output.directory,name);
       mkdirSync(dir);
