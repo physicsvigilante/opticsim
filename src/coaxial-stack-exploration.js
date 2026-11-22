@@ -268,17 +268,12 @@ export async function verifyCoaxialStackPackage(pkg){
     fail('INVALID_PACKAGE','Package digests must be 64-character lowercase hex SHA-256 strings.');
 
   validateMetadata(pkg.metadata);
-  const baseMeta=validateCoaxialStackFacts(pkg.baselineFacts);
-  const currMeta=validateCoaxialStackFacts(pkg.currentFacts);
+  validateCoaxialStackFacts(pkg.baselineFacts);
+  validateCoaxialStackFacts(pkg.currentFacts);
   if(pkg.baselineFacts.model!==pkg.currentFacts.model||
      pkg.baselineFacts.signConvention!==pkg.currentFacts.signConvention||
      pkg.baselineFacts.lengthUnit!==pkg.currentFacts.lengthUnit)
     fail('CORRUPT_PACKAGE','Package baselineFacts and currentFacts must share model, signConvention, and lengthUnit.');
-  const baseTypesById=new Map(pkg.baselineFacts.elements.map(e=>[e.id,e.type]));
-  for(const el of pkg.currentFacts.elements){
-    if(baseTypesById.has(el.id)&&baseTypesById.get(el.id)!==el.type)
-      fail('CORRUPT_PACKAGE','Package element '+el.id+' changed type without retirement.');
-  }
 
   const expectedBaseSha=await sha256Text(canonicalJSON(pkg.baselineFacts));
   if(pkg.baselineSha256!==expectedBaseSha)
@@ -292,9 +287,9 @@ export async function verifyCoaxialStackPackage(pkg){
   if(!Array.isArray(pkg.edits)||pkg.edits.length>COAXIAL_STACK_EXPLORATION_LIMITS.maxEdits)
     fail('INVALID_PACKAGE','edits must be an array of at most '+COAXIAL_STACK_EXPLORATION_LIMITS.maxEdits+' entries.');
 
-  const activeIds=new Set(baseMeta.elementIds);
+  let replayedFacts=structuredClone(pkg.baselineFacts);
+  let replayedSha=pkg.baselineSha256;
   const retired=new Set();
-  let expectedParent=pkg.baselineSha256;
 
   if(pkg.edits.length===0){
     if(pkg.currentSha256!==pkg.baselineSha256||!sameJson(pkg.baselineFacts,pkg.currentFacts))
@@ -304,50 +299,62 @@ export async function verifyCoaxialStackPackage(pkg){
   }else{
     for(let i=0;i<pkg.edits.length;i++){
       const edit=pkg.edits[i];
-      checkFields(edit,['index','kind','parentSha256','resultSha256','intent','addedIds','removedIds','changes'],
-        [],'Package edit '+i,'INVALID_PACKAGE');
-      if(edit.index!==i+1)fail('CORRUPT_PACKAGE','Edit index sequence is invalid.');
+      if(!isPlainObject(edit))fail('INVALID_PACKAGE','Package edit '+i+' must be a plain object.');
       if(edit.kind!=='parameter-revision'&&edit.kind!=='structural-revision')
         fail('INVALID_PACKAGE','Unsupported edit kind: '+String(edit.kind));
-      if(edit.parentSha256!==expectedParent)
+      const requiredEditFields=edit.kind==='structural-revision'
+        ?['index','kind','parentSha256','resultSha256','intent','addedIds','removedIds','operations','changes']
+        :['index','kind','parentSha256','resultSha256','intent','addedIds','removedIds','changes'];
+      checkFields(edit,requiredEditFields,[],'Package edit '+i,'INVALID_PACKAGE');
+      if(edit.index!==i+1)fail('CORRUPT_PACKAGE','Edit index sequence is invalid.');
+      if(edit.parentSha256!==replayedSha)
         fail('CORRUPT_PACKAGE','Edit hash chain mismatch at edit '+edit.index+'.');
       if(!isSha256(edit.resultSha256)||edit.resultSha256===edit.parentSha256)
         fail('CORRUPT_PACKAGE','Edit resultSha256 is invalid or represents a no-op edit.');
       if(edit.intent!==null)validateOptionalText(edit.intent,'edit.intent','INVALID_PACKAGE');
       if(!Array.isArray(edit.addedIds)||!Array.isArray(edit.removedIds)||!Array.isArray(edit.changes))
         fail('INVALID_PACKAGE','Edit arrays are malformed.');
-      if(edit.changes.length<1||edit.changes.length>32)fail('INVALID_PACKAGE','Edit change summary must contain 1 to 32 entries.');
-      const addSet=new Set(),remSet=new Set();
-      for(const id of edit.removedIds){
-        if(!isStableId(id)||remSet.has(id))fail('INVALID_PACKAGE','Invalid or duplicate removedId in edit '+edit.index+'.');
-        remSet.add(id);
+      if(edit.changes.length<1||edit.changes.length>32)
+        fail('INVALID_PACKAGE','Edit change summary must contain 1 to 32 entries.');
+
+      if(edit.kind==='parameter-revision'){
+        if(edit.addedIds.length||edit.removedIds.length)
+          fail('CORRUPT_PACKAGE','Parameter revision edit cannot record added or removed element IDs.');
+        let step;
+        try{
+          step=applyParameterChangesBatch(replayedFacts,edit.changes,{requireExactBefore:true});
+        }catch(err){
+          fail('CORRUPT_PACKAGE','Edit '+edit.index+' failed parameter replay: '+err.message);
+        }
+        if(!sameJson(step.applied,edit.changes))
+          fail('CORRUPT_PACKAGE','Edit '+edit.index+' parameter change summary does not match replayed transition.');
+        const stepSha=await sha256Text(canonicalJSON(step.nextFacts));
+        if(stepSha!==edit.resultSha256)
+          fail('CORRUPT_PACKAGE','Edit '+edit.index+' replayed SHA does not match resultSha256.');
+        replayedFacts=step.nextFacts;
+        replayedSha=stepSha;
+      }else{
+        let step;
+        try{
+          step=applyStructureOperationsBatch(replayedFacts,edit.operations,retired);
+        }catch(err){
+          fail('CORRUPT_PACKAGE','Edit '+edit.index+' failed structural replay: '+err.message);
+        }
+        if(!sameJson(step.addedIds,edit.addedIds)||!sameJson(step.removedIds,edit.removedIds)||
+           !sameJson(step.changeSummaries,edit.changes)||!sameJson(step.canonicalOps,edit.operations))
+          fail('CORRUPT_PACKAGE','Edit '+edit.index+' structural metadata does not match replayed operations.');
+        const stepSha=await sha256Text(canonicalJSON(step.nextFacts));
+        if(stepSha!==edit.resultSha256)
+          fail('CORRUPT_PACKAGE','Edit '+edit.index+' replayed SHA does not match resultSha256.');
+        for(const id of step.removedIds)retired.add(id);
+        replayedFacts=step.nextFacts;
+        replayedSha=stepSha;
       }
-      for(const id of edit.addedIds){
-        if(!isStableId(id)||addSet.has(id)||remSet.has(id))
-          fail('CORRUPT_PACKAGE','Invalid, duplicate, or same-edit replaced ID in edit '+edit.index+'.');
-        addSet.add(id);
-      }
-      if(edit.kind==='parameter-revision'&&(addSet.size||remSet.size))
-        fail('CORRUPT_PACKAGE','Parameter revision edit cannot record added or removed element IDs.');
-      for(const id of remSet){
-        if(!activeIds.has(id))fail('CORRUPT_PACKAGE','Edit '+edit.index+' removes inactive element '+id+'.');
-        activeIds.delete(id);
-        retired.add(id);
-      }
-      for(const id of addSet){
-        if(activeIds.has(id)||retired.has(id))
-          fail('CORRUPT_PACKAGE','Edit '+edit.index+' reuses an active or retired element ID: '+id+'.');
-        activeIds.add(id);
-      }
-      expectedParent=edit.resultSha256;
     }
-    if(expectedParent!==pkg.currentSha256)
-      fail('CORRUPT_PACKAGE','Final edit resultSha256 does not match currentSha256.');
+    if(replayedSha!==pkg.currentSha256||!sameJson(replayedFacts,pkg.currentFacts))
+      fail('CORRUPT_PACKAGE','Replaying recorded edits from baselineFacts does not reproduce currentFacts.');
   }
 
-  const currentIdSet=new Set(currMeta.elementIds);
-  if(activeIds.size!==currentIdSet.size||[...currentIdSet].some(id=>!activeIds.has(id)))
-    fail('CORRUPT_PACKAGE','Recorded lineage active element IDs do not match currentFacts.');
   const expectedRetired=[...retired].sort();
   if(expectedRetired.length!==pkg.retiredIds.length||expectedRetired.some((id,i)=>pkg.retiredIds[i]!==id))
     fail('CORRUPT_PACKAGE','retiredIds does not match the recorded edit lineage.');
@@ -438,6 +445,49 @@ function applySingleParameterChange(facts,change,label){
   fail('UNSUPPORTED_REVISION_TARGET',label+' target must be stack, object, or element.');
 }
 
+function applyParameterChangesBatch(baseFacts,changes,{requireExactBefore=false}={}){
+  if(!Array.isArray(changes)||!changes.length)
+    fail('EMPTY_REVISION','Parameter revision requires at least one change.');
+  if(changes.length>COAXIAL_STACK_EXPLORATION_LIMITS.maxChangesPerRevision)
+    fail('REVISION_LIMIT','Parameter revision supports at most '+COAXIAL_STACK_EXPLORATION_LIMITS.maxChangesPerRevision+' changes.');
+
+  const nextFacts=structuredClone(baseFacts);
+  const seenTargets=new Set();
+  const applied=[];
+  for(let i=0;i<changes.length;i++){
+    const raw=changes[i];
+    const label='changes['+i+']';
+    let changeInput=raw;
+    if(requireExactBefore){
+      if(!isPlainObject(raw)||typeof raw.target!=='string')
+        fail('INVALID_REVISION',label+' must be a recorded parameter change.');
+      const reqFields=raw.target==='element'
+        ?['target','id','field','before','after']
+        :['target','field','before','after'];
+      checkFields(raw,reqFields,[],label,'INVALID_REVISION');
+      changeInput=raw.target==='element'
+        ?{target:raw.target,id:raw.id,field:raw.field,value:raw.after}
+        :{target:raw.target,field:raw.field,value:raw.after};
+    }
+    const {targetKey,delta}=applySingleParameterChange(nextFacts,changeInput,label);
+    if(seenTargets.has(targetKey))
+      fail('DUPLICATE_REVISION_TARGET','Duplicate parameter revision target: '+targetKey+'.');
+    seenTargets.add(targetKey);
+    if(requireExactBefore){
+      const recordedBefore=raw.before===null?null:normalizeZero(raw.before);
+      const recordedAfter=normalizeZero(raw.after);
+      if(delta.before!==recordedBefore||delta.after!==recordedAfter)
+        fail('INVALID_REVISION',label+' recorded before/after does not match actual state transition.');
+      if(delta.before===delta.after)
+        fail('NO_EFFECTIVE_CHANGE',label+' recorded a no-op parameter transition.');
+    }
+    if(delta.before!==delta.after)applied.push(delta);
+  }
+
+  const afterMeta=validateCoaxialStackFacts(nextFacts);
+  return {nextFacts,afterMeta,applied};
+}
+
 async function appendPackageEdit(resolved,nextFacts,nextSha256,editRecord){
   const pkg=structuredClone(resolved.pkg);
   if(pkg.edits.length>=COAXIAL_STACK_EXPLORATION_LIMITS.maxEdits)
@@ -463,24 +513,8 @@ export async function reviseCoaxialStack(input,patch){
   const intent=own(patch,'intent')?validateOptionalText(patch.intent,'intent','INVALID_REVISION'):null;
   if(own(patch,'intent')&&intent===null)fail('INVALID_REVISION','intent must be nonempty bounded text when present.');
 
-  if(!Array.isArray(patch.changes)||!patch.changes.length)
-    fail('EMPTY_REVISION','Parameter revision requires at least one change.');
-  if(patch.changes.length>COAXIAL_STACK_EXPLORATION_LIMITS.maxChangesPerRevision)
-    fail('REVISION_LIMIT','Parameter revision supports at most '+COAXIAL_STACK_EXPLORATION_LIMITS.maxChangesPerRevision+' changes.');
-
   const beforeMeta=validateCoaxialStackFacts(resolved.facts);
-  const nextFacts=structuredClone(resolved.facts);
-  const seenTargets=new Set();
-  const applied=[];
-  for(let i=0;i<patch.changes.length;i++){
-    const {targetKey,delta}=applySingleParameterChange(nextFacts,patch.changes[i],'changes['+i+']');
-    if(seenTargets.has(targetKey))
-      fail('DUPLICATE_REVISION_TARGET','Duplicate parameter revision target: '+targetKey+'.');
-    seenTargets.add(targetKey);
-    if(delta.before!==delta.after)applied.push(delta);
-  }
-
-  const afterMeta=validateCoaxialStackFacts(nextFacts);
+  const {nextFacts,afterMeta,applied}=applyParameterChangesBatch(resolved.facts,patch.changes);
   const nextSha256=await sha256Text(canonicalJSON(nextFacts));
   if(applied.length===0||nextSha256===resolved.sha256)
     fail('NO_EFFECTIVE_CHANGE','Parameter revision produced no effective change from the current stack.');
@@ -533,33 +567,23 @@ function resolveInsertionIndex(elements,position,label){
   fail('INVALID_STRUCTURE_REVISION',label+' position must be "start", "end", {beforeId}, or {afterId}.');
 }
 
-export async function reviseCoaxialStackStructure(input,patch){
-  [input,patch]=structuredClone([input,patch]);
-  const resolved=await resolveInput(input);
-  checkFields(patch,['format','expectedSha256','operations'],['expectedIntegritySha256','intent'],
-    'Coaxial stack structural revision','INVALID_STRUCTURE_REVISION');
-  if(patch.format!==COAXIAL_STACK_STRUCTURE_REVISION)
-    fail('UNSUPPORTED_REVISION','Expected '+COAXIAL_STACK_STRUCTURE_REVISION+'.');
-  assertShaGuards(resolved,patch);
-  const intent=own(patch,'intent')?validateOptionalText(patch.intent,'intent','INVALID_STRUCTURE_REVISION'):null;
-  if(own(patch,'intent')&&intent===null)fail('INVALID_STRUCTURE_REVISION','intent must be nonempty bounded text when present.');
-
-  if(!Array.isArray(patch.operations)||!patch.operations.length)
+function applyStructureOperationsBatch(baseFacts,operations,retiredIds){
+  if(!Array.isArray(operations)||!operations.length)
     fail('EMPTY_REVISION','Structural revision requires at least one operation.');
-  if(patch.operations.length>COAXIAL_STACK_EXPLORATION_LIMITS.maxOperationsPerStructure)
+  if(operations.length>COAXIAL_STACK_EXPLORATION_LIMITS.maxOperationsPerStructure)
     fail('REVISION_LIMIT','Structural revision supports at most '+COAXIAL_STACK_EXPLORATION_LIMITS.maxOperationsPerStructure+' operations.');
 
-  const beforeMeta=validateCoaxialStackFacts(resolved.facts);
-  const nextFacts=structuredClone(resolved.facts);
+  const nextFacts=structuredClone(baseFacts);
   const addedIds=[];
   const removedIds=[];
   const addedSet=new Set();
   const removedSet=new Set();
   let objectOp=null;
   const changeSummaries=[];
+  const canonicalOps=[];
 
-  for(let i=0;i<patch.operations.length;i++){
-    const op=patch.operations[i];
+  for(let i=0;i<operations.length;i++){
+    const op=operations[i];
     const label='operations['+i+']';
     if(!isPlainObject(op)||typeof op.op!=='string')
       fail('INVALID_STRUCTURE_REVISION',label+' must be an object with an op field.');
@@ -569,7 +593,7 @@ export async function reviseCoaxialStackStructure(input,patch){
       if(!isPlainObject(op.element)||!isStableId(op.element.id))
         fail('INVALID_STRUCTURE_REVISION',label+'.element must be a plain object with a valid stable id.');
       const id=op.element.id;
-      if(resolved.retiredIds.has(id)||removedSet.has(id))
+      if(retiredIds.has(id)||removedSet.has(id))
         fail('RETIRED_ELEMENT_ID','Element ID '+id+' was previously removed and cannot be reused; use a new stable ID.');
       if(addedSet.has(id)||nextFacts.elements.some(e=>e.id===id))
         fail('DUPLICATE_ELEMENT_ID','Element ID '+id+' already exists in the stack.');
@@ -580,6 +604,7 @@ export async function reviseCoaxialStackStructure(input,patch){
       addedSet.add(id);
       addedIds.push(id);
       changeSummaries.push({op:'add-element',id,type:typeof cleanEl.type==='string'?cleanEl.type:null,insertIndex:idx});
+      canonicalOps.push({op:'add-element',element:structuredClone(cleanEl),...(own(op,'position')?{position:structuredClone(op.position)}:{})});
     }else if(op.op==='remove-element'){
       checkFields(op,['op','id'],[],label,'INVALID_STRUCTURE_REVISION');
       if(!isStableId(op.id))fail('INVALID_STRUCTURE_REVISION',label+'.id must be a valid stable id.');
@@ -593,6 +618,7 @@ export async function reviseCoaxialStackStructure(input,patch){
       removedSet.add(op.id);
       removedIds.push(op.id);
       changeSummaries.push({op:'remove-element',id:op.id,type:removed.type});
+      canonicalOps.push({op:'remove-element',id:op.id});
     }else if(op.op==='add-object'){
       checkFields(op,['op','object'],[],label,'INVALID_STRUCTURE_REVISION');
       if(objectOp!==null)
@@ -604,7 +630,8 @@ export async function reviseCoaxialStackStructure(input,patch){
       for(const k of Object.keys(cleanObj))if(typeof cleanObj[k]==='number')cleanObj[k]=normalizeZero(cleanObj[k]);
       nextFacts.object=cleanObj;
       objectOp='added';
-      changeSummaries.push({op:'add-object',after:cleanObj});
+      changeSummaries.push({op:'add-object',after:structuredClone(cleanObj)});
+      canonicalOps.push({op:'add-object',object:structuredClone(cleanObj)});
     }else if(op.op==='remove-object'){
       checkFields(op,['op'],[],label,'INVALID_STRUCTURE_REVISION');
       if(objectOp!==null)
@@ -615,12 +642,30 @@ export async function reviseCoaxialStackStructure(input,patch){
       delete nextFacts.object;
       objectOp='removed';
       changeSummaries.push({op:'remove-object',before:prev});
+      canonicalOps.push({op:'remove-object'});
     }else{
       fail('UNSUPPORTED_STRUCTURE_OPERATION','Unsupported structural operation: '+op.op);
     }
   }
 
   const afterMeta=validateCoaxialStackFacts(nextFacts);
+  return {nextFacts,afterMeta,addedIds,removedIds,objectChange:objectOp,changeSummaries,canonicalOps};
+}
+
+export async function reviseCoaxialStackStructure(input,patch){
+  [input,patch]=structuredClone([input,patch]);
+  const resolved=await resolveInput(input);
+  checkFields(patch,['format','expectedSha256','operations'],['expectedIntegritySha256','intent'],
+    'Coaxial stack structural revision','INVALID_STRUCTURE_REVISION');
+  if(patch.format!==COAXIAL_STACK_STRUCTURE_REVISION)
+    fail('UNSUPPORTED_REVISION','Expected '+COAXIAL_STACK_STRUCTURE_REVISION+'.');
+  assertShaGuards(resolved,patch);
+  const intent=own(patch,'intent')?validateOptionalText(patch.intent,'intent','INVALID_STRUCTURE_REVISION'):null;
+  if(own(patch,'intent')&&intent===null)fail('INVALID_STRUCTURE_REVISION','intent must be nonempty bounded text when present.');
+
+  const beforeMeta=validateCoaxialStackFacts(resolved.facts);
+  const {nextFacts,afterMeta,addedIds,removedIds,objectChange,changeSummaries,canonicalOps}=
+    applyStructureOperationsBatch(resolved.facts,patch.operations,resolved.retiredIds);
   const nextSha256=await sha256Text(canonicalJSON(nextFacts));
   const ambientIndexShifts=computeAmbientIndexShifts(beforeMeta,afterMeta,nextFacts);
   const nextPkg=resolved.isPackage
@@ -631,6 +676,7 @@ export async function reviseCoaxialStackStructure(input,patch){
       intent,
       addedIds,
       removedIds,
+      operations:canonicalOps,
       changes:changeSummaries
     })
     :null;
@@ -641,7 +687,7 @@ export async function reviseCoaxialStackStructure(input,patch){
     sha256:nextSha256,
     addedIds,
     removedIds,
-    objectChange:objectOp,
+    objectChange,
     changes:changeSummaries,
     ambientIndexShifts,
     facts:nextFacts,

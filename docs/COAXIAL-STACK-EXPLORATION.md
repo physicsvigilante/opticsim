@@ -6,8 +6,8 @@
 
 1. **Canonical hashing & lineage packages (`opticsim-coaxial-stack-package-v1`)**
    - `coaxialStackHash(facts)` validates `facts` through the canonical `coaxial-paraxial-stack` parser before computing its SHA-256 digest.
-   - `createCoaxialStackPackage(facts, metadata?)` seals `baselineFacts` + `baselineSha256` separately from mutable hypothetical states (`currentFacts` + `currentSha256`), tracks `retiredIds` and bounded `edits` (at most 64), and seals the full record with `integritySha256`.
-   - `verifyCoaxialStackPackage(pkg)` revalidates both baseline and current stacks, replays the entire edit chain (`parentSha256` → `resultSha256`), confirms `lengthUnit`/`model`/`signConvention` and surviving element types were never mutated in place, verifies exact `retiredIds`, and checks `integritySha256`. Package hashes detect drift or tampering, not source truth (`provenanceStatus: "author-declared-not-verified"`).
+   - `createCoaxialStackPackage(facts, metadata?)` seals `baselineFacts` + `baselineSha256` separately from mutable hypothetical states (`currentFacts` + `currentSha256`), tracks `retiredIds` and bounded replayable `edits` (at most 64, including canonical `operations` on structural edits), and seals the full record with `integritySha256`.
+   - `verifyCoaxialStackPackage(pkg)` revalidates both baseline and current stacks, deterministically replays every recorded parameter and structural edit from `baselineFacts` through the canonical validator, recomputes and verifies every intermediate SHA-256 and transition summary, verifies that replay reproduces `currentFacts` and `retiredIds` identically, and checks `integritySha256`. Package hashes detect drift or tampering, not source truth (`provenanceStatus: "author-declared-not-verified"`).
 
 2. **SHA-guarded parameter revisions (`opticsim-coaxial-stack-revision-v1`)**
    - `reviseCoaxialStack(input, patch)` updates 1–16 explicit targets (`stack.incidentIndex`, existing `object.x`/`y`, or element-type-valid fields `x`, `focalLength`, `signedRadius`, `downstreamIndex`) on either raw facts or a verified package.

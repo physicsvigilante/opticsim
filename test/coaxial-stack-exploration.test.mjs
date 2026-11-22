@@ -155,6 +155,67 @@ test('package creation, verification, and tamper-detection invariants',async()=>
   forgedType.integritySha256=await sha256Text(canonicalJSON(coreType));
   await assert.rejects(()=>verifyCoaxialStackPackage(forgedType),{code:'CORRUPT_PACKAGE'});
 
+  // Astra P2 regression #1: forged ordinary parameter edit with recomputed hashes
+  // (focalLength actually changed 100->150, while edits[0].changes falsely claims x: 0->20).
+  const forgedParam=await createCoaxialStackPackage(baseSingleLens());
+  forgedParam.currentFacts.elements[0].focalLength=150;
+  forgedParam.currentSha256=await coaxialStackHash(forgedParam.currentFacts);
+  forgedParam.edits=[{
+    index:1,kind:'parameter-revision',
+    parentSha256:forgedParam.baselineSha256,
+    resultSha256:forgedParam.currentSha256,
+    intent:null,addedIds:[],removedIds:[],
+    changes:[{target:'element',id:'L1',field:'x',before:0,after:20}]
+  }];
+  const {integritySha256:_ignored3,...coreParam}=forgedParam;
+  forgedParam.integritySha256=await sha256Text(canonicalJSON(coreParam));
+  await assert.rejects(()=>verifyCoaxialStackPackage(forgedParam),{code:'CORRUPT_PACKAGE'});
+
+  // Forged parameter edit with false `before` value (even with matching `after` and final SHA).
+  const forgedBefore=await createCoaxialStackPackage(baseSingleLens());
+  forgedBefore.currentFacts.elements[0].focalLength=150;
+  forgedBefore.currentSha256=await coaxialStackHash(forgedBefore.currentFacts);
+  forgedBefore.edits=[{
+    index:1,kind:'parameter-revision',
+    parentSha256:forgedBefore.baselineSha256,
+    resultSha256:forgedBefore.currentSha256,
+    intent:null,addedIds:[],removedIds:[],
+    changes:[{target:'element',id:'L1',field:'focalLength',before:99,after:150}]
+  }];
+  const {integritySha256:_ignored4,...coreBefore}=forgedBefore;
+  forgedBefore.integritySha256=await sha256Text(canonicalJSON(coreBefore));
+  await assert.rejects(()=>verifyCoaxialStackPackage(forgedBefore),{code:'CORRUPT_PACKAGE'});
+
+  // Astra P2 regression #2: element added in structural edit 1 (S1: refracting-surface),
+  // then fabricated edit 2 mutates S1's type to terminal-mirror with recomputed hashes.
+  const sPkg0=await createCoaxialStackPackage(baseSingleLens());
+  const sPkg1=(await reviseCoaxialStackStructure(sPkg0,{
+    format:COAXIAL_STACK_STRUCTURE_REVISION,
+    expectedSha256:sPkg0.currentSha256,
+    expectedIntegritySha256:sPkg0.integritySha256,
+    operations:[{op:'add-element',position:'end',element:{id:'S1',type:'refracting-surface',x:50,signedRadius:'infinity',downstreamIndex:1.5}}]
+  })).package;
+  const forgedAddedType=structuredClone(sPkg1);
+  forgedAddedType.currentFacts.elements[1]={id:'S1',type:'terminal-mirror',x:50,signedRadius:-200};
+  forgedAddedType.currentSha256=await coaxialStackHash(forgedAddedType.currentFacts);
+  forgedAddedType.edits.push({
+    index:2,kind:'parameter-revision',
+    parentSha256:sPkg1.currentSha256,
+    resultSha256:forgedAddedType.currentSha256,
+    intent:'forged type mutation on newly added element',addedIds:[],removedIds:[],
+    changes:[{target:'element',id:'L1',field:'focalLength',before:100,after:120}]
+  });
+  const {integritySha256:_ignored5,...coreAddedType}=forgedAddedType;
+  forgedAddedType.integritySha256=await sha256Text(canonicalJSON(coreAddedType));
+  await assert.rejects(()=>verifyCoaxialStackPackage(forgedAddedType),{code:'CORRUPT_PACKAGE'});
+
+  // Forged structural summary mismatching recorded operations (with recomputed integritySha256).
+  const forgedStructSummary=structuredClone(sPkg1);
+  forgedStructSummary.edits[0].changes=[{op:'add-element',id:'S1',type:'thin-lens',insertIndex:1}];
+  const {integritySha256:_ignored6,...coreStruct}=forgedStructSummary;
+  forgedStructSummary.integritySha256=await sha256Text(canonicalJSON(coreStruct));
+  await assert.rejects(()=>verifyCoaxialStackPackage(forgedStructSummary),{code:'CORRUPT_PACKAGE'});
+
   // Metadata validation bounds.
   await assert.rejects(()=>createCoaxialStackPackage(base,{sourceNote:'   '}),{code:'INVALID_PACKAGE'});
   await assert.rejects(()=>createCoaxialStackPackage(base,{assumptions:Array(17).fill('ok')}),{code:'INVALID_PACKAGE'});
