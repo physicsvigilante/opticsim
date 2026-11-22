@@ -13,6 +13,7 @@ import {analyzeLayerLens,layerLensCapabilities,LAYER_LENS_FACTS,LAYER_LENS_QUERY
 import {analyzeParallelReturn,parallelReturnCapabilities,PARALLEL_RETURN_FACTS,PARALLEL_RETURN_QUERY} from './lens-mirror-parallel-return.js';
 import {analyzeAxialPreservation,axialPreservationCapabilities,AXIAL_PRESERVATION_FACTS,AXIAL_PRESERVATION_QUERY} from './lens-train-axial-preservation.js';
 import {analyzeCollimatedFocus,collimatedFocusCapabilities,COLLIMATED_FOCUS_FACTS,COLLIMATED_FOCUS_QUERY} from './lens-train-collimated-focus.js';
+import {analyzeConjugateReconstruction,conjugateReconstructionCapabilities,CONJUGATE_RECONSTRUCTION_FACTS,CONJUGATE_RECONSTRUCTION_QUERY} from './thin-lens-conjugate-reconstruction.js';
 import {analyzeFourWall,fourWallCapabilities,FOUR_WALL_FACTS,FOUR_WALL_QUERY} from './four-wall-mirror-directions.js';
 import {analyzeFiniteViewing,finiteViewingCapabilities,FINITE_VIEW_FACTS,FINITE_VIEW_QUERY} from './two-lens-finite-viewing.js';
 import {analyzeMirrorOscillation,mirrorOscillationCapabilities,OSCILLATION_FACTS,OSCILLATION_QUERY} from './axial-mirror-oscillation.js';
@@ -43,6 +44,7 @@ const prismKinds=new Set(prismAngleCapabilities().kinds);
 const twoFaceKinds=new Set(twoFaceCapabilities().kinds);
 const reducedAngularAndPowerRoutes=new Map();
 for(const [kinds,format,analyze,missing] of [
+  [conjugateReconstructionCapabilities().kinds,CONJUGATE_RECONSTRUCTION_QUERY,analyzeConjugateReconstruction,'Specify off-axis real object and conjugate image coordinates, unit and x-increasing convention.'],
   [collimatedFocusCapabilities().kinds,COLLIMATED_FOCUS_QUERY,analyzeCollimatedFocus,'Specify one to four separated coaxial thin lenses, unit, x-increasing convention and collimated-along-axis incidence.'],
   [axialPreservationCapabilities().kinds,AXIAL_PRESERVATION_QUERY,analyzeAxialPreservation,'Specify one to four separated coaxial thin lenses, unit and x-increasing convention.'],
   [parallelReturnCapabilities().kinds,PARALLEL_RETURN_QUERY,analyzeParallelReturn,'Specify the positive lens, facing concave mirror, and collimated input.'],
@@ -78,6 +80,7 @@ const mirrorKinds=new Set(mirrorAngularCapabilities().kinds);
 const observableKinds=observableCapabilities().kinds;
 // References the live fact/query formats, not a second physics validator.
 const factContracts=Object.freeze({
+ [CONJUGATE_RECONSTRUCTION_QUERY]:[CONJUGATE_RECONSTRUCTION_FACTS],
  [COLLIMATED_FOCUS_QUERY]:[COLLIMATED_FOCUS_FACTS],
  [AXIAL_PRESERVATION_QUERY]:[AXIAL_PRESERVATION_FACTS],
  [PARALLEL_RETURN_QUERY]:[PARALLEL_RETURN_FACTS],
@@ -111,6 +114,7 @@ const factContracts=Object.freeze({
  [MIRROR_QUERY_FORMAT]:[MIRROR_FACTS_FORMAT]
 });
 const requestKindRegistry=()=>({
+ ...Object.fromEntries(conjugateReconstructionCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:CONJUGATE_RECONSTRUCTION_QUERY}])),
  ...Object.fromEntries(collimatedFocusCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:COLLIMATED_FOCUS_QUERY}])),
  ...Object.fromEntries(axialPreservationCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:AXIAL_PRESERVATION_QUERY}])),
  ...Object.fromEntries(parallelReturnCapabilities().kinds.map(k=>[k,{route:'conditional-analytical',contract:PARALLEL_RETURN_QUERY}])),
@@ -161,6 +165,7 @@ export function problemWorkflowCapabilities(){
     refractingMirrorReturn:returnCapabilities(),
     calibratedLensImmersion:immersionCapabilities(),
     planarInterfaceLens:layerLensCapabilities(),
+    thinLensConjugateReconstruction:conjugateReconstructionCapabilities(),
     lensTrainCollimatedFocus:collimatedFocusCapabilities(),
     lensTrainAxialPreservation:axialPreservationCapabilities(),
     lensMirrorParallelReturn:parallelReturnCapabilities(),
