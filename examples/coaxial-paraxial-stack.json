@@ -1,0 +1,21 @@
+{
+  "format": "opticsim-problem-v1",
+  "physical": {
+    "format": "opticsim-coaxial-paraxial-stack-facts-v1",
+    "model": "coaxial-paraxial-optical-stack",
+    "signConvention": "x-increasing",
+    "lengthUnit": "mm",
+    "incidentIndex": 1,
+    "elements": [
+      {"id": "slab-front", "type": "refracting-surface", "x": 0, "signedRadius": "infinity", "downstreamIndex": 1.5},
+      {"id": "slab-back", "type": "refracting-surface", "x": 30, "signedRadius": "infinity", "downstreamIndex": 1},
+      {"id": "L1", "type": "thin-lens", "x": 80, "focalLength": 50}
+    ],
+    "object": {"x": -70, "y": 2}
+  },
+  "requests": [
+    {"id": "conjugate", "kind": "coaxial-stack-conjugate"},
+    {"id": "focus", "kind": "coaxial-stack-collimated-focus"},
+    {"id": "transfer", "kind": "coaxial-stack-transfer"}
+  ]
+}
