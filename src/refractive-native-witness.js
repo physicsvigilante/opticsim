@@ -436,6 +436,9 @@ function summarizeRefractiveEncounters(elements,propagationMode,emitted,outgoing
     }else{
       const iface=interfacesById&&own(interfacesById,el.id)?interfacesById[el.id]:null;
       const observedCount=iface&&Number.isSafeInteger(iface.interactions)?iface.interactions:0;
+      const transmitted=iface&&Number.isSafeInteger(iface.transmitted)?iface.transmitted:0;
+      const reflected=iface&&Number.isSafeInteger(iface.reflected)?iface.reflected:0;
+      const totalInternalReflections=iface&&Number.isSafeInteger(iface.totalInternalReflections)?iface.totalInternalReflections:0;
       if(observedCount===0)zeroEncounterElementIds.push(el.id);
       const [frontFaceId,backFaceId,rimFaceA,rimFaceB]=el.nativeType==='spherical-lens'
         ?['front-arc','back-arc','top-rim','bottom-rim']
@@ -447,6 +450,9 @@ function summarizeRefractiveEncounters(elements,propagationMode,emitted,outgoing
       const expectedPerOpticalFace=Number.isSafeInteger(emitted)?emitted*(propagationMode==='return'?2:1):null;
       const matchesAllEmittedRays=expectedForAllEmittedRays!==null&&
         observedCount===expectedForAllEmittedRays&&
+        transmitted===expectedForAllEmittedRays&&
+        reflected===0&&
+        totalInternalReflections===0&&
         frontInteractions===expectedPerOpticalFace&&
         backInteractions===expectedPerOpticalFace&&
         rimInteractions===0;
@@ -454,6 +460,9 @@ function summarizeRefractiveEncounters(elements,propagationMode,emitted,outgoing
       byElementId[el.id]={
         nativeType:el.nativeType,
         observedCount,
+        transmitted,
+        reflected,
+        totalInternalReflections,
         expectedPerFullStackRay,
         expectedForAllEmittedRays,
         frontFaceId,frontInteractions,

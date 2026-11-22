@@ -219,7 +219,44 @@ test('encounter gating withholds corroboration on bypassed rays, partial bypass,
   assert.equal(rimReport.comparison.stackEncounters.byElementId.SL1.rimInteractions,1);
   assert.equal(rimReport.comparison.stackEncounters.byElementId.SL1.backInteractions,0);
 
-  // 5. Forged/unverified v38EndpointsVerified === false -> native-run-not-qualified.
+  // 5. TIR + bypassed-ray counterexample: ray at y = 4.3 undergoes 2 internal TIR bounces inside
+  //    n = 3 biconvex lens (front=2, back=2, rim=0, interactions=4, totalInternalReflections=2)
+  //    while ray at y = 15 bypasses L1 completely and hits the detector -> must fail closed!
+  const tirBypassStack={
+    format:COAXIAL_STACK_FACTS,
+    model:'coaxial-paraxial-optical-stack',
+    signConvention:'x-increasing',
+    lengthUnit:'mm',
+    incidentIndex:1,
+    elements:[
+      {id:'F1',type:'refracting-surface',x:-4,signedRadius:17,downstreamIndex:3},
+      {id:'B1',type:'refracting-surface',x:4,signedRadius:-17,downstreamIndex:1}
+    ]
+  };
+  const tirBypassSpec={
+    format:REFRACTIVE_WITNESS_SPEC,
+    query:{format:COAXIAL_STACK_QUERY,kind:'coaxial-stack-collimated-focus'},
+    bodies:[{id:'L1',frontSurfaceId:'F1',backSurfaceId:'B1',apertureHeight:10}],
+    partialReflection:false,
+    emitter:{
+      mode:'single-ray',
+      rays:[
+        {id:'S_tir',x:-80,y:4.3,brightness:0.5},
+        {id:'S_bypass',x:-80,y:15,brightness:0.5}
+      ]
+    },
+    detector:{id:'D1',x:30,y:0,orientationDeg:90,length:100}
+  };
+  const tirBypassReport=await runRefractiveStackNativeWitness(tirBypassStack,tirBypassSpec,{execute});
+  assert.equal(tirBypassReport.native.executionPassed,true);
+  assert.equal(tirBypassReport.comparison.status,'partial-stack-encounters-route-unverified');
+  assert.equal(tirBypassReport.comparison.stackEncounters.byElementId.L1.observedCount,4);
+  assert.equal(tirBypassReport.comparison.stackEncounters.byElementId.L1.frontInteractions,2);
+  assert.equal(tirBypassReport.comparison.stackEncounters.byElementId.L1.backInteractions,2);
+  assert.equal(tirBypassReport.comparison.stackEncounters.byElementId.L1.rimInteractions,0);
+  assert.equal(tirBypassReport.comparison.stackEncounters.byElementId.L1.totalInternalReflections,2);
+
+  // 6. Forged/unverified v38EndpointsVerified === false -> native-run-not-qualified.
   const tamperedReport=await runRefractiveStackNativeWitness(example.stack,example.spec,{
     execute:async(doc,reqs)=>{
       const res=await execute(doc,reqs);
