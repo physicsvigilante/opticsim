@@ -3,6 +3,7 @@ import {ExplorationUI} from './exploration-ui.js';
 import {MIRROR_BOX_VERSION} from './native-mirror-box.js';
 import {GUIDE_FAN_VERSION} from './finite-guide-fan.js';
 import {GENERAL_BENCH_VERSION} from './native-general-optical-bench.js';
+import {HYBRID_BENCH_VERSION} from './native-general-hybrid-bench.js';
 import {REFRACTIVE_BENCH_VERSION} from './native-general-refractive-bench.js';
 import {installGrinV25DisplayScale} from './grin-v25-display.js';
 import {isCurved} from './curved-mirrors.js';
@@ -407,7 +408,7 @@ function controls() {
   syncSampling();
 }
 function sourcePicker(component) {
-  const choices = [5,7,8,9,10,11,12,13,14,15,16,17,18,24,25,33,MIRROR_BOX_VERSION,REFRACTIVE_BENCH_VERSION].includes(session.document.schemaVersion)?[{mode:'single-ray',title:'Single ray (native)',description:'One exact direction; sampling density does not create a cone',icon:angleSourceIcon}]:[
+  const choices = [5,7,8,9,10,11,12,13,14,15,16,17,18,24,25,33,MIRROR_BOX_VERSION,REFRACTIVE_BENCH_VERSION,HYBRID_BENCH_VERSION].includes(session.document.schemaVersion)?[{mode:'single-ray',title:'Single ray (native)',description:'One exact direction; sampling density does not create a cone',icon:angleSourceIcon}]:[
     { mode: 'full-circle', title: 'Point source (360°)', description: 'Light in every direction', icon: pointSourceIcon },
     { mode: 'directional', title: 'Point source (directional)', description: 'Symmetric cone · 1–180°', icon: angleSourceIcon }
   ];

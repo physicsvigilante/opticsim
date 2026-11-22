@@ -1,0 +1,41 @@
+{
+  "title": "Hybrid slab + ideal thin lens + circular-arc mirror return bench (v39)",
+  "model": "native-general-hybrid-bench",
+  "lengthUnit": "mm",
+  "runPolicy": "preview-v1",
+  "components": [
+    {
+      "id": "B1",
+      "type": "parallel-beam",
+      "parameters": { "x": -180, "y": 0, "width": 20, "directionDeg": 0, "brightness": 0.2 }
+    },
+    {
+      "id": "L1",
+      "type": "ideal-lens",
+      "parameters": { "x": -90, "focalLength": 180, "apertureHeight": 80 }
+    },
+    {
+      "id": "SL1",
+      "type": "polygon-dielectric",
+      "parameters": {
+        "x1": -20, "y1": -50,
+        "x2": 30, "y2": -50,
+        "x3": 30, "y3": 50,
+        "x4": -20, "y4": 50,
+        "insideIndex": 1.5,
+        "outsideIndex": 1,
+        "partialReflection": false
+      }
+    },
+    {
+      "id": "CM1",
+      "type": "circular-arc-mirror",
+      "parameters": { "x": 110, "y": 0, "normalDeg": 180, "radius": 200, "apertureHeight": 80 }
+    },
+    {
+      "id": "D1",
+      "type": "ray-detector",
+      "parameters": { "x": -210, "y": 0, "orientationDeg": 90, "length": 140 }
+    }
+  ]
+}

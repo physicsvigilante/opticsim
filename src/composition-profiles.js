@@ -167,6 +167,17 @@ define(38,'native-general-refractive-bench',{
   ...Object.fromEntries(stops.map(t=>[t,range(0,2)])),
   [detector]:range(0,2)
 },[group([prism,polygon,circle,thick],1,2),group(stops,0,2)],[rule('native-general-refractive')],single);
+// v39 unifies v37 (ideal lenses, plane & curved mirrors, opaque stops, detectors)
+// and v38 (1-2 disjoint finite dielectric bodies sharing one explicit outsideIndex)
+// under one strict >= 0.01 mm clearance and emitted/incoming/outgoing audit contract.
+define(39,'native-general-hybrid-bench',{
+  [source]:range(0,4),[beam]:range(0,1),
+  [prism]:range(0,2),[polygon]:range(0,2),[circle]:range(0,2),[thick]:range(0,2),
+  [lens]:range(0,2),[mirror]:range(0,2),
+  ...Object.fromEntries(curves.map(t=>[t,range(0,2)])),
+  ...Object.fromEntries(stops.map(t=>[t,range(0,2)])),
+  [detector]:range(0,2)
+},[group([prism,polygon,circle,thick],1,2),group(curves,0,2),group(stops,0,2)],[rule('native-general-hybrid')],single);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 
@@ -288,6 +299,11 @@ const guidanceByProfile=freeze({
   label:'Composable native refractive bench · v38',
   geometry:'Combine either 1–4 exact single-ray sources or 1 finite parallel Beam with 1–2 disjoint finite dielectrics (prism, convex quadrilateral, circle, or spherical thick lens sharing one explicit outsideIndex), 0–2 plane mirrors, 0–2 opaque stops and 0–2 passive detectors (max 12 components). Keep at least 0.01 mm clearance everywhere.',
   scope:'Pinned PhyDemo traces all finite refractions, Fresnel branches (when enabled), total internal reflection, reflections, absorptions and detector crossings. Incomplete, truncated, corner-ambiguous or endpoint-grazing runs withhold accepted measurements.'
+ },
+ 'native-general-hybrid-bench@39':{
+  label:'Composable hybrid optical & refractive bench · v39',
+  geometry:'Combine either 1–4 exact single-ray sources or 1 finite parallel Beam with 1–2 disjoint finite dielectrics (sharing one explicit outsideIndex), 0–2 coaxial ideal lenses (focalLength in exterior medium outsideIndex), 0–2 curved mirrors, 0–2 plane mirrors, 0–2 opaque stops and 0–2 passive detectors (max 14 components). Keep at least 0.01 mm clearance everywhere.',
+  scope:'Pinned PhyDemo traces all finite refractions, TIR, Fresnel branches (when enabled), ideal-lens deflections, curved/plane reflections, absorptions and detector crossings. Emitted, incoming and outgoing near-misses or tangencies (< 0.01 mm) fail closed and withhold accepted measurements.'
  }
 });
 export function compositionGuidance(model,version){

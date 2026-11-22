@@ -38,6 +38,7 @@ For cross-checking supported coaxial paraxial stacks side-by-side against pinned
 For a finite parallel Beam passing through an ideal lens and then a finite aperture, see the [schema-v28 authoring contract and worked example](docs/POST-LENS-APERTURE.md).
 For composing either 1–4 point sources or 1 finite parallel Beam with coaxial ideal lenses, plane mirrors, curved mirrors, opaque stops, and passive detectors under one native PhyDemo schema, see the [schema-v37 composable native optical bench](docs/NATIVE-GENERAL-OPTICAL-BENCH.md).
 For composing either 1–4 exact single-ray sources or 1 finite parallel Beam with 1–2 disjoint finite dielectrics (prism, convex quadrilateral, circle, or spherical thick lens), plane mirrors, opaque stops, and passive detectors under one native PhyDemo schema, see the [schema-v38 composable native refractive bench](docs/NATIVE-GENERAL-REFRACTIVE-BENCH.md).
+For unifying finite dielectrics with coaxial ideal thin lenses, curved/plane mirrors, opaque stops, and passive detectors under one native PhyDemo schema, see the [schema-v39 composable hybrid optical & refractive bench](docs/NATIVE-GENERAL-HYBRID-BENCH.md).
 For cross-checking finite thick-lens, planar-slab, and planar-mirror coaxial paraxial stacks side-by-side against pinned PhyDemo `v38` Snell ray traces (including paraxial vs. marginal spherical aberration), see the [refractive paraxial stack ↔ native v38 witness bridge](docs/REFRACTIVE-NATIVE-WITNESS.md).
 
 A standalone-browser-capable optical bench powered by PhyDemo Ray Optics Simulation **v5.4.0**,
