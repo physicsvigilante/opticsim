@@ -69,7 +69,7 @@ export function refractiveNativeWitnessCapabilities(){
     supportedStackScope:{
       lengthUnit:'mm',
       outsideIndex:'Any explicit stack incidentIndex in [1, 4]; all dielectric bodies must return to this shared outsideIndex.',
-      elements:'1–2 disjoint finite dielectric bodies formed by consecutive refracting-surface pairs (biconvex spherical lens: R1 > 0, R2 < 0; or coaxial planar slab: R1 = R2 = "infinity"), plus 0–1 optional planar terminal-mirror (signedRadius = "infinity"). Thin lenses, curved mirrors, meniscus/plano-convex/biconcave surfaces, cemented multi-index doublets, and unpaired half-spaces are refused.',
+      elements:'1–2 disjoint finite dielectric bodies in transmission, or 1 finite dielectric body + 1 planar terminal-mirror (signedRadius = "infinity") in return, formed by consecutive refracting-surface pairs (biconvex spherical lens: R1 > 0, R2 < 0; or coaxial planar slab: R1 = R2 = "infinity"). Two-body terminal-mirror returns (>= 9 optical encounters) exceed the v38 maxRayDepth = 8 budget and are refused at build time, as are thin lenses, curved mirrors, meniscus/plano-convex/biconcave surfaces, cemented multi-index doublets, and unpaired half-spaces.',
       separation:'Distinct native bodies, mirrors, emitters, and detectors must satisfy v38 >= 0.01 mm clearance.'
     },
     requiredWitnessInputs:{
@@ -127,6 +127,8 @@ function decomposeRefractiveStack(facts){
   const pairCount=opticalElements.length/2;
   if(pairCount>2)
     fail('UNSUPPORTED_WITNESS_SCOPE','Native v38 refractive witness supports at most 2 finite dielectric bodies.');
+  if(pairCount===2&&terminalMirror)
+    fail('UNSUPPORTED_WITNESS_SCOPE','Two finite dielectric bodies with a terminal-mirror return require at least 9 native optical encounters, exceeding the v38 maxRayDepth = 8 budget; use 1–2 bodies in transmission or 1 body with a planar terminal-mirror.');
 
   const pairs=[];
   for(let i=0;i<opticalElements.length;i+=2){

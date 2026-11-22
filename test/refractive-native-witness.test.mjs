@@ -329,6 +329,34 @@ test('strict scope and spec validation refuses unsupported stacks and missing ex
     emitter:{mode:'single-ray',directionDeg:1,brightness:0.5}
   }),{code:'UNSUPPORTED_SCOPE'});
 
+  // Two dielectric bodies + planar terminal mirror exceeds v38 maxRayDepth = 8 -> refused at build time
+  await assert.rejects(()=>buildRefractiveStackNativeWitness({
+    format:COAXIAL_STACK_FACTS,
+    model:'coaxial-paraxial-optical-stack',
+    signConvention:'x-increasing',
+    lengthUnit:'mm',
+    incidentIndex:1,
+    object:{x:-200,y:0},
+    elements:[
+      {id:'F1',type:'refracting-surface',x:-15,signedRadius:100,downstreamIndex:1.5},
+      {id:'B1',type:'refracting-surface',x:15,signedRadius:-100,downstreamIndex:1},
+      {id:'F2',type:'refracting-surface',x:135,signedRadius:100,downstreamIndex:1.3},
+      {id:'B2',type:'refracting-surface',x:165,signedRadius:-100,downstreamIndex:1},
+      {id:'M1',type:'terminal-mirror',x:300,signedRadius:'infinity'}
+    ]
+  },{
+    format:REFRACTIVE_WITNESS_SPEC,
+    query:{format:COAXIAL_STACK_QUERY,kind:'coaxial-stack-conjugate'},
+    bodies:[
+      {id:'L1',frontSurfaceId:'F1',backSurfaceId:'B1',apertureHeight:100},
+      {id:'L2',frontSurfaceId:'F2',backSurfaceId:'B2',apertureHeight:100}
+    ],
+    mirrorLength:400,
+    partialReflection:false,
+    emitter:{mode:'single-ray',directionDeg:0,brightness:0.5},
+    detector:{id:'D1',x:-100,y:0,orientationDeg:90,length:400}
+  }),{code:'UNSUPPORTED_WITNESS_SCOPE'});
+
   // Mismatched surface IDs in bodies
   const badBody=structuredClone(example.spec);
   badBody.bodies[0].frontSurfaceId='WRONG';

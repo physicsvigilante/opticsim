@@ -5,10 +5,10 @@
 ## Supported Stack-to-v38 Scope
 
 - `lengthUnit: "mm"` and any valid explicit ambient `incidentIndex` in `[1, 4]` (works in air or immersed media).
-- **1–2 disjoint finite dielectric bodies** formed by consecutive `refracting-surface` pairs `(front, back)` with `back.x > front.x`, `front.downstreamIndex !== outsideIndex`, and `back.downstreamIndex === outsideIndex`:
+- **1–2 disjoint finite dielectric bodies in transmission, or 1 finite dielectric body + 1 planar terminal mirror (`signedRadius: "infinity"`) in return**, formed by consecutive `refracting-surface` pairs `(front, back)` with `back.x > front.x`, `front.downstreamIndex !== outsideIndex`, and `back.downstreamIndex === outsideIndex`:
   - **Biconvex thick spherical lens** (`R1 > 0`, `R2 < 0`) → native `spherical-lens` (`frontRadius = R1`, `backRadius = -R2`).
   - **Coaxial planar dielectric slab** (`R1 = "infinity"`, `R2 = "infinity"`) → native `polygon-dielectric` rectangle.
-- **0–1 optional planar terminal mirror** (`type: "terminal-mirror"`, `signedRadius: "infinity"`) → native `plane-mirror` (symmetric return pass).
+  - **Optional planar terminal mirror** (with 1 dielectric body only) → native `plane-mirror` (symmetric return pass; 2-body + terminal-mirror returns require `>= 9` optical encounters, exceeding the v38 `maxRayDepth = 8` budget, and fail closed at build time with `UNSUPPORTED_WITNESS_SCOPE`).
 - Unpaired half-spaces, thin lenses (`v37` bridge), curved mirrors, meniscus/plano-convex/biconcave surfaces, and cemented multi-index doublets are explicitly refused (`UNSUPPORTED_WITNESS_SCOPE`).
 
 ## Explicit Witness Inputs (No Silent Assumptions)
