@@ -498,3 +498,37 @@ test('v38 Round 2 P2: secondary prism-apex no-callback near-miss fails closed; >
   assert.equal(safeObs.results[0].value,2);
   assert.equal(safeObs.results[1].value,0);
 });
+
+test('v38 Round 3 P2: same-prism refracted-exit near-corner no-callback witness fails closed; >=0.01 mm control qualifies',async()=>{
+  const prism={
+    id:'PR1',type:'triangular-prism',
+    parameters:{x1:0,y1:0,x2:100,y2:0,x3:50,y3:86.60254037844386,insideIndex:1.5,outsideIndex:1,partialReflection:false}
+  };
+  const reqs=[{id:'pr1',kind:'interface-interactions',componentId:'PR1'}];
+
+  // Enters left face and exits bottom face at (50, 0) nearly horizontally, passing ~0.005 mm
+  // below vertex (100, 0) outside PR1 with no subsequent PR1.onRayIncident callback.
+  const {document:nearDoc}=prepareScene(refrReq([
+    {id:'S1',type:'point-source',parameters:{x:-33.49551126310409,y:118.70371849981765,brightness:0.5},emission:{mode:'single-ray',directionDeg:-57.920490527040826}},
+    prism
+  ]));
+  const nearRun=await evaluateDocument(nearDoc,core,reqs);
+  assert.equal(nearRun.summary.executionPassed,false);
+  assert.equal(nearRun.summary.observations,null);
+  assert.equal(nearRun.report.native.diagnostics.v38EndpointsVerified,false);
+  assert.equal(nearRun.report.native.diagnostics.interfacesById.PR1.interactions,2); // entry + exit only, no vertex hit
+  assert.ok(nearRun.summary.native.errors.some(e=>/PR1.*corner\/vertex/.test(e)));
+  assert.equal((await evaluateObservables(nearDoc,reqs,nearRun.summary)).results[0].status,'suppressed');
+
+  // Safe >= 0.01 mm control: exits bottom face ~0.001 rad downward (~0.05 mm clear of vertex (100, 0)).
+  const {document:safeDoc}=prepareScene(refrReq([
+    {id:'S1',type:'point-source',parameters:{x:-33.4954401409903,y:118.70377481755398,brightness:0.5},emission:{mode:'single-ray',directionDeg:-57.92053143856877}},
+    prism
+  ]));
+  const safeRun=await evaluateDocument(safeDoc,core,reqs);
+  assert.equal(safeRun.summary.executionPassed,true);
+  assert.equal(safeRun.summary.observations.v38EndpointsVerified,true);
+  const safeObs=await evaluateObservables(safeDoc,reqs,safeRun.summary);
+  assert.equal(safeObs.results[0].status,'qualified');
+  assert.equal(safeObs.results[0].value,2);
+});

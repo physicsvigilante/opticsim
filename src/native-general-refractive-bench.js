@@ -354,7 +354,6 @@ export function installGeneralRefractiveBenchAudit(doc,scene,idMap,mirrorEndpoin
     }
     if(fault)return;
     for(const target of endpointTargets){
-      if(target.id===sourceCompId)continue;
       for(const ep of target.endpoints){
         const offset=delta(state.origin,ep);
         const ahead=dot(offset,state.dir),perp=Math.abs(cross(offset,state.dir));
@@ -369,7 +368,6 @@ export function installGeneralRefractiveBenchAudit(doc,scene,idMap,mirrorEndpoin
       }
     }
     for(const target of cornerTargets){
-      if(target.id===sourceCompId)continue;
       for(const corner of target.corners){
         const offset=delta(state.origin,corner);
         const ahead=dot(offset,state.dir),perp=Math.abs(cross(offset,state.dir));
