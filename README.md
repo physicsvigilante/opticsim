@@ -73,8 +73,7 @@ indexes all 114 *Problems* images in the pinned eight-chapter Ray Optics
 archive, visually reviews 40 preselected examples and ranks reusable optical
 objects/compositions that Opticsim does not yet expose. It does **not** read
 Solutions, rerun sealed authoring studies, score textbook answers, or modify
-native physics. Candidate systems include bounded polygonal glass and opaque
-screens. Beam sources for refractive systems remain deferred by the owner.
+native physics. At that historical atlas snapshot (`52accb7`), candidate systems included bounded polygonal glass, opaque screens, and refractive Beam sources; current `schemaVersion: 38` now provides bounded finite-dielectric `parallel-beam` composition (see [schema-v38 composable native refractive bench](docs/NATIVE-GENERAL-REFRACTIVE-BENCH.md)).
 
 ## Re-evaluate a portable investigation with native physics
 

@@ -5,7 +5,7 @@
 // non-intersection and clearance contract. Pinned PhyDemo alone traces all rays.
 import {compositionCountsMatch} from './composition-profiles.js';
 import {finiteSurfaceGeometry,pointWithinSupportingLineClearance,segmentsIntersect} from './composition-validation.js';
-import {curvedPoints,isCurved} from './curved-mirrors.js';
+import {curvedFrame,curvedPoints,isCurved} from './curved-mirrors.js';
 import {FINITE_APERTURE_TYPE,apertureGeometry,separatedSegmentDistance} from './finite-aperture.js';
 import {CIRCLE_BLOCKER_TYPE} from './opaque-circle-blocker.js';
 import {
@@ -206,33 +206,177 @@ export function validateGeneralOpticalBench(components,rayDensity,mirrorEndpoint
   }
 }
 
-// Route-independent observed native endpoint audit for v37: delegates every
-// pinned PhyDemo onRayIncident callback exactly once, counts actual native
-// optical encounters per stable element ID, and fails closed if any observed
-// native encounter lands within 0.01 mm of a finite component endpoint.
+export const V37_NATIVE_STATE_LIMIT=10000;
+
+const delta=(a,b)=>({x:b.x-a.x,y:b.y-a.y});
+const dot=(a,b)=>a.x*b.x+a.y*b.y;
+const cross=(a,b)=>a.x*b.y-a.y*b.x;
+
+function extractNativeRay(ray){
+  const p=ray?.p1,q=ray?.p2;
+  if(!p||!q||![p.x,p.y,q.x,q.y].every(Number.isFinite))return null;
+  const vx=q.x-p.x,vy=-(q.y-p.y),len=Math.hypot(vx,vy);
+  if(!(len>1e-12&&Number.isFinite(len)))return null;
+  return {origin:{x:p.x,y:-p.y},dir:{x:vx/len,y:vy/len}};
+}
+
+function componentTangentCircles(c){
+  const p=c.parameters;
+  if(c.type===CIRCLE_BLOCKER_TYPE)
+    return [{center:{x:p.x,y:p.y},radius:p.radius}];
+  if(c.type==='circular-arc-mirror'){
+    const {n}=curvedFrame(p);
+    return [{center:{x:p.x+p.radius*n.x,y:p.y+p.radius*n.y},radius:Math.abs(p.radius)}];
+  }
+  return [];
+}
+
+// Route-independent observed native endpoint and tangency audit for v37:
+// delegates every pinned PhyDemo emitter/incident callback exactly once, counts
+// actual native optical encounters per stable element ID, and fails closed if
+// any emitted, incoming, or outgoing native ray state approaches within 0.01 mm
+// of a finite component endpoint (including transparent aperture gaps) or a
+// circle-blocker / circular-arc-mirror tangency.
 export function installGeneralBenchEndpointAudit(doc,scene,idMap,mirrorEndpoints){
   let fault=null;
+  let checkedStates=0;
   const opticalIncidentsById={};
+  const endpointTargets=[];
+  const endpointById=new Map();
+  const circleTargets=[];
+  const circleById=new Map();
   for(const c of doc.physics.components){
     const isOptical=c.type==='ideal-lens'||c.type==='plane-mirror'||isCurved(c.type);
     if(isOptical)opticalIncidentsById[c.id]=0;
     const eps=componentFiniteEndpoints(c,mirrorEndpoints);
-    if(!eps.length)continue;
+    if(eps.length){
+      const target={id:c.id,type:c.type,endpoints:eps};
+      endpointTargets.push(target);
+      endpointById.set(c.id,target);
+    }
+    const circles=componentTangentCircles(c);
+    if(circles.length){
+      const target={id:c.id,type:c.type,circles};
+      circleTargets.push(target);
+      circleById.set(c.id,target);
+    }
+  }
+
+  function auditRayState(ray,sourceCompId){
+    if(++checkedStates>V37_NATIVE_STATE_LIMIT){
+      fault??=sourceCompId+': v37 native ray-state audit exceeded bounded state limit; measurements withheld.';
+      return;
+    }
+    const state=extractNativeRay(ray);
+    if(!state){
+      fault??=sourceCompId+': v37 native ray state was non-finite or degenerate; measurements withheld.';
+      return;
+    }
+    if(fault)return;
+    for(const target of endpointTargets){
+      for(const ep of target.endpoints){
+        const offset=delta(state.origin,ep);
+        const ahead=dot(offset,state.dir),perp=Math.abs(cross(offset,state.dir));
+        if(!Number.isFinite(ahead)||!Number.isFinite(perp)){
+          fault=target.id+': v37 native endpoint proximity check was non-finite; measurements withheld.';
+          return;
+        }
+        if(ahead>0&&perp<GENERAL_BENCH_CLEARANCE_MM){
+          fault=target.id+': observed native ray passes within 0.01 mm of a finite component endpoint; measurements withheld.';
+          return;
+        }
+      }
+    }
+    for(const target of circleTargets){
+      const sameBody=target.id===sourceCompId;
+      for(const tc of target.circles){
+        const offset=delta(state.origin,tc.center);
+        const ahead=dot(offset,state.dir),perp=Math.abs(cross(offset,state.dir));
+        if(!Number.isFinite(ahead)||!Number.isFinite(perp)){
+          fault=target.id+': v37 native circular/arc tangency check was non-finite; measurements withheld.';
+          return;
+        }
+        if((sameBody||ahead>0)&&Math.abs(perp-tc.radius)<GENERAL_BENCH_CLEARANCE_MM){
+          fault=target.id+': observed native ray approaches within 0.01 mm of tangency to a circular/arc surface; measurements withheld.';
+          return;
+        }
+      }
+    }
+  }
+
+  for(const c of doc.physics.components){
     const nativeObj=scene.objs[idMap.get(c.id)];
-    if(!nativeObj||typeof nativeObj.onRayIncident!=='function')continue;
+    if(c.type==='point-source'||c.type===PARALLEL_BEAM_TYPE){
+      if(!nativeObj||typeof nativeObj.onSimulationStart!=='function'){
+        fault??=c.id+': native emitter method unavailable for v37 audit.';
+        continue;
+      }
+      const originalStart=nativeObj.onSimulationStart;
+      nativeObj.onSimulationStart=function(...args){
+        const result=originalStart.apply(this,args);
+        try{
+          if(!result||!Array.isArray(result.newRays)){
+            fault??=c.id+': native emitter did not return an inspectable ray list; measurements withheld.';
+          }else{
+            for(const ray of result.newRays)auditRayState(ray,c.id);
+          }
+        }catch{
+          fault??=c.id+': v37 native emitter audit failed; measurements withheld.';
+        }
+        return result;
+      };
+      continue;
+    }
+
+    const isOptical=c.type==='ideal-lens'||c.type==='plane-mirror'||isCurved(c.type);
+    const epTarget=endpointById.get(c.id)||null;
+    const cTarget=circleById.get(c.id)||null;
+    if(!isOptical&&!epTarget&&!cTarget)continue;
+    if(!nativeObj||typeof nativeObj.onRayIncident!=='function'){
+      fault??=c.id+': native incident method unavailable for v37 audit.';
+      continue;
+    }
     const original=nativeObj.onRayIncident;
     nativeObj.onRayIncident=function(...args){
+      const inRay=cTarget?extractNativeRay(args[0]):null;
       const incidentPoint=args[2];
       const result=original.apply(this,args);
       if(isOptical)opticalIncidentsById[c.id]++;
-      if(!fault){
-        if(!incidentPoint||!Number.isFinite(incidentPoint.x)||!Number.isFinite(incidentPoint.y)){
-          fault=c.id+': native ray incident point was non-finite.';
-        }else{
-          const x=incidentPoint.x,y=-incidentPoint.y;
-          if(eps.some(ep=>Math.hypot(x-ep.x,y-ep.y)<=GENERAL_BENCH_CLEARANCE_MM))
-            fault=c.id+': native ray struck within 0.01 mm of a finite component endpoint; measurements withheld.';
+      try{
+        if(!fault&&epTarget){
+          if(!incidentPoint||!Number.isFinite(incidentPoint.x)||!Number.isFinite(incidentPoint.y)){
+            fault=c.id+': native ray incident point was non-finite.';
+          }else{
+            const x=incidentPoint.x,y=-incidentPoint.y;
+            if(epTarget.endpoints.some(ep=>Math.hypot(x-ep.x,y-ep.y)<GENERAL_BENCH_CLEARANCE_MM))
+              fault=c.id+': native ray struck within 0.01 mm of a finite component endpoint; measurements withheld.';
+          }
         }
+        if(!fault&&cTarget){
+          if(!inRay){
+            fault=c.id+': native incident ray state was non-finite or degenerate; measurements withheld.';
+          }else{
+            for(const tc of cTarget.circles){
+              const b=Math.abs(cross(delta(inRay.origin,tc.center),inRay.dir));
+              if(!Number.isFinite(b)||Math.abs(b-tc.radius)<GENERAL_BENCH_CLEARANCE_MM){
+                fault=c.id+': native incident ray struck within 0.01 mm of tangency to a circular/arc surface; measurements withheld.';
+                break;
+              }
+            }
+          }
+        }
+        if(isOptical){
+          if(!result?.isAbsorbed)auditRayState(args[0],c.id);
+          if(result?.newRays!==undefined){
+            if(!Array.isArray(result.newRays)){
+              fault??=c.id+': native incident returned non-array newRays; measurements withheld.';
+            }else{
+              for(const child of result.newRays)auditRayState(child,c.id);
+            }
+          }
+        }
+      }catch{
+        fault??=c.id+': v37 native incident audit failed; measurements withheld.';
       }
       return result;
     };

@@ -67,7 +67,7 @@ export function coaxialStackNativeWitnessCapabilities(){
     supportedStackScope:{
       lengthUnit:'mm',
       incidentIndex:1,
-      elements:'1–4 thin-lens and/or 1 optional terminal-mirror (plane or spherical); refracting-surface elements are refused because v37 is homogeneous unit-index air.',
+      elements:'1–4 thin-lens in transmission, or 0–3 thin-lens + 1 terminal-mirror (plane or spherical) in return; 4 thin-lens + terminal-mirror returns (>= 10 native encounters including the detector) exceed the v37 maxRayDepth = 8 budget and are refused at build time. Refracting-surface elements are refused because v37 is homogeneous unit-index air.',
       separation:'Distinct component planes must satisfy v37 >= 0.01 mm clearance (co-located elements with gap 0 are refused).'
     },
     requiredWitnessInputs:{
@@ -130,6 +130,8 @@ export async function buildCoaxialStackNativeWitness(input,spec){
     fail('UNSUPPORTED_WITNESS_SCOPE','Native v37 witness supports at most 4 ideal-lens elements.');
 
   const terminalMirror=facts.elements.find(e=>e.type==='terminal-mirror')||null;
+  if(terminalMirror&&lenses.length>3)
+    fail('UNSUPPORTED_WITNESS_SCOPE','Four thin lenses with a terminal-mirror return require at least 10 native encounters (9 optical + 1 detector), exceeding the v37 maxRayDepth = 8 budget; use 1–4 thin lenses in transmission or 0–3 thin lenses with a terminal-mirror.');
   const hasSphericalMirror=!!terminalMirror&&terminalMirror.signedRadius!=='infinity';
   if(hasSphericalMirror){
     if(!own(spec,'mirrorModel')||!MIRROR_MODELS.includes(spec.mirrorModel))

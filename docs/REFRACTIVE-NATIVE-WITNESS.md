@@ -1,6 +1,6 @@
 # Refractive Paraxial Stack ↔ Native v38 Witness Bridge
 
-`src/refractive-native-witness.js` and `scripts/witness-refractive-stack.mjs` bridge Opticsim's conditional exact `binary64-rational` coaxial paraxial stack (`opticsim-coaxial-paraxial-stack-facts-v1` / `opticsim-coaxial-paraxial-stack-package-v1`) to real finite-dielectric Snell ray tracing in schema-v38 `native-general-refractive-bench` on the pinned PhyDemo core (`811f508d2b070898c241a568b0c167dcb8645251`).
+`src/refractive-native-witness.js` and `scripts/witness-refractive-stack.mjs` bridge Opticsim's conditional exact `binary64-rational` coaxial paraxial stack (`opticsim-coaxial-paraxial-stack-facts-v1` / `opticsim-coaxial-stack-package-v1`) to real finite-dielectric Snell ray tracing in schema-v38 `native-general-refractive-bench` on the pinned PhyDemo core (`811f508d2b070898c241a568b0c167dcb8645251`).
 
 ## Supported Stack-to-v38 Scope
 

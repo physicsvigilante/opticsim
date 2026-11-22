@@ -329,6 +329,31 @@ test('honest failure modes: endpoint suppression, zero outgoing hits, and strict
   delete noMirrorModel.mirrorModel;
   await assert.rejects(()=>buildCoaxialStackNativeWitness(exampleData.stackFacts,noMirrorModel),
     {code:'INVALID_WITNESS_SPEC'});
+
+  // F3 regression: 4 thin lenses + terminal plane mirror requires >= 10 native encounters (> v37 maxRayDepth = 8).
+  const fourLensReturnStack={
+    format:COAXIAL_STACK_FACTS,
+    model:'coaxial-paraxial-optical-stack',
+    signConvention:'x-increasing',
+    lengthUnit:'mm',
+    incidentIndex:1,
+    object:{x:-100,y:0},
+    elements:[
+      {id:'L1',type:'thin-lens',x:0,focalLength:10000},
+      {id:'L2',type:'thin-lens',x:100,focalLength:10000},
+      {id:'L3',type:'thin-lens',x:200,focalLength:10000},
+      {id:'L4',type:'thin-lens',x:300,focalLength:10000},
+      {id:'M1',type:'terminal-mirror',x:400,signedRadius:'infinity'}
+    ]
+  };
+  await assert.rejects(()=>buildCoaxialStackNativeWitness(fourLensReturnStack,{
+    format:COAXIAL_WITNESS_SPEC,
+    query:{format:COAXIAL_STACK_QUERY,kind:'coaxial-stack-conjugate'},
+    aperturesById:{L1:100,L2:100,L3:100,L4:100,M1:100},
+    emitter:{mode:'single-ray',directionDeg:0,brightness:0.5},
+    detector:{x:-200,y:0,orientationDeg:90,length:100},
+    runPolicy:'preview-v1'
+  }),{code:'UNSUPPORTED_WITNESS_SCOPE'});
 });
 
 test('offline CLI scripts/witness-coaxial-stack.mjs executes capabilities, plan, and run cleanly',()=>{
