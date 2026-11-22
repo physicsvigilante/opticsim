@@ -30,6 +30,7 @@ For a flat liquid surface in front of a fixed lens, use the [image-distance and 
 For the two spacings of a lens and concave mirror that give a parallel return, use the [mirror placement query](docs/LENS-MIRROR-PARALLEL-RETURN.md).
 For testing whether a coaxial thin-lens train preserves axial image position and how it transforms transverse magnification, use the [axial-preservation query](docs/LENS-TRAIN-AXIAL-PRESERVATION.md).
 For the back focal point, effective focal length, rear principal plane, or afocal emergence of an axial parallel beam through 1–4 coaxial thin lenses, use the [collimated-focus query](docs/LENS-TRAIN-COLLIMATED-FOCUS.md).
+For reconstructing a single thin lens's type, optical centre, focal length, and focal points from an off-axis real object and its conjugate image, use the [conjugate-reconstruction query](docs/THIN-LENS-CONJUGATE-RECONSTRUCTION.md).
 
 For a finite parallel Beam passing through an ideal lens and then a finite aperture, see the [schema-v28 authoring contract and worked example](docs/POST-LENS-APERTURE.md).
 
