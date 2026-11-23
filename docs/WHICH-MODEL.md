@@ -24,6 +24,7 @@ All three modern composable benches are available directly in the browser **Scen
 | **Branching, structural edits, sweeps & replayable packages** over a paraxial stack | `scripts/explore-coaxial-stack.mjs` — [docs](COAXIAL-STACK-EXPLORATION.md) | SHA-guarded revisions, atomic add/remove, bounded 1–25 value sweeps, baseline-vs-variant comparisons. |
 | **Cross-check thin-lens / mirror paraxial stack against real `v37` rays** | `scripts/witness-coaxial-stack.mjs` — [docs](COAXIAL-STACK-NATIVE-WITNESS.md) | Side-by-side ABCD prediction vs. observed `v37` outgoing ray lines (including spherical aberration on `circular-arc-mirror`). |
 | **Cross-check thick-lens / planar-slab paraxial stack against real `v38` Snell rays** | `scripts/witness-refractive-stack.mjs` — [docs](REFRACTIVE-NATIVE-WITNESS.md) | Side-by-side ABCD prediction vs. observed `v38` Snell rays (paraxial vs. marginal spherical aberration, immersed media, zero-TIR/rim-free encounter gating). |
+| **Cross-check hybrid glass + thin-lens + mirror paraxial stack against real `v39` rays** | `scripts/witness-hybrid-stack.mjs` — [docs](HYBRID-NATIVE-WITNESS.md) | Side-by-side ABCD prediction vs. observed `v39` hybrid rays across dielectrics, ideal thin lenses, and plane/curved terminal mirrors (with `maxRayDepth = 8` budget and full-stack encounter gating). |
 
 ## 3. Reading Opticsim Result Statuses Honestly
 

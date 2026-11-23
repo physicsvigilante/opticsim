@@ -213,12 +213,15 @@ export function validateGeneralHybridBench(components,rayDensity,mirrorEndpoints
 }
 
 export function installGeneralHybridBenchAudit(doc,scene,idMap,mirrorEndpoints){
+  const isOptical=c=>c.type==='ideal-lens'||c.type==='plane-mirror'||isCurved(c.type);
   return installBenchEndpointAudit(doc,scene,idMap,mirrorEndpoints,{
     versionTag:'v39',
     key:'v39EndpointsVerified',
     clearance:HYBRID_BENCH_CLEARANCE_MM,
     stateLimit:V39_NATIVE_STATE_LIMIT,
-    isRedirector:c=>HYBRID_DIELECTRIC_TYPES.includes(c.type)||c.type==='ideal-lens'||c.type==='plane-mirror'||isCurved(c.type),
+    isRedirector:c=>HYBRID_DIELECTRIC_TYPES.includes(c.type)||isOptical(c),
+    isCountedOptical:isOptical,
+    extraKey:'v39OpticalIncidentsById',
     surfaceLabel:'circular/spherical/arc'
   });
 }

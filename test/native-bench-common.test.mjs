@@ -65,16 +65,29 @@ test('installBenchEndpointAudit fails closed on missing native methods, non-arra
   });
   assert.match(auditMissing.finish(),/native emitter method unavailable/);
 
-  // Non-array newRays and bounded stateLimit fail closed.
-  const scene={
+  // Bounded stateLimit fails closed on emitter rays.
+  const sceneLimit={
     objs:[
       {onSimulationStart:()=>({newRays:[{p1:{x:-100,y:0},p2:{x:-99,y:0}},{p1:{x:-100,y:5},p2:{x:-99,y:5}}]})},
+      {onRayIncident:()=>({})}
+    ]
+  };
+  const auditLimit=installBenchEndpointAudit(doc,sceneLimit,idMap,mirrorEndpoints,{
+    versionTag:'v39',key:'v39EndpointsVerified',stateLimit:1,isRedirector:c=>c.type==='plane-mirror'
+  });
+  sceneLimit.objs[0].onSimulationStart();
+  assert.match(auditLimit.finish(),/exceeded bounded state limit/);
+
+  // Non-array newRays returned by onRayIncident fails closed directly (PR #257 P3).
+  const sceneBadIncident={
+    objs:[
+      {onSimulationStart:()=>({newRays:[{p1:{x:-100,y:0},p2:{x:-99,y:0}}]})},
       {onRayIncident:()=>({newRays:'not-an-array'})}
     ]
   };
-  const auditLimit=installBenchEndpointAudit(doc,scene,idMap,mirrorEndpoints,{
-    versionTag:'v39',key:'v39EndpointsVerified',stateLimit:1,isRedirector:c=>c.type==='plane-mirror'
+  const auditBadIncident=installBenchEndpointAudit(doc,sceneBadIncident,idMap,mirrorEndpoints,{
+    versionTag:'v39',key:'v39EndpointsVerified',isRedirector:c=>c.type==='plane-mirror'
   });
-  scene.objs[0].onSimulationStart();
-  assert.match(auditLimit.finish(),/exceeded bounded state limit/);
+  sceneBadIncident.objs[1].onRayIncident({p1:{x:0,y:0},p2:{x:-1,y:0}},0,{x:0,y:0});
+  assert.match(auditBadIncident.finish(),/native incident returned non-array newRays/);
 });
