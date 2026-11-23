@@ -17,11 +17,12 @@
 
 - **Strict separation:** Conditional exact `binary64-rational` ABCD predictions (`paraxial.nativeObservation: false`) and observed pinned-PhyDemo native ray lines (`native.nativeObservation: true`) are reported separately, with `nativeImageDetected: false` on both.
 - **Execution gate:** Uses `isAcceptedExecutionSummary` requiring exact `sceneSha256` match, `executionPassed === true`, `v39EndpointsVerified === true`, accepted terminal native status, zero truncation/undefinedBehavior, empty native errors, accepted `measurementState`, and bounded `detector-hit-events`.
-- **Full-stack encounter gate:** Aggregate geometric comparison requires every emitted ray to traverse every declared element:
-  - Each finite dielectric body (`interfacesById`): `interactions === expected`, `transmitted === expected`, `reflected === 0`, `totalInternalReflections === 0` (`expected = 2 * emitted` in transmission, `4 * emitted` in return).
+- **Full-stack per-axial-face encounter gate:** Aggregate geometric comparison requires observed per-element and per-axial-face counts to match expected stack totals:
+  - Each finite dielectric body (`interfacesById` & `interfacesById[id].faces`): `interactions === expected`, `transmitted === expected`, `reflected === 0`, `totalInternalReflections === 0`, **and** declared axial front/back faces (`front-arc`/`back-arc` for `spherical-lens`; `face-41`/`face-23` for coaxial `polygon-dielectric` slab) each equal `(returnMode ? 2 : 1) * emitted` with **zero** lateral-rim hits (`top-rim`/`bottom-rim` or `face-12`/`face-34`). Any ray exiting through a lateral rim fails closed with `lateral-rim-encounter-route-unverified`.
   - Each `ideal-lens` (`v39OpticalIncidentsById`): `incidents === expected` (`1 * emitted` in transmission, `2 * emitted` in return).
   - Optional `terminal-mirror` (`reflectionsById` and `v39OpticalIncidentsById`): both equal `emitted`.
   - Plus `outgoingHitCount === emitted`.
+  - For multi-ray witnesses, `routeQualification` is reported honestly as `aggregate-axial-faces-and-optics-matched` (aggregate count evidence, not per-ray route attribution); single-ray witnesses report `single-ray-axial-faces-and-optics-matched`.
 
 ## Offline CLI
 

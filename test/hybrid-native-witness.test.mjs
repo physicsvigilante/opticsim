@@ -38,16 +38,19 @@ test('worked hybrid return example (thin lens + planar slab + concave mirror) co
   assert.equal(arcReport.native.executionPassed,true);
   assert.equal(arcReport.native.v39EndpointsVerified,true);
   assert.equal(arcReport.comparison.status,'observed-ray-geometry-compared');
-  assert.equal(arcReport.comparison.routeQualification,'all-emitted-rays-encountered-every-element');
+  assert.equal(arcReport.comparison.routeQualification,'aggregate-axial-faces-and-optics-matched');
   assert.equal(arcReport.comparison.exitDirection,'-x');
   assert.equal(arcReport.comparison.outgoingHitCount,2);
 
-  // Per-element encounter counts: 2 rays x (SL1: 4, L1: 2, CM1: 1).
+  // Per-element encounter counts: 2 rays x (SL1: 4 total = 2 front + 2 back + 0 rim, L1: 2, CM1: 1).
   const enc=arcReport.comparison.stackEncounters.byElementId;
   assert.equal(enc.SL1.interactions,8);
   assert.equal(enc.SL1.transmitted,8);
   assert.equal(enc.SL1.reflected,0);
   assert.equal(enc.SL1.totalInternalReflections,0);
+  assert.equal(enc.SL1.frontFaceInteractions,4);
+  assert.equal(enc.SL1.backFaceInteractions,4);
+  assert.equal(enc.SL1.lateralRimInteractions,0);
   assert.equal(enc.L1.incidents,4);
   assert.equal(enc.CM1.reflections,2);
   assert.equal(enc.CM1.incidents,2);
@@ -96,10 +99,17 @@ test('immersed (n=1.33) hybrid transmission stack (spherical-lens + thin-lens + 
   assert.equal(report.native.executionPassed,true);
   assert.equal(report.native.v39EndpointsVerified,true);
   assert.equal(report.comparison.status,'observed-ray-geometry-compared');
+  assert.equal(report.comparison.routeQualification,'single-ray-axial-faces-and-optics-matched');
   assert.equal(report.comparison.exitDirection,'+x');
   assert.equal(report.comparison.stackEncounters.byElementId.G1.interactions,2);
+  assert.equal(report.comparison.stackEncounters.byElementId.G1.frontFaceInteractions,1);
+  assert.equal(report.comparison.stackEncounters.byElementId.G1.backFaceInteractions,1);
+  assert.equal(report.comparison.stackEncounters.byElementId.G1.lateralRimInteractions,0);
   assert.equal(report.comparison.stackEncounters.byElementId.L1.incidents,1);
   assert.equal(report.comparison.stackEncounters.byElementId.SL1.interactions,2);
+  assert.equal(report.comparison.stackEncounters.byElementId.SL1.frontFaceInteractions,1);
+  assert.equal(report.comparison.stackEncounters.byElementId.SL1.backFaceInteractions,1);
+  assert.equal(report.comparison.stackEncounters.byElementId.SL1.lateralRimInteractions,0);
   assert.ok(report.comparison.maxPerpendicularMissMm<0.05,'immersed paraxial hybrid ray should agree closely with exact ABCD');
 });
 
@@ -165,6 +175,67 @@ test('encounter gating withholds corroboration on bypassed ideal-lens, Fresnel t
     execute:()=>({summary:{canonicalSha256:'0'.repeat(64),executionPassed:true,native:{status:'completed',truncation:0,undefinedBehavior:0,errors:[],warnings:[]},observations:{v39EndpointsVerified:true},measurementState:'complete'}})
   });
   assert.equal(staleReport.comparison.status,'native-run-not-qualified');
+});
+
+test('P2-1 side-rim exit regression: ray entering front face and exiting top rim (never hitting S2) fails closed in both slab-only and hybrid lens+slab stacks',async()=>{
+  // Exact Astra P2-1 constructive counterexample: S1 x=0 (n=1.1), S2 x=100 (n=1.33),
+  // incidentIndex=1.33, apertureHeight=40, object (-80,-10), 15 deg ray, detector (180,140,300).
+  const slabOnlyStack={
+    ...BASE_STACK,
+    incidentIndex:1.33,
+    object:{x:-80,y:-10},
+    elements:[
+      {id:'S1',type:'refracting-surface',x:0,signedRadius:'infinity',downstreamIndex:1.1},
+      {id:'S2',type:'refracting-surface',x:100,signedRadius:'infinity',downstreamIndex:1.33}
+    ]
+  };
+  const slabOnlySpec={
+    format:HYBRID_WITNESS_SPEC,
+    query:{format:COAXIAL_STACK_QUERY,kind:'coaxial-stack-conjugate'},
+    bodies:[{id:'SL1',frontSurfaceId:'S1',backSurfaceId:'S2',apertureHeight:40}],
+    partialReflection:false,
+    emitter:{mode:'single-ray',id:'R1',directionDeg:15,brightness:0.5},
+    detector:{id:'D1',x:180,y:140,orientationDeg:90,length:300}
+  };
+  const slabReport=await runHybridStackNativeWitness(slabOnlyStack,slabOnlySpec,{execute});
+  assert.equal(slabReport.native.executionPassed,true);
+  assert.equal(slabReport.native.v39EndpointsVerified,true);
+  assert.equal(slabReport.comparison.status,'lateral-rim-encounter-route-unverified');
+  assert.equal(slabReport.comparison.routeQualification,'lateral-rim-encountered');
+  assert.equal(slabReport.comparison.outgoingHitCount,1);
+  assert.deepEqual(slabReport.comparison.stackEncounters.lateralRimElementIds,['SL1']);
+  const slabStats=slabReport.comparison.stackEncounters.byElementId.SL1;
+  assert.equal(slabStats.interactions,2);
+  assert.equal(slabStats.transmitted,2);
+  assert.equal(slabStats.frontFaceInteractions,1);
+  assert.equal(slabStats.backFaceInteractions,0);
+  assert.equal(slabStats.lateralRimInteractions,1);
+  assert.equal(slabStats.matches,false);
+
+  // Hybrid variant with prepended ideal-lens at x=-45, f=1000, apertureHeight=80.
+  const hybridSideRimStack={
+    ...BASE_STACK,
+    incidentIndex:1.33,
+    object:{x:-80,y:-10},
+    elements:[
+      {id:'L1',type:'thin-lens',x:-45,focalLength:1000},
+      {id:'S1',type:'refracting-surface',x:0,signedRadius:'infinity',downstreamIndex:1.1},
+      {id:'S2',type:'refracting-surface',x:100,signedRadius:'infinity',downstreamIndex:1.33}
+    ]
+  };
+  const hybridSideRimSpec={
+    ...slabOnlySpec,
+    aperturesById:{L1:80}
+  };
+  const hybridReport=await runHybridStackNativeWitness(hybridSideRimStack,hybridSideRimSpec,{execute});
+  assert.equal(hybridReport.native.executionPassed,true);
+  assert.equal(hybridReport.native.v39EndpointsVerified,true);
+  assert.equal(hybridReport.comparison.status,'lateral-rim-encounter-route-unverified');
+  assert.equal(hybridReport.comparison.routeQualification,'lateral-rim-encountered');
+  assert.equal(hybridReport.comparison.stackEncounters.byElementId.L1.incidents,1);
+  assert.equal(hybridReport.comparison.stackEncounters.byElementId.SL1.frontFaceInteractions,1);
+  assert.equal(hybridReport.comparison.stackEncounters.byElementId.SL1.backFaceInteractions,0);
+  assert.equal(hybridReport.comparison.stackEncounters.byElementId.SL1.lateralRimInteractions,1);
 });
 
 test('strict scope and maxRayDepth=8 build-time refusals reject out-of-scope stacks cleanly',async()=>{

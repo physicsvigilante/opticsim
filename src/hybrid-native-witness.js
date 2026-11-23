@@ -89,7 +89,7 @@ export function hybridNativeWitnessCapabilities(){
     guarantees:[
       'Conditional paraxial results (nativeObservation: false) and native PhyDemo hybrid results (nativeObservation: true) remain strictly separated.',
       'Native execution is gated on canonical SHA-256 match, v39EndpointsVerified === true, zero truncation/undefinedBehavior/errors, accepted measurementState, and complete bounded detector-hit-events (<= 32 hits).',
-      'Aggregate corroboration requires observed per-element native encounter counts matching full-stack traversal by every emitted ray across every dielectric body (zero TIR/reflection, full transmission), every ideal-lens (v39OpticalIncidentsById), and any terminal mirror (reflectionsById & v39OpticalIncidentsById).',
+      'Aggregate corroboration requires observed per-element and per-axial-face native encounter counts matching expected stack totals (declared front/back axial faces only with zero lateral-rim hits, zero TIR, zero dielectric reflection, full transmission, matching ideal-lens v39OpticalIncidentsById, and matching terminal-mirror reflectionsById & v39OpticalIncidentsById). For multi-ray witnesses, these are aggregate encounter totals, not per-ray route attribution.',
       'Exact binary64-rational outgoing ray metrics report perpendicular miss, deltaY at predicted target x, and deltaX at predicted target y without claiming native image detection (nativeImageDetected: false).'
     ]
   };
@@ -532,33 +532,64 @@ function summarizeHybridEncounters(elements,propagationMode,emitted,outgoingHitC
   const returnMode=propagationMode==='return';
   const byElementId={};
   const zeroEncounterElementIds=[];
+  const lateralRimElementIds=[];
   let allMatch=Number.isSafeInteger(emitted)&&emitted>0&&outgoingHitCount===emitted;
 
   for(const el of elements){
     if(el.category==='dielectric-body'){
       const expectedPerRay=returnMode?4:2;
+      const expectedPerAxialFacePerRay=returnMode?2:1;
       const expectedForAllEmittedRays=Number.isSafeInteger(emitted)?expectedPerRay*emitted:null;
+      const expectedPerAxialFaceTotal=Number.isSafeInteger(emitted)?expectedPerAxialFacePerRay*emitted:null;
       const stats=interfacesById&&own(interfacesById,el.id)?interfacesById[el.id]:null;
       const interactions=Number.isSafeInteger(stats?.interactions)?stats.interactions:null;
       const transmitted=Number.isSafeInteger(stats?.transmitted)?stats.transmitted:null;
       const reflected=Number.isSafeInteger(stats?.reflected)?stats.reflected:null;
       const totalInternalReflections=Number.isSafeInteger(stats?.totalInternalReflections)?stats.totalInternalReflections:null;
-      if(interactions===0)zeroEncounterElementIds.push(el.id);
+
+      // Gate on the declared axial front/back optical faces (never lateral rims).
+      const frontFaceId=el.nativeType==='spherical-lens'?'front-arc':'face-41';
+      const backFaceId=el.nativeType==='spherical-lens'?'back-arc':'face-23';
+      const rimFaceIds=el.nativeType==='spherical-lens'?['top-rim','bottom-rim']:['face-12','face-34'];
+      const faces=stats?.faces??null;
+      const frontFaceInteractions=Number.isSafeInteger(faces?.[frontFaceId]?.interactions)
+        ?faces[frontFaceId].interactions:null;
+      const backFaceInteractions=Number.isSafeInteger(faces?.[backFaceId]?.interactions)
+        ?faces[backFaceId].interactions:null;
+      const rimCounts=rimFaceIds.map(id=>faces?.[id]?.interactions);
+      const lateralRimInteractions=rimCounts.every(Number.isSafeInteger)
+        ?rimCounts.reduce((acc,n)=>acc+n,0):null;
+
+      if(interactions===0||frontFaceInteractions===0||backFaceInteractions===0)
+        zeroEncounterElementIds.push(el.id);
+      if(lateralRimInteractions!==null&&lateralRimInteractions>0)
+        lateralRimElementIds.push(el.id);
+
       const matches=expectedForAllEmittedRays!==null&&
+        expectedPerAxialFaceTotal!==null&&
         interactions===expectedForAllEmittedRays&&
         transmitted===expectedForAllEmittedRays&&
         reflected===0&&
-        totalInternalReflections===0;
+        totalInternalReflections===0&&
+        frontFaceInteractions===expectedPerAxialFaceTotal&&
+        backFaceInteractions===expectedPerAxialFaceTotal&&
+        lateralRimInteractions===0;
       if(!matches)allMatch=false;
       byElementId[el.id]={
         category:el.category,
         nativeType:el.nativeType,
+        frontFaceId,
+        backFaceId,
         expectedPerRay,
         expectedForAllEmittedRays,
+        expectedPerAxialFaceTotal,
         interactions,
         transmitted,
         reflected,
         totalInternalReflections,
+        frontFaceInteractions,
+        backFaceInteractions,
+        lateralRimInteractions,
         matches
       };
     }else if(el.category==='ideal-lens'){
@@ -606,7 +637,8 @@ function summarizeHybridEncounters(elements,propagationMode,emitted,outgoingHitC
     propagationMode,
     byElementId,
     zeroEncounterElementIds,
-    allElementsEncounteredByAllEmittedRays:allMatch
+    lateralRimElementIds,
+    allAxialFacesAndOpticsMatched:allMatch
   };
 }
 
@@ -650,11 +682,25 @@ function compareOutgoingHits(paraxialResult,events,exitPlaneX,elements,emitted,i
     };
   }
 
+  if(stackEncounters.lateralRimElementIds.length>0){
+    return {
+      status:'lateral-rim-encounter-route-unverified',
+      routeQualification:'lateral-rim-encountered',
+      reason:'Native ray(s) struck a lateral dielectric rim face ('+stackEncounters.lateralRimElementIds.join(', ')+') instead of traversing only the declared axial front/back surfaces; geometric corroboration is withheld.',
+      exitDirection,
+      outgoingHitCount:outgoing.length,
+      nonExitDirectionHitCount:nonExitCount,
+      stackEncounters,
+      targetPointMm:null,
+      hits:outgoing.map((ev,i)=>({index:i,pointMm:ev.pointMm,incomingUnit:ev.incomingUnit,routeVerified:false}))
+    };
+  }
+
   if(stackEncounters.zeroEncounterElementIds.length>0){
     return {
       status:'stack-optics-not-encountered',
       routeQualification:'zero-encounters-on-declared-optics',
-      reason:'Declared hybrid stack element(s) recorded zero native ray encounters ('+stackEncounters.zeroEncounterElementIds.join(', ')+'); outgoing detector hits bypassed the declared stack and cannot corroborate it.',
+      reason:'Declared hybrid stack element(s) or axial surface(s) recorded zero native ray encounters ('+stackEncounters.zeroEncounterElementIds.join(', ')+'); outgoing detector hits bypassed the declared stack and cannot corroborate it.',
       exitDirection,
       outgoingHitCount:outgoing.length,
       nonExitDirectionHitCount:nonExitCount,
@@ -664,11 +710,11 @@ function compareOutgoingHits(paraxialResult,events,exitPlaneX,elements,emitted,i
     };
   }
 
-  if(!stackEncounters.allElementsEncounteredByAllEmittedRays){
+  if(!stackEncounters.allAxialFacesAndOpticsMatched){
     return {
       status:'partial-stack-encounters-route-unverified',
       routeQualification:'partial-or-unverified',
-      reason:'Observed per-element native encounter counts do not match full-stack traversal by all emitted rays (partial aperture clipping, TIR, or extra Fresnel branches); aggregate corroboration metrics are withheld.',
+      reason:'Observed per-element and per-axial-face native encounter counts do not match expected stack totals (partial aperture clipping, TIR, or extra Fresnel branches); aggregate corroboration metrics are withheld.',
       exitDirection,
       outgoingHitCount:outgoing.length,
       nonExitDirectionHitCount:nonExitCount,
@@ -677,6 +723,10 @@ function compareOutgoingHits(paraxialResult,events,exitPlaneX,elements,emitted,i
       hits:outgoing.map((ev,i)=>({index:i,pointMm:ev.pointMm,incomingUnit:ev.incomingUnit,routeVerified:false}))
     };
   }
+
+  const routeQualification=emitted===1
+    ?'single-ray-axial-faces-and-optics-matched'
+    :'aggregate-axial-faces-and-optics-matched';
 
   if(paraxialResult.kind==='coaxial-stack-collimated-focus'&&pv.isAfocal){
     const hitRows=outgoing.map((ev,i)=>{
@@ -694,7 +744,7 @@ function compareOutgoingHits(paraxialResult,events,exitPlaneX,elements,emitted,i
     const finiteSlopes=hitRows.map(h=>h.absSlope).filter(v=>typeof v==='number'&&Number.isFinite(v));
     return {
       status:'observed-afocal-collimation-compared',
-      routeQualification:'all-emitted-rays-encountered-every-element',
+      routeQualification,
       exitDirection,
       outgoingHitCount:outgoing.length,
       nonExitDirectionHitCount:nonExitCount,
@@ -708,7 +758,7 @@ function compareOutgoingHits(paraxialResult,events,exitPlaneX,elements,emitted,i
   if(paraxialResult.kind==='coaxial-stack-conjugate'&&pv.imageKind==='at-infinity'){
     return {
       status:'paraxial-at-infinity',
-      routeQualification:'all-emitted-rays-encountered-every-element',
+      routeQualification,
       reason:'Paraxial image lies at infinity; outgoing native ray directions are reported without a finite target coordinate.',
       exitDirection,
       outgoingHitCount:outgoing.length,
@@ -735,7 +785,7 @@ function compareOutgoingHits(paraxialResult,events,exitPlaneX,elements,emitted,i
 
   return {
     status:'observed-ray-geometry-compared',
-    routeQualification:'all-emitted-rays-encountered-every-element',
+    routeQualification,
     exitDirection,
     outgoingHitCount:outgoing.length,
     nonExitDirectionHitCount:nonExitCount,
