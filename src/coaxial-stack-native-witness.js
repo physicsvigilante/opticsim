@@ -10,47 +10,36 @@
 // from sampled native PhyDemo observations (nativeObservation: true). Never
 // invents missing apertures/rays or claims native image detection.
 import {
-  COAXIAL_STACK_FACTS,
   COAXIAL_STACK_QUERY,
-  analyzeCoaxialStack,
-  validateCoaxialStackFacts
+  analyzeCoaxialStack
 } from './coaxial-paraxial-stack.js';
-import {
-  COAXIAL_STACK_PACKAGE,
-  coaxialStackHash,
-  verifyCoaxialStackPackage
-} from './coaxial-stack-exploration.js';
 import {prepareScene} from './authoring.js';
-import {absolute,add,divide,fromBinary64,multiply,subtract,toBinary64} from './binary64-rational.js';
+import {divide,fromBinary64,toBinary64} from './binary64-rational.js';
 import {GENERAL_BENCH_MODEL,GENERAL_BENCH_VERSION} from './native-general-optical-bench.js';
-import {qualifyRunnerSummary} from './native-observations.js';
+import {isAcceptedExecutionSummary,qualifyRunnerSummary} from './native-observations.js';
 import {evaluateObservables} from './observables.js';
-import {isRecord,sceneHash} from './qualified-utils.js';
+import {sceneHash} from './qualified-utils.js';
+import {
+  TWO,
+  WITNESS_MIRROR_MODELS as MIRROR_MODELS,
+  WITNESS_RUN_POLICIES as RUN_POLICIES,
+  WITNESS_STABLE_ID_RE as STABLE_ID_RE,
+  WITNESS_SUPPORTED_QUERIES as SUPPORTED_QUERIES,
+  checkWitnessFields as checkFields,
+  compareQualifiedWitnessHits,
+  computeWitnessRayMetrics,
+  isPlainObject,
+  negR,
+  own,
+  resolveWitnessStackInput as resolveStackInput,
+  validateWitnessDetector,
+  witnessFail as fail
+} from './witness-common.js';
 
+export {computeWitnessRayMetrics};
 export const COAXIAL_WITNESS_SPEC='opticsim-coaxial-stack-native-witness-v1';
 export const COAXIAL_WITNESS_PLAN='opticsim-coaxial-stack-native-witness-plan-v1';
 export const COAXIAL_WITNESS_REPORT='opticsim-coaxial-stack-native-witness-report-v1';
-
-const SUPPORTED_QUERIES=Object.freeze(['coaxial-stack-conjugate','coaxial-stack-collimated-focus']);
-const MIRROR_MODELS=Object.freeze(['circular-arc-mirror','ideal-curved-mirror']);
-const RUN_POLICIES=Object.freeze(['preview-v1','dense-v1']);
-const STABLE_ID_RE=/^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
-
-const own=(o,k)=>Object.hasOwn(o,k);
-const fail=(code,message)=>{throw Object.assign(new Error(message),{code});};
-const isPlainObject=v=>isRecord(v)&&Object.getPrototypeOf(v)===Object.prototype;
-const absR=q=>({n:absolute(q.n),d:q.d});
-const negR=q=>({n:-q.n,d:q.d});
-const TWO=fromBinary64(2);
-
-function checkFields(value,required,optional,label,code='INVALID_WITNESS_SPEC'){
-  if(!isPlainObject(value))fail(code,label+' must be a plain object.');
-  const allowed=[...required,...optional];
-  const extra=Object.keys(value).filter(k=>!allowed.includes(k));
-  if(extra.length)fail(code,label+' has unsupported fields: '+extra.join(', '));
-  const missing=required.filter(k=>!own(value,k));
-  if(missing.length)fail(code,label+' requires '+missing.join(', ')+'.');
-}
 
 export function coaxialStackNativeWitnessCapabilities(){
   return {
@@ -84,21 +73,6 @@ export function coaxialStackNativeWitnessCapabilities(){
       'Outgoing ray geometry checks (perpendicular miss and intercept at predicted target x) filter hits matching exitDirection (+x transmission / -x return) and never assert native image detection (nativeImageDetected: false).'
     ]
   };
-}
-
-async function resolveStackInput(input){
-  if(!isPlainObject(input)||typeof input.format!=='string')
-    fail('UNSUPPORTED_INPUT','Supply either '+COAXIAL_STACK_FACTS+' or '+COAXIAL_STACK_PACKAGE+'.');
-  if(input.format===COAXIAL_STACK_PACKAGE){
-    const pkg=await verifyCoaxialStackPackage(input);
-    return {facts:structuredClone(pkg.currentFacts),stackSha256:pkg.currentSha256,packageIntegritySha256:pkg.integritySha256};
-  }
-  if(input.format===COAXIAL_STACK_FACTS){
-    const facts=structuredClone(input);
-    validateCoaxialStackFacts(facts);
-    return {facts,stackSha256:await coaxialStackHash(facts),packageIntegritySha256:null};
-  }
-  fail('UNSUPPORTED_INPUT','Unsupported stack input format: '+input.format);
 }
 
 export async function buildCoaxialStackNativeWitness(input,spec){
@@ -212,21 +186,7 @@ export async function buildCoaxialStackNativeWitness(input,spec){
   }
 
   // Validate explicit passive detector.
-  checkFields(spec.detector,['x','y','orientationDeg','length'],['id'],'Witness detector');
-  const detectorId=own(spec.detector,'id')?spec.detector.id:'D_witness';
-  if(typeof detectorId!=='string'||!STABLE_ID_RE.test(detectorId)||usedIds.has(detectorId))
-    fail('INVALID_WITNESS_SPEC','Detector requires a unique valid stable ID distinct from stack and emitter IDs.');
-  usedIds.add(detectorId);
-  const detectorComponent={
-    id:detectorId,
-    type:'ray-detector',
-    parameters:{
-      x:spec.detector.x,
-      y:spec.detector.y,
-      orientationDeg:spec.detector.orientationDeg,
-      length:spec.detector.length
-    }
-  };
+  const {detectorId,detectorComponent}=validateWitnessDetector(spec.detector,usedIds);
 
   // Compile stack elements into v37 native components with explicit sign mapping.
   const opticalComponents=[];
@@ -313,33 +273,6 @@ export async function buildCoaxialStackNativeWitness(input,spec){
     nativeObservation:false,
     nativeImageDetected:false,
     questionSupport:'not-assessed-by-engine'
-  };
-}
-
-// Exact binary64-rational ray-line geometry on represented binary64 inputs,
-// eliminating product-difference cancellation up to the 1e9 mm target ceiling.
-export function computeWitnessRayMetrics(pointMm,incomingUnit,targetPointMm){
-  const xh=fromBinary64(pointMm.x),yh=fromBinary64(pointMm.y);
-  const ux=fromBinary64(incomingUnit.x),uy=fromBinary64(incomingUnit.y);
-  const tx=fromBinary64(targetPointMm.x),ty=fromBinary64(targetPointMm.y);
-  const dx=subtract(tx,xh),dy=subtract(ty,yh);
-  const perpMiss=toBinary64(absR(subtract(multiply(dx,uy),multiply(dy,ux))));
-  const yAtTargetXR=add(yh,divide(multiply(dx,uy),ux));
-  const yAtTargetX=toBinary64(yAtTargetXR);
-  const deltaY=toBinary64(subtract(yAtTargetXR,ty));
-  let xAtTargetY=null,deltaX=null;
-  if(Math.abs(incomingUnit.y)>1e-12){
-    const xAtTargetYR=add(xh,divide(multiply(dy,ux),uy));
-    const xNum=toBinary64(xAtTargetYR);
-    const dxNum=toBinary64(subtract(xAtTargetYR,tx));
-    if(Number.isFinite(xNum)&&Number.isFinite(dxNum)){xAtTargetY=xNum;deltaX=dxNum;}
-  }
-  return {
-    perpendicularMissMm:Number.isFinite(perpMiss)?perpMiss:null,
-    yAtTargetXMm:Number.isFinite(yAtTargetX)?yAtTargetX:null,
-    deltaYAtTargetXMm:Number.isFinite(deltaY)?deltaY:null,
-    xAtTargetYMm:xAtTargetY,
-    deltaXAtTargetYMm:deltaX
   };
 }
 
@@ -432,73 +365,9 @@ function compareOutgoingHits(paraxialResult,events,exitPlaneX,elements,emitted,o
     };
   }
 
-  // Handle collimated/afocal paraxial output explicitly (no finite target point).
-  if(paraxialResult.kind==='coaxial-stack-collimated-focus'&&pv.isAfocal){
-    const hitRows=outgoing.map((ev,i)=>{
-      const slopeR=divide(fromBinary64(ev.incomingUnit.y),fromBinary64(ev.incomingUnit.x));
-      const slope=toBinary64(slopeR);
-      const absSlope=toBinary64(absR(slopeR));
-      return {
-        index:i,
-        pointMm:ev.pointMm,
-        incomingUnit:ev.incomingUnit,
-        slope:Number.isFinite(slope)?slope:null,
-        absSlope:Number.isFinite(absSlope)?absSlope:null
-      };
-    });
-    const finiteSlopes=hitRows.map(h=>h.absSlope).filter(v=>typeof v==='number'&&Number.isFinite(v));
-    return {
-      status:'observed-afocal-collimation-compared',
-      routeQualification:'all-emitted-rays-encountered-every-element',
-      exitDirection,
-      outgoingHitCount:outgoing.length,
-      nonExitDirectionHitCount:nonExitCount,
-      stackEncounters,
-      targetPointMm:null,
-      maxAbsOutgoingSlope:finiteSlopes.length===hitRows.length?Math.max(...finiteSlopes):null,
-      hits:hitRows
-    };
-  }
-  if(paraxialResult.kind==='coaxial-stack-conjugate'&&pv.imageKind==='at-infinity'){
-    return {
-      status:'paraxial-at-infinity',
-      routeQualification:'all-emitted-rays-encountered-every-element',
-      reason:'Paraxial image lies at infinity; outgoing native ray directions are reported without a finite target coordinate.',
-      exitDirection,
-      outgoingHitCount:outgoing.length,
-      nonExitDirectionHitCount:nonExitCount,
-      stackEncounters,
-      targetPointMm:null,
-      hits:outgoing.map((ev,i)=>({index:i,pointMm:ev.pointMm,incomingUnit:ev.incomingUnit}))
-    };
-  }
-
-  const targetX=paraxialResult.kind==='coaxial-stack-conjugate'?pv.imageX:pv.backFocusX;
-  const targetY=paraxialResult.kind==='coaxial-stack-conjugate'?(own(pv,'imageY')?pv.imageY:0):0;
-  const targetPointMm={x:targetX,y:targetY};
-
-  const hitRows=outgoing.map((ev,i)=>({
-    index:i,
-    pointMm:ev.pointMm,
-    incomingUnit:ev.incomingUnit,
-    ...computeWitnessRayMetrics(ev.pointMm,ev.incomingUnit,targetPointMm)
-  }));
-
-  const misses=hitRows.map(h=>h.perpendicularMissMm).filter(v=>typeof v==='number'&&Number.isFinite(v));
-  const deltaYs=hitRows.map(h=>h.deltaYAtTargetXMm).filter(v=>typeof v==='number'&&Number.isFinite(v)).map(Math.abs);
-
-  return {
-    status:'observed-ray-geometry-compared',
-    routeQualification:'all-emitted-rays-encountered-every-element',
-    exitDirection,
-    outgoingHitCount:outgoing.length,
-    nonExitDirectionHitCount:nonExitCount,
-    stackEncounters,
-    targetPointMm,
-    maxPerpendicularMissMm:misses.length===hitRows.length?Math.max(...misses):null,
-    maxAbsDeltaYAtTargetXMm:deltaYs.length===hitRows.length?Math.max(...deltaYs):null,
-    hits:hitRows
-  };
+  return compareQualifiedWitnessHits(
+    paraxialResult,outgoing,nonExitCount,stackEncounters,'all-emitted-rays-encountered-every-element'
+  );
 }
 
 export async function runCoaxialStackNativeWitness(input,spec,{execute}={}){
@@ -512,10 +381,7 @@ export async function runCoaxialStackNativeWitness(input,spec,{execute}={}){
   const observed=await evaluateObservables(plan.document,plan.witnessRequests,summary);
   const byId=Object.fromEntries(observed.results.map(r=>[r.id,r]));
 
-  const nativeQualified=summary?.canonicalSha256===plan.sceneSha256&&
-    summary?.executionPassed===true&&
-    summary?.observations?.v37EndpointsVerified===true&&
-    ['completed','completed-with-warnings'].includes(summary?.native?.status);
+  const nativeQualified=isAcceptedExecutionSummary(plan.document,plan.sceneSha256,summary);
 
   const exitEl=plan.mapping.elements.find(e=>e.id===plan.paraxialResult.value?.exitElementId);
   const exitPlaneX=exitEl?exitEl.x:0;
