@@ -18,7 +18,6 @@ import {
 import {prepareScene} from './authoring.js';
 import {add,divide,fromBinary64,subtract,toBinary64} from './binary64-rational.js';
 import {REFRACTIVE_BENCH_MODEL,REFRACTIVE_BENCH_VERSION} from './native-general-refractive-bench.js';
-import {isAcceptedExecutionSummary,qualifyRunnerSummary} from './native-observations.js';
 import {evaluateObservables} from './observables.js';
 import {sceneHash} from './qualified-utils.js';
 import {
@@ -31,6 +30,7 @@ import {
   compareQualifiedWitnessHits,
   negR,
   own,
+  qualifyWitnessExecution,
   resolveWitnessStackInput as resolveStackInput,
   validateWitnessDetector,
   witnessFail as fail
@@ -387,11 +387,11 @@ export async function runRefractiveStackNativeWitness(input,spec,{execute}={}){
 
   const plan=await buildRefractiveStackNativeWitness(input,spec);
   const rawExecution=await execute(structuredClone(plan.document),structuredClone(plan.witnessRequests));
-  const summary=qualifyRunnerSummary(plan.document,rawExecution?.summary);
-  const observed=await evaluateObservables(plan.document,plan.witnessRequests,summary);
+  const {summary,nativeQualified,observableSummary}=qualifyWitnessExecution(
+    plan.document,plan.sceneSha256,rawExecution?.summary
+  );
+  const observed=await evaluateObservables(plan.document,plan.witnessRequests,observableSummary);
   const byId=Object.fromEntries(observed.results.map(r=>[r.id,r]));
-
-  const nativeQualified=isAcceptedExecutionSummary(plan.document,plan.sceneSha256,summary);
 
   // Sum exact emitted counts across all authored witness emitters.
   const emissionResults=plan.mapping.emitters.map((_,i)=>byId['witness-emissions-'+(i+1)]);

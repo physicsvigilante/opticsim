@@ -13,6 +13,7 @@ import {
   verifyCoaxialStackPackage
 } from './coaxial-stack-exploration.js';
 import {absolute,add,divide,fromBinary64,multiply,subtract,toBinary64} from './binary64-rational.js';
+import {isAcceptedExecutionSummary,qualifyRunnerSummary} from './native-observations.js';
 import {isRecord} from './qualified-utils.js';
 
 export const WITNESS_SUPPORTED_QUERIES=Object.freeze(['coaxial-stack-conjugate','coaxial-stack-collimated-focus']);
@@ -242,6 +243,26 @@ export function computeWitnessRayMetrics(pointMm,incomingUnit,targetPointMm){
     xAtTargetYMm:xAtTargetY,
     deltaXAtTargetYMm:deltaX
   };
+}
+
+export function qualifyWitnessExecution(doc,expectedSceneSha256,rawSummary){
+  const summary=qualifyRunnerSummary(doc,rawSummary);
+  const nativeQualified=isAcceptedExecutionSummary(doc,expectedSceneSha256,summary);
+  const observableSummary=nativeQualified?summary:{
+    canonicalSha256:summary?.canonicalSha256??null,
+    executionPassed:false,
+    native:{
+      status:summary?.native?.status??'incomplete',
+      error:summary?.native?.error??'Native witness run did not satisfy complete execution qualification.',
+      errors:Array.isArray(summary?.native?.errors)&&summary.native.errors.length
+        ?summary.native.errors
+        :['Native witness run did not satisfy complete execution qualification.'],
+      warnings:Array.isArray(summary?.native?.warnings)?summary.native.warnings:[]
+    },
+    observations:null,
+    measurementState:'withheld-incomplete'
+  };
+  return {summary,nativeQualified,observableSummary};
 }
 
 export function compareQualifiedWitnessHits(paraxialResult,outgoing,nonExitCount,stackEncounters,routeQualification){

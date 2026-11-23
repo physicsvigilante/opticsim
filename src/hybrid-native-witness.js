@@ -20,7 +20,6 @@ import {
 import {prepareScene} from './authoring.js';
 import {add,divide,fromBinary64,subtract,toBinary64} from './binary64-rational.js';
 import {HYBRID_BENCH_MODEL,HYBRID_BENCH_VERSION} from './native-general-hybrid-bench.js';
-import {isAcceptedExecutionSummary,qualifyRunnerSummary} from './native-observations.js';
 import {evaluateObservables} from './observables.js';
 import {sceneHash} from './qualified-utils.js';
 import {
@@ -35,6 +34,7 @@ import {
   isPlainObject,
   negR,
   own,
+  qualifyWitnessExecution,
   resolveWitnessStackInput as resolveStackInput,
   validateWitnessDetector,
   witnessFail as fail
@@ -566,11 +566,11 @@ export async function runHybridStackNativeWitness(input,spec,{execute}={}){
 
   const plan=await buildHybridStackNativeWitness(input,spec);
   const rawExecution=await execute(structuredClone(plan.document),structuredClone(plan.witnessRequests));
-  const summary=qualifyRunnerSummary(plan.document,rawExecution?.summary);
-  const observed=await evaluateObservables(plan.document,plan.witnessRequests,summary);
+  const {summary,nativeQualified,observableSummary}=qualifyWitnessExecution(
+    plan.document,plan.sceneSha256,rawExecution?.summary
+  );
+  const observed=await evaluateObservables(plan.document,plan.witnessRequests,observableSummary);
   const byId=Object.fromEntries(observed.results.map(r=>[r.id,r]));
-
-  const nativeQualified=isAcceptedExecutionSummary(plan.document,plan.sceneSha256,summary);
 
   const emissionResults=plan.mapping.emitters.map((_,i)=>byId['witness-emissions-'+(i+1)]);
   const totalEmitted=emissionResults.every(r=>r&&(r.status==='available'||r.status==='qualified')&&Number.isSafeInteger(r.value))

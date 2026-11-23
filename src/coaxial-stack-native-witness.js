@@ -16,7 +16,6 @@ import {
 import {prepareScene} from './authoring.js';
 import {divide,fromBinary64,toBinary64} from './binary64-rational.js';
 import {GENERAL_BENCH_MODEL,GENERAL_BENCH_VERSION} from './native-general-optical-bench.js';
-import {isAcceptedExecutionSummary,qualifyRunnerSummary} from './native-observations.js';
 import {evaluateObservables} from './observables.js';
 import {sceneHash} from './qualified-utils.js';
 import {
@@ -31,6 +30,7 @@ import {
   isPlainObject,
   negR,
   own,
+  qualifyWitnessExecution,
   resolveWitnessStackInput as resolveStackInput,
   validateWitnessDetector,
   witnessFail as fail
@@ -377,11 +377,11 @@ export async function runCoaxialStackNativeWitness(input,spec,{execute}={}){
 
   const plan=await buildCoaxialStackNativeWitness(input,spec);
   const rawExecution=await execute(structuredClone(plan.document),structuredClone(plan.witnessRequests));
-  const summary=qualifyRunnerSummary(plan.document,rawExecution?.summary);
-  const observed=await evaluateObservables(plan.document,plan.witnessRequests,summary);
+  const {summary,nativeQualified,observableSummary}=qualifyWitnessExecution(
+    plan.document,plan.sceneSha256,rawExecution?.summary
+  );
+  const observed=await evaluateObservables(plan.document,plan.witnessRequests,observableSummary);
   const byId=Object.fromEntries(observed.results.map(r=>[r.id,r]));
-
-  const nativeQualified=isAcceptedExecutionSummary(plan.document,plan.sceneSha256,summary);
 
   const exitEl=plan.mapping.elements.find(e=>e.id===plan.paraxialResult.value?.exitElementId);
   const exitPlaneX=exitEl?exitEl.x:0;
