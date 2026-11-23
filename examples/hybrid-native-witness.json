@@ -1,0 +1,48 @@
+{
+  "description": "Worked hybrid paraxial-to-native v39 witness: ideal thin lens + planar glass slab (n=1.5) + concave terminal mirror return (8/8 native encounters including detector).",
+  "stack": {
+    "format": "opticsim-coaxial-paraxial-stack-facts-v1",
+    "model": "coaxial-paraxial-optical-stack",
+    "signConvention": "x-increasing",
+    "lengthUnit": "mm",
+    "incidentIndex": 1,
+    "elements": [
+      {"id": "L1", "type": "thin-lens", "x": -90, "focalLength": 180},
+      {"id": "S1", "type": "refracting-surface", "x": -20, "signedRadius": "infinity", "downstreamIndex": 1.5},
+      {"id": "S2", "type": "refracting-surface", "x": 30, "signedRadius": "infinity", "downstreamIndex": 1},
+      {"id": "CM1", "type": "terminal-mirror", "x": 110, "signedRadius": -200}
+    ]
+  },
+  "witnessSpec": {
+    "format": "opticsim-hybrid-stack-native-witness-v1",
+    "title": "Worked hybrid slab + thin lens + concave mirror return witness (v39)",
+    "query": {
+      "format": "opticsim-coaxial-paraxial-stack-query-v1",
+      "kind": "coaxial-stack-collimated-focus"
+    },
+    "bodies": [
+      {"id": "SL1", "frontSurfaceId": "S1", "backSurfaceId": "S2", "apertureHeight": 100}
+    ],
+    "aperturesById": {
+      "L1": 80,
+      "CM1": 80
+    },
+    "mirrorModel": "circular-arc-mirror",
+    "partialReflection": false,
+    "emitter": {
+      "mode": "single-ray",
+      "rays": [
+        {"id": "R_paraxial", "x": -180, "y": 2, "brightness": 0.5},
+        {"id": "R_marginal", "x": -180, "y": 24, "brightness": 0.5}
+      ]
+    },
+    "detector": {
+      "id": "D1",
+      "x": -210,
+      "y": 0,
+      "orientationDeg": 90,
+      "length": 140
+    },
+    "runPolicy": "preview-v1"
+  }
+}
