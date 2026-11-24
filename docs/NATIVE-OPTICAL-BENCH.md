@@ -81,7 +81,20 @@ node scripts/author-scene.mjs bench-capabilities
 - **Proportionate runtime audit (`v40EndpointsVerified`):** Reuses the shared emitted/incoming/outgoing `< 0.01 mm` endpoint, vertex, and circular/spherical/arc tangency audit plus deterministic seed verification, near-grazing dielectric incidence refusal (`|d · n| <= 1e-4`), and high-to-low near-critical refusal (`|n_i sin θ_i - n_t| <= 1e-6`). Truncation, stops, or audit faults fail closed and withhold accepted measurements.
 - **Browser starter:** Available in the **Scene** dropdown as `v40 / Unified optical bench (interior sources + glass + lens + mirror)` (`scenes/native-optical-bench.json`, `examples/native-optical-bench.json`).
 
-## 4. Known Boundaries & Upgrade Notes (Current Milestone 3)
+## 4. Paraxial-vs-Native Witness Bridge (`v40`)
+
+For coaxial paraxial stacks (`opticsim-coaxial-paraxial-stack-facts-v1` or `opticsim-coaxial-paraxial-stack-package-v1`), `src/optical-bench-witness.js` and `scripts/witness-optical-bench.mjs` compile supported coaxial stacks directly into validated `v40` scenes (`maxRayDepth = 16`):
+
+```powershell
+node scripts/witness-optical-bench.mjs capabilities
+node scripts/witness-optical-bench.mjs plan <stack-or-package.json> <witness-spec.json>
+node scripts/witness-optical-bench.mjs run <stack-or-package.json> <witness-spec.json>
+```
+
+- Compiles `0–2` finite dielectric bodies (planar slabs or signed/flat `spherical-lens`: biconvex, plano-convex, plano-concave, meniscus, biconcave; disjoint, touching layered slabs, or coaxial cemented doublets), `0–4` coaxial ideal thin lenses, and `0–1` terminal mirror (separated or flush flat/curved silvered on the final dielectric body) into `v40`.
+- Strictly separates conditional exact binary64-rational ABCD predictions (`nativeObservation: false`) from observed native PhyDemo ray geometry (`nativeObservation: true`), gating corroboration on `v40EndpointsVerified === true` and exact per-element / per-axial-face encounter accounting (including PhyDemo `surfaceMergingObjs` ownership on touching glass and flush silvered mirrors). Never claims native image detection (`nativeImageDetected: false`).
+
+## 5. Known Boundaries & Upgrade Notes (Current Milestone 4A)
 
 - **Milestone 1 → 2A `ideal-lens` note:** Milestone 2A extended `v40` in place to support decentered vertical lenses (`parameters.y`). Any pre-Milestone-2A `v40` save or authoring request containing an `ideal-lens` without `y` needs explicit `"y": 0` to preserve the original centered geometry.
 - **Milestone 2B `spherical-lens` signed/flat convention:** `frontRadius` and `backRadius` use the outward-convex sign convention (`+R` convex outward, `−R` concave inward, `null` flat/planar face) so all pre-existing biconvex `v15`–`v40` lenses keep identical geometry. Textbook Cartesian radii are $R_1 = \text{frontRadius}$ and $R_2 = -\text{backRadius}$. `spherical-lens` remains exterior-source-only; require `|radius| >= apertureHeight/2 + 1 mm` (or `null`), `centerThickness >= 2 mm`, and `edgeThickness >= 1 mm`.
