@@ -3,7 +3,7 @@
 // native benches (v37 optical, v38 refractive, v39 hybrid).
 // Pinned PhyDemo alone owns all ray tracing, intersections, refraction, TIR,
 // reflection, lens deflection, and absorption.
-import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
+import {CIRCULAR_TYPE,circularEncounter,circularExtents} from './circular-dielectric.js';
 import {segmentsIntersect} from './composition-validation.js';
 import {curvedFrame,curvedPoints,isCurved} from './curved-mirrors.js';
 import {FINITE_APERTURE_TYPE,apertureGeometry,separatedSegmentDistance} from './finite-aperture.js';
@@ -15,12 +15,15 @@ import {
   parallelBeamGeometry,
   pinnedBeamAdmissionSamples
 } from './parallel-beam.js';
-import {POLYGON_TYPE,polygonVertices} from './polygon-dielectric.js';
-import {SPHERICAL_LENS_TYPE,thickLensExtents,thickLensGeometry} from './spherical-lens.js';
-import {PRISM_TYPE,prismVertices} from './triangular-prism.js';
+import {POLYGON_TYPE,polygonEncounter,polygonVertices} from './polygon-dielectric.js';
+import {SPHERICAL_LENS_TYPE,sphericalLensEncounter,thickLensExtents,thickLensGeometry} from './spherical-lens.js';
+import {PRISM_TYPE,prismEncounter,prismVertices} from './triangular-prism.js';
 
 export const BENCH_CLEARANCE_MM=0.01;
+export const BENCH_CONTACT_TOL_MM=1e-11;
+export const BENCH_MIN_CONTACT_OVERLAP_MM=1;
 export const BENCH_NATIVE_STATE_LIMIT=10000;
+export const OPTICAL_BENCH_V40_VERSION=40;
 export const DIELECTRIC_BODY_TYPES=Object.freeze([
   PRISM_TYPE,POLYGON_TYPE,CIRCULAR_TYPE,SPHERICAL_LENS_TYPE
 ]);
@@ -60,7 +63,7 @@ export function buildDielectricBody(c,cPath,fail,{allowSignedSpherical=false}={}
     const twiceArea=Math.abs(cross(delta(v[0],v[1]),delta(v[0],v[2])));
     if(faces.some(f=>f.length<1||twiceArea/f.length<1))
       fail(cPath,'Prism edges and altitudes must be at least 1 mm; collinear or repeated vertices are invalid.','UNSUPPORTED_SCOPE');
-    return {kind:'poly',id:c.id,type:c.type,insideIndex:p.insideIndex,outsideIndex:p.outsideIndex,vertices:v,faces,corners:v,tangentCircles:[]};
+    return {kind:'poly',id:c.id,type:c.type,insideIndex:p.insideIndex,outsideIndex:p.outsideIndex,vertices:v,faces,flatFaces:faces,corners:v,tangentCircles:[]};
   }
   if(c.type===POLYGON_TYPE){
     const v=polygonVertices(p);
@@ -74,13 +77,13 @@ export function buildDielectricBody(c,cPath,fail,{allowSignedSpherical=false}={}
     if(faces.some((f,i)=>f.length<1||v.some((q,j)=>j!==i&&j!==(i+1)%4&&
          Math.abs(cross(delta(f.a,f.b),delta(f.a,q)))/f.length<1)))
       fail(cPath,'All polygon edges and opposite-vertex altitudes must be at least 1 mm.','UNSUPPORTED_SCOPE');
-    return {kind:'poly',id:c.id,type:c.type,insideIndex:p.insideIndex,outsideIndex:p.outsideIndex,vertices:v,faces,corners:v,tangentCircles:[]};
+    return {kind:'poly',id:c.id,type:c.type,insideIndex:p.insideIndex,outsideIndex:p.outsideIndex,vertices:v,faces,flatFaces:faces,corners:v,tangentCircles:[]};
   }
   if(c.type===CIRCULAR_TYPE){
     if(p.radius<2||circularExtents(p).some(q=>!allowedCoord(q.x,q.y)))
       fail(cPath,'Circular dielectric requires radius >= 2 mm and must fit within +/-10000 mm.','UNSUPPORTED_SCOPE');
     const center={x:p.x,y:p.y};
-    return {kind:'circle',id:c.id,type:c.type,insideIndex:p.insideIndex,outsideIndex:p.outsideIndex,center,radius:p.radius,corners:[],tangentCircles:[{center,radius:p.radius}]};
+    return {kind:'circle',id:c.id,type:c.type,insideIndex:p.insideIndex,outsideIndex:p.outsideIndex,center,radius:p.radius,flatFaces:[],corners:[],tangentCircles:[{center,radius:p.radius}]};
   }
   // SPHERICAL_LENS_TYPE: conservative convex AABB contains the complete physical lens
   // (biconvex, plano-convex, plano-concave, meniscus, biconcave, or flat-flat in v40);
@@ -105,10 +108,23 @@ export function buildDielectricBody(c,cPath,fail,{allowSignedSpherical=false}={}
   const tangentCircles=[];
   if(p.frontRadius!==null)tangentCircles.push({center:g.frontCenter,radius:Math.abs(p.frontRadius)});
   if(p.backRadius!==null)tangentCircles.push({center:g.backCenter,radius:Math.abs(p.backRadius)});
+  const flatFaces=[];
+  if(p.frontRadius===null){
+    flatFaces.push({
+      a:{x:g.frontApex,y:g.bottom},b:{x:g.frontApex,y:g.top},
+      normal:{x:-1,y:0},length:p.apertureHeight
+    });
+  }
+  if(p.backRadius===null){
+    flatFaces.push({
+      a:{x:g.backApex,y:g.top},b:{x:g.backApex,y:g.bottom},
+      normal:{x:1,y:0},length:p.apertureHeight
+    });
+  }
   return {
     kind:'poly',id:c.id,type:c.type,insideIndex:p.insideIndex,outsideIndex:p.outsideIndex,
-    vertices:boxVertices,faces:finiteGlassFaces(boxVertices),corners:g.corners,
-    tangentCircles
+    vertices:boxVertices,faces:finiteGlassFaces(boxVertices),flatFaces,corners:g.corners,
+    lensParams:p,lensGeom:g,tangentCircles
   };
 }
 
@@ -226,6 +242,121 @@ export function bodiesDisjointExact(a,b,clearance){
     }
   }
   return true;
+}
+
+function collinearOverlapMm(a,b,c,d){
+  const vx=b.x-a.x,vy=b.y-a.y,len=Math.hypot(vx,vy);
+  if(!(len>0&&Number.isFinite(len)))return 0;
+  const tx=vx/len,ty=vy/len;
+  const pc=(c.x-a.x)*tx+(c.y-a.y)*ty,pd=(d.x-a.x)*tx+(d.y-a.y)*ty;
+  return Math.min(len,Math.max(pc,pd))-Math.max(0,Math.min(pc,pd));
+}
+
+// Exact clean flat-face contact between two disjoint-interior dielectric bodies
+// (e.g. stacked slabs, water-on-glass, prism-on-slab, or flat face of a spherical lens on a slab).
+// Contact tolerance 1e-11 mm stays 10x below PhyDemo's 1e-6 mm MIN_RAY_SEGMENT_LENGTH merge threshold
+// across the admitted dielectric angular envelope (|d·n| > 1e-4) while rejecting near-contact gaps.
+export function bodiesShareFlatContact(a,b,tol=BENCH_CONTACT_TOL_MM,minOverlap=BENCH_MIN_CONTACT_OVERLAP_MM){
+  if(!a.flatFaces?.length||!b.flatFaces?.length)return false;
+  for(const fa of a.flatFaces){
+    for(const fb of b.flatFaces){
+      if(dot(fa.normal,fb.normal)>-1+1e-9)continue;
+      if(Math.abs(dot(delta(fa.a,fb.a),fa.normal))>tol||Math.abs(dot(delta(fa.a,fb.b),fa.normal))>tol)continue;
+      if(b.vertices.some(v=>dot(delta(fa.a,v),fa.normal)<-tol))continue;
+      if(a.vertices.some(v=>dot(delta(fb.a,v),fb.normal)<-tol))continue;
+      if(collinearOverlapMm(fa.a,fa.b,fb.a,fb.b)>=minOverlap)return true;
+    }
+  }
+  return false;
+}
+
+// Exact coaxial cemented-doublet contact between two spherical-lens bodies:
+// left lens back face and right lens front face share identical apex and opposite-signed curvature
+// (or both flat), guaranteeing disjoint interiors across both apertures.
+export function sphericalLensesCemented(a,b,tol=BENCH_CONTACT_TOL_MM){
+  if(a.type!==SPHERICAL_LENS_TYPE||b.type!==SPHERICAL_LENS_TYPE)return false;
+  const pairs=[[a,b],[b,a]];
+  for(const [left,right] of pairs){
+    const pL=left.lensParams,pR=right.lensParams,gL=left.lensGeom,gR=right.lensGeom;
+    if(Math.abs(pL.y-pR.y)>tol)continue;
+    if(Math.abs(gL.backApex-gR.frontApex)>tol)continue;
+    const bothFlat=pL.backRadius===null&&pR.frontRadius===null;
+    const matchedCurved=pL.backRadius!==null&&pR.frontRadius!==null&&
+      Math.abs(pL.backRadius+pR.frontRadius)<=tol;
+    if(bothFlat||matchedCurved)return true;
+  }
+  return false;
+}
+
+// Exact flush silvering of a plane mirror on a physical flat dielectric face
+// (e.g. silvered slab, silvered prism, flat-silvered plano-convex/plano-concave lens, or mirror table).
+export function planeMirrorCoincidentWithBody(mirrorSeg,body,tol=BENCH_CONTACT_TOL_MM,minOverlap=BENCH_MIN_CONTACT_OVERLAP_MM){
+  if(!body.flatFaces?.length)return false;
+  const [m1,m2]=mirrorSeg;
+  for(const f of body.flatFaces){
+    if(Math.abs(dot(delta(f.a,m1),f.normal))>tol||Math.abs(dot(delta(f.a,m2),f.normal))>tol)continue;
+    if(body.vertices.some(v=>dot(delta(f.a,v),f.normal)>tol))continue;
+    if(collinearOverlapMm(f.a,f.b,m1,m2)>=minOverlap)return true;
+  }
+  return false;
+}
+
+// Exact flush silvering of a circular-arc-mirror on a curved spherical-lens face or circular-dielectric boundary.
+export function arcMirrorCoincidentWithBody(arcMirror,body,tol=BENCH_CONTACT_TOL_MM){
+  if(arcMirror.type!=='circular-arc-mirror')return false;
+  const p=arcMirror.parameters,{n}=curvedFrame(p);
+  const mCenter={x:p.x+p.radius*n.x,y:p.y+p.radius*n.y},mR=Math.abs(p.radius);
+  const pts=curvedPoints(arcMirror);
+  if(body.type===CIRCULAR_TYPE){
+    return Math.abs(mR-body.radius)<=tol&&
+      Math.hypot(mCenter.x-body.center.x,mCenter.y-body.center.y)<=tol;
+  }
+  if(body.type===SPHERICAL_LENS_TYPE){
+    const lp=body.lensParams,g=body.lensGeom;
+    const faces=[];
+    if(lp.frontRadius!==null)faces.push({center:g.frontCenter,radius:lp.frontRadius,isFront:true});
+    if(lp.backRadius!==null)faces.push({center:g.backCenter,radius:lp.backRadius,isFront:false});
+    for(const f of faces){
+      if(Math.abs(mR-Math.abs(f.radius))>tol)continue;
+      if(Math.hypot(mCenter.x-f.center.x,mCenter.y-f.center.y)>tol)continue;
+      const sgn=Math.sign(f.radius);
+      const onFace=pts.every(q=>{
+        if(q.y<g.bottom-tol||q.y>g.top+tol)return false;
+        return f.isFront
+          ?(sgn>0?q.x<=f.center.x+tol:q.x>=f.center.x-tol)
+          :(sgn>0?q.x>=f.center.x-tol:q.x<=f.center.x+tol);
+      });
+      if(onFace)return true;
+    }
+  }
+  return false;
+}
+
+export function dielectricEncounter(component,nativePoint,incoming){
+  if(component.type===CIRCULAR_TYPE)return circularEncounter(component,nativePoint,incoming);
+  if(component.type===PRISM_TYPE)return prismEncounter(component,nativePoint,incoming);
+  if(component.type===POLYGON_TYPE)return polygonEncounter(component,nativePoint,incoming);
+  if(component.type===SPHERICAL_LENS_TYPE)return sphericalLensEncounter(component,nativePoint,incoming);
+  return null;
+}
+
+// Resolve effective (incidentIndex, destinationIndex) for a v40 dielectric encounter
+// when PhyDemo passes non-empty surfaceMergingObjs (touching/cemented glass bodies).
+export function resolveMergedDielectricIndices(component,encounter,nativePoint,incoming,surfaceMergingObjs,nativeToComp){
+  if(!encounter||encounter.invalid)return {incidentIndex:NaN,destinationIndex:NaN,mergedWithId:null,invalid:true};
+  const merged=Array.isArray(surfaceMergingObjs)?surfaceMergingObjs:[];
+  if(!merged.length)
+    return {incidentIndex:encounter.incidentIndex,destinationIndex:encounter.destinationIndex,mergedWithId:null,invalid:false};
+  if(merged.length!==1)return {incidentIndex:NaN,destinationIndex:NaN,mergedWithId:null,invalid:true};
+  const other=nativeToComp.get(merged[0]);
+  if(!other||!DIELECTRIC_BODY_TYPES.includes(other.type))
+    return {incidentIndex:NaN,destinationIndex:NaN,mergedWithId:null,invalid:true};
+  const encOther=dielectricEncounter(other,nativePoint,incoming);
+  if(!encOther||encOther.invalid||encounter.from===encOther.from)
+    return {incidentIndex:NaN,destinationIndex:NaN,mergedWithId:null,invalid:true};
+  return encounter.from==='inside'
+    ?{incidentIndex:component.parameters.insideIndex,destinationIndex:other.parameters.insideIndex,mergedWithId:other.id,invalid:false}
+    :{incidentIndex:other.parameters.insideIndex,destinationIndex:component.parameters.insideIndex,mergedWithId:other.id,invalid:false};
 }
 
 export function componentFiniteEndpoints(c,mirrorEndpoints){

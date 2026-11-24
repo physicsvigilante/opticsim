@@ -189,7 +189,7 @@ function validateVersion(doc, version) {
     'general-optical':c=>validateMixedTraceScope(c,true),
     'plane-mirror':validateMirrorScope,
     'lens-bench':c=>validateBenchScope(c,version),
-    detectors:validateDetectorScope,
+    detectors:c=>version===OPTICAL_BENCH_V40_VERSION?undefined:validateDetectorScope(c),
     'opaque-circles':c=>validateCircleBlockerGeometry(c,mirrorEndpoints,fail)
   });
   const v = doc.presentation;
