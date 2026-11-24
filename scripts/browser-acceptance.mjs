@@ -400,6 +400,10 @@ async function main(){
     const v39Starter=await composableStarter('native-general-hybrid-bench','Composable hybrid optical & refractive bench · v39',['completed','completed-with-warnings']);
     assert.match(v39Starter.detectorReadouts,/D1: 4 native crossings/);
     await shot('v39-hybrid-bench-starter');
+    const v40Starter=await composableStarter('native-optical-bench','Unified optical bench · v40',['completed','completed-with-warnings']);
+    assert.match(v40Starter.detectorReadouts,/D1: 4 native crossings/);
+    assert.deepEqual(v40Starter.sourceChoices,['Single ray (native)']);
+    await shot('v40-unified-bench-starter');
 
     // Load a v39 single-ray scene via #load to verify single-ray sourcePicker isolation and sampling-note guidance.
     const v39SinglePath=join(profile,'v39-single-ray.json');

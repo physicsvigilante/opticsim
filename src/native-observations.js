@@ -5,6 +5,7 @@ export const NATIVE_OBSERVATION_KEYS=Object.freeze([
 ]);
 export const MISSING_V27_ENDPOINTS='A fresh native endpoint verification is required for this profile.';
 export function hasEndpointEvidence(doc,evidence) {
+  if(doc?.schemaVersion===40)return evidence?.v40EndpointsVerified===true;
   if(doc?.schemaVersion===39)return evidence?.v39EndpointsVerified===true;
   if(doc?.schemaVersion===38)return evidence?.v38EndpointsVerified===true;
   if(doc?.schemaVersion===37)return evidence?.v37EndpointsVerified===true;
@@ -46,6 +47,8 @@ export function snapshotNativeObservations(diagnostics,requests=[]){
   const parentage=requests.some(r=>r?.kind==='detector-ray-provenance');
   const finite=requests.some(r=>r?.kind==='finite-hit-numerical-diagnostic');
   return {...ordinary,
+    ...(diagnostics?.v40EndpointsVerified===true?{v40EndpointsVerified:true}:{}),
+    ...(diagnostics?.v40OpticalIncidentsById?{v40OpticalIncidentsById:structuredClone(diagnostics.v40OpticalIncidentsById)}:{}),
     ...(diagnostics?.v39EndpointsVerified===true?{v39EndpointsVerified:true}:{}),
     ...(diagnostics?.v39OpticalIncidentsById?{v39OpticalIncidentsById:structuredClone(diagnostics.v39OpticalIncidentsById)}:{}),
     ...(diagnostics?.v38EndpointsVerified===true?{v38EndpointsVerified:true}:{}),

@@ -6,7 +6,7 @@ import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {capabilities,prepareScene,reviseScene,AuthoringError} from '../src/authoring.js';
+import {capabilities,opticalBenchCapabilities,prepareScene,reviseScene,AuthoringError} from '../src/authoring.js';
 import {problemCapabilities,resolveProblemRequest} from '../src/problem-authoring.js';
 import {serializeSave} from '../src/contract.js';
 import {snapshotNativeObservations} from '../src/native-observations.js';
@@ -58,7 +58,7 @@ export function evaluateDocument(doc,core,requests=[]) {
 }
 function usage() {
   return 'Usage:\n'+
-    '  node scripts/author-scene.mjs capabilities|problem-capabilities\n'+
+    '  node scripts/author-scene.mjs capabilities|bench-capabilities|problem-capabilities\n'+
     '  node scripts/author-scene.mjs problem <request.json> [--illustrate] [--out test-artifacts/llm-authoring/<fresh-name>]\n'+
     '  node scripts/author-scene.mjs evaluate <request.json> [--out test-artifacts/llm-authoring/<fresh-name>]\n'+
     '  node scripts/author-scene.mjs revise <scene.json> <changes.json> [--out test-artifacts/llm-authoring/<fresh-name>]\n'+
@@ -84,8 +84,9 @@ function record(summary,details,sceneText,context){
 function main(context){
   const [command,...args]=process.argv.slice(2);
   context.command=command;
-  if(['capabilities','problem-capabilities'].includes(command)&&args.length===0){
-    process.stdout.write(JSON.stringify(command==='capabilities'?capabilities():problemCapabilities(),null,2)+'\n');return;
+  if(['capabilities','bench-capabilities','problem-capabilities'].includes(command)&&args.length===0){
+    const payload=command==='capabilities'?capabilities():command==='bench-capabilities'?opticalBenchCapabilities():problemCapabilities();
+    process.stdout.write(JSON.stringify(payload,null,2)+'\n');return;
   }
   if(!['problem','evaluate','revise'].includes(command))throw new Error(usage());
   const count=command==='revise'?2:1;

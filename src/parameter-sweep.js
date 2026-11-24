@@ -6,6 +6,7 @@ import {reviseScene} from './authoring.js';
 import {validateObservables,evaluateObservables} from './observables.js';
 import {verifyQualifiedBundle,recordQualifiedEdit,createQualifiedBundle} from './qualification.js';
 import {isRecord,canonicalJSON} from './qualified-utils.js';
+import {OPTICAL_BENCH_V40_VERSION,V40_MAX_RAY_DEPTH} from './native-optical-bench.js';
 export const SWEEP_LIMITS=Object.freeze({samples:25,processedRayLimit:10000,maxRayDepth:8,rayDensity:1});
 function keys(value,allowed,label){
   if(!isRecord(value)||Object.keys(value).some(k=>!allowed.includes(k)))throw Error('Invalid '+label+' fields');
@@ -28,7 +29,8 @@ export function validateSweep(spec,baseline){
     throw Error('Supply 1–25 distinct finite numeric values; no ranges or executable expressions');
   const requests=spec.observables??baseline.observables;validateObservables(requests);
   if(!requests.length)throw Error('A sweep needs at least one requested observable');
-  for(const [key,maximum] of Object.entries(SWEEP_LIMITS)){
+  const maxRayDepthLimit=baseline.scene.schemaVersion===OPTICAL_BENCH_V40_VERSION?V40_MAX_RAY_DEPTH:SWEEP_LIMITS.maxRayDepth;
+  for(const [key,maximum] of Object.entries({...SWEEP_LIMITS,maxRayDepth:maxRayDepthLimit})){
     if(key!=='samples'&&baseline.scene.simulation[key]>maximum)
       throw Error('Sweep budget exceeded: '+key+' must be <= '+maximum+'; baseline is not silently changed');
   }

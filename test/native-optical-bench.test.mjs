@@ -1,0 +1,676 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {createRequire} from 'node:module';
+import {readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {
+  COMPONENT_REVISION_FORMAT,
+  capabilities,
+  opticalBenchCapabilities,
+  prepareScene,
+  reviseComponents,
+  reviseScene
+} from '../src/authoring.js';
+import {parseSave,serializeSave,validate} from '../src/contract.js';
+import {createExplorationNotebook} from '../src/exploration-notebook.js';
+import {replayExplorationNotebook} from '../src/exploration-notebook-replay.js';
+import {snapshotScenario} from '../src/exploration.js';
+import {
+  OPTICAL_BENCH_V40_MODEL,
+  OPTICAL_BENCH_V40_VERSION,
+  V40_DEFAULT_RANDOM_SEED,
+  V40_MAX_RAY_DEPTH
+} from '../src/native-optical-bench.js';
+import {evaluateObservables} from '../src/observables.js';
+import {runParameterSweep} from '../src/parameter-sweep.js';
+import {createQualifiedBundle,initialQualification} from '../src/qualification.js';
+import {sceneHash} from '../src/qualified-utils.js';
+import {evaluateDocument} from '../scripts/author-scene.mjs';
+
+const root=fileURLToPath(new URL('../',import.meta.url));
+const core=createRequire(import.meta.url)(resolve(root,'dist/test-core.cjs'));
+const exampleRequest=JSON.parse(readFileSync(resolve(root,'examples/native-optical-bench.json'),'utf8'));
+const starterSceneText=readFileSync(resolve(root,'scenes/native-optical-bench.json'),'utf8');
+const html=readFileSync(resolve(root,'public/index.html'),'utf8');
+
+function v40Req(components,{backgroundIndex=1,runPolicy,randomSeed,title='v40 test bench'}={}){
+  return {
+    title,
+    model:OPTICAL_BENCH_V40_MODEL,
+    lengthUnit:'mm',
+    backgroundIndex,
+    ...(runPolicy!==undefined?{runPolicy}:{}),
+    ...(randomSeed!==undefined?{randomSeed}:{}),
+    components
+  };
+}
+
+// Independent standalone Snell vector helper for analytical test oracles.
+// Uses standard Snell law on unit direction d and unit outward normal n (pointing into n2).
+function snellStep(d,nInto2,n1,n2){
+  const cosI=d.x*nInto2.x+d.y*nInto2.y;
+  const sinI=d.x*nInto2.y-d.y*nInto2.x; // signed cross in 2D
+  const ratio=n1/n2;
+  const sinT=ratio*sinI;
+  if(Math.abs(sinT)>=1){
+    // Total internal reflection: reflect across normal
+    return {tir:true,dir:{x:d.x-2*cosI*nInto2.x,y:d.y-2*cosI*nInto2.y}};
+  }
+  const cosT=Math.sqrt(1-sinT*sinT);
+  // Tangent unit vector perpendicular to nInto2 such that d = cosI * nInto2 + sinI * t
+  // Since sinI = d.x*n.y - d.y*n.x, t = (n.y, -n.x) satisfies d·t = d.x*n.y - d.y*n.x = sinI.
+  const tx=nInto2.y,ty=-nInto2.x;
+  return {tir:false,dir:{x:cosT*nInto2.x+sinT*tx,y:cosT*nInto2.y+sinT*ty}};
+}
+
+test('v40 classifyRun, capabilities, CLI bench-capabilities, and browser starter scene work cleanly',async()=>{
+  assert.equal(core.classifyRun('simulationComplete',{
+    errors:[],warnings:[],truncation:0,undefinedBehavior:0,v40EndpointsVerified:false
+  }),'incomplete');
+  assert.equal(core.classifyRun('simulationComplete',{
+    errors:[],warnings:[],truncation:0,undefinedBehavior:0,v40EndpointsVerified:true
+  }),'completed');
+
+  const slim=opticalBenchCapabilities();
+  assert.equal(slim.schemaVersion,OPTICAL_BENCH_V40_VERSION);
+  assert.equal(slim.model,OPTICAL_BENCH_V40_MODEL);
+  assert.equal(slim.maxRayDepth,V40_MAX_RAY_DEPTH);
+  assert.deepEqual(capabilities().opticalBench,slim);
+
+  const cliOut=JSON.parse(execFileSync(process.execPath,['scripts/author-scene.mjs','bench-capabilities'],{cwd:root,encoding:'utf8'}));
+  assert.deepEqual(cliOut,slim);
+
+  // Verify browser starter exists in scenes/, public/index.html, and matches examples/native-optical-bench.json physics.
+  assert.ok(html.includes('option value="native-optical-bench"'));
+  const starterDoc=parseSave(starterSceneText);
+  validate(starterDoc);
+  assert.equal(starterDoc.schemaVersion,40);
+  assert.equal(starterDoc.physics.model,OPTICAL_BENCH_V40_MODEL);
+  assert.equal(starterDoc.physics.backgroundIndex,1);
+  assert.equal(starterDoc.simulation.maxRayDepth,16);
+  assert.equal(starterDoc.simulation.randomSeed,V40_DEFAULT_RANDOM_SEED);
+
+  const {document:fromExample}=prepareScene(exampleRequest);
+  assert.deepEqual(fromExample.physics,starterDoc.physics);
+  assert.deepEqual(fromExample.simulation,starterDoc.simulation);
+
+  const reqs=[
+    {id:'s1',kind:'source-emissions',componentId:'S1'},
+    {id:'s2',kind:'source-emissions',componentId:'S2'},
+    {id:'c1',kind:'interface-interactions',componentId:'C1'},
+    {id:'sl1',kind:'interface-interactions',componentId:'SL1'},
+    {id:'m1',kind:'mirror-reflections',componentId:'M1'},
+    {id:'d1',kind:'detector-crossings',componentId:'D1'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ];
+  const run=await evaluateDocument(starterDoc,core,reqs);
+  assert.equal(run.summary.executionPassed,true);
+  assert.equal(run.summary.observations.v40EndpointsVerified,true);
+  assert.equal(run.summary.native.truncation,0);
+  assert.equal(run.summary.native.undefinedBehavior,0);
+  const byId=Object.fromEntries((await evaluateObservables(starterDoc,reqs,run.summary)).results.map(r=>[r.id,r]));
+  assert.equal(byId.s1.value,1);
+  assert.equal(byId.s2.value,1);
+  assert.equal(byId.c1.value,2); // 1 exit per interior source; return rays clear C1
+  assert.equal(byId.sl1.value,8); // 2 rays * (2 forward + 2 return)
+  assert.equal(byId.m1.value,2);
+  assert.equal(byId.d1.value,4); // 2 forward + 2 return crossings
+  assert.equal(byId.hits.value.length,4);
+  // Also confirm starter uses >8 encounters per ray (10 encounters), proving depth-16 capability:
+  const depth8Doc=structuredClone(starterDoc);
+  depth8Doc.simulation.maxRayDepth=8;
+  const depth8Run=await evaluateDocument(depth8Doc,core,reqs);
+  assert.equal(depth8Run.summary.executionPassed,false);
+  assert.equal(depth8Run.summary.native.status,'incomplete');
+});
+
+test('Family 1 oracle: interior source inside circular dielectric -> ideal thin lens -> detector',async()=>{
+  // Source at (0, 6) inside radius-15 circle centered at (0, 0), n_in = 1.5, backgroundIndex = 1.
+  // Ray exits horizontally right, refracts at curved boundary, crosses ideal thin lens at x = 40 (f = 80),
+  // hits vertical detector at x = 90.
+  const R=15,y0=6,nIn=1.5,nOut=1,xLens=40,fLens=80,xDet=90;
+  const xExit=Math.sqrt(R*R-y0*y0);
+  const nOutward={x:xExit/R,y:y0/R};
+  const afterCircle=snellStep({x:1,y:0},nOutward,nIn,nOut);
+  assert.equal(afterCircle.tir,false);
+  const slope1=afterCircle.dir.y/afterCircle.dir.x;
+  const yLens=y0+(xLens-xExit)*slope1;
+  // Exact PhyDemo IdealLens mapping: ray through (xLens, yLens) with incoming slope1
+  // goes through the focal point (xLens + fLens, fLens * slope1):
+  // slope2 = (fLens * slope1 - yLens) / fLens = slope1 - yLens / fLens.
+  const slope2=slope1-yLens/fLens;
+  const expectedYDet=yLens+(xDet-xLens)*slope2;
+
+  const {document:doc}=prepareScene(v40Req([
+    {id:'C1',type:'circular-dielectric',parameters:{x:0,y:0,radius:R,insideIndex:nIn,outsideIndex:nOut,partialReflection:false}},
+    {id:'S1',type:'point-source',parameters:{x:0,y:y0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'L1',type:'ideal-lens',parameters:{x:xLens,focalLength:fLens,apertureHeight:60}},
+    {id:'D1',type:'ray-detector',parameters:{x:xDet,y:0,orientationDeg:90,length:80}}
+  ]));
+  const reqs=[
+    {id:'c1',kind:'interface-first-event',componentId:'C1'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ];
+  const run=await evaluateDocument(doc,core,reqs);
+  assert.equal(run.summary.executionPassed,true);
+  assert.equal(run.summary.observations.v40EndpointsVerified,true);
+  assert.equal(run.summary.observations.v40OpticalIncidentsById.L1,1);
+  const byId=Object.fromEntries((await evaluateObservables(doc,reqs,run.summary)).results.map(r=>[r.id,r]));
+  assert.equal(byId.c1.value.from,'inside');
+  assert.equal(byId.c1.value.outcome,'transmission');
+  assert.equal(byId.hits.value.length,1);
+  assert.ok(Math.abs(byId.hits.value[0].pointMm.y-expectedYDet)<1e-6,
+    `Expected y=${expectedYDet}, got ${byId.hits.value[0].pointMm.y}`);
+});
+
+test('Family 2 oracle: interior triangular-prism source -> TIR on hypotenuse -> base exit -> ideal lens -> detector',async()=>{
+  // Right isosceles prism: V1=(0,0), V2=(40,0), V3=(0,40). Hypotenuse is x + y = 40.
+  // Interior source at (10, 10), shooting straight up (+90 deg).
+  // Hits hypotenuse at (10, 30) with incidence angle 45 deg (> critical angle arcsin(1/1.5) = 41.81 deg) -> pure TIR!
+  // After TIR on x+y=40, upward ray (0,1) reflects to (-1,0) leftward, hitting vertical face x=0 at (0, 30)
+  // at normal incidence -> exits straight left (-1,0)!
+  // Let's also make it oblique (85 deg) so BOTH TIR AND non-trivial Snell exit refraction + thin-lens bending are tested!
+  // Source at (8, 8), direction 85 deg (d = (cos85, sin85)):
+  const deg=85*Math.PI/180;
+  const d0={x:Math.cos(deg),y:Math.sin(deg)};
+  // Hits hypotenuse x + y = 40 at t1 = (40 - 16) / (d0.x + d0.y):
+  const t1=24/(d0.x+d0.y);
+  const p1={x:8+t1*d0.x,y:8+t1*d0.y};
+  const nHyp={x:Math.SQRT1_2,y:Math.SQRT1_2};
+  const step1=snellStep(d0,nHyp,1.5,1); // sin(theta_i) = sin(40 deg) = 0.6428 < 2/3 -> wait! Let's use 95 deg so incidence is 50 deg > 41.81 deg!
+  // Recompute cleanly with 95 deg:
+  const deg95=95*Math.PI/180;
+  const dir0={x:Math.cos(deg95),y:Math.sin(deg95)};
+  const th=(40-16)/(dir0.x+dir0.y);
+  const pHyp={x:8+th*dir0.x,y:8+th*dir0.y};
+  const afterTir=snellStep(dir0,nHyp,1.5,1);
+  assert.equal(afterTir.tir,true);
+  // Hits left vertical face x = 0 (outward normal (-1, 0)):
+  const tx=(0-pHyp.x)/afterTir.dir.x;
+  const pExit={x:0,y:pHyp.y+tx*afterTir.dir.y};
+  assert.ok(pExit.y>1&&pExit.y<39);
+  const afterExit=snellStep(afterTir.dir,{x:-1,y:0},1.5,1);
+  assert.equal(afterExit.tir,false);
+  // Left-going ray hits ideal lens at x = -30 (f = 100), then vertical detector at x = -70:
+  const xLens=-30,fLens=100,xDet=-70;
+  const slopeBefore=afterExit.dir.y/afterExit.dir.x; // dy/dx
+  const yLens=pExit.y+(xLens-0)*slopeBefore;
+  // For a left-going ray (dx < 0), PhyDemo IdealLens bends ray toward axis:
+  // In propagation coordinate s = -x, incoming slope m_in = dy/ds = -slopeBefore,
+  // outgoing slope m_out = m_in - yLens / fLens, so dy/dx = -m_out = slopeBefore + yLens / fLens.
+  const slopeAfter=slopeBefore+yLens/fLens;
+  const expectedYDet=yLens+(xDet-xLens)*slopeAfter;
+
+  const {document:doc}=prepareScene(v40Req([
+    {id:'PR1',type:'triangular-prism',parameters:{x1:0,y1:0,x2:40,y2:0,x3:0,y3:40,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'S1',type:'point-source',parameters:{x:8,y:8,brightness:0.2},emission:{mode:'single-ray',directionDeg:95}},
+    {id:'L1',type:'ideal-lens',parameters:{x:xLens,focalLength:fLens,apertureHeight:100}},
+    {id:'D1',type:'ray-detector',parameters:{x:xDet,y:0,orientationDeg:90,length:120}}
+  ]));
+  const reqs=[
+    {id:'tir',kind:'interface-tir-count',componentId:'PR1'},
+    {id:'cnt',kind:'interface-interactions',componentId:'PR1'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ];
+  const run=await evaluateDocument(doc,core,reqs);
+  assert.equal(run.summary.executionPassed,true);
+  assert.equal(run.summary.observations.v40EndpointsVerified,true);
+  const byId=Object.fromEntries((await evaluateObservables(doc,reqs,run.summary)).results.map(r=>[r.id,r]));
+  assert.equal(byId.tir.value,1);
+  assert.equal(byId.cnt.value,2); // 1 TIR on hypotenuse + 1 transmission on x=0
+  assert.equal(byId.hits.value.length,1);
+  assert.ok(Math.abs(byId.hits.value[0].pointMm.y-expectedYDet)<1e-6,
+    `Expected y=${expectedYDet}, got ${byId.hits.value[0].pointMm.y}`);
+});
+
+test('Family 3 oracle: two-body return, index-matched neutral slab, and 2 -> 1 -> 0 structural deletion closure',async()=>{
+  // Exact analytical predictions from the architectural debate:
+  // B1: circle center (0,0), R=10, n=1.5; S1 inside at (0,4), dir=0 deg.
+  // B2: rectangular slab x in [20,40], y in [-20,20], n=1.6.
+  // M1: vertical mirror at x=50, length=40; D1: vertical detector at x=15, y in [-16,-8].
+  const r=Math.sqrt(21);
+  const u=(r-6)/6;
+  const w=(3*r-8)/25;
+  const v=-(w/1.6)/Math.sqrt(1-(w/1.6)**2);
+  const a=4+(20-2*r)*u;
+  const yFull=a+25*u+40*v;         // ~ -10.273531748953 mm
+  const yNoSlab=a+65*u;            // ~ -13.915026264881 mm
+
+  const {document:fullDoc}=prepareScene(v40Req([
+    {id:'B1',type:'circular-dielectric',parameters:{x:0,y:0,radius:10,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'S1',type:'point-source',parameters:{x:0,y:4,brightness:0.1},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:20,y1:-20,x2:40,y2:-20,x3:40,y3:20,x4:20,y4:20,insideIndex:1.6,outsideIndex:1,partialReflection:false}},
+    {id:'M1',type:'plane-mirror',parameters:{x:50,y:0,orientationDeg:90,length:40}},
+    {id:'D1',type:'ray-detector',parameters:{x:15,y:-12,orientationDeg:90,length:8}}
+  ],{runPolicy:'preview-v1'})); // 7 encounters fits inside depth=8 too!
+
+  const fullReqs=[
+    {id:'b1',kind:'interface-interactions',componentId:'B1'},
+    {id:'b2',kind:'interface-interactions',componentId:'B2'},
+    {id:'m1',kind:'mirror-reflections',componentId:'M1'},
+    {id:'d1',kind:'detector-crossings',componentId:'D1'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ];
+  const fullRun=await evaluateDocument(fullDoc,core,fullReqs);
+  assert.equal(fullRun.summary.executionPassed,true);
+  assert.equal(fullRun.summary.observations.v40EndpointsVerified,true);
+  const fullById=Object.fromEntries((await evaluateObservables(fullDoc,fullReqs,fullRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(fullById.b1.value,1);
+  assert.equal(fullById.b2.value,4); // 2 forward + 2 return slab crossings
+  assert.equal(fullById.m1.value,1);
+  assert.equal(fullById.d1.value,1);
+  assert.ok(Math.abs(fullById.hits.value[0].pointMm.y-yFull)<1e-6);
+
+  // Variant B: index-matched neutral slab (insideIndex = 1 === backgroundIndex).
+  // Optically equivalent detector hit to deleted slab, while 4 slab interface crossings remain observed!
+  const neutralDoc=reviseScene(fullDoc,{changes:[{id:'B2',section:'parameters',key:'insideIndex',value:1}]}).document;
+  const neutralRun=await evaluateDocument(neutralDoc,core,fullReqs);
+  assert.equal(neutralRun.summary.executionPassed,true);
+  const neutralById=Object.fromEntries((await evaluateObservables(neutralDoc,fullReqs,neutralRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(neutralById.b2.value,4);
+  assert.equal(neutralById.d1.value,1);
+  assert.ok(Math.abs(neutralById.hits.value[0].pointMm.y-yNoSlab)<1e-6);
+
+  // Variant C: structural deletion of B2 (2 -> 1 bodies), preserving backgroundIndex & randomSeed.
+  const oneBodyDoc=reviseComponents(fullDoc,{
+    format:COMPONENT_REVISION_FORMAT,
+    operations:[{op:'remove',id:'B2'}]
+  }).document;
+  assert.equal(oneBodyDoc.physics.backgroundIndex,1);
+  assert.equal(oneBodyDoc.simulation.randomSeed,V40_DEFAULT_RANDOM_SEED);
+  const oneBodyReqs=[
+    {id:'b1',kind:'interface-interactions',componentId:'B1'},
+    {id:'m1',kind:'mirror-reflections',componentId:'M1'},
+    {id:'d1',kind:'detector-crossings',componentId:'D1'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ];
+  const oneBodyRun=await evaluateDocument(oneBodyDoc,core,oneBodyReqs);
+  assert.equal(oneBodyRun.summary.executionPassed,true);
+  const oneBodyById=Object.fromEntries((await evaluateObservables(oneBodyDoc,oneBodyReqs,oneBodyRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(oneBodyById.b1.value,1);
+  assert.equal(oneBodyById.d1.value,1);
+  assert.ok(Math.abs(oneBodyById.hits.value[0].pointMm.y-yNoSlab)<1e-6);
+  // Neutral-slab hit and deleted-slab hit agree to < 1e-9 mm:
+  assert.ok(Math.abs(neutralById.hits.value[0].pointMm.y-oneBodyById.hits.value[0].pointMm.y)<1e-9);
+
+  // Variant D: structural deletion of host circle B1 (1 -> 0 bodies!).
+  // Source S1 now emits horizontally at y=4 in ambient air, reflects once off M1, misses D1 at y in [-16,-8].
+  const zeroBodyDoc=reviseComponents(oneBodyDoc,{
+    format:COMPONENT_REVISION_FORMAT,
+    operations:[{op:'remove',id:'B1'}]
+  }).document;
+  assert.equal(zeroBodyDoc.physics.backgroundIndex,1);
+  const zeroBodyReqs=[
+    {id:'m1',kind:'mirror-reflections',componentId:'M1'},
+    {id:'d1',kind:'detector-crossings',componentId:'D1'}
+  ];
+  const zeroBodyRun=await evaluateDocument(zeroBodyDoc,core,zeroBodyReqs);
+  assert.equal(zeroBodyRun.summary.executionPassed,true);
+  assert.equal(zeroBodyRun.summary.observations.v40EndpointsVerified,true);
+  const zeroBodyById=Object.fromEntries((await evaluateObservables(zeroBodyDoc,zeroBodyReqs,zeroBodyRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(zeroBodyById.m1.value,1);
+  assert.equal(zeroBodyById.d1.value,0);
+
+  // Non-air ambient (water n=1.33) deletion & re-addition preserves backgroundIndex = 1.33:
+  const {document:waterDoc}=prepareScene(v40Req([
+    {id:'C1',type:'circular-dielectric',parameters:{x:0,y:0,radius:15,insideIndex:1.6,outsideIndex:1.33,partialReflection:false}},
+    {id:'S1',type:'point-source',parameters:{x:0,y:5,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'D1',type:'ray-detector',parameters:{x:40,y:0,orientationDeg:90,length:40}}
+  ],{backgroundIndex:1.33}));
+  const waterEmpty=reviseComponents(waterDoc,{format:COMPONENT_REVISION_FORMAT,operations:[{op:'remove',id:'C1'}]}).document;
+  assert.equal(waterEmpty.physics.backgroundIndex,1.33);
+  // Adding a new body with mismatched outsideIndex=1 must fail, while outsideIndex=1.33 passes:
+  assert.throws(()=>reviseComponents(waterEmpty,{
+    format:COMPONENT_REVISION_FORMAT,
+    operations:[{op:'add',lengthUnit:'mm',component:{id:'C2',type:'circular-dielectric',parameters:{x:0,y:0,radius:15,insideIndex:1.5,outsideIndex:1,partialReflection:false}}}]
+  }),/backgroundIndex/);
+  const waterRestored=reviseComponents(waterEmpty,{
+    format:COMPONENT_REVISION_FORMAT,
+    operations:[{op:'add',lengthUnit:'mm',component:{id:'C2',type:'circular-dielectric',parameters:{x:0,y:0,radius:15,insideIndex:1.5,outsideIndex:1.33,partialReflection:false}}}]
+  }).document;
+  assert.equal(waterRestored.physics.backgroundIndex,1.33);
+});
+
+test('Family 4: unfamiliar JEE compositions — equilateral prism + ideal lens + tilted mirror oracle, plus 4-lens parallel-beam bench',async()=>{
+  // 4A: Unfamiliar composition: exterior ray enters 60-deg equilateral prism (n=1.5 in air),
+  // exits right face, refracts through converging ideal thin lens at x=60 (f=120),
+  // reflects off 45-deg plane mirror at (110, -20) downward onto a horizontal detector at y=-60.
+  // Prism vertices: V1=(0,0), V2=(40,0), V3=(20, 20*sqrt(3) ≈ 34.64101615).
+  const h=20*Math.sqrt(3);
+  // Horizontal ray at y = 12 from S1=(-30, 12):
+  // Left face V1->V3: x = y / sqrt(3) => enters at xIn = 12/sqrt(3) = 4*sqrt(3), y = 12.
+  const xIn=12/Math.sqrt(3);
+  // Outward normal of left face V1->V3 (from (0,0) to (20, 20*sqrt(3))): (-sqrt(3)/2, 1/2).
+  // Normal pointing INTO glass is (+sqrt(3)/2, -1/2).
+  const inGlass=snellStep({x:1,y:0},{x:Math.sqrt(3)/2,y:-0.5},1,1.5);
+  assert.equal(inGlass.tir,false);
+  // Right face V2->V3: line from (40,0) to (20,20*sqrt(3)) => sqrt(3)*x + y = 40*sqrt(3).
+  const tRight=(40*Math.sqrt(3)-(Math.sqrt(3)*xIn+12))/(Math.sqrt(3)*inGlass.dir.x+inGlass.dir.y);
+  const pOut={x:xIn+tRight*inGlass.dir.x,y:12+tRight*inGlass.dir.y};
+  // Outward normal of right face: (+sqrt(3)/2, +1/2).
+  const outAir=snellStep(inGlass.dir,{x:Math.sqrt(3)/2,y:0.5},1.5,1);
+  assert.equal(outAir.tir,false);
+  const slope1=outAir.dir.y/outAir.dir.x;
+  const xLens=60,fLens=120;
+  const yLens=pOut.y+(xLens-pOut.x)*slope1;
+  const slope2=slope1-yLens/fLens;
+  // Tilted 105-deg plane mirror placed along the post-lens ray at xMir = 85:
+  // A down-right ray (~-45 deg) reflecting off a 105-deg tangent mirror exits at ~2*105 - (-45) = 255 deg (-105 deg, steeply downward)
+  // onto a horizontal detector at y = -80 without returning to the prism.
+  const xMir=85;
+  const yMir=yLens+slope2*(xMir-xLens);
+  const len2=Math.hypot(1,slope2);
+  const d2={x:1/len2,y:slope2/len2};
+  const mirDeg=105,phi=mirDeg*Math.PI/180;
+  const nMir={x:-Math.sin(phi),y:Math.cos(phi)};
+  const dn=d2.x*nMir.x+d2.y*nMir.y;
+  const dRefl={x:d2.x-2*dn*nMir.x,y:d2.y-2*dn*nMir.y};
+  assert.ok(dRefl.y<-0.5,'Reflected ray should head cleanly downward');
+  // Intersect horizontal detector at y = -80:
+  const yDet=-80;
+  const tDet=(yDet-yMir)/dRefl.y;
+  const expectedXDet=xMir+tDet*dRefl.x;
+
+  const {document:unfamiliarDoc}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-30,y:12,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'PR1',type:'triangular-prism',parameters:{x1:0,y1:0,x2:40,y2:0,x3:20,y3:h,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'L1',type:'ideal-lens',parameters:{x:xLens,focalLength:fLens,apertureHeight:100}},
+    {id:'M1',type:'plane-mirror',parameters:{x:xMir,y:yMir,orientationDeg:mirDeg,length:40}},
+    {id:'D1',type:'ray-detector',parameters:{x:expectedXDet,y:yDet,orientationDeg:0,length:50}}
+  ]));
+  const reqs=[
+    {id:'pr',kind:'interface-interactions',componentId:'PR1'},
+    {id:'m1',kind:'mirror-reflections',componentId:'M1'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ];
+  const run=await evaluateDocument(unfamiliarDoc,core,reqs);
+  assert.equal(run.summary.executionPassed,true);
+  assert.equal(run.summary.observations.v40EndpointsVerified,true);
+  const byId=Object.fromEntries((await evaluateObservables(unfamiliarDoc,reqs,run.summary)).results.map(r=>[r.id,r]));
+  assert.equal(byId.pr.value,2);
+  assert.equal(byId.m1.value,1);
+  assert.equal(byId.hits.value.length,1);
+  assert.ok(Math.abs(byId.hits.value[0].pointMm.x-expectedXDet)<1e-5,
+    `Expected x=${expectedXDet}, got ${byId.hits.value[0].pointMm.x}`);
+
+  // 4B: Parallel beam + 4 coaxial ideal lenses + finite glass slab + opaque stop + curved mirror + detector!
+  // Demonstrates v40 preserves parallel-beam AND 0..4 ideal lenses AND immersed backgroundIndex = 1.33.
+  const {document:fourLensDoc}=prepareScene(v40Req([
+    {id:'B1',type:'parallel-beam',parameters:{x:-220,y:0,width:20,directionDeg:0,brightness:0.2}},
+    {id:'L1',type:'ideal-lens',parameters:{x:-160,focalLength:300,apertureHeight:90}},
+    {id:'L2',type:'ideal-lens',parameters:{x:-110,focalLength:-400,apertureHeight:90}},
+    {id:'SL1',type:'polygon-dielectric',parameters:{x1:-60,y1:-50,x2:-20,y2:-50,x3:-20,y3:50,x4:-60,y4:50,insideIndex:1.6,outsideIndex:1.33,partialReflection:false}},
+    {id:'L3',type:'ideal-lens',parameters:{x:20,focalLength:250,apertureHeight:90}},
+    {id:'L4',type:'ideal-lens',parameters:{x:70,focalLength:250,apertureHeight:90}},
+    {id:'A1',type:'finite-aperture',parameters:{x:110,y:0,orientationDeg:90,length:100,openingLength:60}},
+    {id:'CM1',type:'circular-arc-mirror',parameters:{x:190,y:0,normalDeg:180,radius:240,apertureHeight:90}},
+    {id:'D1',type:'ray-detector',parameters:{x:135,y:0,orientationDeg:90,length:110}}
+  ],{backgroundIndex:1.33}));
+  const beamReqs=[
+    {id:'b1',kind:'source-emissions',componentId:'B1'},
+    {id:'sl1',kind:'interface-interactions',componentId:'SL1'},
+    {id:'cm1',kind:'mirror-reflections',componentId:'CM1'},
+    {id:'d1',kind:'detector-crossings',componentId:'D1'}
+  ];
+  const beamRun=await evaluateDocument(fourLensDoc,core,beamReqs);
+  assert.equal(beamRun.summary.executionPassed,true);
+  assert.equal(beamRun.summary.observations.v40EndpointsVerified,true);
+  assert.equal(beamRun.summary.observations.v40OpticalIncidentsById.L1,8); // 4 forward + 4 return (15 encounters/ray <= 16!)
+  assert.equal(beamRun.summary.observations.v40OpticalIncidentsById.L4,8);
+  const beamById=Object.fromEntries((await evaluateObservables(fourLensDoc,beamReqs,beamRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(beamById.b1.value,4);
+  assert.equal(beamById.sl1.value,16); // 4 rays * (2 forward + 2 return)
+  assert.equal(beamById.cm1.value,4);
+  assert.equal(beamById.d1.value,8); // 4 forward + 4 return!
+});
+
+test('v40 deterministic randomSeed replay, parameter sweeps at maxRayDepth=16, and exploration notebook replay',async()=>{
+  const {document:base}=prepareScene(v40Req([
+    {id:'C1',type:'circular-dielectric',parameters:{x:0,y:0,radius:20,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'S1',type:'point-source',parameters:{x:0,y:8,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'SL1',type:'polygon-dielectric',parameters:{x1:35,y1:-30,x2:65,y2:-30,x3:65,y3:30,x4:35,y4:30,insideIndex:1.55,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:90,y:0,orientationDeg:90,length:80}}
+  ],{randomSeed:'jee-demo-seed-42'}));
+  assert.equal(base.simulation.randomSeed,'jee-demo-seed-42');
+  assert.equal(base.simulation.maxRayDepth,16);
+
+  // Confirm randomSeed is passed to native PhyDemo Scene and survives round-trip export.
+  const loaded=core.loadDocument(base);
+  assert.equal(loaded.scene.randomSeed,'jee-demo-seed-42');
+  const reqs=[
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'},
+    {id:'det',kind:'detector-crossings',componentId:'D1'}
+  ];
+  const r1=await evaluateDocument(base,core,reqs);
+  const r2=await evaluateDocument(base,core,reqs);
+  assert.equal(r1.summary.executionPassed,true);
+  assert.deepEqual(r1.summary.observations.detectorHitEventsById,r2.summary.observations.detectorHitEventsById);
+
+  // Parameter sweep works at v40 maxRayDepth=16 without rejecting sweep budget:
+  const q=initialQualification(base,null,{inputSha256:await sceneHash(base)});
+  const bundle=await createQualifiedBundle(base,q,reqs);
+  const sweep=await runParameterSweep(bundle,{
+    format:'opticsim-parameter-sweep-v1',
+    expectedSceneSha256:bundle.sceneSha256,
+    parameter:{id:'SL1',section:'parameters',key:'insideIndex'},
+    values:[1,1.5,1.8,4.5],
+    observables:reqs
+  },{execute:doc=>evaluateDocument(doc,core,reqs)});
+  assert.equal(sweep.status,'completed-with-failed-samples');
+  assert.equal(sweep.completedSamples,3);
+  assert.equal(sweep.failedSamples,1);
+  assert.equal(sweep.samples[3].status,'invalid-input');
+
+  // Exploration notebook + fresh replay works cleanly on v40:
+  const snap=await snapshotScenario(bundle,r1,'Baseline');
+  const notebook=await createExplorationNotebook([snap]);
+  const replayed=await replayExplorationNotebook(notebook,{
+    run:(doc,obs)=>evaluateDocument(doc,core,obs)
+  });
+  assert.equal(replayed.status,'all-native-qualified');
+  assert.equal(replayed.newNativeQualified,1);
+});
+
+test('v40 negative controls: exact membership boundaries, mismatched ambient, spherical interior, grazing/critical/Fresnel guards, and legacy isolation',async()=>{
+  const circle={id:'C1',type:'circular-dielectric',parameters:{x:0,y:0,radius:10,insideIndex:1.5,outsideIndex:1,partialReflection:false}};
+  const prism={id:'PR1',type:'triangular-prism',parameters:{x1:0,y1:0,x2:20,y2:0,x3:0,y3:20,insideIndex:1.5,outsideIndex:1,partialReflection:false}};
+  const thick={id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:20,centerThickness:10,frontRadius:20,backRadius:20,insideIndex:1.5,outsideIndex:1,partialReflection:false}};
+
+  // 1. Missing backgroundIndex in authoring request -> rejected.
+  assert.throws(()=>prepareScene({
+    model:OPTICAL_BENCH_V40_MODEL,lengthUnit:'mm',
+    components:[{id:'S1',type:'point-source',parameters:{x:-20,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}}]
+  }),/backgroundIndex/);
+
+  // 2. Mismatched body outsideIndex vs backgroundIndex -> rejected.
+  assert.throws(()=>prepareScene(v40Req([
+    circle,
+    {id:'S1',type:'point-source',parameters:{x:-20,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}}
+  ],{backgroundIndex:1.33})),/backgroundIndex/);
+
+  // 3. Invalid randomSeed in authoring or canonical JSON -> rejected.
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-20,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}}
+  ],{randomSeed:'   '})),/randomSeed/);
+  const {document:validV40}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-20,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}}
+  ]));
+  const missingSeed=structuredClone(validV40);
+  delete missingSeed.simulation.randomSeed;
+  assert.throws(()=>validate(missingSeed),/randomSeed/);
+  const missingBg=structuredClone(validV40);
+  delete missingBg.physics.backgroundIndex;
+  assert.throws(()=>validate(missingBg),/backgroundIndex/);
+
+  // 4. Circle boundary band (< 0.01 mm inside OR outside) -> rejected.
+  for(const y of [9.995,10.005]){
+    assert.throws(()=>prepareScene(v40Req([
+      circle,
+      {id:'S1',type:'point-source',parameters:{x:0,y,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}}
+    ])),/0\.01 mm from dielectric body boundary/);
+  }
+
+  // 5. Exact convex-polygon exterior corner distance:
+  // Right-angle corner at (0,0): (-0.005, -0.005) has Euclidean dist 0.00707 < 0.01 -> rejected;
+  // (-0.008, -0.008) has Euclidean dist 0.01131 >= 0.01 -> admitted!
+  assert.throws(()=>prepareScene(v40Req([
+    prism,
+    {id:'S1',type:'point-source',parameters:{x:-0.005,y:-0.005,brightness:0.2},emission:{mode:'single-ray',directionDeg:180}}
+  ])),/0\.01 mm from dielectric body boundary/);
+  assert.doesNotThrow(()=>prepareScene(v40Req([
+    prism,
+    {id:'S1',type:'point-source',parameters:{x:-0.008,y:-0.008,brightness:0.2},emission:{mode:'single-ray',directionDeg:180}}
+  ])));
+  // Interior boundary band inside prism (x=0.005, y=5) -> rejected.
+  assert.throws(()=>prepareScene(v40Req([
+    prism,
+    {id:'S1',type:'point-source',parameters:{x:0.005,y:5,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}}
+  ])),/0\.01 mm from dielectric body boundary/);
+
+  // 6. Spherical-lens interior source -> rejected (exterior-only in M1).
+  assert.throws(()=>prepareScene(v40Req([
+    thick,
+    {id:'S1',type:'point-source',parameters:{x:0,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}}
+  ])),/outside spherical-lens/);
+
+  // 7. Parallel beam intersecting dielectric body -> rejected.
+  assert.throws(()=>prepareScene(v40Req([
+    circle,
+    {id:'B1',type:'parallel-beam',parameters:{x:0,y:0,width:12,directionDeg:0,brightness:0.2}}
+  ])),/Parallel emitter must lie completely outside/);
+
+  // 8. Cardinality bounds: >2 bodies or >4 ideal lenses -> rejected.
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-120,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'C1',type:'circular-dielectric',parameters:{x:-40,y:0,radius:10,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'C2',type:'circular-dielectric',parameters:{x:0,y:0,radius:10,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'C3',type:'circular-dielectric',parameters:{x:40,y:0,radius:10,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+  ])),/0–2 disjoint finite dielectrics/);
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-120,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'L1',type:'ideal-lens',parameters:{x:-80,focalLength:100,apertureHeight:40}},
+    {id:'L2',type:'ideal-lens',parameters:{x:-40,focalLength:100,apertureHeight:40}},
+    {id:'L3',type:'ideal-lens',parameters:{x:0,focalLength:100,apertureHeight:40}},
+    {id:'L4',type:'ideal-lens',parameters:{x:40,focalLength:100,apertureHeight:40}},
+    {id:'L5',type:'ideal-lens',parameters:{x:80,focalLength:100,apertureHeight:40}}
+  ])),/0–4 coaxial ideal lenses/);
+
+  // 9. Near-critical TIR and near-grazing dielectric incidence guards fail closed:
+  // Slab x in [0,40], y in [-40,40], n=1.5 -> choose sin(theta) = (1 - 5e-7)/1.5 so |n_i sin(theta) - n_t| = 5e-7 <= 1e-6
+  // while cos(theta_t) ~ 1e-3 >> 1e-10 (proving the v40 near-critical margin guard triggers specifically).
+  const nearCritDeg=Math.asin((1-5e-7)/1.5)*180/Math.PI;
+  const {document:nearCritDoc}=prepareScene(v40Req([
+    {id:'SL1',type:'polygon-dielectric',parameters:{x1:0,y1:-40,x2:40,y2:-40,x3:40,y3:40,x4:0,y4:40,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'S1',type:'point-source',parameters:{x:20,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:nearCritDeg}}
+  ]));
+  const critRun=await evaluateDocument(nearCritDoc,core,[{id:'sl',kind:'interface-interactions',componentId:'SL1'}]);
+  assert.equal(critRun.summary.executionPassed,false);
+  assert.equal(critRun.report.native.diagnostics.v40EndpointsVerified,false);
+  assert.match(critRun.summary.native.errors.join(' '),/near-critical/);
+
+  // Near-grazing incidence onto top face y=0 of a tall slab x in [0,1000], y in [-40,0]:
+  // source at (200, 0.02) aiming slightly downward at -0.004 deg -> |d·n| = sin(0.004 deg) ~ 6.98e-5 <= 1e-4,
+  // hitting face at x ~ 200 + 0.02/6.98e-5 ~ 486.5 mm (far from corners 0 and 1000).
+  const {document:nearGrazeDoc}=prepareScene(v40Req([
+    {id:'SL1',type:'polygon-dielectric',parameters:{x1:0,y1:-40,x2:1000,y2:-40,x3:1000,y3:0,x4:0,y4:0,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'S1',type:'point-source',parameters:{x:200,y:0.02,brightness:0.2},emission:{mode:'single-ray',directionDeg:-0.004}}
+  ]));
+  const grazeRun=await evaluateDocument(nearGrazeDoc,core,[{id:'sl',kind:'interface-interactions',componentId:'SL1'}]);
+  assert.equal(grazeRun.summary.executionPassed,false);
+  assert.equal(grazeRun.report.native.diagnostics.v40EndpointsVerified,false);
+  assert.match(grazeRun.summary.native.errors.join(' '),/grazing/);
+
+  // 10. Fresnel partialReflection=true truncation withholds accepted measurements cleanly:
+  const {document:fresnelDoc}=prepareScene(v40Req([
+    {id:'SL1',type:'polygon-dielectric',parameters:{x1:0,y1:-40,x2:40,y2:-40,x3:40,y3:40,x4:0,y4:40,insideIndex:1.5,outsideIndex:1,partialReflection:true}},
+    {id:'S1',type:'point-source',parameters:{x:-20,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'D1',type:'ray-detector',parameters:{x:60,y:0,orientationDeg:90,length:40}}
+  ]));
+  const fresnelRun=await evaluateDocument(fresnelDoc,core,[{id:'d1',kind:'detector-crossings',componentId:'D1'}]);
+  assert.equal(fresnelRun.summary.executionPassed,false);
+  assert.equal(fresnelRun.summary.native.status,'incomplete');
+  assert.equal(fresnelRun.summary.observations,null);
+
+  // 11. Legacy isolation: unmarked requests keep old schema versions, bench-v40 policy refused on non-v40,
+  // and v39 keeps its depth<=8 ceiling.
+  const v7=prepareScene({
+    lengthUnit:'mm',
+    components:[
+      {id:'S1',type:'point-source',parameters:{x:-40,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+      circle
+    ]
+  });
+  assert.equal(v7.document.schemaVersion,7);
+  assert.throws(()=>prepareScene({
+    lengthUnit:'mm',runPolicy:'bench-v40',
+    components:[{id:'S1',type:'point-source',parameters:{x:-40,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},circle]
+  }),/UNSUPPORTED_POLICY|registered/);
+  const v39Doc=parseSave(readFileSync(resolve(root,'scenes/native-general-hybrid-bench.json'),'utf8'));
+  v39Doc.simulation.maxRayDepth=16;
+  assert.throws(()=>validate(v39Doc),/maxRayDepth/);
+});
+
+test('v40 P2-1 regression: exact corner clearance for circle/polygon bodies, circle blockers, curved mirrors, and diagonal polygons',async()=>{
+  const sq={id:'B1',type:'polygon-dielectric',parameters:{x1:0,y1:0,x2:20,y2:0,x3:20,y3:20,x4:0,y4:20,insideIndex:1.5,outsideIndex:1,partialReflection:false}};
+  const ray={id:'S1',type:'point-source',parameters:{x:-30,y:10,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}};
+
+  // Positive witness from PR #260 R1 P2-1:
+  // Circle centered at (-2, -2) with R = 2 has exact clearance sqrt(8) - 2 ~ 0.8284 mm (> 80x 0.01 mm) from square B1.
+  const {document:cornerCircleDoc}=prepareScene(v40Req([
+    sq,
+    {id:'C1',type:'circular-dielectric',parameters:{x:-2,y:-2,radius:2,insideIndex:1.4,outsideIndex:1,partialReflection:false}},
+    ray
+  ]));
+  const cornerRun=await evaluateDocument(cornerCircleDoc,core,[
+    {id:'b1',kind:'interface-interactions',componentId:'B1'},
+    {id:'c1',kind:'interface-interactions',componentId:'C1'}
+  ]);
+  assert.equal(cornerRun.summary.executionPassed,true);
+  assert.equal(cornerRun.summary.observations.v40EndpointsVerified,true);
+  const byId=Object.fromEntries((await evaluateObservables(cornerCircleDoc,[
+    {id:'b1',kind:'interface-interactions',componentId:'B1'},
+    {id:'c1',kind:'interface-interactions',componentId:'C1'}
+  ],cornerRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(byId.b1.value,2);
+  assert.equal(byId.c1.value,0);
+
+  // Positive witness for circle-blocker and curved-mirror bounding disk placed safely beyond a polygon corner:
+  assert.doesNotThrow(()=>prepareScene(v40Req([
+    sq,
+    {id:'K1',type:'circle-blocker',parameters:{x:-2,y:-2,radius:2}},
+    {id:'CM1',type:'ideal-curved-mirror',parameters:{x:25,y:25,normalDeg:-135,focalLength:20,apertureHeight:10}},
+    ray
+  ])));
+
+  // Positive witness for two diagonally separated convex polygons (corner gap 2*sqrt(2) ~ 2.83 mm):
+  assert.doesNotThrow(()=>prepareScene(v40Req([
+    sq,
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:-22,y1:-22,x2:-2,y2:-22,x3:-2,y3:-2,x4:-22,y4:-2,insideIndex:1.4,outsideIndex:1,partialReflection:false}},
+    ray
+  ])));
+
+  // Negative controls: nested circle, near-corner (< 0.01 mm), overlapping near-corner circle/blocker, and overlapping diagonal polygon.
+  for(const [label,cx,cy] of [
+    ['nested circle inside polygon',10,10],
+    ['near-corner circle (< 0.01 mm clearance)',-1.42,-1.42],
+    ['overlapping near-corner circle',-1.4,-1.4]
+  ]){
+    assert.throws(()=>prepareScene(v40Req([
+      sq,
+      {id:'C1',type:'circular-dielectric',parameters:{x:cx,y:cy,radius:2,insideIndex:1.4,outsideIndex:1,partialReflection:false}},
+      ray
+    ])),/Finite dielectric bodies must be disjoint/,label);
+  }
+  assert.throws(()=>prepareScene(v40Req([
+    sq,
+    {id:'K1',type:'circle-blocker',parameters:{x:-1.4,y:-1.4,radius:2}},
+    ray
+  ])),/opaque circle must lie outside dielectric body/);
+  assert.throws(()=>prepareScene(v40Req([
+    sq,
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:-20.005,y1:-20.005,x2:-0.005,y2:-20.005,x3:-0.005,y3:-0.005,x4:-20.005,y4:-0.005,insideIndex:1.4,outsideIndex:1,partialReflection:false}},
+    ray
+  ])),/Finite dielectric bodies must be disjoint/);
+});

@@ -254,7 +254,9 @@ test('v18 browser provenance is append-only relative to reviewed v17 code, never
   assert.equal(refractiveBenchFollowup.v38AppGitBlob,auditF4Followup.sourceV38AppGitBlob);
   const hybridBenchFollowup=JSON.parse(readFileSync(new URL('./fixtures/native-general-hybrid-v39-app-integration.json',import.meta.url),'utf8'));
   assert.equal(auditF4Followup.auditF4AppGitBlob,hybridBenchFollowup.sourceAuditF4AppGitBlob);
-  assert.equal(hybridBenchFollowup.v39AppGitBlob,sha);
+  const opticalBenchV40Followup=JSON.parse(readFileSync(new URL('./fixtures/native-optical-bench-v40-app-integration.json',import.meta.url),'utf8'));
+  assert.equal(hybridBenchFollowup.v39AppGitBlob,opticalBenchV40Followup.sourceV39AppGitBlob);
+  assert.equal(opticalBenchV40Followup.v40AppGitBlob,sha);
   assert.notEqual(sha,reconciliation.reconciledAppGitBlob,'New v25 UI is not the reviewed v24 browser code');
   assert.notEqual(sha,p.newV18AppGitBlob,'Do not claim new UI matches old reviewed v18 byte identity');
   assert.equal(p.originalV17AppGitBlob,'9d447af4c8fc59ec1e8fdcfbcec0c4d739fc477f');

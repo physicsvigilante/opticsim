@@ -1,6 +1,7 @@
 import {validateImmersedArcPort} from './immersed-arc-plane-port.js';
 import {GENERAL_BENCH_VERSION,validateGeneralOpticalBench} from './native-general-optical-bench.js';
 import {HYBRID_BENCH_VERSION,validateGeneralHybridBench} from './native-general-hybrid-bench.js';
+import {OPTICAL_BENCH_V40_VERSION,V40_MAX_RAY_DEPTH,isValidRandomSeed,validateNativeOpticalBenchV40} from './native-optical-bench.js';
 import {REFRACTIVE_BENCH_VERSION,validateGeneralRefractiveBench} from './native-general-refractive-bench.js';
 import {MIRROR_BOX_VERSION,validateMirrorBox} from './native-mirror-box.js';
 import {validateGuideFan} from './finite-guide-fan.js';
@@ -101,11 +102,12 @@ function validateVersion(doc, version) {
   choice(doc.adapterVersion, [version], '$.adapterVersion');
   choice(doc.upstreamCommit, [UPSTREAM], '$.upstreamCommit');
   const p = doc.physics;
-  object(p, ['lengthUnit', 'coordinates', 'model', 'components'], '$.physics');
+  object(p, ['lengthUnit', 'coordinates', 'model', ...(version===OPTICAL_BENCH_V40_VERSION?['backgroundIndex']:[]), 'components'], '$.physics');
   choice(p.lengthUnit, ['mm'], '$.physics.lengthUnit');
   choice(p.coordinates, ['x-right-y-up'], '$.physics.coordinates');
   const models = compositionModels(version);
   choice(p.model, models, '$.physics.model');
+  if (version===OPTICAL_BENCH_V40_VERSION) number(p.backgroundIndex, 1, 4, '$.physics.backgroundIndex');
   if (!Array.isArray(p.components) || p.components.length > 32) fail('$.physics.components', 'expected a bounded component array');
   const ids = new Set();
   p.components.forEach((c, i) => {
@@ -113,7 +115,7 @@ function validateVersion(doc, version) {
     object(c, ['id', 'type', 'parameters', ...(version >= 2 && c?.type === 'point-source' ? ['emission'] : [])], path);
     if (typeof c.id !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(c.id) || ids.has(c.id)) fail(`${path}.id`, 'expected a unique stable ID (letters, digits, underscores, hyphens)');
     ids.add(c.id);
-    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version===CAP_VERSION||t!==CAP_TYPE)&&(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(t!==SPHERICAL_LENS_TYPE||[15,16,17,18,REFRACTIVE_BENCH_VERSION,HYBRID_BENCH_VERSION].includes(version))&&(t!==GRIN_V25_TYPE||[GRIN_V25_VERSION,GRIN_SLAB_VERSION].includes(version))&&(version===4||version===GENERAL_BENCH_VERSION||version===REFRACTIVE_BENCH_VERSION||version===HYBRID_BENCH_VERSION||([13,CURVED_ENTRY_VERSION,MIRROR_BOX_VERSION].includes(version)&&t==='line-blocker')||(version===THICK_APERTURE_VERSION&&t===FINITE_APERTURE_TYPE)||([PARALLEL_BEAM_VERSION,28].includes(version)&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||[PARALLEL_BEAM_VERSION,DECENTERED_BEAM_VERSION,SEMICIRCULAR_VERSION,PRISM_BEAM_VERSION,CIRCLE_BEAM_VERSION,BEAM_PLANAR_MIRROR_VERSION,BEAM_TWO_PLANE_MIRROR_VERSION,28,30,GENERAL_BENCH_VERSION,REFRACTIVE_BENCH_VERSION,HYBRID_BENCH_VERSION].includes(version))&&(t!==SEMICIRCULAR_TYPE||[SEMICIRCULAR_VERSION,CURVED_ENTRY_VERSION,30].includes(version))) :
+    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version===CAP_VERSION||t!==CAP_TYPE)&&(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(t!==SPHERICAL_LENS_TYPE||[15,16,17,18,REFRACTIVE_BENCH_VERSION,HYBRID_BENCH_VERSION,OPTICAL_BENCH_V40_VERSION].includes(version))&&(t!==GRIN_V25_TYPE||[GRIN_V25_VERSION,GRIN_SLAB_VERSION].includes(version))&&(version===4||version===GENERAL_BENCH_VERSION||version===REFRACTIVE_BENCH_VERSION||version===HYBRID_BENCH_VERSION||version===OPTICAL_BENCH_V40_VERSION||([13,CURVED_ENTRY_VERSION,MIRROR_BOX_VERSION].includes(version)&&t==='line-blocker')||(version===THICK_APERTURE_VERSION&&t===FINITE_APERTURE_TYPE)||([PARALLEL_BEAM_VERSION,28].includes(version)&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||[PARALLEL_BEAM_VERSION,DECENTERED_BEAM_VERSION,SEMICIRCULAR_VERSION,PRISM_BEAM_VERSION,CIRCLE_BEAM_VERSION,BEAM_PLANAR_MIRROR_VERSION,BEAM_TWO_PLANE_MIRROR_VERSION,28,30,GENERAL_BENCH_VERSION,REFRACTIVE_BENCH_VERSION,HYBRID_BENCH_VERSION,OPTICAL_BENCH_V40_VERSION].includes(version))&&(t!==SEMICIRCULAR_TYPE||[SEMICIRCULAR_VERSION,CURVED_ENTRY_VERSION,30].includes(version))) :
       version >= 3 ? ['point-source', 'ideal-lens', 'plane-mirror'] :
       ['point-source', 'ideal-lens'], `${path}.type`);
     object(c.parameters, componentParameterNames(c.type,version), `${path}.parameters`);
@@ -153,6 +155,7 @@ function validateVersion(doc, version) {
     'native-general-bench':c=>validateGeneralOpticalBench(c,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'native-general-refractive':c=>validateGeneralRefractiveBench(c,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'native-general-hybrid':c=>validateGeneralHybridBench(c,doc.simulation?.rayDensity,mirrorEndpoints,fail),
+    'native-optical-bench-v40':c=>validateNativeOpticalBenchV40(c,p.backgroundIndex,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'native-mirror-box':c=>validateMirrorBox(c,mirrorEndpoints,fail),
     'finite-guide-fan':c=>validateGuideFan(c,doc.simulation?.rayDensity,mirrorEndpoints,fail),
     'inside-circular-cap':c=>validateCircularCap(c,doc.simulation?.rayDensity,fail),
@@ -193,18 +196,21 @@ function validateVersion(doc, version) {
   choice(v.mode, ['rays', 'extended'], '$.presentation.mode');
   if (typeof v.grid !== 'boolean') fail('$.presentation.grid', 'expected boolean');
   if (version === 1) number(v.brightness, 0.01, 1, '$.presentation.brightness');
-  object(doc.simulation, ['rayDensity', 'maxRayDepth', 'processedRayLimit'], '$.simulation');
+  object(doc.simulation, ['rayDensity', 'maxRayDepth', 'processedRayLimit', ...(version===OPTICAL_BENCH_V40_VERSION?['randomSeed']:[])], '$.simulation');
   number(doc.simulation.rayDensity, version === 1 ? 0.1 : SAMPLING_PRESETS.sparse, 1, '$.simulation.rayDensity');
-  // Only v17-v18 receive the explicitly versioned deep native budget.
-  // v19-v21 remain bounded at their independently reviewed depth <=8.
+  // Only v17-v18 and v40 receive explicitly versioned deep native budgets.
+  // v19-v21 and v37-v39 remain bounded at their independently reviewed depth <=8.
   number(doc.simulation.maxRayDepth,0,
     version===TWO_THICK_MIRROR_VERSION?TWO_THICK_MIRROR_NATIVE_DEPTH:
     version===THICK_APERTURE_VERSION?THICK_APERTURE_NATIVE_DEPTH:
+    version===OPTICAL_BENCH_V40_VERSION?V40_MAX_RAY_DEPTH:
     version===GRIN_V25_VERSION?GRIN_V25_POLICY.maxRayDepth:
     version===GRIN_SLAB_VERSION?GRIN_SLAB_POLICY.maxRayDepth:8,
     '$.simulation.maxRayDepth');
   number(doc.simulation.processedRayLimit, 1, 10000, '$.simulation.processedRayLimit');
   for (const key of ['maxRayDepth', 'processedRayLimit']) if (!Number.isInteger(doc.simulation[key])) fail(`$.simulation.${key}`, 'expected integer');
+  if (version===OPTICAL_BENCH_V40_VERSION && !isValidRandomSeed(doc.simulation.randomSeed))
+    fail('$.simulation.randomSeed', 'expected a nonempty printable seed string (1–64 characters)');
   if(version===GRIN_V25_VERSION&&(doc.simulation.maxRayDepth!==GRIN_V25_POLICY.maxRayDepth||
     doc.simulation.processedRayLimit!==GRIN_V25_POLICY.processedRayLimit||
     doc.simulation.rayDensity!==GRIN_V25_POLICY.rayDensity))

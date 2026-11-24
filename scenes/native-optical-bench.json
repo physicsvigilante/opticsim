@@ -1,0 +1,116 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 40,
+  "adapterVersion": 40,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "native-optical-bench",
+    "backgroundIndex": 1,
+    "components": [
+      {
+        "id": "C1",
+        "type": "circular-dielectric",
+        "parameters": {
+          "x": -100,
+          "y": 0,
+          "radius": 30,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -100,
+          "y": 12,
+          "brightness": 0.5
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 0,
+          "angleDeg": 30
+        }
+      },
+      {
+        "id": "S2",
+        "type": "point-source",
+        "parameters": {
+          "x": -100,
+          "y": -12,
+          "brightness": 0.5
+        },
+        "emission": {
+          "mode": "single-ray",
+          "directionDeg": 0,
+          "angleDeg": 30
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": -40,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 130
+        }
+      },
+      {
+        "id": "L1",
+        "type": "ideal-lens",
+        "parameters": {
+          "x": -10,
+          "focalLength": 150,
+          "apertureHeight": 120
+        }
+      },
+      {
+        "id": "SL1",
+        "type": "polygon-dielectric",
+        "parameters": {
+          "x1": 30,
+          "y1": -55,
+          "x2": 70,
+          "y2": -55,
+          "x3": 70,
+          "y3": 55,
+          "x4": 30,
+          "y4": 55,
+          "insideIndex": 1.6,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "M1",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": 120,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 120
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "Unified optical bench: interior glass sources + thin lens + slab + mirror return (v40)",
+    "view": {
+      "x": -5,
+      "y": 0,
+      "zoom": 2
+    },
+    "mode": "rays",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 16,
+    "processedRayLimit": 10000,
+    "randomSeed": "opticsim-v40-seed-v1"
+  }
+}
