@@ -8,6 +8,7 @@ import {SPHERICAL_LENS_TYPE,SPHERICAL_FACES,sphericalLensEncounter} from './sphe
 import {CIRCULAR_TYPE,circularEncounter} from './circular-dielectric.js';
 import {circleBeamNativeEncounter} from './native-circle-beam.js';
 import {CAP_TYPE,capEncounter} from './finite-circular-cap.js';
+import {OPTICAL_BENCH_V40_VERSION,resolveMergedDielectricIndices} from './native-bench-common.js';
 import {SEMICIRCULAR_TYPE,semicircularEncounter,semicircularFaces} from './semicircular-dielectric.js';
 export const PLANAR_TYPE='planar-interface';
 export const PLANAR_PARAMETERS=Object.freeze(['x','y','normalDeg','negativeIndex','positiveIndex','partialReflection']);
@@ -56,6 +57,8 @@ const direction=ray=>{
 const power=ray=>ray.brightness_s+ray.brightness_p;
 const angle=(d,n)=>d?Math.atan2(Math.abs(d.x*n.y-d.y*n.x),Math.abs(d.x*n.x+d.y*n.y))*180/Math.PI:null;
 export function observeInterfaceSet(doc,scene,idMap,{parentage=null,finiteDiagnostic=null}={}){
+  const v40NativeToComp=doc.schemaVersion===OPTICAL_BENCH_V40_VERSION
+    ?new Map(doc.physics.components.map(c=>[scene.objs[idMap.get(c.id)],c])):null;
   const entries=doc.physics.components.filter(c=>c.type===PLANAR_TYPE||c.type===CIRCULAR_TYPE||c.type===PRISM_TYPE||c.type===POLYGON_TYPE||c.type===SEMICIRCULAR_TYPE||c.type===CAP_TYPE||c.type===SPHERICAL_LENS_TYPE).map(component=>{
     const native=scene.objs[idMap.get(component.id)],original=native.onRayIncident;
     const circular=component.type===CIRCULAR_TYPE,semicircle=component.type===SEMICIRCULAR_TYPE,cap=component.type===CAP_TYPE,
@@ -80,13 +83,15 @@ export function observeInterfaceSet(doc,scene,idMap,{parentage=null,finiteDiagno
         cap?capEncounter(component,args[2],incoming):semicircle?semicircularEncounter(component,args[2],incoming):circular?
           (doc.schemaVersion===23?circleBeamNativeEncounter(component,args[2],incoming):
             circularEncounter(component,args[2],incoming)):null;
+      const v40Merged=v40NativeToComp&&encounter
+        ?resolveMergedDielectricIndices(component,encounter,args[2],incoming,args[3],v40NativeToComp):null;
       const n=encounter?.normal||interfaceNormal(component.parameters);
       const incomingSign=incoming?Math.sign(incoming.x*n.x+incoming.y*n.y):0;
       // v22 checks only real native incoming direction and real hit normal.
       // Near critical refraction/TIR and near-vertex geometry fail closed;
       // neither check changes PhyDemo's transmitted/reflected ray or verdict.
       const criticalRisk=v22Prism&&prismBeamNearCritical(encounter,incoming);
-      if((circular||faceEvents)&&(!incoming||encounter?.invalid||criticalRisk||![n.x,n.y,encounter.point.x,encounter.point.y].every(Number.isFinite)||
+      if((circular||faceEvents)&&(!incoming||encounter?.invalid||v40Merged?.invalid||criticalRisk||![n.x,n.y,encounter.point.x,encounter.point.y].every(Number.isFinite)||
         Math.abs(incoming.x*n.x+incoming.y*n.y)<1e-10))meter.invalidObservations++;
       // Delegate exactly once, with identical arguments and return object.
       const returned=original.apply(this,args);
@@ -109,8 +114,9 @@ export function observeInterfaceSet(doc,scene,idMap,{parentage=null,finiteDiagno
         ...(encounter?{pointMm:encounter.point,outwardNormal:encounter.normal}:{}),
         ...(faceEvents?{faceId:encounter.faceId,incidentDirection:incoming}:{}),
         from:encounter?.from??(incomingSign>0?'negative':'positive'),
-        incidentIndex:encounter?.incidentIndex??(incomingSign>0?component.parameters.negativeIndex:component.parameters.positiveIndex),
-        destinationIndex:encounter?.destinationIndex??(incomingSign>0?component.parameters.positiveIndex:component.parameters.negativeIndex),
+        incidentIndex:v40Merged&&!v40Merged.invalid?v40Merged.incidentIndex:(encounter?.incidentIndex??(incomingSign>0?component.parameters.negativeIndex:component.parameters.positiveIndex)),
+        destinationIndex:v40Merged&&!v40Merged.invalid?v40Merged.destinationIndex:(encounter?.destinationIndex??(incomingSign>0?component.parameters.positiveIndex:component.parameters.negativeIndex)),
+        ...(v40Merged?.mergedWithId?{mergedWithId:v40Merged.mergedWithId}:{}),
         outcome:tir?'total-internal-reflection':returned?.isUndefinedBehavior?'undefined-native-interaction':
           transmitted?'transmission':branches.some(b=>b.kind==='grazing')?'grazing':'no-transmitted-primary',
         transmittedAngleDeg:transmitted?.angleDeg??null,reflectedAngleDeg:reflected?.angleDeg??null,

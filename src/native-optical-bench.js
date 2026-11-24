@@ -9,39 +9,42 @@
 // full-circle) or 1 external parallel beam (max 16 components, maxRayDepth <= 16).
 // Pinned PhyDemo alone owns all ray intersections, refraction, TIR, reflection,
 // lens deflection, and absorption.
-import {CIRCULAR_TYPE,circularEncounter} from './circular-dielectric.js';
 import {compositionCountsMatch} from './composition-profiles.js';
 import {finiteSurfaceGeometry,segmentsIntersect} from './composition-validation.js';
 import {curvedPoints,isCurved} from './curved-mirrors.js';
 import {FINITE_APERTURE_TYPE,separatedSegmentDistance} from './finite-aperture.js';
 import {CIRCLE_BLOCKER_TYPE} from './opaque-circle-blocker.js';
 import {BEAM_CLEARANCE_MM,PARALLEL_BEAM_TYPE} from './parallel-beam.js';
-import {POLYGON_TYPE,polygonEncounter} from './polygon-dielectric.js';
-import {SPHERICAL_LENS_TYPE,sphericalLensEncounter} from './spherical-lens.js';
-import {PRISM_TYPE,prismEncounter} from './triangular-prism.js';
 import {
   BENCH_CLEARANCE_MM,
   BENCH_NATIVE_STATE_LIMIT,
   DIELECTRIC_BODY_TYPES,
+  OPTICAL_BENCH_V40_VERSION,
   allowedCoord,
+  arcMirrorCoincidentWithBody,
   bodiesDisjointExact,
+  bodiesShareFlatContact,
   buildDielectricBody,
   circleOutsideBodyExact,
   componentFiniteEndpoints,
   componentTangentCircles,
   cross,
   delta,
+  dielectricEncounter,
   dot,
   extractNativeRay,
   installBenchEndpointAudit,
+  planeMirrorCoincidentWithBody,
   pointSegmentDistance,
+  resolveMergedDielectricIndices,
   resolveSourceMembership,
   segmentOutsideBodyExact,
+  sphericalLensesCemented,
   validateParallelBeamAdmission,
   validatePointSourceSeparation
 } from './native-bench-common.js';
 
-export const OPTICAL_BENCH_V40_VERSION=40;
+export {OPTICAL_BENCH_V40_VERSION,dielectricEncounter,resolveMergedDielectricIndices};
 export const OPTICAL_BENCH_V40_MODEL='native-optical-bench';
 export const OPTICAL_BENCH_V40_MAX_COMPONENTS=16;
 export const OPTICAL_BENCH_V40_CLEARANCE_MM=BENCH_CLEARANCE_MM;
@@ -100,8 +103,11 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
       fail(`${path}[${index}].parameters.outsideIndex`,'Every finite dielectric body in v40 must match physics.backgroundIndex ('+backgroundIndex+').','UNSUPPORTED_SCOPE');
     bodies.push(body);
   }
-  if(bodies.length===2&&!bodiesDisjointExact(bodies[0],bodies[1],OPTICAL_BENCH_V40_CLEARANCE_MM))
-    fail(path,'Finite dielectric bodies must be disjoint with at least 0.01 mm clearance ('+bodies[0].id+' and '+bodies[1].id+').','UNSUPPORTED_SCOPE');
+  if(bodies.length===2&&
+     !bodiesDisjointExact(bodies[0],bodies[1],OPTICAL_BENCH_V40_CLEARANCE_MM)&&
+     !bodiesShareFlatContact(bodies[0],bodies[1])&&
+     !sphericalLensesCemented(bodies[0],bodies[1]))
+    fail(path,'Finite dielectric bodies must be disjoint (>= 0.01 mm clearance), share a clean coincident flat boundary, or form a coaxial cemented doublet ('+bodies[0].id+' and '+bodies[1].id+').','UNSUPPORTED_SCOPE');
 
   // Point sources may start in ambient medium OR strictly inside a circle, prism, or convex quad (>= 0.01 mm clearance).
   // Spherical lenses remain exterior-only in v40; parallel beams must lie strictly outside all bodies.
@@ -139,8 +145,8 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
     if(beamSeg&&pointSegmentDistance(disk.center,beamSeg)<disk.radius+OPTICAL_BENCH_V40_CLEARANCE_MM)
       fail(path,'Parallel emitter must lie at least 0.01 mm outside curved aperture bounding disk ('+disk.id+').','UNSUPPORTED_SCOPE');
     for(const body of bodies)
-      if(!circleOutsideBodyExact(disk,body,OPTICAL_BENCH_V40_CLEARANCE_MM))
-        fail(path,'Curved mirror bounding disk must lie outside dielectric body by at least 0.01 mm ('+body.id+' and '+disk.id+').','UNSUPPORTED_SCOPE');
+      if(!circleOutsideBodyExact(disk,body,OPTICAL_BENCH_V40_CLEARANCE_MM)&&!arcMirrorCoincidentWithBody(c,body))
+        fail(path,'Curved mirror bounding disk must lie outside dielectric body by at least 0.01 mm or silver a coincident curved face ('+body.id+' and '+c.id+').','UNSUPPORTED_SCOPE');
     curveDisks.push(disk);
   }
 
@@ -179,8 +185,9 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
     if(line.some(v=>!allowedCoord(v.x,v.y)))
       fail(cPath+'.parameters','segment endpoints exceed coordinate bounds','UNSUPPORTED_SCOPE');
     for(const body of bodies)
-      if(!segmentOutsideBodyExact(line,body,OPTICAL_BENCH_V40_CLEARANCE_MM))
-        fail(cPath,'finite segment must lie outside dielectric body by at least 0.01 mm ('+body.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
+      if(!segmentOutsideBodyExact(line,body,OPTICAL_BENCH_V40_CLEARANCE_MM)&&
+         !(c.type==='plane-mirror'&&planeMirrorCoincidentWithBody(line,body)))
+        fail(cPath,'finite segment must lie outside dielectric body by at least 0.01 mm or (for a plane-mirror) sit flush on a flat dielectric face ('+body.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
     for(const arm of arms){
       if(points.some(s=>pointSegmentDistance(s,arm)<OPTICAL_BENCH_V40_CLEARANCE_MM))
         fail(cPath+'.parameters','each source must be at least 0.01 mm from finite segment ('+c.id+')','UNSUPPORTED_SCOPE');
@@ -233,14 +240,6 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
   }
 }
 
-function dielectricEncounter(component,nativePoint,incoming){
-  if(component.type===CIRCULAR_TYPE)return circularEncounter(component,nativePoint,incoming);
-  if(component.type===PRISM_TYPE)return prismEncounter(component,nativePoint,incoming);
-  if(component.type===POLYGON_TYPE)return polygonEncounter(component,nativePoint,incoming);
-  if(component.type===SPHERICAL_LENS_TYPE)return sphericalLensEncounter(component,nativePoint,incoming);
-  return null;
-}
-
 export function installNativeOpticalBenchV40Audit(doc,scene,idMap,mirrorEndpoints){
   const isOptical=c=>c.type==='ideal-lens'||c.type==='plane-mirror'||isCurved(c.type);
   const baseAudit=installBenchEndpointAudit(doc,scene,idMap,mirrorEndpoints,{
@@ -258,9 +257,12 @@ export function installNativeOpticalBenchV40Audit(doc,scene,idMap,mirrorEndpoint
   if(scene.randomSeed!==doc.simulation.randomSeed)
     guardFault='v40 deterministic randomSeed was not applied to the native scene; measurements withheld.';
 
+  const nativeToComp=new Map(doc.physics.components.map(c=>[scene.objs[idMap.get(c.id)],c]));
+
   // Proportionate dielectric incidence check on each finite glass body:
   // fails closed on near-grazing (|d·n| <= 1e-4) or high-to-low near-critical
-  // (|n_i sin(theta_i) - n_t| <= 1e-6) encounters without hooking private PhyDemo internals.
+  // (|n_i sin(theta_i) - n_t| <= 1e-6) encounters without hooking private PhyDemo internals,
+  // using true effective merged indices when PhyDemo passes surfaceMergingObjs.
   for(const c of doc.physics.components){
     if(!V40_DIELECTRIC_TYPES.includes(c.type))continue;
     const nativeObj=scene.objs[idMap.get(c.id)];
@@ -272,6 +274,7 @@ export function installNativeOpticalBenchV40Audit(doc,scene,idMap,mirrorEndpoint
     nativeObj.onRayIncident=function(...args){
       const inRay=extractNativeRay(args[0]);
       const incidentPoint=args[2];
+      const mergedObjs=args[3];
       const result=previous.apply(this,args);
       if(!guardFault){
         try{
@@ -279,15 +282,16 @@ export function installNativeOpticalBenchV40Audit(doc,scene,idMap,mirrorEndpoint
             guardFault=c.id+': v40 dielectric incident ray or hit point was non-finite; measurements withheld.';
           }else{
             const enc=dielectricEncounter(c,incidentPoint,inRay.dir);
-            if(!enc||enc.invalid||![enc.normal?.x,enc.normal?.y].every(Number.isFinite)){
+            const eff=resolveMergedDielectricIndices(c,enc,incidentPoint,inRay.dir,mergedObjs,nativeToComp);
+            if(!enc||enc.invalid||eff.invalid||![enc.normal?.x,enc.normal?.y].every(Number.isFinite)){
               guardFault=c.id+': v40 dielectric encounter was ambiguous or near a vertex; measurements withheld.';
             }else{
               const cosTheta=Math.abs(dot(inRay.dir,enc.normal));
               if(!(cosTheta>V40_GRAZING_MIN_COS)){
                 guardFault=c.id+': observed native ray approached dielectric surface within grazing tolerance (|d·n| <= '+V40_GRAZING_MIN_COS+'); measurements withheld.';
-              }else if(enc.incidentIndex>enc.destinationIndex){
+              }else if(eff.incidentIndex>eff.destinationIndex){
                 const sinTheta=Math.abs(cross(inRay.dir,enc.normal));
-                const margin=Math.abs(enc.incidentIndex*sinTheta-enc.destinationIndex);
+                const margin=Math.abs(eff.incidentIndex*sinTheta-eff.destinationIndex);
                 if(!(margin>V40_CRITICAL_MIN_MARGIN))
                   guardFault=c.id+': observed native ray fell within near-critical TIR margin (|n_i sin(theta) - n_t| <= '+V40_CRITICAL_MIN_MARGIN+'); measurements withheld.';
               }
@@ -336,15 +340,15 @@ export function opticalBenchCapabilities(){
       'parallel-beam':{parameters:['x','y','width','directionDeg','brightness'],interiorPlacement:'Must lie completely outside all finite dielectric bodies (>= 0.01 mm).'}
     },
     components:{
-      finiteDielectrics:{groupCount:[0,2],note:'Zero-body deletion closure supported (2 -> 1 -> 0). Equal insideIndex === outsideIndex (index-matched neutral body) is admitted.',types:{
+      finiteDielectrics:{groupCount:[0,2],note:'Zero-body deletion closure (2 -> 1 -> 0) and equal-index neutral bodies admitted. Two bodies may be disjoint (>= 0.01 mm), share a clean coincident flat boundary (layered slabs, water-on-glass, prism-on-slab, flat lens on slab), or form a coaxial cemented doublet (matching opposite-signed curvature at shared apex). Native PhyDemo surfaceMergingObjs owns merged refraction/TIR; callbacks fire on the primary body only, reporting true merged incident/destination indices.',types:{
         'circular-dielectric':{parameters:['x','y','radius','insideIndex','outsideIndex','partialReflection']},
         'triangular-prism':{parameters:['x1','y1','x2','y2','x3','y3','insideIndex','outsideIndex','partialReflection']},
         'polygon-dielectric':{parameters:['x1','y1','x2','y2','x3','y3','x4','y4','insideIndex','outsideIndex','partialReflection']},
         'spherical-lens':{parameters:['x','y','apertureHeight','centerThickness','frontRadius','backRadius','insideIndex','outsideIndex','partialReflection'],note:'Signed outward-convex convention: positive radius bulges outward (convex), negative curves inward (concave), null is a flat/planar face (R = infinity). Supports biconvex, plano-convex, plano-concave, meniscus, biconcave, and flat-flat shapes. Textbook Cartesian equivalents: R1 = frontRadius, R2 = -backRadius. Requires |radius| >= apertureHeight/2 + 1 mm (or null), centerThickness >= 2 mm, edgeThickness >= 1 mm; exterior sources only.'}
       }},
       'ideal-lens':{count:[0,4],parameters:['x','y','focalLength','apertureHeight'],note:'Vertical thin lens with independent transverse centre y (split lenses at the same x are admitted when vertically separated by >= 0.01 mm); focalLength defined in ambient medium backgroundIndex.'},
-      'plane-mirror':{count:[0,2],parameters:['x','y','orientationDeg','length']},
-      curvedMirrors:{groupCount:[0,2],types:{
+      'plane-mirror':{count:[0,2],parameters:['x','y','orientationDeg','length'],note:'May sit >= 0.01 mm clear of dielectrics OR flush on a physical flat dielectric face (silvered slab, silvered prism, flat-silvered lens, or mirror table) via native PhyDemo mergesWithGlass.'},
+      curvedMirrors:{groupCount:[0,2],note:'circular-arc-mirror may sit >= 0.01 mm clear of dielectrics OR concentric and flush on a curved spherical-lens face or circular-dielectric boundary (curved-silvered lens / silvered sphere) via native PhyDemo mergesWithGlass.',types:{
         'ideal-curved-mirror':{parameters:['x','y','normalDeg','focalLength','apertureHeight']},
         'circular-arc-mirror':{parameters:['x','y','normalDeg','radius','apertureHeight']}
       }},

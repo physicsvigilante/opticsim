@@ -1280,3 +1280,341 @@ test('Milestone 2B P2-2 regression: focusedExplorationContext & capabilities acc
     assert.match(legacySpherical.geometry,/neither negative nor null/);
   }
 });
+
+// Independent ray-circle / reflection helper for Milestone 3 silvered-lens and cemented-doublet oracles.
+function hitCurvedOrFlatFace(p,u,apex,R,yAxis,isFront){
+  if(R===null){
+    const t=(apex-p.x)/u.x;
+    return {point:{x:apex,y:p.y+t*u.y},outwardNormal:{x:isFront?-1:1,y:0}};
+  }
+  const cx=isFront?apex+R:apex-R,cy=yAxis,absR=Math.abs(R),sgn=Math.sign(R);
+  const ox=p.x-cx,oy=p.y-cy;
+  const b=ox*u.x+oy*u.y,c=ox*ox+oy*oy-absR*absR;
+  const s=Math.sqrt(b*b-c);
+  const ts=[-b-s,-b+s].filter(t=>t>1e-9).filter(t=>{
+    const hx=p.x+t*u.x;
+    return isFront?(sgn>0?hx<=cx:hx>=cx):(sgn>0?hx>=cx:hx<=cx);
+  });
+  const t=Math.min(...ts);
+  const point={x:p.x+t*u.x,y:p.y+t*u.y};
+  return {point,outwardNormal:{x:sgn*(point.x-cx)/absR,y:sgn*(point.y-cy)/absR}};
+}
+function reflectDir(d,n){
+  const dn=d.x*n.x+d.y*n.y;
+  return {x:d.x-2*dn*n.x,y:d.y-2*dn*n.y};
+}
+
+test('Milestone 3 oracle: layered media (water resting on glass) — transmission, merged TIR, order invariance, and true merged near-critical audit',async()=>{
+  const glass={id:'B1',type:'polygon-dielectric',parameters:{x1:-50,y1:-30,x2:50,y2:-30,x3:50,y3:0,x4:-50,y4:0,insideIndex:1.6,outsideIndex:1,partialReflection:false}};
+  const water={id:'B2',type:'polygon-dielectric',parameters:{x1:-50,y1:0,x2:50,y2:0,x3:50,y3:20,x4:-50,y4:20,insideIndex:1.33,outsideIndex:1,partialReflection:false}};
+
+  // 1A: Source inside glass at (0, -15) shooting at 65 deg (theta1 = 25 deg from +y normal) -> glass(1.6) -> water(1.33) -> air(1) -> detector at y=35.
+  const th1=25*Math.PI/180;
+  const th2=Math.asin((1.6/1.33)*Math.sin(th1));
+  const th3=Math.asin(1.6*Math.sin(th1));
+  const expectedX=15*Math.tan(th1)+20*Math.tan(th2)+15*Math.tan(th3);
+  const det={id:'D1',type:'ray-detector',parameters:{x:20,y:35,orientationDeg:0,length:100}};
+  const src={id:'S1',type:'point-source',parameters:{x:0,y:-15,brightness:0.2},emission:{mode:'single-ray',directionDeg:65}};
+
+  // Verify BOTH component orders ([B1, B2] and [B2, B1]) agree to < 1e-6 mm and report true merged indices (1.6 -> 1.33)!
+  for(const [orderName,pair,primaryId,secondaryId] of [
+    ['glass-first',[glass,water],'B1','B2'],
+    ['water-first',[water,glass],'B2','B1']
+  ]){
+    const {document:doc}=prepareScene(v40Req([...pair,src,det]));
+    const reqs=[
+      {id:'first',kind:'interface-first-event',componentId:primaryId},
+      {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+    ];
+    const run=await evaluateDocument(doc,core,reqs);
+    assert.equal(run.summary.executionPassed,true,orderName);
+    assert.equal(run.summary.observations.v40EndpointsVerified,true,orderName);
+    const byId=Object.fromEntries((await evaluateObservables(doc,reqs,run.summary)).results.map(r=>[r.id,r]));
+    assert.equal(byId.hits.value.length,1,orderName);
+    assert.ok(Math.abs(byId.hits.value[0].pointMm.x-expectedX)<1e-6,
+      `${orderName}: expected x=${expectedX}, got ${byId.hits.value[0].pointMm.x}`);
+    assert.equal(byId.first.value.incidentIndex,1.6,orderName);
+    assert.equal(byId.first.value.destinationIndex,1.33,orderName);
+    assert.equal(byId.first.value.mergedWithId,secondaryId,orderName);
+  }
+
+  // 1B: Merged glass->water TIR (theta1 = 60 deg > arcsin(1.33/1.6) = 56.23 deg).
+  // Source at (0, -10) shooting at +30 deg: hits y=0 at x=10*sqrt(3), TIRs to -30 deg,
+  // hits right sidewall x=40 at y = -(40 - 10*sqrt(3))/sqrt(3) = 10 - 40/sqrt(3) ~ -13.094 (inside [-20,0]),
+  // exits glass(1.6)->air(1) at 30 deg incidence -> sin(theta_out)=1.6*0.5=0.8 -> hits detector at x=60!
+  const gTir={id:'B1',type:'polygon-dielectric',parameters:{x1:-40,y1:-20,x2:40,y2:-20,x3:40,y3:0,x4:-40,y4:0,insideIndex:1.6,outsideIndex:1,partialReflection:false}};
+  const wTir={id:'B2',type:'polygon-dielectric',parameters:{x1:-40,y1:0,x2:40,y2:0,x3:40,y3:20,x4:-40,y4:20,insideIndex:1.33,outsideIndex:1,partialReflection:false}};
+  const yWall=10-40/Math.sqrt(3);
+  const sinOut=1.6*0.5,tanOut=sinOut/Math.sqrt(1-sinOut*sinOut);
+  const expectedTirY=yWall-20*tanOut;
+  const {document:tirDoc}=prepareScene(v40Req([
+    gTir,wTir,
+    {id:'S1',type:'point-source',parameters:{x:0,y:-10,brightness:0.2},emission:{mode:'single-ray',directionDeg:30}},
+    {id:'D1',type:'ray-detector',parameters:{x:60,y:-30,orientationDeg:90,length:80}}
+  ]));
+  const tirReqs=[
+    {id:'tir',kind:'interface-tir-count',componentId:'B1'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ];
+  const tirRun=await evaluateDocument(tirDoc,core,tirReqs);
+  assert.equal(tirRun.summary.executionPassed,true);
+  assert.equal(tirRun.summary.observations.v40EndpointsVerified,true);
+  const tirById=Object.fromEntries((await evaluateObservables(tirDoc,tirReqs,tirRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(tirById.tir.value,1);
+  assert.equal(tirById.hits.value.length,1);
+  assert.ok(Math.abs(tirById.hits.value[0].pointMm.y-expectedTirY)<1e-6);
+
+  // 1C: Merged near-critical audit checks TRUE glass-water critical angle (1.4/1.6), NOT glass-air (1/1.6)!
+  // Source at (25, -10) shooting at exact glass-air critical angle crosses y=0 at x~33.01 into water(n=1.4)
+  // at theta_w~45.58 deg and exits the right sidewall x=50 at y~16.65 (angle 44.42 deg < 45.58 deg critical) cleanly!
+  const glassAirCritFromVert=Math.asin(1/1.6)*180/Math.PI;
+  const water14={id:'B2',type:'polygon-dielectric',parameters:{x1:-50,y1:0,x2:50,y2:0,x3:50,y3:25,x4:-50,y4:25,insideIndex:1.4,outsideIndex:1,partialReflection:false}};
+  const {document:notCritMerged}=prepareScene(v40Req([
+    glass,water14,
+    {id:'S1',type:'point-source',parameters:{x:25,y:-10,brightness:0.2},emission:{mode:'single-ray',directionDeg:90-glassAirCritFromVert}}
+  ]));
+  const safeMergedRun=await evaluateDocument(notCritMerged,core,[{id:'b1',kind:'interface-interactions',componentId:'B1'}]);
+  assert.equal(safeMergedRun.summary.executionPassed,true,'Glass-air critical angle must NOT falsely trip merged glass-water audit');
+
+  // Near TRUE glass-water (1.6 -> 1.4) critical angle -> MUST fail closed with /near-critical/!
+  const trueMergedNearCrit=Math.asin((1.4-5e-7)/1.6)*180/Math.PI;
+  const {document:critMerged}=prepareScene(v40Req([
+    glass,water14,
+    {id:'S1',type:'point-source',parameters:{x:-30,y:-10,brightness:0.2},emission:{mode:'single-ray',directionDeg:90-trueMergedNearCrit}}
+  ]));
+  const critMergedRun=await evaluateDocument(critMerged,core,[{id:'b1',kind:'interface-interactions',componentId:'B1'}]);
+  assert.equal(critMergedRun.summary.executionPassed,false);
+  assert.equal(critMergedRun.report.native.diagnostics.v40EndpointsVerified,false);
+  assert.match(critMergedRun.summary.native.errors.join(' '),/near-critical/);
+});
+
+test('Milestone 3 oracle: JEE silvered plano-convex lenses (flat-silvered and curved-silvered) match exact 3-step Snell+reflection oracles',async()=>{
+  // 2A: Flat-silvered plano-convex lens: frontRadius=+60, backRadius=null, d=10, ap=40, n=1.5, x=0.
+  // Plane mirror M1 flush on flat back face at x=+5, orientationDeg=90, length=40.
+  const y0=6,xDet=-80,R=60,d=10,n=1.5;
+  const f1a=hitCurvedOrFlatFace({x:-100,y:y0},{x:1,y:0},-d/2,R,0,true);
+  const in1a=snellStep({x:1,y:0},{x:-f1a.outwardNormal.x,y:-f1a.outwardNormal.y},1,n);
+  const tMirA=(d/2-f1a.point.x)/in1a.dir.x;
+  const pMirA={x:d/2,y:f1a.point.y+tMirA*in1a.dir.y};
+  const reflA=reflectDir(in1a.dir,{x:-1,y:0});
+  const f2a=hitCurvedOrFlatFace(pMirA,reflA,-d/2,R,0,true);
+  const outA=snellStep(reflA,f2a.outwardNormal,n,1);
+  const expectedYA=f2a.point.y+((xDet-f2a.point.x)/outA.dir.x)*outA.dir.y;
+
+  const {document:flatSilv}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-100,y:y0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:40,centerThickness:d,frontRadius:R,backRadius:null,insideIndex:n,outsideIndex:1,partialReflection:false}},
+    {id:'M1',type:'plane-mirror',parameters:{x:d/2,y:0,orientationDeg:90,length:40}},
+    {id:'D1',type:'ray-detector',parameters:{x:xDet,y:0,orientationDeg:90,length:120}}
+  ]));
+  const reqs=[
+    {id:'tl',kind:'interface-interactions',componentId:'TL1'},
+    {id:'m1',kind:'mirror-reflections',componentId:'M1'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ];
+  const runA=await evaluateDocument(flatSilv,core,reqs);
+  assert.equal(runA.summary.executionPassed,true);
+  assert.equal(runA.summary.observations.v40EndpointsVerified,true);
+  const byIdA=Object.fromEntries((await evaluateObservables(flatSilv,reqs,runA.summary)).results.map(r=>[r.id,r]));
+  assert.equal(byIdA.tl.value,2); // front entry + front exit; back hit owned by flush mirror M1
+  assert.equal(byIdA.m1.value,1);
+  assert.equal(byIdA.hits.value.length,2); // 1 outgoing ray + 1 returning ray!
+  const retA=byIdA.hits.value.find(h=>h.incomingUnit.x<0);
+  assert.ok(retA&&Math.abs(retA.pointMm.y-expectedYA)<1e-5,
+    `Flat-silvered expected y=${expectedYA}, got ${retA?.pointMm.y}`);
+
+  // 2B: Curved-silvered plano-convex lens: frontRadius=null, backRadius=+60, d=10, ap=40, n=1.5, x=0.
+  // Circular-arc mirror M1 concentric & flush on curved back face: x=+5, y=0, normalDeg=180, radius=+60, ap=40.
+  const f1b=hitCurvedOrFlatFace({x:-100,y:y0},{x:1,y:0},-d/2,null,0,true); // normal entry, stays horizontal!
+  const pMirB=hitCurvedOrFlatFace(f1b.point,{x:1,y:0},d/2,R,0,false);
+  const reflB=reflectDir({x:1,y:0},pMirB.outwardNormal);
+  const f2b=hitCurvedOrFlatFace(pMirB.point,reflB,-d/2,null,0,true);
+  const outB=snellStep(reflB,f2b.outwardNormal,n,1);
+  const expectedYB=f2b.point.y+((xDet-f2b.point.x)/outB.dir.x)*outB.dir.y;
+
+  const {document:curvedSilv}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-100,y:y0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:40,centerThickness:d,frontRadius:null,backRadius:R,insideIndex:n,outsideIndex:1,partialReflection:false}},
+    {id:'M1',type:'circular-arc-mirror',parameters:{x:d/2,y:0,normalDeg:180,radius:R,apertureHeight:40}},
+    {id:'D1',type:'ray-detector',parameters:{x:xDet,y:0,orientationDeg:90,length:120}}
+  ]));
+  const runB=await evaluateDocument(curvedSilv,core,reqs);
+  assert.equal(runB.summary.executionPassed,true);
+  assert.equal(runB.summary.observations.v40EndpointsVerified,true);
+  const byIdB=Object.fromEntries((await evaluateObservables(curvedSilv,reqs,runB.summary)).results.map(r=>[r.id,r]));
+  assert.equal(byIdB.tl.value,2);
+  assert.equal(byIdB.m1.value,1);
+  const retB=byIdB.hits.value.find(h=>h.incomingUnit.x<0);
+  assert.ok(retB&&Math.abs(retB.pointMm.y-expectedYB)<1e-5,
+    `Curved-silvered expected y=${expectedYB}, got ${retB?.pointMm.y}`);
+});
+
+test('Milestone 3 oracle: silvered glass sphere, water-on-glass-on-mirror tank, and coaxial cemented doublet',async()=>{
+  // 3A: Silvered glass sphere (R=30, n=1.5) with concentric rear circular-arc-mirror at (30, 0).
+  const R=30,n=1.5,y0=6,xDet=-70;
+  const xIn=-Math.sqrt(R*R-y0*y0);
+  const nIn={x:-xIn/R,y:-y0/R}; // pointing into sphere
+  const d1=snellStep({x:1,y:0},nIn,1,n).dir;
+  // Hit right hemisphere of circle x^2+y^2=R^2 from (xIn, y0):
+  const b1=xIn*d1.x+y0*d1.y;
+  const t1=-2*b1;
+  const pMir={x:xIn+t1*d1.x,y:y0+t1*d1.y};
+  const d2=reflectDir(d1,{x:pMir.x/R,y:pMir.y/R});
+  const b2=pMir.x*d2.x+pMir.y*d2.y;
+  const t2=-2*b2;
+  const pOut={x:pMir.x+t2*d2.x,y:pMir.y+t2*d2.y};
+  const d3=snellStep(d2,{x:pOut.x/R,y:pOut.y/R},n,1).dir;
+  const expectedSphereY=pOut.y+((xDet-pOut.x)/d3.x)*d3.y;
+
+  const {document:sphereDoc}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-80,y:y0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'C1',type:'circular-dielectric',parameters:{x:0,y:0,radius:R,insideIndex:n,outsideIndex:1,partialReflection:false}},
+    {id:'M1',type:'circular-arc-mirror',parameters:{x:R,y:0,normalDeg:180,radius:R,apertureHeight:30}},
+    {id:'D1',type:'ray-detector',parameters:{x:xDet,y:0,orientationDeg:90,length:100}}
+  ]));
+  const sphereReqs=[
+    {id:'c1',kind:'interface-interactions',componentId:'C1'},
+    {id:'m1',kind:'mirror-reflections',componentId:'M1'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ];
+  const sphereRun=await evaluateDocument(sphereDoc,core,sphereReqs);
+  assert.equal(sphereRun.summary.executionPassed,true);
+  assert.equal(sphereRun.summary.observations.v40EndpointsVerified,true);
+  const sById=Object.fromEntries((await evaluateObservables(sphereDoc,sphereReqs,sphereRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(sById.c1.value,2);
+  assert.equal(sById.m1.value,1);
+  const sphereRet=sById.hits.value.find(h=>h.incomingUnit.x<0);
+  assert.ok(sphereRet&&Math.abs(sphereRet.pointMm.y-expectedSphereY)<1e-5);
+
+  // 3B: 3-component contact stack — water (y in [15,35], n=1.33) on glass (y in [0,15], n=1.6) on bottom mirror (y=0).
+  const thA=30*Math.PI/180,thW=Math.asin(Math.sin(thA)/1.33),thG=Math.asin(Math.sin(thA)/1.6);
+  const expectedTankX=-40+2*(20*Math.tan(thA)+20*Math.tan(thW)+15*Math.tan(thG));
+  const {document:tankDoc}=prepareScene(v40Req([
+    {id:'B1',type:'polygon-dielectric',parameters:{x1:-50,y1:0,x2:50,y2:0,x3:50,y3:15,x4:-50,y4:15,insideIndex:1.6,outsideIndex:1,partialReflection:false}},
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:-50,y1:15,x2:50,y2:15,x3:50,y3:35,x4:-50,y4:35,insideIndex:1.33,outsideIndex:1,partialReflection:false}},
+    {id:'M1',type:'plane-mirror',parameters:{x:0,y:0,orientationDeg:0,length:100}},
+    {id:'S1',type:'point-source',parameters:{x:-40,y:55,brightness:0.2},emission:{mode:'single-ray',directionDeg:-60}},
+    {id:'D1',type:'ray-detector',parameters:{x:10,y:55,orientationDeg:0,length:80}}
+  ]));
+  const tankRun=await evaluateDocument(tankDoc,core,[
+    {id:'m1',kind:'mirror-reflections',componentId:'M1'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ]);
+  assert.equal(tankRun.summary.executionPassed,true);
+  assert.equal(tankRun.summary.observations.v40EndpointsVerified,true);
+  const tankById=Object.fromEntries((await evaluateObservables(tankDoc,[
+    {id:'m1',kind:'mirror-reflections',componentId:'M1'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ],tankRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(tankById.m1.value,1);
+  assert.equal(tankById.hits.value.length,1);
+  assert.ok(Math.abs(tankById.hits.value[0].pointMm.x-expectedTankX)<1e-5);
+
+  // 3C: Coaxial cemented doublet — crown biconvex TL1 (+60, +50, n=1.5, d=12, x=-6) cemented to
+  // flint plano-concave TL2 (-50, null, n=1.65, d=8, x=+4) sharing curved interface at x=0!
+  const yDoub=8,xDetDoub=120;
+  const f1=hitCurvedOrFlatFace({x:-60,y:yDoub},{x:1,y:0},-12,60,0,true);
+  const dIn1=snellStep({x:1,y:0},{x:-f1.outwardNormal.x,y:-f1.outwardNormal.y},1,1.5).dir;
+  const f2=hitCurvedOrFlatFace(f1.point,dIn1,0,50,0,false);
+  const dIn2=snellStep(dIn1,f2.outwardNormal,1.5,1.65).dir;
+  const f3=hitCurvedOrFlatFace(f2.point,dIn2,8,null,0,false);
+  const dOut=snellStep(dIn2,f3.outwardNormal,1.65,1).dir;
+  const expectedDoubY=f3.point.y+((xDetDoub-f3.point.x)/dOut.x)*dOut.y;
+
+  const {document:doubDoc}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-60,y:yDoub,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'TL1',type:'spherical-lens',parameters:{x:-6,y:0,apertureHeight:40,centerThickness:12,frontRadius:60,backRadius:50,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'TL2',type:'spherical-lens',parameters:{x:4,y:0,apertureHeight:40,centerThickness:8,frontRadius:-50,backRadius:null,insideIndex:1.65,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:xDetDoub,y:0,orientationDeg:90,length:160}}
+  ]));
+  const doubReqs=[
+    {id:'faces',kind:'interface-face-events',componentId:'TL1'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ];
+  const doubRun=await evaluateDocument(doubDoc,core,doubReqs);
+  assert.equal(doubRun.summary.executionPassed,true);
+  assert.equal(doubRun.summary.observations.v40EndpointsVerified,true);
+  const doubById=Object.fromEntries((await evaluateObservables(doubDoc,doubReqs,doubRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(doubById.hits.value.length,1);
+  assert.ok(Math.abs(doubById.hits.value[0].pointMm.y-expectedDoubY)<1e-5,
+    `Cemented doublet expected y=${expectedDoubY}, got ${doubById.hits.value[0].pointMm.y}`);
+  assert.equal(doubById.faces.value['back-arc'].first.incidentIndex,1.5);
+  assert.equal(doubById.faces.value['back-arc'].first.destinationIndex,1.65);
+  assert.equal(doubById.faces.value['back-arc'].first.mergedWithId,'TL2');
+});
+
+test('Milestone 3 negative controls: near-contact gaps, overlaps, mismatched silvering, non-mirror contact, and legacy v38/v39 isolation',()=>{
+  const s1={id:'S1',type:'point-source',parameters:{x:-80,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}};
+  const slabA={id:'B1',type:'polygon-dielectric',parameters:{x1:-20,y1:-20,x2:0,y2:-20,x3:0,y3:20,x4:-20,y4:20,insideIndex:1.5,outsideIndex:1,partialReflection:false}};
+
+  // 1. Forbidden near-contact air gap (0.005 mm in (1e-8, 0.01) mm) between two slabs -> rejected!
+  assert.throws(()=>prepareScene(v40Req([
+    s1,slabA,
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:0.005,y1:-20,x2:20.005,y2:-20,x3:20.005,y3:20,x4:0.005,y4:20,insideIndex:1.6,outsideIndex:1,partialReflection:false}}
+  ])),/Finite dielectric bodies/);
+
+  // 2. Overlapping interiors -> rejected!
+  assert.throws(()=>prepareScene(v40Req([
+    s1,slabA,
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:-2,y1:-20,x2:18,y2:-20,x3:18,y3:20,x4:-2,y4:20,insideIndex:1.6,outsideIndex:1,partialReflection:false}}
+  ])),/Finite dielectric bodies/);
+
+  // 3. Insufficient flat-face overlap (< 1 mm) -> rejected!
+  assert.throws(()=>prepareScene(v40Req([
+    s1,slabA,
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:0,y1:19.5,x2:20,y2:19.5,x3:20,y3:39.5,x4:0,y4:39.5,insideIndex:1.6,outsideIndex:1,partialReflection:false}}
+  ])),/Finite dielectric bodies/);
+
+  // 4. Plane mirror on curved spherical-lens AABB (NOT a physical flat face) -> rejected!
+  assert.throws(()=>prepareScene(v40Req([
+    s1,
+    {id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:40,centerThickness:12,frontRadius:50,backRadius:50,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'M1',type:'plane-mirror',parameters:{x:6,y:0,orientationDeg:90,length:40}}
+  ])),/flush on a flat dielectric face/);
+
+  // 5. Curved arc mirror with mismatched radius or exceeding lens aperture -> rejected!
+  assert.throws(()=>prepareScene(v40Req([
+    s1,
+    {id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:40,centerThickness:10,frontRadius:null,backRadius:60,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'M1',type:'circular-arc-mirror',parameters:{x:5,y:0,normalDeg:180,radius:59.5,apertureHeight:40}}
+  ])),/silver a coincident curved face/);
+  assert.throws(()=>prepareScene(v40Req([
+    s1,
+    {id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:40,centerThickness:10,frontRadius:null,backRadius:60,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'M1',type:'circular-arc-mirror',parameters:{x:5,y:0,normalDeg:180,radius:60,apertureHeight:50}}
+  ])),/silver a coincident curved face/);
+
+  // 6. Non-mirror segments (detector, ideal-lens, line-blocker) flush on a dielectric face -> rejected!
+  for(const badSeg of [
+    {id:'D1',type:'ray-detector',parameters:{x:0,y:0,orientationDeg:90,length:30}},
+    {id:'L1',type:'ideal-lens',parameters:{x:0,y:0,focalLength:80,apertureHeight:30}},
+    {id:'K1',type:'line-blocker',parameters:{x:0,y:0,orientationDeg:90,length:30}}
+  ]){
+    assert.throws(()=>prepareScene(v40Req([s1,slabA,badSeg])),/flush on a flat dielectric face/);
+  }
+
+  // 7. Source on or within 0.01 mm of shared glass-glass boundary -> rejected!
+  assert.throws(()=>prepareScene(v40Req([
+    slabA,
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:0,y1:-20,x2:20,y2:-20,x3:20,y3:20,x4:0,y4:20,insideIndex:1.6,outsideIndex:1,partialReflection:false}},
+    {id:'S1',type:'point-source',parameters:{x:0,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}}
+  ])),/0\.01 mm from dielectric body boundary/);
+
+  // 8. Legacy v38 and v39 MUST still reject touching slabs and flush silvered mirrors!
+  for(const model of ['native-general-refractive-bench','native-general-hybrid-bench']){
+    assert.throws(()=>prepareScene({
+      model,lengthUnit:'mm',
+      components:[
+        s1,slabA,
+        {id:'B2',type:'polygon-dielectric',parameters:{x1:0,y1:-20,x2:20,y2:-20,x3:20,y3:20,x4:0,y4:20,insideIndex:1.6,outsideIndex:1,partialReflection:false}}
+      ]
+    }),/disjoint/);
+    assert.throws(()=>prepareScene({
+      model,lengthUnit:'mm',
+      components:[
+        s1,slabA,
+        {id:'M1',type:'plane-mirror',parameters:{x:0,y:0,orientationDeg:90,length:40}}
+      ]
+    }),/outside dielectric/);
+  }
+});
