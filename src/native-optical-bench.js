@@ -37,7 +37,6 @@ import {
   resolveSourceMembership,
   segmentOutsideBodyExact,
   signedSupportDistance,
-  validateCoaxialLensPlanes,
   validateParallelBeamAdmission,
   validatePointSourceSeparation
 } from './native-bench-common.js';
@@ -64,22 +63,24 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
   const path='$.physics.components';
   if(!compositionCountsMatch(components,OPTICAL_BENCH_V40_MODEL,OPTICAL_BENCH_V40_VERSION)||
      components.length>OPTICAL_BENCH_V40_MAX_COMPONENTS)
-    fail(path,'v40 optical bench supports either 1–4 single-ray point sources or 1 external parallel beam, 0–2 disjoint finite dielectrics, 0–4 coaxial ideal lenses, 0–2 curved mirrors, 0–2 plane mirrors, 0–2 opaque stops and 0–2 detectors (max 16 components).','UNSUPPORTED_SCOPE');
+    fail(path,'v40 optical bench supports either 1–4 point sources (single-ray, directional, or full-circle) or 1 external parallel beam, 0–2 disjoint finite dielectrics, 0–4 vertical ideal lenses, 0–2 curved mirrors, 0–2 plane mirrors, 0–2 opaque stops and 0–2 detectors (max 16 components).','UNSUPPORTED_SCOPE');
 
   const sources=components.filter(c=>c.type==='point-source');
   const beams=components.filter(c=>c.type===PARALLEL_BEAM_TYPE);
   if(!((sources.length>=1&&beams.length===0)||(sources.length===0&&beams.length===1)))
-    fail(path,'v40 optical bench requires either 1–4 single-ray point sources or 1 parallel beam, not both.','UNSUPPORTED_SCOPE');
+    fail(path,'v40 optical bench requires either 1–4 point sources or 1 parallel beam, not both.','UNSUPPORTED_SCOPE');
 
   const points=sources.map(c=>c.parameters);
   validatePointSourceSeparation(points,OPTICAL_BENCH_V40_CLEARANCE_MM,path,fail);
 
   const initialRays=[];
   for(const s of sources){
-    if(s.emission.mode!=='single-ray')
-      fail(path,'v40 point sources require explicit single-ray emission.','UNSUPPORTED_SCOPE');
-    const a=s.emission.directionDeg*Math.PI/180;
-    initialRays.push({origin:{x:s.parameters.x,y:s.parameters.y},dir:{x:Math.cos(a),y:Math.sin(a)}});
+    if(!['single-ray','directional','full-circle'].includes(s.emission.mode))
+      fail(path,'v40 point sources support single-ray, directional, or full-circle emission.','UNSUPPORTED_SCOPE');
+    if(s.emission.mode==='single-ray'){
+      const a=s.emission.directionDeg*Math.PI/180;
+      initialRays.push({origin:{x:s.parameters.x,y:s.parameters.y},dir:{x:Math.cos(a),y:Math.sin(a)}});
+    }
   }
 
   let beamSeg=null;
@@ -118,9 +119,16 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
         fail(path,'Parallel emitter must lie completely outside every dielectric body by at least 0.01 mm ('+body.id+').','UNSUPPORTED_SCOPE');
   }
 
-  // 0-4 coaxial vertical ideal thin lenses (focalLength specified in ambient medium backgroundIndex).
-  const lenses=components.filter(c=>c.type==='ideal-lens');
-  validateCoaxialLensPlanes(lenses,points,beamSeg,OPTICAL_BENCH_V40_CLEARANCE_MM,path,fail);
+  // 0-4 independently centered vertical ideal thin lenses (x, y; focalLength in backgroundIndex).
+  // Emitters stay >= 0.01 mm off each lens plane; vertically separated lenses at the same x
+  // (e.g. Billet split lenses) are admitted when their finite segments are disjoint by >= 0.01 mm.
+  for(const lens of components.filter(c=>c.type==='ideal-lens')){
+    const lx=lens.parameters.x;
+    if(points.some(s=>Math.abs(lx-s.x)<OPTICAL_BENCH_V40_CLEARANCE_MM))
+      fail(path,'each point source must be separated from every lens plane by at least 0.01 mm','UNSUPPORTED_SCOPE');
+    if(beamSeg&&!(beamSeg.every(e=>e.x<=lx-BEAM_CLEARANCE_MM)||beamSeg.every(e=>e.x>=lx+BEAM_CLEARANCE_MM)))
+      fail(path,'entire parallel emitter must lie at least 0.01 mm on one side of every lens plane','UNSUPPORTED_SCOPE');
+  }
 
   // Curved mirrors (>= 0.01 mm clearance from emitters, bodies, and each other).
   const curveDisks=[];
@@ -230,7 +238,7 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
         const tPlane=(c.parameters.x-origin.x)/dir.x;
         if(tPlane>0){
           const yHit=origin.y+tPlane*dir.y;
-          if(Math.abs(Math.abs(yHit)-c.parameters.apertureHeight/2)<OPTICAL_BENCH_V40_CLEARANCE_MM)
+          if(Math.abs(Math.abs(yHit-(c.parameters.y??0))-c.parameters.apertureHeight/2)<OPTICAL_BENCH_V40_CLEARANCE_MM)
             fail(path,'Initial forward ray meets finite ideal-lens rim within 0.01 mm ('+c.id+').','UNSUPPORTED_SCOPE');
         }
       }
@@ -336,8 +344,8 @@ export function opticalBenchCapabilities(){
     maxRayDepth:V40_MAX_RAY_DEPTH,
     clearanceMm:OPTICAL_BENCH_V40_CLEARANCE_MM,
     emitters:{
-      rule:'Choose EITHER 1–4 point-source (single-ray) OR 1 external parallel-beam (not both).',
-      'point-source':{parameters:['x','y','brightness'],emission:{mode:'single-ray',required:['directionDeg']},interiorPlacement:'Allowed in ambient medium OR strictly inside circular-dielectric, triangular-prism, or polygon-dielectric (>= 0.01 mm from boundary). Exterior-only for spherical-lens.'},
+      rule:'Choose EITHER 1–4 point-source (single-ray, directional, or full-circle) OR 1 external parallel-beam (not both).',
+      'point-source':{parameters:['x','y','brightness'],emission:{modes:['single-ray','directional','full-circle'],singleRayRequired:['directionDeg'],directionalRequired:['directionDeg','angleDeg']},interiorPlacement:'Allowed in ambient medium OR strictly inside circular-dielectric, triangular-prism, or polygon-dielectric (>= 0.01 mm from boundary). Exterior-only for spherical-lens.'},
       'parallel-beam':{parameters:['x','y','width','directionDeg','brightness'],interiorPlacement:'Must lie completely outside all finite dielectric bodies (>= 0.01 mm).'}
     },
     components:{
@@ -347,7 +355,7 @@ export function opticalBenchCapabilities(){
         'polygon-dielectric':{parameters:['x1','y1','x2','y2','x3','y3','x4','y4','insideIndex','outsideIndex','partialReflection']},
         'spherical-lens':{parameters:['x','y','apertureHeight','centerThickness','frontRadius','backRadius','insideIndex','outsideIndex','partialReflection'],note:'Biconvex positive radii; exterior sources only.'}
       }},
-      'ideal-lens':{count:[0,4],parameters:['x','focalLength','apertureHeight'],note:'Coaxial vertical thin lens at y=0; focalLength defined in ambient medium backgroundIndex.'},
+      'ideal-lens':{count:[0,4],parameters:['x','y','focalLength','apertureHeight'],note:'Vertical thin lens with independent transverse centre y (split lenses at the same x are admitted when vertically separated by >= 0.01 mm); focalLength defined in ambient medium backgroundIndex.'},
       'plane-mirror':{count:[0,2],parameters:['x','y','orientationDeg','length']},
       curvedMirrors:{groupCount:[0,2],types:{
         'ideal-curved-mirror':{parameters:['x','y','normalDeg','focalLength','apertureHeight']},

@@ -306,7 +306,7 @@ function controls() {
       note.textContent = 'Passive native detector. Orientation is its surface tangent; signed power uses native relative units and can cancel across directions. Crossing count is sampled, not continuous throughput.';
       fieldset.append(note);
     }
-    if (component.type === 'ideal-lens' && parallelTwoLens) {
+    if (component.type === 'ideal-lens' && (parallelTwoLens || session.document.schemaVersion === OPTICAL_BENCH_V40_VERSION)) {
       const note=document.createElement('p');note.className='muted';
       note.textContent='Native vertical IdealLens with explicit transverse centre y. Finite lens misses stay genuine misses, not absorption; sampled ray crossings are not a detected image.';
       fieldset.append(note);
@@ -411,12 +411,12 @@ function controls() {
   syncSampling();
 }
 function sourcePicker(component) {
-  const choices = [5,7,8,9,10,11,12,13,14,15,16,17,18,24,25,33,MIRROR_BOX_VERSION,REFRACTIVE_BENCH_VERSION,HYBRID_BENCH_VERSION,OPTICAL_BENCH_V40_VERSION].includes(session.document.schemaVersion)?[{mode:'single-ray',title:'Single ray (native)',description:'One exact direction; sampling density does not create a cone',icon:angleSourceIcon}]:[
+  const choices = [5,7,8,9,10,11,12,13,14,15,16,17,18,24,25,33,MIRROR_BOX_VERSION,REFRACTIVE_BENCH_VERSION,HYBRID_BENCH_VERSION].includes(session.document.schemaVersion)?[{mode:'single-ray',title:'Single ray (native)',description:'One exact direction; sampling density does not create a cone',icon:angleSourceIcon}]:[
     { mode: 'full-circle', title: 'Point source (360°)', description: 'Light in every direction', icon: pointSourceIcon },
     { mode: 'directional', title: 'Point source (directional)', description: 'Symmetric cone · 1–180°', icon: angleSourceIcon }
   ];
   if([29,31,32,34,GUIDE_FAN_VERSION].includes(session.document.schemaVersion))choices.splice(0,1);
-  if([6,GENERAL_BENCH_VERSION].includes(session.document.schemaVersion))choices.push({mode:'single-ray',title:'Single ray (native)',description:'One exact direction; no cone from sampling',icon:angleSourceIcon});
+  if([6,GENERAL_BENCH_VERSION,OPTICAL_BENCH_V40_VERSION].includes(session.document.schemaVersion))choices.push({mode:'single-ray',title:'Single ray (native)',description:'One exact direction; no cone from sampling',icon:angleSourceIcon});
   const details = document.createElement('details'); details.className = 'source-picker';
   const summary = document.createElement('summary'); summary.id = `${component.id}-mode`;
   const heading = document.createElement('span');

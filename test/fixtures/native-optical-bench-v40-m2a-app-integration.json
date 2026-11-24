@@ -1,0 +1,6 @@
+{
+  "format": "opticsim-native-optical-bench-v40-m2a-app-integration-v1",
+  "sourceV40AppGitBlob": "7662d95796c6654f556df22888e167f3a09b54ee",
+  "v40M2aAppGitBlob": "0ec68e7982e4daef6cc2deb36054f0c7ab913a14",
+  "note": "Append-only provenance for v40 Milestone 2A: expose 3-mode sourcePicker (360°, directional, single-ray) and decentered ideal-lens y guidance in v40."
+}

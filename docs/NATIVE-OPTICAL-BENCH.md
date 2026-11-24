@@ -18,9 +18,9 @@ node scripts/author-scene.mjs bench-capabilities
 | `backgroundIndex` | Required number in `[1, 4]` | Explicit ambient refractive index (`doc.physics.backgroundIndex`), preserved across structural edits and `2 → 1 → 0` body deletion. Every finite dielectric body's `outsideIndex` must match it. |
 | `randomSeed` | Optional string (`1–64` printable chars) | Defaults to `"opticsim-v40-seed-v1"` during authoring; required in canonical saved v40 JSON and compiled into native PhyDemo `Scene.randomSeed`. |
 | `runPolicy` | `bench-v40` (default), `bench-v40-dense`, `preview-v1`, `dense-v1` | `bench-v40` sets `maxRayDepth: 16` (`0..16` admitted in v40), enabling multi-element returns across two glass bodies, thin lenses, mirrors, and detectors. |
-| **Emitters** (choose one mode) | `1–4` `point-source` (`single-ray`) **OR** `1` `parallel-beam` | Point sources may start in the ambient medium **or strictly inside** a `circular-dielectric`, `triangular-prism`, or `polygon-dielectric` (`>= 0.01 mm` from boundary). `spherical-lens` sources and `parallel-beam` emitters must lie strictly outside all bodies. |
+| **Emitters** (choose one mode) | `1–4` `point-source` (`single-ray`, `directional`, or `full-circle`) **OR** `1` `parallel-beam` | Point sources may start in the ambient medium **or strictly inside** a `circular-dielectric`, `triangular-prism`, or `polygon-dielectric` (`>= 0.01 mm` from boundary). `spherical-lens` sources and `parallel-beam` emitters must lie strictly outside all bodies. |
 | **Finite dielectrics** | `0–2` total (`circular-dielectric`, `triangular-prism`, `polygon-dielectric`, `spherical-lens`) | Pairwise disjoint (`>= 0.01 mm` clearance). Zero-body deletion closure (`2 → 1 → 0`) and equal-index neutral bodies (`insideIndex === outsideIndex`) are admitted. |
-| `ideal-lens` | `0–4` coaxial vertical thin lenses | Centered at `y = 0`; `focalLength` is defined in the ambient medium `backgroundIndex`. |
+| `ideal-lens` | `0–4` vertical thin lenses (`x`, `y`, `focalLength`, `apertureHeight`) | Independent transverse center `y` (vertically separated split lenses at the same `x` are admitted when disjoint by `>= 0.01 mm`); `focalLength` is defined in the ambient medium `backgroundIndex`. |
 | **Curved mirrors** | `0–2` total (`ideal-curved-mirror`, `circular-arc-mirror`) | Disjoint bounding disks (`>= 0.01 mm` clearance). |
 | `plane-mirror` | `0–2` finite plane mirrors | Center `(x, y)`, tangent `orientationDeg`, finite `length`. |
 | **Opaque stops** | `0–2` total (`line-blocker`, `circle-blocker`, `finite-aperture`) | Fully opaque native absorbers. |
@@ -81,9 +81,7 @@ node scripts/author-scene.mjs bench-capabilities
 - **Proportionate runtime audit (`v40EndpointsVerified`):** Reuses the shared emitted/incoming/outgoing `< 0.01 mm` endpoint, vertex, and circular/spherical/arc tangency audit plus deterministic seed verification, near-grazing dielectric incidence refusal (`|d · n| <= 1e-4`), and high-to-low near-critical refusal (`|n_i sin θ_i - n_t| <= 1e-6`). Truncation, stops, or audit faults fail closed and withhold accepted measurements.
 - **Browser starter:** Available in the **Scene** dropdown as `v40 / Unified optical bench (interior sources + glass + lens + mirror)` (`scenes/native-optical-bench.json`, `examples/native-optical-bench.json`).
 
-## 4. Known Boundaries (Current Milestone 1)
+## 4. Known Boundaries (Current Milestone 2A)
 
-- `ideal-lens` remains centered at `y = 0` (independent `ideal-lens.y` decentering is scheduled for Milestone 2).
-- `point-source` uses explicit `single-ray` emission in v40 (directional fans are scheduled for Milestone 2; `parallel-beam` is supported now).
-- `spherical-lens` remains biconvex and exterior-source-only in Milestone 1.
+- `spherical-lens` remains biconvex and exterior-source-only (signed-radius plano-convex / meniscus / biconcave lenses are scheduled for Milestone 2B).
 - No route-independent `ideal-image` prediction or continuous irradiance/flux claim is fabricated on arbitrary multi-element benches.
