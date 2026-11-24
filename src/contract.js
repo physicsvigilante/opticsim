@@ -121,6 +121,12 @@ function validateVersion(doc, version) {
     object(c.parameters, componentParameterNames(c.type,version), `${path}.parameters`);
     for (const [key, value] of Object.entries(c.parameters)) {
       if(key==='partialReflection'){if(typeof value!=='boolean')fail(`${path}.parameters.${key}`,'expected explicit boolean');continue;}
+      if(version===OPTICAL_BENCH_V40_VERSION&&c.type===SPHERICAL_LENS_TYPE&&['frontRadius','backRadius'].includes(key)){
+        if(value===null)continue;
+        number(value,-10000,10000,`${path}.parameters.${key}`);
+        if(Math.abs(value)<1)fail(`${path}.parameters.${key}`,'radius magnitude must be at least 1 mm (or null for a flat face)');
+        continue;
+      }
       if(['negativeIndex','positiveIndex','insideIndex','outsideIndex'].includes(key))number(value,1,4,`${path}.parameters.${key}`);
       if(key==='normalDeg')number(value,-180,180,`${path}.parameters.${key}`);
       number(value, -10000, 10000, `${path}.parameters.${key}`);

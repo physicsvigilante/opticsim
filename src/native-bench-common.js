@@ -50,7 +50,7 @@ export function extractNativeRay(ray){
   return {origin:{x:p.x,y:-p.y},dir:{x:vx/len,y:vy/len}};
 }
 
-export function buildDielectricBody(c,cPath,fail){
+export function buildDielectricBody(c,cPath,fail,{allowSignedSpherical=false}={}){
   const p=c.parameters;
   if(c.type===PRISM_TYPE){
     const v=prismVertices(p);
@@ -82,11 +82,17 @@ export function buildDielectricBody(c,cPath,fail){
     const center={x:p.x,y:p.y};
     return {kind:'circle',id:c.id,type:c.type,insideIndex:p.insideIndex,outsideIndex:p.outsideIndex,center,radius:p.radius,corners:[],tangentCircles:[{center,radius:p.radius}]};
   }
-  // SPHERICAL_LENS_TYPE: conservative convex AABB contains the complete physical biconvex lens;
-  // both native generating circles are retained for tangency admission and runtime qualification.
+  // SPHERICAL_LENS_TYPE: conservative convex AABB contains the complete physical lens
+  // (biconvex, plano-convex, plano-concave, meniscus, biconcave, or flat-flat in v40);
+  // curved generating circles are retained for tangency admission and runtime qualification.
   const half=p.apertureHeight/2;
-  if(!(p.apertureHeight>=4&&p.centerThickness>=2&&p.frontRadius>=half+1&&p.backRadius>=half+1))
-    fail(cPath,'Spherical lens requires aperture >= 4 mm, thickness >= 2 mm and each radius >= half-aperture + 1 mm.','UNSUPPORTED_SCOPE');
+  const radiusOk=r=>allowSignedSpherical
+    ?(r===null||(Number.isFinite(r)&&Math.abs(r)>=half+1&&Math.abs(r)<=10000))
+    :(Number.isFinite(r)&&r>=half+1);
+  if(!(p.apertureHeight>=4&&p.centerThickness>=2&&radiusOk(p.frontRadius)&&radiusOk(p.backRadius)))
+    fail(cPath,allowSignedSpherical
+      ?'Spherical lens requires aperture >= 4 mm, thickness >= 2 mm, and each face radius either null (flat) or |radius| >= half-aperture + 1 mm.'
+      :'Spherical lens requires aperture >= 4 mm, thickness >= 2 mm and each radius >= half-aperture + 1 mm.','UNSUPPORTED_SCOPE');
   const g=thickLensGeometry(p);
   if(!Number.isFinite(g.edgeThickness)||g.edgeThickness<1)
     fail(cPath,'Spherical lens faces must retain edge thickness >= 1 mm.','UNSUPPORTED_SCOPE');
@@ -96,13 +102,13 @@ export function buildDielectricBody(c,cPath,fail){
     {x:g.left,y:g.bottom},{x:g.right,y:g.bottom},
     {x:g.right,y:g.top},{x:g.left,y:g.top}
   ];
+  const tangentCircles=[];
+  if(p.frontRadius!==null)tangentCircles.push({center:g.frontCenter,radius:Math.abs(p.frontRadius)});
+  if(p.backRadius!==null)tangentCircles.push({center:g.backCenter,radius:Math.abs(p.backRadius)});
   return {
     kind:'poly',id:c.id,type:c.type,insideIndex:p.insideIndex,outsideIndex:p.outsideIndex,
     vertices:boxVertices,faces:finiteGlassFaces(boxVertices),corners:g.corners,
-    tangentCircles:[
-      {center:g.frontCenter,radius:p.frontRadius},
-      {center:g.backCenter,radius:p.backRadius}
-    ]
+    tangentCircles
   };
 }
 
@@ -246,8 +252,10 @@ export function componentTangentCircles(c){
   if(c.type===CIRCULAR_TYPE||c.type===CIRCLE_BLOCKER_TYPE)
     return [{center:{x:p.x,y:p.y},radius:p.radius}];
   if(c.type===SPHERICAL_LENS_TYPE){
-    const g=thickLensGeometry(p);
-    return [{center:g.frontCenter,radius:p.frontRadius},{center:g.backCenter,radius:p.backRadius}];
+    const g=thickLensGeometry(p),circles=[];
+    if(p.frontRadius!==null)circles.push({center:g.frontCenter,radius:Math.abs(p.frontRadius)});
+    if(p.backRadius!==null)circles.push({center:g.backCenter,radius:Math.abs(p.backRadius)});
+    return circles;
   }
   if(c.type==='circular-arc-mirror'){
     const {n}=curvedFrame(p);

@@ -405,6 +405,92 @@ async function main(){
     assert.deepEqual(v40Starter.sourceChoices,['Point source (360°)','Point source (directional)','Single ray (native)']);
     await shot('v40-unified-bench-starter');
 
+    // PR #262 P2-1 regression: real keyboard input on v40 nullable signed spherical-lens frontRadius.
+    // Partial/malformed number text ("-", "1e-") yields value==="" with validity.badInput===true and MUST
+    // invalidate the draft (across 75 ms throttle, Enter, and sampling change) instead of committing flat null.
+    const v40LensPath=join(profile,'v40-signed-lens.json');
+    await writeFile(v40LensPath,JSON.stringify({
+      format:'ray-optics-2d',schemaVersion:40,adapterVersion:40,
+      upstreamCommit:'811f508d2b070898c241a568b0c167dcb8645251',
+      physics:{lengthUnit:'mm',coordinates:'x-right-y-up',model:'native-optical-bench',backgroundIndex:1,components:[
+        {id:'S1',type:'point-source',parameters:{x:-60,y:8,brightness:0.2},emission:{mode:'single-ray',directionDeg:0,angleDeg:30}},
+        {id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:40,centerThickness:12,frontRadius:50,backRadius:50,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+        {id:'D1',type:'ray-detector',parameters:{x:120,y:0,orientationDeg:90,length:200}}
+      ]},
+      presentation:{title:'v40 signed lens keyboard check',view:{x:20,y:0,zoom:2},mode:'rays',grid:false},
+      simulation:{rayDensity:0.2,maxRayDepth:16,processedRayLimit:10000,randomSeed:'opticsim-v40-seed-v1'}
+    },null,2));
+    const domV40Lens=await cdp.send('DOM.getDocument',{depth:-1});
+    const loadV40Lens=await cdp.send('DOM.querySelector',{nodeId:domV40Lens.root.nodeId,selector:'#load'});
+    await cdp.send('DOM.setFileInputFiles',{nodeId:loadV40Lens.nodeId,files:[v40LensPath]});
+    const v40LensLoaded=await until(state,x=>x?.title==='v40 signed lens keyboard check'&&['completed','completed-with-warnings'].includes(x.status)&&x.detectorReadouts?.includes('D1: 1 native crossings'),'v40 signed lens load');
+    assert.equal(v40LensLoaded.saveDisabled,false);
+    const keyTap=async(key,code,vk)=>{
+      await cdp.send('Input.dispatchKeyEvent',{type:'keyDown',key,code,windowsVirtualKeyCode:vk,nativeVirtualKeyCode:vk});
+      await cdp.send('Input.dispatchKeyEvent',{type:'keyUp',key,code,windowsVirtualKeyCode:vk,nativeVirtualKeyCode:vk});
+    };
+    const clearAndType=async(selector,text)=>{
+      await evaluate(`(() => {const e=document.querySelector(${JSON.stringify(selector)});e.focus();e.select();})()`);
+      await keyTap('Backspace','Backspace',8);
+      for(const ch of text)await cdp.send('Input.insertText',{text:ch});
+    };
+    // 1. Lone minus "-": badInput === true -> MUST stay invalid across throttle, Enter, and sampling change!
+    await clearAndType('#TL1-frontRadius','-');
+    const minusDom=await evaluate('(() => {const e=document.getElementById("TL1-frontRadius");return {value:e.value,badInput:e.validity.badInput};})()');
+    assert.equal(minusDom.value,'');
+    assert.equal(minusDom.badInput,true);
+    await sleep(220);
+    const afterMinus=await state();
+    assert.equal(afterMinus.status,'invalid');
+    assert.equal(afterMinus.saveDisabled,true);
+    await keyTap('Enter','Enter',13);
+    await sleep(120);
+    assert.equal((await state()).status,'invalid');
+    await evaluate('(() => {const e=document.getElementById("sampling");e.value="dense";e.dispatchEvent(new Event("change",{bubbles:true}));})()');
+    await sleep(120);
+    assert.equal((await state()).status,'invalid');
+    // 2. Incomplete exponent "1e-": badInput === true -> MUST stay invalid across throttle!
+    await keyTap('Backspace','Backspace',8);
+    await clearAndType('#TL1-frontRadius','1e-');
+    const expDom=await evaluate('(() => {const e=document.getElementById("TL1-frontRadius");return {value:e.value,badInput:e.validity.badInput};})()');
+    assert.equal(expDom.value,'');
+    assert.equal(expDom.badInput,true);
+    await sleep(220);
+    assert.equal((await state()).status,'invalid');
+    // 3. Deliberate clear to truly empty (badInput === false) -> commits flat null!
+    for(let i=0;i<4;i++)await keyTap('Backspace','Backspace',8);
+    const emptyDom=await evaluate('(() => {const e=document.getElementById("TL1-frontRadius");return {value:e.value,badInput:e.validity.badInput};})()');
+    assert.equal(emptyDom.value,'');
+    assert.equal(emptyDom.badInput,false);
+    const afterFlat=await until(state,x=>x?.title==='v40 signed lens keyboard check'&&['completed','completed-with-warnings'].includes(x.status)&&x.saveDisabled===false,'v40 deliberate flat clear');
+    assert.match(afterFlat.detectorReadouts,/D1: 1 native crossings/);
+    for(const f of (await readdir(downloads)).filter(n=>n.startsWith('scene.ray-optics-2d')))await rm(join(downloads,f),{force:true});
+    await evaluate('document.getElementById("save").click()');
+    const savedFlat=await until(async()=>{
+      for(const f of (await readdir(downloads)).filter(n=>n.startsWith('scene.ray-optics-2d')&&n.endsWith('.json'))){
+        const v=JSON.parse(await readFile(join(downloads,f),'utf8'));
+        if(v.presentation?.title==='v40 signed lens keyboard check')return v;
+      }
+      return null;
+    },x=>!!x,'save v40 flat lens');
+    assert.equal(savedFlat.physics.components.find(c=>c.id==='TL1').parameters.frontRadius,null);
+    // 4. Enter valid negative radius "-50" -> commits signed -50!
+    await clearAndType('#TL1-frontRadius','-50');
+    const afterNeg=await until(state,x=>x?.title==='v40 signed lens keyboard check'&&['completed','completed-with-warnings'].includes(x.status)&&x.saveDisabled===false,'v40 signed negative radius');
+    assert.match(afterNeg.detectorReadouts,/D1: 1 native crossings/);
+    for(const f of (await readdir(downloads)).filter(n=>n.startsWith('scene.ray-optics-2d')))await rm(join(downloads,f),{force:true});
+    await evaluate('document.getElementById("save").click()');
+    const savedNeg=await until(async()=>{
+      for(const f of (await readdir(downloads)).filter(n=>n.startsWith('scene.ray-optics-2d')&&n.endsWith('.json'))){
+        const v=JSON.parse(await readFile(join(downloads,f),'utf8'));
+        if(v.presentation?.title==='v40 signed lens keyboard check')return v;
+      }
+      return null;
+    },x=>!!x,'save v40 negative lens');
+    assert.equal(savedNeg.physics.components.find(c=>c.id==='TL1').parameters.frontRadius,-50);
+    report.checks.push({name:'v40 signed/flat spherical-lens keyboard badInput, deliberate clear (null), and negative radius',result:'pass'});
+    await shot('v40-signed-lens-keyboard');
+
     // Load a v39 single-ray scene via #load to verify single-ray sourcePicker isolation and sampling-note guidance.
     const v39SinglePath=join(profile,'v39-single-ray.json');
     await writeFile(v39SinglePath,JSON.stringify({

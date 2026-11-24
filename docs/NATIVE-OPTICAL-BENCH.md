@@ -19,13 +19,13 @@ node scripts/author-scene.mjs bench-capabilities
 | `randomSeed` | Optional string (`1–64` printable chars) | Defaults to `"opticsim-v40-seed-v1"` during authoring; required in canonical saved v40 JSON and compiled into native PhyDemo `Scene.randomSeed`. |
 | `runPolicy` | `bench-v40` (default), `bench-v40-dense`, `preview-v1`, `dense-v1` | `bench-v40` sets `maxRayDepth: 16` (`0..16` admitted in v40), enabling multi-element returns across two glass bodies, thin lenses, mirrors, and detectors. |
 | **Emitters** (choose one mode) | `1–4` `point-source` (`single-ray`, `directional`, or `full-circle`) **OR** `1` `parallel-beam` | Point sources may start in the ambient medium **or strictly inside** a `circular-dielectric`, `triangular-prism`, or `polygon-dielectric` (`>= 0.01 mm` from boundary). `spherical-lens` sources and `parallel-beam` emitters must lie strictly outside all bodies. |
-| **Finite dielectrics** | `0–2` total (`circular-dielectric`, `triangular-prism`, `polygon-dielectric`, `spherical-lens`) | Pairwise disjoint (`>= 0.01 mm` clearance). Zero-body deletion closure (`2 → 1 → 0`) and equal-index neutral bodies (`insideIndex === outsideIndex`) are admitted. |
+| **Finite dielectrics** | `0–2` total (`circular-dielectric`, `triangular-prism`, `polygon-dielectric`, `spherical-lens`) | Pairwise disjoint (`>= 0.01 mm` clearance). Zero-body deletion closure (`2 → 1 → 0`) and equal-index neutral bodies (`insideIndex === outsideIndex`) are admitted. In `v40`, `spherical-lens` admits signed radii (`+` convex outward, `−` concave inward, `null` flat/planar face: biconvex, plano-convex, plano-concave, meniscus, biconcave, or flat-flat; textbook Cartesian $R_1 = \text{frontRadius}$, $R_2 = -\text{backRadius}$). |
 | `ideal-lens` | `0–4` vertical thin lenses (`x`, `y`, `focalLength`, `apertureHeight`) | Independent transverse center `y` (vertically separated split lenses at the same `x` are admitted when disjoint by `>= 0.01 mm`); `focalLength` is defined in the ambient medium `backgroundIndex`. |
 | **Curved mirrors** | `0–2` total (`ideal-curved-mirror`, `circular-arc-mirror`) | Disjoint bounding disks (`>= 0.01 mm` clearance). |
 | `plane-mirror` | `0–2` finite plane mirrors | Center `(x, y)`, tangent `orientationDeg`, finite `length`. |
 | **Opaque stops** | `0–2` total (`line-blocker`, `circle-blocker`, `finite-aperture`) | Fully opaque native absorbers. |
 | `ray-detector` | `0–2` passive finite detectors | Crossing counts, signed native relative power, and bounded `detector-hit-events` (`<= 32` hits). |
-| **Total components** | At most `16` | All non-source surfaces keep `>= 0.01 mm` clearance from bodies, emitters, and each other. |
+| **Total components** | At most `16` | Emitters and all non-source surfaces keep `>= 0.01 mm` exact finite-segment / body clearance (sources may sit along a finite mirror, detector, stop, or lens line extension when `>= 0.01 mm` clear of the actual finite segment). |
 
 ## 2. Minimal Authoring Example
 
@@ -81,8 +81,9 @@ node scripts/author-scene.mjs bench-capabilities
 - **Proportionate runtime audit (`v40EndpointsVerified`):** Reuses the shared emitted/incoming/outgoing `< 0.01 mm` endpoint, vertex, and circular/spherical/arc tangency audit plus deterministic seed verification, near-grazing dielectric incidence refusal (`|d · n| <= 1e-4`), and high-to-low near-critical refusal (`|n_i sin θ_i - n_t| <= 1e-6`). Truncation, stops, or audit faults fail closed and withhold accepted measurements.
 - **Browser starter:** Available in the **Scene** dropdown as `v40 / Unified optical bench (interior sources + glass + lens + mirror)` (`scenes/native-optical-bench.json`, `examples/native-optical-bench.json`).
 
-## 4. Known Boundaries & Upgrade Notes (Current Milestone 2A)
+## 4. Known Boundaries & Upgrade Notes (Current Milestone 2B)
 
-- **Milestone 1 → 2A `ideal-lens` note:** Milestone 2A extends `v40` in place to support decentered vertical lenses (`parameters.y`). Any pre-Milestone-2A `v40` save or authoring request containing an `ideal-lens` without `y` needs explicit `"y": 0` to preserve the original centered geometry.
-- `spherical-lens` remains biconvex and exterior-source-only (signed-radius plano-convex / meniscus / biconcave lenses are scheduled for Milestone 2B).
+- **Milestone 1 → 2A `ideal-lens` note:** Milestone 2A extended `v40` in place to support decentered vertical lenses (`parameters.y`). Any pre-Milestone-2A `v40` save or authoring request containing an `ideal-lens` without `y` needs explicit `"y": 0` to preserve the original centered geometry.
+- **Milestone 2B `spherical-lens` signed/flat convention:** `frontRadius` and `backRadius` use the outward-convex sign convention (`+R` convex outward, `−R` concave inward, `null` flat/planar face) so all pre-existing biconvex `v15`–`v40` lenses keep identical geometry. Textbook Cartesian radii are $R_1 = \text{frontRadius}$ and $R_2 = -\text{backRadius}$. `spherical-lens` remains exterior-source-only; require `|radius| >= apertureHeight/2 + 1 mm` (or `null`), `centerThickness >= 2 mm`, and `edgeThickness >= 1 mm`.
+- **Milestone 2B finite-segment clearance:** Emitters in `v40` require `>= 0.01 mm` clearance from actual finite segments (`ideal-lens`, `plane-mirror`, `line-blocker`, `finite-aperture` arms, `ray-detector`) rather than infinite supporting-line extensions, admitting L-shaped and side-by-side JEE setups while retaining full endpoint and runtime grazing protection.
 - No route-independent `ideal-image` prediction or continuous irradiance/flux claim is fabricated on arbitrary multi-element benches.

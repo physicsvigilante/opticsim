@@ -89,8 +89,9 @@ function physicalNumber(value,path) {
     fail([issue(path,'INVALID_VALUE','Expected a finite numeric value, not text or an unlabelled expression')]);
   return value;
 }
-function canonicalValue(key,value,scale,path) {
+function canonicalValue(key,value,scale,path,allowFlatRadius=false) {
   if(key==='partialReflection'){if(typeof value!=='boolean')fail([issue(path,'INVALID_VALUE','Expected an explicit boolean')]);return value;}
+  if(allowFlatRadius&&['frontRadius','backRadius'].includes(key)&&value===null)return null;
   return physicalNumber(value,path)*(lengthKeys.has(key)?scale:1);
 }
 export class AuthoringError extends Error {
@@ -212,7 +213,15 @@ export function capabilities() {
       ...(type===PRISM_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-31'],geometry:'Three physical vertices; vertex order defines face labels, not a ray route'}:{}),
       ...(type===POLYGON_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-34','face-41'],geometry:'One strictly convex four-vertex finite region, never a ray route'}:{}),
       ...(type===GRIN_V25_TYPE?{nativeType:'GrinGlass',geometry:'Bounded physical rectangle with fixed positive square-root index field; native Euler inside steps, real exit and passive detector; no arbitrary LaTeX.'}:{}),
-      ...(type===SPHERICAL_LENS_TYPE?{nativeType:'SphericalLens',booleanParameters:['partialReflection'],faceIds:['front-arc','back-arc','top-rim','bottom-rim'],geometry:'Native finite 2D biconvex lens. Both radii are positive lengths, not a thin-lens focal length; back-face native curvature sign is reversed'}:{}),
+      ...(type===SPHERICAL_LENS_TYPE?{
+        nativeType:'SphericalLens',booleanParameters:['partialReflection'],
+        faceIds:['front-arc','back-arc','top-rim','bottom-rim'],
+        geometry:'Native finite 2D spherical lens (outward-convex sign convention; not a thin-lens focal length). Legacy v15–v39 are positive-only biconvex (frontRadius, backRadius >= apertureHeight/2 + 1 mm). In v40 (native-optical-bench), frontRadius and backRadius also admit negative values (concave inward, |radius| >= apertureHeight/2 + 1 mm) and null (flat/planar face, R = infinity); textbook Cartesian equivalents are R1 = frontRadius and R2 = -backRadius. Requires apertureHeight >= 4 mm, centerThickness >= 2 mm, and edgeThickness >= 1 mm.',
+        schemaVariants:{
+          legacy:{versions:'15–18, 38–39',radii:'positive-only biconvex (>= apertureHeight/2 + 1 mm)'},
+          v40:{versions:[OPTICAL_BENCH_V40_VERSION],radii:'signed (+convex outward, -concave inward, |radius| >= apertureHeight/2 + 1 mm) or null (flat/planar face)',nullableParameters:['frontRadius','backRadius']}
+        }
+      }:{}),
       ...(type==='line-blocker'?{nativeType:'Blocker',geometry:'Opaque finite line segment; centre, tangent orientation, and length are explicit; absorbs each actual native ray incident'}:{}),
       ...(type===CIRCLE_BLOCKER_TYPE?{nativeType:'CircleBlocker',geometry:'Opaque 2D circular boundary with explicit centre and positive radius; absorbs actual native ray incidents; not a 3D body'}:{}),
       ...(type===FINITE_APERTURE_TYPE?{nativeType:'Aperture',geometry:'Opaque 2D line with an explicitly transparent centred opening; no wave diffraction'}:{}),
@@ -273,6 +282,8 @@ export function inspectAuthoringRequest(request){
   }
   const number=(key,value,path,type=null)=>{
     if(key==='partialReflection'){if(typeof value!=='boolean')issues.push(issue(path,'INVALID_VALUE','Expected explicit boolean'));return;}
+    const signedSpherical=isV40&&type===SPHERICAL_LENS_TYPE&&['frontRadius','backRadius'].includes(key);
+    if(signedSpherical&&value===null)return;
     if(typeof value!=='number'||!Number.isFinite(value)){
       issues.push(issue(path,'INVALID_VALUE','Expected a finite numeric value, not text or an unlabelled expression'));return;
     }
@@ -282,8 +293,10 @@ export function inspectAuthoringRequest(request){
       ['negativeIndex','positiveIndex','insideIndex','outsideIndex'].includes(key)?b.refractiveIndex:
       key==='normalDeg'?b.orientationDeg:key==='orientationDeg'?b.orientationDeg:key==='directionDeg'?b.directionDeg:
       key==='angleDeg'?b.openingAngleDeg:
+      signedSpherical?b.coordinateMm:
       ['length','openingLength','apertureHeight','centerThickness','frontRadius','backRadius'].includes(key)?b.positiveLengthMm:key==='width'?[10,100]:b.coordinateMm;
     if(!Number.isFinite(n)||n<bounds[0]||n>bounds[1]||
+      (signedSpherical&&Math.abs(n)<1)||
       (key==='focalLength'&&Math.abs(n)<b.minimumAbsFocalLengthMm)||
       (key==='radius'&&(type===CIRCULAR_TYPE?n<2:type===SEMICIRCULAR_TYPE?n<5:type===CIRCLE_BLOCKER_TYPE?n<1:Math.abs(n)<2)))
       issues.push(issue(path,'INVALID_INPUT','Value is outside the live contract bounds'+
@@ -390,8 +403,9 @@ export function prepareScene(request) {
       while(knownIds.has(prefix+'-'+index))index++;
       id=prefix+'-'+index;knownIds.add(id);assignedIds.push({index:i,id});
     }
+    const allowFlatRadius=selectedComposition.schemaVersion===OPTICAL_BENCH_V40_VERSION&&component.type===SPHERICAL_LENS_TYPE;
     const parameters=Object.fromEntries(required.map(key=>[key,canonicalValue(
-      key,component.parameters[key],scale,path+'.parameters.'+key)]));
+      key,component.parameters[key],scale,path+'.parameters.'+key,allowFlatRadius)]));
     const result={id,type:component.type,parameters};
     if(component.type==='point-source'){
       result.emission={mode:component.emission.mode,
@@ -473,7 +487,8 @@ export function reviseScene(document,patch){
       issues.push(issue(path+'.unit','UNSUPPORTED_UNIT','Units apply only to length parameters'));continue;
     }
     const scale=own(change,'unit')?units(change.unit,path+'.unit'):1;
-    component[change.section][change.key]=canonicalValue(change.key,change.value,scale,path+'.value');
+    const allowFlatRadius=document.schemaVersion===OPTICAL_BENCH_V40_VERSION&&component.type===SPHERICAL_LENS_TYPE;
+    component[change.section][change.key]=canonicalValue(change.key,change.value,scale,path+'.value',allowFlatRadius);
   }
   if(issues.length)fail(issues);
   // Inactive full-circle values are never an implicit new directional choice.
@@ -554,8 +569,9 @@ export function reviseComponents(document,patch){
       fail([issue(cp+'.type','UNSUPPORTED_COMPONENT','Not a registered physical component type')]);
     const required=componentParameterNames(author.type,document.schemaVersion);
     checkObject(author.parameters,cp+'.parameters',required,required);
+    const allowFlatRadius=document.schemaVersion===OPTICAL_BENCH_V40_VERSION&&author.type===SPHERICAL_LENS_TYPE;
     const parameters=Object.fromEntries(required.map(key=>[key,canonicalValue(
-      key,author.parameters[key],scale,cp+'.parameters.'+key)]));
+      key,author.parameters[key],scale,cp+'.parameters.'+key,allowFlatRadius)]));
     const component={id:author.id,type:author.type,parameters};
     if(author.type==='point-source'){
       checkObject(author.emission,cp+'.emission',['mode','directionDeg','angleDeg'],['mode']);

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "milestone": "native-optical-bench-v40-milestone-2b",
+  "sourceV40M2aAppGitBlob": "0ec68e7982e4daef6cc2deb36054f0c7ab913a14",
+  "v40M2bAppGitBlob": "9f6d5fe2afb79cbd5e5fa499eaed5372c3a02ab1",
+  "note": "Added v40 nullable signed spherical-lens frontRadius/backRadius input handling (blank = flat/null, rejecting validity.badInput partial text such as '-' or '1e-') and accurate v40 sidebar note in src/app.js; legacy v1-v39 UI unchanged."
+}

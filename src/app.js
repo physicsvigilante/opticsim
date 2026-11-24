@@ -251,9 +251,10 @@ function controls() {
         ['plane-mirror','line-blocker','circle-blocker','finite-aperture','ray-detector'].includes(component.type) ?
         { min: ['length','radius','openingLength'].includes(key) ? 1 : key === 'orientationDeg' ? -180 : -10000, max: key === 'orientationDeg' ? 180 : 10000, step: 1 } : null;
       const fixed = mixed && component.type === 'plane-mirror' && ['y', 'orientationDeg'].includes(key);
+      const nullable = session.document.schemaVersion === OPTICAL_BENCH_V40_VERSION && component.type === 'spherical-lens' && ['frontRadius', 'backRadius'].includes(key);
       addNumber(component.type === 'point-source' && key === 'brightness' && !multipleSources ?
         $('source-parameters') : fieldset, component.id, 'parameters', key,
-        key === 'brightness' ? 'Brightness (relative)' : `${key === 'radius' && component.type === 'circle-blocker' ? 'Circle blocker radius (positive)' : key === 'radius' && component.type === 'circular-dielectric' ? 'Glass radius (positive)' : labels[key]} (${['orientationDeg','normalDeg','directionDeg'].includes(key) ? '°' : ['negativeIndex','positiveIndex','insideIndex','outsideIndex','indexSquaredAtAxis'].includes(key)?'dimensionless':'mm'})`, value, slider, fixed);
+        key === 'brightness' ? 'Brightness (relative)' : `${key === 'radius' && component.type === 'circle-blocker' ? 'Circle blocker radius (positive)' : key === 'radius' && component.type === 'circular-dielectric' ? 'Glass radius (positive)' : labels[key]} (${['orientationDeg','normalDeg','directionDeg'].includes(key) ? '°' : ['negativeIndex','positiveIndex','insideIndex','outsideIndex','indexSquaredAtAxis'].includes(key)?'dimensionless':'mm'})`, value, slider, fixed, nullable);
     }
     if (['line-blocker','circle-blocker','finite-aperture'].includes(component.type)) {
       const note=document.createElement('p');note.className='muted';
@@ -278,7 +279,9 @@ function controls() {
     }
     if(component.type==='spherical-lens'){
       const note=document.createElement('p');note.className='muted';
-      note.textContent='Pinned native finite biconvex SphericalLens: independent positive front/back face radii, centre thickness, aperture, material indices and observed native arc/rim interactions. Not a thin-lens image.';
+      note.textContent=session.document.schemaVersion===OPTICAL_BENCH_V40_VERSION?
+        'Pinned native finite SphericalLens: positive radius bulges outward (convex), negative curves inward (concave), blank is a flat face (R = ∞). Supports biconvex, plano-convex, meniscus, and biconcave lenses. Not a thin-lens image.':
+        'Pinned native finite biconvex SphericalLens: independent positive front/back face radii, centre thickness, aperture, material indices and observed native arc/rim interactions. Not a thin-lens image.';
       fieldset.append(note);
     }
     if(component.type==='polygon-dielectric'){
@@ -458,13 +461,14 @@ document.addEventListener('click', event => {
 });
 // Same basic range + editable-number interaction as upstream ObjBar, with all
 // writes going through the authored document instead of native object mutation.
-function addNumber(parent, id, section, key, text, value, slider = null, disabled = false) {
+function addNumber(parent, id, section, key, text, value, slider = null, disabled = false, nullable = false) {
   const row = document.createElement('div'); row.className = slider ? 'number-pair' : 'number-row';
   const label = document.createElement('label'); label.textContent = text;
-  const input = document.createElement('input'); input.type = 'number'; input.step = 'any'; input.value = value;
+  const input = document.createElement('input'); input.type = 'number'; input.step = 'any'; input.value = value === null ? '' : value;
+  if (nullable) input.placeholder = 'flat (∞)';
   input.id = `${id}-${key}`; input.disabled = disabled; label.htmlFor = input.id;
   row.append(label, input);
-  bindings.push({ id, section, key, input });
+  bindings.push({ id, section, key, input, nullable });
   if (slider) {
     const range = document.createElement('input'); range.type = 'range'; range.id = `${input.id}-slider`;
     range.min = slider.min; range.max = slider.max; range.step = slider.step; range.value = value; range.disabled = disabled;
@@ -481,9 +485,11 @@ function addNumber(parent, id, section, key, text, value, slider = null, disable
 }
 function readDraft() {
   const candidate = structuredClone(session.document);
-  for (const { id, section, key, input } of bindings) {
+  for (const { id, section, key, input, nullable } of bindings) {
     const c = candidate.physics.components.find(c => c.id === id);
-    c[section][key] = input.type==='checkbox'?input.checked:input.value.trim() === '' ? NaN : Number(input.value);
+    c[section][key] = input.type==='checkbox'?input.checked:
+      input.validity?.badInput ? NaN :
+      input.value.trim() === '' ? (nullable ? null : NaN) : Number(input.value);
   }
   return candidate;
 }
