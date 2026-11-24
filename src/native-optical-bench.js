@@ -11,7 +11,7 @@
 // lens deflection, and absorption.
 import {CIRCULAR_TYPE,circularEncounter} from './circular-dielectric.js';
 import {compositionCountsMatch} from './composition-profiles.js';
-import {finiteSurfaceGeometry,pointWithinSupportingLineClearance,segmentsIntersect} from './composition-validation.js';
+import {finiteSurfaceGeometry,segmentsIntersect} from './composition-validation.js';
 import {curvedPoints,isCurved} from './curved-mirrors.js';
 import {FINITE_APERTURE_TYPE,separatedSegmentDistance} from './finite-aperture.js';
 import {CIRCLE_BLOCKER_TYPE} from './opaque-circle-blocker.js';
@@ -37,7 +37,6 @@ import {
   pointSegmentDistance,
   resolveSourceMembership,
   segmentOutsideBodyExact,
-  signedSupportDistance,
   validateParallelBeamAdmission,
   validatePointSourceSeparation
 } from './native-bench-common.js';
@@ -92,10 +91,11 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
   }
 
   // 0-2 disjoint finite dielectric bodies; each body's outsideIndex must match physics.backgroundIndex.
+  // v40 admits signed/flat radii on spherical-lens (+ convex outward, - concave inward, null flat).
   const bodies=[];
   for(const [index,c] of components.entries()){
     if(!V40_DIELECTRIC_TYPES.includes(c.type))continue;
-    const body=buildDielectricBody(c,`${path}[${index}].parameters`,fail);
+    const body=buildDielectricBody(c,`${path}[${index}].parameters`,fail,{allowSignedSpherical:true});
     if(body.outsideIndex!==backgroundIndex)
       fail(`${path}[${index}].parameters.outsideIndex`,'Every finite dielectric body in v40 must match physics.backgroundIndex ('+backgroundIndex+').','UNSUPPORTED_SCOPE');
     bodies.push(body);
@@ -118,17 +118,6 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
     for(const body of bodies)
       if(!segmentOutsideBodyExact(beamSeg,body,OPTICAL_BENCH_V40_CLEARANCE_MM))
         fail(path,'Parallel emitter must lie completely outside every dielectric body by at least 0.01 mm ('+body.id+').','UNSUPPORTED_SCOPE');
-  }
-
-  // 0-4 independently centered vertical ideal thin lenses (x, y; focalLength in backgroundIndex).
-  // Emitters stay >= 0.01 mm off each lens plane; vertically separated lenses at the same x
-  // (e.g. Billet split lenses) are admitted when their finite segments are disjoint by >= 0.01 mm.
-  for(const lens of components.filter(c=>c.type==='ideal-lens')){
-    const lx=lens.parameters.x;
-    if(points.some(s=>Math.abs(lx-s.x)<OPTICAL_BENCH_V40_CLEARANCE_MM))
-      fail(path,'each point source must be separated from every lens plane by at least 0.01 mm','UNSUPPORTED_SCOPE');
-    if(beamSeg&&!(beamSeg.every(e=>e.x<=lx-BEAM_CLEARANCE_MM)||beamSeg.every(e=>e.x>=lx+BEAM_CLEARANCE_MM)))
-      fail(path,'entire parallel emitter must lie at least 0.01 mm on one side of every lens plane','UNSUPPORTED_SCOPE');
   }
 
   // Curved mirrors (>= 0.01 mm clearance from emitters, bodies, and each other).
@@ -180,26 +169,23 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
   }
 
   // Finite segment components: ideal lenses, plane mirrors, line blockers, finite apertures, detectors.
+  // Emitters require >= 0.01 mm clearance from every actual finite segment (not its infinite line extension),
+  // admitting side-by-side / L-shaped JEE setups while endpoint and runtime audits still fail closed on grazing rays.
   const segments=[];
   for(const [index,c] of components.entries()){
     if(!SEGMENT_TYPES.includes(c.type))continue;
-    const p=c.parameters,cPath=`${path}[${index}]`;
+    const cPath=`${path}[${index}]`;
     const {line,segments:arms}=finiteSurfaceGeometry(c,mirrorEndpoints);
     if(line.some(v=>!allowedCoord(v.x,v.y)))
       fail(cPath+'.parameters','segment endpoints exceed coordinate bounds','UNSUPPORTED_SCOPE');
-    if(c.type!=='ideal-lens'){
-      if(points.some(s=>pointWithinSupportingLineClearance(s,p,OPTICAL_BENCH_V40_CLEARANCE_MM)))
-        fail(cPath+'.parameters','each source must be at least 0.01 mm from finite surface supporting line','UNSUPPORTED_SCOPE');
-      if(beamSeg){
-        const signed=beamSeg.map(v=>signedSupportDistance(v,line));
-        if(signed.some(v=>!Number.isFinite(v)||Math.abs(v)<BEAM_CLEARANCE_MM)||signed[0]*signed[1]<=0)
-          fail(cPath+'.parameters','entire parallel emitter must lie on one safe side of supporting line ('+c.id+')','UNSUPPORTED_SCOPE');
-      }
-    }
     for(const body of bodies)
       if(!segmentOutsideBodyExact(line,body,OPTICAL_BENCH_V40_CLEARANCE_MM))
         fail(cPath,'finite segment must lie outside dielectric body by at least 0.01 mm ('+body.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
     for(const arm of arms){
+      if(points.some(s=>pointSegmentDistance(s,arm)<OPTICAL_BENCH_V40_CLEARANCE_MM))
+        fail(cPath+'.parameters','each source must be at least 0.01 mm from finite segment ('+c.id+')','UNSUPPORTED_SCOPE');
+      if(beamSeg&&(segmentsIntersect(beamSeg,arm)||separatedSegmentDistance(beamSeg,arm)<BEAM_CLEARANCE_MM))
+        fail(cPath+'.parameters','parallel emitter must keep at least 0.01 mm clearance from finite segment ('+c.id+')','UNSUPPORTED_SCOPE');
       for(const other of segments){
         if(other.id===c.id)continue;
         if(segmentsIntersect(other.line,arm)||separatedSegmentDistance(other.line,arm)<OPTICAL_BENCH_V40_CLEARANCE_MM)
@@ -354,7 +340,7 @@ export function opticalBenchCapabilities(){
         'circular-dielectric':{parameters:['x','y','radius','insideIndex','outsideIndex','partialReflection']},
         'triangular-prism':{parameters:['x1','y1','x2','y2','x3','y3','insideIndex','outsideIndex','partialReflection']},
         'polygon-dielectric':{parameters:['x1','y1','x2','y2','x3','y3','x4','y4','insideIndex','outsideIndex','partialReflection']},
-        'spherical-lens':{parameters:['x','y','apertureHeight','centerThickness','frontRadius','backRadius','insideIndex','outsideIndex','partialReflection'],note:'Biconvex positive radii; exterior sources only.'}
+        'spherical-lens':{parameters:['x','y','apertureHeight','centerThickness','frontRadius','backRadius','insideIndex','outsideIndex','partialReflection'],note:'Signed outward-convex convention: positive radius bulges outward (convex), negative curves inward (concave), null is a flat/planar face (R = infinity). Supports biconvex, plano-convex, plano-concave, meniscus, biconcave, and flat-flat shapes. Textbook Cartesian equivalents: R1 = frontRadius, R2 = -backRadius. Requires |radius| >= apertureHeight/2 + 1 mm (or null), centerThickness >= 2 mm, edgeThickness >= 1 mm; exterior sources only.'}
       }},
       'ideal-lens':{count:[0,4],parameters:['x','y','focalLength','apertureHeight'],note:'Vertical thin lens with independent transverse centre y (split lenses at the same x are admitted when vertically separated by >= 0.01 mm); focalLength defined in ambient medium backgroundIndex.'},
       'plane-mirror':{count:[0,2],parameters:['x','y','orientationDeg','length']},

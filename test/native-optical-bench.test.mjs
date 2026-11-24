@@ -16,7 +16,8 @@ import {
 import {parseSave,serializeSave,validate} from '../src/contract.js';
 import {createExplorationNotebook} from '../src/exploration-notebook.js';
 import {replayExplorationNotebook} from '../src/exploration-notebook-replay.js';
-import {snapshotScenario} from '../src/exploration.js';
+import {prepareExplorationProposal,snapshotScenario} from '../src/exploration.js';
+import {compareScenario} from '../src/scenario-comparison.js';
 import {
   OPTICAL_BENCH_V40_MODEL,
   OPTICAL_BENCH_V40_VERSION,
@@ -838,4 +839,366 @@ test('Milestone 2A: full-circle (360 deg) source in v40 and reviseScene source-m
   assert.equal(v37Dir.schemaVersion,37);
   assert.equal(v37Dir.physics.components[0].emission.mode,'directional');
   assert.equal(v37Dir.physics.components[0].emission.angleDeg,24);
+});
+
+// Independent exact 2-surface spherical-lens ray tracer for Milestone 2B physical oracles.
+// Uses outward-convex sign convention (+R convex outward, -R concave inward, null flat).
+function traceThickLensOracle(origin,dir,lens,xDet){
+  const {x,y,centerThickness:d,frontRadius:rf,backRadius:rb,insideIndex:nIn,outsideIndex:nOut}=lens;
+  const frontApex=x-d/2,backApex=x+d/2;
+  const hitFace=(p,u,apex,R,isFront)=>{
+    if(R===null){
+      const t=(apex-p.x)/u.x;
+      return {point:{x:apex,y:p.y+t*u.y},outwardNormal:{x:isFront?-1:1,y:0}};
+    }
+    const cx=isFront?apex+R:apex-R,cy=y,absR=Math.abs(R),sgn=Math.sign(R);
+    const ox=p.x-cx,oy=p.y-cy;
+    const b=ox*u.x+oy*u.y,c=ox*ox+oy*oy-absR*absR;
+    const disc=b*b-c;
+    assert.ok(disc>0,'Oracle ray must hit curved face');
+    const s=Math.sqrt(disc);
+    const ts=[-b-s,-b+s].filter(t=>t>1e-9).filter(t=>{
+      const hx=p.x+t*u.x;
+      return isFront?(sgn>0?hx<=cx:hx>=cx):(sgn>0?hx>=cx:hx<=cx);
+    });
+    assert.ok(ts.length>=1,'Oracle ray must meet the expected arc hemisphere');
+    const t=Math.min(...ts);
+    const point={x:p.x+t*u.x,y:p.y+t*u.y};
+    const outwardNormal={x:sgn*(point.x-cx)/absR,y:sgn*(point.y-cy)/absR};
+    return {point,outwardNormal};
+  };
+  const f1=hitFace(origin,dir,frontApex,rf,true);
+  const nIntoGlass={x:-f1.outwardNormal.x,y:-f1.outwardNormal.y};
+  const step1=snellStep(dir,nIntoGlass,nOut,nIn);
+  assert.equal(step1.tir,false);
+  const f2=hitFace(f1.point,step1.dir,backApex,rb,false);
+  const step2=snellStep(step1.dir,f2.outwardNormal,nIn,nOut);
+  assert.equal(step2.tir,false);
+  const tDet=(xDet-f2.point.x)/step2.dir.x;
+  return {
+    front:f1,
+    back:f2,
+    outDir:step2.dir,
+    yDet:f2.point.y+tDet*step2.dir.y
+  };
+}
+
+test('Milestone 2B oracle: signed/flat spherical-lens — plano-convex (both orientations), positive & negative meniscus, and biconcave lenses',async()=>{
+  const cases=[
+    {name:'plano-convex (flat front, convex back)',y0:10,xDet:120,lens:{x:0,y:0,apertureHeight:40,centerThickness:12,frontRadius:null,backRadius:50,insideIndex:1.5,outsideIndex:1,partialReflection:false},expectSign:-1},
+    {name:'plano-convex (convex front, flat back)',y0:10,xDet:120,lens:{x:0,y:0,apertureHeight:40,centerThickness:12,frontRadius:50,backRadius:null,insideIndex:1.5,outsideIndex:1,partialReflection:false},expectSign:-1},
+    {name:'converging meniscus (+40 front, -80 back)',y0:8,xDet:120,lens:{x:0,y:0,apertureHeight:36,centerThickness:10,frontRadius:40,backRadius:-80,insideIndex:1.5,outsideIndex:1,partialReflection:false},expectSign:-1},
+    {name:'diverging meniscus (+80 front, -40 back)',y0:8,xDet:120,lens:{x:0,y:0,apertureHeight:36,centerThickness:10,frontRadius:80,backRadius:-40,insideIndex:1.5,outsideIndex:1,partialReflection:false},expectSign:+1},
+    {name:'biconcave (-50 front, -50 back)',y0:8,xDet:100,lens:{x:0,y:0,apertureHeight:40,centerThickness:8,frontRadius:-50,backRadius:-50,insideIndex:1.5,outsideIndex:1,partialReflection:false},expectSign:+1},
+    {name:'flat-flat zero-power slab control (null, null)',y0:8,xDet:100,lens:{x:0,y:0,apertureHeight:40,centerThickness:10,frontRadius:null,backRadius:null,insideIndex:1.5,outsideIndex:1,partialReflection:false},expectSign:0}
+  ];
+
+  const planoY=[];
+  for(const tc of cases){
+    const oracle=traceThickLensOracle({x:-60,y:tc.y0},{x:1,y:0},tc.lens,tc.xDet);
+    if(tc.expectSign<0)assert.ok(oracle.outDir.y<-0.01,tc.name+' should converge');
+    if(tc.expectSign>0)assert.ok(oracle.outDir.y>0.01,tc.name+' should diverge');
+    if(tc.expectSign===0)assert.ok(Math.abs(oracle.outDir.y)<1e-12,tc.name+' should stay horizontal');
+
+    const {document:doc}=prepareScene(v40Req([
+      {id:'S1',type:'point-source',parameters:{x:-60,y:tc.y0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+      {id:'TL1',type:'spherical-lens',parameters:tc.lens},
+      {id:'D1',type:'ray-detector',parameters:{x:tc.xDet,y:0,orientationDeg:90,length:200}}
+    ]));
+    // Confirm canonical JSON round-trip preserves null flat radii cleanly.
+    const reparsed=parseSave(serializeSave(doc));
+    validate(reparsed);
+    assert.deepEqual(reparsed.physics,doc.physics);
+
+    const reqs=[
+      {id:'faces',kind:'interface-face-events',componentId:'TL1'},
+      {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+    ];
+    const run=await evaluateDocument(doc,core,reqs);
+    assert.equal(run.summary.executionPassed,true,tc.name);
+    assert.equal(run.summary.observations.v40EndpointsVerified,true,tc.name);
+    const byId=Object.fromEntries((await evaluateObservables(doc,reqs,run.summary)).results.map(r=>[r.id,r]));
+    assert.equal(byId.hits.value.length,1,tc.name);
+    assert.ok(Math.abs(byId.hits.value[0].pointMm.y-oracle.yDet)<1e-5,
+      `${tc.name}: expected y=${oracle.yDet}, got ${byId.hits.value[0].pointMm.y}`);
+    assert.equal(byId.faces.value['front-arc'].interactions,1,tc.name);
+    assert.equal(byId.faces.value['back-arc'].interactions,1,tc.name);
+    assert.ok(Math.hypot(
+      byId.faces.value['front-arc'].first.outwardNormal.x-oracle.front.outwardNormal.x,
+      byId.faces.value['front-arc'].first.outwardNormal.y-oracle.front.outwardNormal.y
+    )<1e-5,tc.name+' front outward normal');
+    assert.ok(Math.hypot(
+      byId.faces.value['back-arc'].first.outwardNormal.x-oracle.back.outwardNormal.x,
+      byId.faces.value['back-arc'].first.outwardNormal.y-oracle.back.outwardNormal.y
+    )<1e-5,tc.name+' back outward normal');
+    if(tc.name.startsWith('plano-convex'))planoY.push(byId.hits.value[0].pointMm.y);
+  }
+  // Classic JEE spherical-aberration / principal-plane asymmetry: orienting the curved face
+  // toward the collimated ray yields a distinct marginal intercept from the flat-front orientation.
+  assert.ok(Math.abs(planoY[0]-planoY[1])>0.05,`Expected distinct plano-convex intercepts, got ${planoY[0]} vs ${planoY[1]}`);
+});
+
+test('Milestone 2B: signed spherical-lens revisions, cm units, flat-baseline sweep, concave AABB clearance, and legacy v15/v38 isolation',async()=>{
+  const {document:base}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-60,y:6,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:40,centerThickness:12,frontRadius:50,backRadius:50,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:120,y:0,orientationDeg:90,length:200}}
+  ]));
+  // Revise biconvex -> plano-convex (null) -> meniscus (-60) -> biconcave (-60, -60):
+  const plano=reviseScene(base,{changes:[{id:'TL1',section:'parameters',key:'frontRadius',value:null}]}).document;
+  assert.equal(plano.physics.components[1].parameters.frontRadius,null);
+  const meniscus=reviseScene(plano,{changes:[{id:'TL1',section:'parameters',key:'frontRadius',value:-6,unit:'cm'}]}).document;
+  assert.equal(meniscus.physics.components[1].parameters.frontRadius,-60);
+  const biconcave=reviseScene(meniscus,{changes:[{id:'TL1',section:'parameters',key:'backRadius',value:-60,unit:'mm'}]}).document;
+  assert.equal(biconcave.physics.components[1].parameters.backRadius,-60);
+
+  // Add a signed plano-concave lens via reviseComponents in cm units:
+  const withSecond=reviseComponents(plano,{
+    format:COMPONENT_REVISION_FORMAT,
+    operations:[{
+      op:'add',lengthUnit:'cm',
+      component:{id:'TL2',type:'spherical-lens',parameters:{x:4,y:0,apertureHeight:4,centerThickness:1,frontRadius:null,backRadius:-5,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+    }]
+  }).document;
+  const tl2=withSecond.physics.components.find(c=>c.id==='TL2');
+  assert.equal(tl2.parameters.frontRadius,null);
+  assert.equal(tl2.parameters.backRadius,-50);
+  const twoRun=await evaluateDocument(withSecond,core,[{id:'hits',kind:'detector-hit-events',componentId:'D1'}]);
+  assert.equal(twoRun.summary.executionPassed,true);
+
+  // Sweep frontRadius starting from a plano-convex (frontRadius: null) baseline across concave & convex radii:
+  const reqs=[{id:'hits',kind:'detector-hit-events',componentId:'D1'},{id:'det',kind:'detector-crossings',componentId:'D1'}];
+  const q=initialQualification(plano,null,{inputSha256:await sceneHash(plano)});
+  const planoBundle=await createQualifiedBundle(plano,q,reqs);
+  const sweep=await runParameterSweep(planoBundle,{
+    format:'opticsim-parameter-sweep-v1',
+    expectedSceneSha256:planoBundle.sceneSha256,
+    parameter:{id:'TL1',section:'parameters',key:'frontRadius',unit:'mm'},
+    values:[-60,-40,40,60,-10],
+    observables:reqs
+  },{execute:doc=>evaluateDocument(doc,core,reqs)});
+  assert.equal(sweep.status,'completed-with-failed-samples');
+  assert.equal(sweep.completedSamples,4);
+  assert.equal(sweep.failedSamples,1);
+  assert.equal(sweep.samples[4].status,'invalid-input');
+
+  // Concave protruding rim AABB guard:
+  // Biconcave at x=0, d=8, ap=40, R=-50 has frontApex=-4 but frontRim ~ -8.174 mm.
+  // Source at (-7, 0) lies inside the conservative AABB and MUST be rejected; source at (-9, 0) is admitted.
+  const biconcaveLens={id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:40,centerThickness:8,frontRadius:-50,backRadius:-50,insideIndex:1.5,outsideIndex:1,partialReflection:false}};
+  assert.throws(()=>prepareScene(v40Req([
+    biconcaveLens,
+    {id:'S1',type:'point-source',parameters:{x:-7,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}}
+  ])),/outside spherical-lens/);
+  assert.doesNotThrow(()=>prepareScene(v40Req([
+    biconcaveLens,
+    {id:'S1',type:'point-source',parameters:{x:-9,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}}
+  ])));
+
+  // Invalid |radius| < halfAperture + 1 or zero radius -> rejected in v40:
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-60,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:40,centerThickness:10,frontRadius:-20,backRadius:50,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+  ])),/half-aperture \+ 1/);
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-60,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:40,centerThickness:10,frontRadius:0,backRadius:50,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+  ])),/INVALID_INPUT|bounds/);
+
+  // Legacy isolation: v15 and v38 MUST still reject negative and null spherical-lens radii!
+  for(const badR of [-50,null]){
+    assert.throws(()=>prepareScene({
+      lengthUnit:'mm',
+      components:[
+        {id:'S1',type:'point-source',parameters:{x:-60,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+        {id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:40,centerThickness:10,frontRadius:badR,backRadius:50,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+      ]
+    }),/Expected a finite numeric value|outside the live contract bounds/);
+    assert.throws(()=>prepareScene({
+      model:'native-general-refractive-bench',lengthUnit:'mm',
+      components:[
+        {id:'S1',type:'point-source',parameters:{x:-60,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+        {id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:40,centerThickness:10,frontRadius:badR,backRadius:50,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+      ]
+    }),/Expected a finite numeric value|outside the live contract bounds/);
+  }
+});
+
+test('Milestone 2B: finite-segment clearance in v40 admits side-by-side / L-shaped JEE setups while preserving segment and endpoint safety',async()=>{
+  // Source S1 at (0, 0) lies directly on the infinite line extension x = 0 of:
+  // - vertical mirror M1 at (0, 45, orientationDeg=90, length=20 -> y in [35, 55])
+  // - decentered ideal-lens L1 at (0, -35, f=50, ap=20 -> y in [-45, -25])
+  // - finite-aperture A1 at (0, 0, orientationDeg=90, length=40, openingLength=10 -> arms [-20,-5] and [5,20])
+  // Ray from S1 at +30 deg clears A1's opening, reflects off M2 at (40, 20) -> (40, 40/sqrt(3)),
+  // hits M1 squarely at (0, 80/sqrt(3) ~ 46.188), and reflects right-up at +30 deg onto D1 at x = 30
+  // at exact y = 110 / sqrt(3) ~ 63.50853 mm!
+  const expectedY=110/Math.sqrt(3);
+  const {document:lShapeDoc}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:30}},
+    {id:'A1',type:'finite-aperture',parameters:{x:0,y:0,orientationDeg:90,length:40,openingLength:10}},
+    {id:'L1',type:'ideal-lens',parameters:{x:0,y:-35,focalLength:50,apertureHeight:20}},
+    {id:'M1',type:'plane-mirror',parameters:{x:0,y:45,orientationDeg:90,length:20}},
+    {id:'M2',type:'plane-mirror',parameters:{x:40,y:20,orientationDeg:90,length:60}},
+    {id:'D1',type:'ray-detector',parameters:{x:30,y:65,orientationDeg:90,length:40}}
+  ]));
+  const reqs=[
+    {id:'m1',kind:'mirror-reflections',componentId:'M1'},
+    {id:'m2',kind:'mirror-reflections',componentId:'M2'},
+    {id:'a1',kind:'blocker-absorptions',componentId:'A1'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ];
+  const run=await evaluateDocument(lShapeDoc,core,reqs);
+  assert.equal(run.summary.executionPassed,true);
+  assert.equal(run.summary.observations.v40EndpointsVerified,true);
+  const byId=Object.fromEntries((await evaluateObservables(lShapeDoc,reqs,run.summary)).results.map(r=>[r.id,r]));
+  assert.equal(byId.m1.value,1);
+  assert.equal(byId.m2.value,1);
+  assert.equal(byId.a1.value,0);
+  assert.equal(byId.hits.value.length,1);
+  assert.ok(Math.abs(byId.hits.value[0].pointMm.y-expectedY)<1e-5,
+    `Expected y=${expectedY}, got ${byId.hits.value[0].pointMm.y}`);
+
+  // Negative controls:
+  // 1. Source within 0.01 mm of actual finite mirror segment -> rejected.
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0.005,y:45,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'M1',type:'plane-mirror',parameters:{x:0,y:45,orientationDeg:90,length:20}}
+  ])),/at least 0\.01 mm from finite segment/);
+  // 2. Source on supporting line aiming collinearly into mirror endpoint -> rejected by endpoint guard!
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:90}},
+    {id:'M1',type:'plane-mirror',parameters:{x:0,y:45,orientationDeg:90,length:20}}
+  ])),/finite component endpoint/);
+  // 3. Parallel beam within 0.01 mm of finite mirror segment -> rejected; parallel beam clear of segment on same line -> admitted!
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'B1',type:'parallel-beam',parameters:{x:0,y:45,width:12,directionDeg:0,brightness:0.2}},
+    {id:'M1',type:'plane-mirror',parameters:{x:0,y:45,orientationDeg:90,length:20}}
+  ])),/clearance from finite segment/);
+  assert.doesNotThrow(()=>prepareScene(v40Req([
+    {id:'B1',type:'parallel-beam',parameters:{x:0,y:0,width:12,directionDeg:0,brightness:0.2}},
+    {id:'M1',type:'plane-mirror',parameters:{x:0,y:45,orientationDeg:90,length:20}}
+  ])));
+});
+
+test('Milestone 2B end-to-end v40 exploration: prepareExplorationProposal (revise + 2->1->0 structure), compareScenario, and notebook replay',async()=>{
+  const {document:baseDoc}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-70,y:8,brightness:0.2},emission:{mode:'directional',directionDeg:0,angleDeg:12}},
+    {id:'TL1',type:'spherical-lens',parameters:{x:-10,y:0,apertureHeight:44,centerThickness:12,frontRadius:null,backRadius:60,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'SL1',type:'polygon-dielectric',parameters:{x1:20,y1:-35,x2:40,y2:-35,x3:40,y3:35,x4:20,y4:35,insideIndex:1.6,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:90,y:0,orientationDeg:90,length:140}}
+  ]));
+  const reqs=[
+    {id:'cross',kind:'detector-crossings',componentId:'D1'},
+    {id:'power',kind:'detector-signed-power',componentId:'D1'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ];
+  const baseQual=initialQualification(baseDoc,null,{inputSha256:await sceneHash(baseDoc)});
+  const baseBundle=await createQualifiedBundle(baseDoc,baseQual,reqs);
+  const baseRun=await evaluateDocument(baseDoc,core,reqs);
+  assert.equal(baseRun.summary.executionPassed,true);
+  const baseSnap=await snapshotScenario(baseBundle,baseRun,'Baseline');
+
+  // Step 1: Parameter edit proposal — convert plano-convex TL1 into biconvex (+60, +60).
+  const pRevise=await prepareExplorationProposal(baseBundle,{
+    format:'opticsim-exploration-proposal-v1',
+    expectedIntegritySha256:baseBundle.integritySha256,
+    intent:'Compare plano-convex against biconvex lens with same back curvature',
+    action:'revise',
+    patch:{changes:[{id:'TL1',section:'parameters',key:'frontRadius',value:60,unit:'mm'}]}
+  });
+  const reviseRun=await evaluateDocument(pRevise.child.scene,core,reqs);
+  assert.equal(reviseRun.summary.executionPassed,true);
+  const reviseSnap=await snapshotScenario(pRevise.child,reviseRun,'Biconvex TL1',{
+    intent:pRevise.proposal.intent,parentIntegritySha256:baseBundle.integritySha256
+  });
+
+  // Step 2: Structural deletion 2 -> 1 bodies (remove slab SL1) inside v40 without schema change.
+  const pOneBody=await prepareExplorationProposal(baseBundle,{
+    format:'opticsim-exploration-proposal-v1',
+    expectedIntegritySha256:baseBundle.integritySha256,
+    intent:'Remove glass slab SL1 to isolate the plano-convex lens alone',
+    action:'structure',
+    patch:{format:COMPONENT_REVISION_FORMAT,operations:[{op:'remove',id:'SL1'}]}
+  });
+  assert.equal(pOneBody.child.scene.schemaVersion,40);
+  assert.equal(pOneBody.child.scene.physics.backgroundIndex,1);
+  const oneBodyRun=await evaluateDocument(pOneBody.child.scene,core,reqs);
+  assert.equal(oneBodyRun.summary.executionPassed,true);
+  const oneBodySnap=await snapshotScenario(pOneBody.child,oneBodyRun,'Remove SL1 (1 body)',{
+    intent:pOneBody.proposal.intent,parentIntegritySha256:baseBundle.integritySha256
+  });
+
+  // Step 3: Structural deletion 1 -> 0 bodies (remove TL1 as well) inside v40.
+  const pZeroBody=await prepareExplorationProposal(pOneBody.child,{
+    format:'opticsim-exploration-proposal-v1',
+    expectedIntegritySha256:pOneBody.child.integritySha256,
+    intent:'Remove lens TL1 too to observe free-space propagation',
+    action:'structure',
+    patch:{format:COMPONENT_REVISION_FORMAT,operations:[{op:'remove',id:'TL1'}]}
+  });
+  assert.equal(pZeroBody.child.scene.schemaVersion,40);
+  assert.equal(pZeroBody.child.scene.physics.backgroundIndex,1);
+  const zeroBodyRun=await evaluateDocument(pZeroBody.child.scene,core,reqs);
+  assert.equal(zeroBodyRun.summary.executionPassed,true);
+  const zeroBodySnap=await snapshotScenario(pZeroBody.child,zeroBodyRun,'Free space (0 bodies)',{
+    intent:pZeroBody.proposal.intent,parentIntegritySha256:pOneBody.child.integritySha256
+  });
+
+  // Verify compareScenario honestly records Fresnel-off warning qualification on dielectric variants
+  // while still confirming accepted evidence, same model/numerics, and distinct physics:
+  for(const variant of [reviseSnap,oneBodySnap,zeroBodySnap]){
+    const cmp=await compareScenario(baseSnap,variant);
+    assert.equal(cmp.evidenceChecks.baseline.accepted,true);
+    assert.equal(cmp.evidenceChecks.scenario.accepted,true);
+    assert.equal(cmp.samePhysics,false);
+    assert.equal(cmp.sameNumerics,true);
+    const byKind=Object.fromEntries(cmp.entries.map(e=>[e.kind,e]));
+    assert.equal(byKind['detector-crossings'].conditions.samePhysicalModel,true);
+    assert.equal(byKind['detector-crossings'].comparison,'not-comparable');
+    assert.match(byKind['detector-crossings'].reason,/warning qualifications/);
+  }
+
+  // Export portable input-only notebook and freshly replay all 4 v40 entries + 3 baseline comparisons:
+  const notebook=await createExplorationNotebook([baseSnap,reviseSnap,oneBodySnap,zeroBodySnap]);
+  const replayed=await replayExplorationNotebook(notebook,{
+    run:(doc,obs)=>evaluateDocument(doc,core,obs)
+  });
+  assert.equal(replayed.status,'all-native-qualified');
+  assert.equal(replayed.newNativeQualified,4);
+  assert.equal(replayed.comparisonsMade,3);
+  assert.equal(replayed.comparisonsWithheld,0);
+  assert.ok(replayed.comparisons.every(c=>c.status==='compared'));
+
+  // And on a warning-free v40 scene (no Fresnel-off approximation), compareScenario returns
+  // full 'sampled-native-comparison' across both reviseScene and structural reviseComponents!
+  const {document:cleanBase}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-80,y:0,brightness:0.2},emission:{mode:'directional',directionDeg:0,angleDeg:20}},
+    {id:'L1',type:'ideal-lens',parameters:{x:0,y:5,focalLength:80,apertureHeight:60}},
+    {id:'D1',type:'ray-detector',parameters:{x:100,y:0,orientationDeg:90,length:120}}
+  ]));
+  const cleanReqs=[
+    {id:'cross',kind:'detector-crossings',componentId:'D1'},
+    {id:'power',kind:'detector-signed-power',componentId:'D1'}
+  ];
+  const cleanBundle=await createQualifiedBundle(cleanBase,initialQualification(cleanBase,null,{inputSha256:await sceneHash(cleanBase)}),cleanReqs);
+  const cleanRun=await evaluateDocument(cleanBase,core,cleanReqs);
+  const cleanSnap=await snapshotScenario(cleanBundle,cleanRun,'Baseline');
+
+  const cleanRemoved=await prepareExplorationProposal(cleanBundle,{
+    format:'opticsim-exploration-proposal-v1',
+    expectedIntegritySha256:cleanBundle.integritySha256,
+    intent:'Remove ideal lens L1 to compare free-space detector crossings',
+    action:'structure',
+    patch:{format:COMPONENT_REVISION_FORMAT,operations:[{op:'remove',id:'L1'}]}
+  });
+  const cleanRemovedRun=await evaluateDocument(cleanRemoved.child.scene,core,cleanReqs);
+  const cleanRemovedSnap=await snapshotScenario(cleanRemoved.child,cleanRemovedRun,'No L1',{
+    intent:cleanRemoved.proposal.intent,parentIntegritySha256:cleanBundle.integritySha256
+  });
+  const cleanCmp=await compareScenario(cleanSnap,cleanRemovedSnap);
+  assert.equal(cleanCmp.evidenceChecks.baseline.accepted,true);
+  assert.equal(cleanCmp.evidenceChecks.scenario.accepted,true);
+  const cleanByKind=Object.fromEntries(cleanCmp.entries.map(e=>[e.kind,e]));
+  assert.equal(cleanByKind['detector-crossings'].comparison,'sampled-native-comparison');
+  assert.equal(cleanByKind['detector-signed-power'].comparison,'sampled-native-comparison');
 });

@@ -89,8 +89,9 @@ function physicalNumber(value,path) {
     fail([issue(path,'INVALID_VALUE','Expected a finite numeric value, not text or an unlabelled expression')]);
   return value;
 }
-function canonicalValue(key,value,scale,path) {
+function canonicalValue(key,value,scale,path,allowFlatRadius=false) {
   if(key==='partialReflection'){if(typeof value!=='boolean')fail([issue(path,'INVALID_VALUE','Expected an explicit boolean')]);return value;}
+  if(allowFlatRadius&&['frontRadius','backRadius'].includes(key)&&value===null)return null;
   return physicalNumber(value,path)*(lengthKeys.has(key)?scale:1);
 }
 export class AuthoringError extends Error {
@@ -273,6 +274,8 @@ export function inspectAuthoringRequest(request){
   }
   const number=(key,value,path,type=null)=>{
     if(key==='partialReflection'){if(typeof value!=='boolean')issues.push(issue(path,'INVALID_VALUE','Expected explicit boolean'));return;}
+    const signedSpherical=isV40&&type===SPHERICAL_LENS_TYPE&&['frontRadius','backRadius'].includes(key);
+    if(signedSpherical&&value===null)return;
     if(typeof value!=='number'||!Number.isFinite(value)){
       issues.push(issue(path,'INVALID_VALUE','Expected a finite numeric value, not text or an unlabelled expression'));return;
     }
@@ -282,8 +285,10 @@ export function inspectAuthoringRequest(request){
       ['negativeIndex','positiveIndex','insideIndex','outsideIndex'].includes(key)?b.refractiveIndex:
       key==='normalDeg'?b.orientationDeg:key==='orientationDeg'?b.orientationDeg:key==='directionDeg'?b.directionDeg:
       key==='angleDeg'?b.openingAngleDeg:
+      signedSpherical?b.coordinateMm:
       ['length','openingLength','apertureHeight','centerThickness','frontRadius','backRadius'].includes(key)?b.positiveLengthMm:key==='width'?[10,100]:b.coordinateMm;
     if(!Number.isFinite(n)||n<bounds[0]||n>bounds[1]||
+      (signedSpherical&&Math.abs(n)<1)||
       (key==='focalLength'&&Math.abs(n)<b.minimumAbsFocalLengthMm)||
       (key==='radius'&&(type===CIRCULAR_TYPE?n<2:type===SEMICIRCULAR_TYPE?n<5:type===CIRCLE_BLOCKER_TYPE?n<1:Math.abs(n)<2)))
       issues.push(issue(path,'INVALID_INPUT','Value is outside the live contract bounds'+
@@ -390,8 +395,9 @@ export function prepareScene(request) {
       while(knownIds.has(prefix+'-'+index))index++;
       id=prefix+'-'+index;knownIds.add(id);assignedIds.push({index:i,id});
     }
+    const allowFlatRadius=selectedComposition.schemaVersion===OPTICAL_BENCH_V40_VERSION&&component.type===SPHERICAL_LENS_TYPE;
     const parameters=Object.fromEntries(required.map(key=>[key,canonicalValue(
-      key,component.parameters[key],scale,path+'.parameters.'+key)]));
+      key,component.parameters[key],scale,path+'.parameters.'+key,allowFlatRadius)]));
     const result={id,type:component.type,parameters};
     if(component.type==='point-source'){
       result.emission={mode:component.emission.mode,
@@ -473,7 +479,8 @@ export function reviseScene(document,patch){
       issues.push(issue(path+'.unit','UNSUPPORTED_UNIT','Units apply only to length parameters'));continue;
     }
     const scale=own(change,'unit')?units(change.unit,path+'.unit'):1;
-    component[change.section][change.key]=canonicalValue(change.key,change.value,scale,path+'.value');
+    const allowFlatRadius=document.schemaVersion===OPTICAL_BENCH_V40_VERSION&&component.type===SPHERICAL_LENS_TYPE;
+    component[change.section][change.key]=canonicalValue(change.key,change.value,scale,path+'.value',allowFlatRadius);
   }
   if(issues.length)fail(issues);
   // Inactive full-circle values are never an implicit new directional choice.
@@ -554,8 +561,9 @@ export function reviseComponents(document,patch){
       fail([issue(cp+'.type','UNSUPPORTED_COMPONENT','Not a registered physical component type')]);
     const required=componentParameterNames(author.type,document.schemaVersion);
     checkObject(author.parameters,cp+'.parameters',required,required);
+    const allowFlatRadius=document.schemaVersion===OPTICAL_BENCH_V40_VERSION&&author.type===SPHERICAL_LENS_TYPE;
     const parameters=Object.fromEntries(required.map(key=>[key,canonicalValue(
-      key,author.parameters[key],scale,cp+'.parameters.'+key)]));
+      key,author.parameters[key],scale,cp+'.parameters.'+key,allowFlatRadius)]));
     const component={id:author.id,type:author.type,parameters};
     if(author.type==='point-source'){
       checkObject(author.emission,cp+'.emission',['mode','directionDeg','angleDeg'],['mode']);

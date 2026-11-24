@@ -320,7 +320,7 @@ const guidanceByProfile=freeze({
  },
  'native-optical-bench@40':{
   label:'Unified optical bench · v40',
-  geometry:'Explicit ambient backgroundIndex (1–4) and deterministic randomSeed. Combine either 1–4 point sources (single-ray, directional, or full-circle; ambient or strictly inside circle/prism/quad) or 1 external parallel Beam with 0–2 disjoint finite dielectrics (outsideIndex = backgroundIndex), 0–4 vertical ideal lenses (independent x, y), 0–2 curved mirrors, 0–2 plane mirrors, 0–2 opaque stops and 0–2 detectors (max 16 components, maxRayDepth <= 16).',
+  geometry:'Explicit ambient backgroundIndex (1–4) and deterministic randomSeed. Combine either 1–4 point sources (single-ray, directional, or full-circle; ambient or strictly inside circle/prism/quad) or 1 external parallel Beam with 0–2 disjoint finite dielectrics (outsideIndex = backgroundIndex; spherical-lens admits signed +convex/−concave or null flat radii), 0–4 vertical ideal lenses (independent x, y), 0–2 curved mirrors, 0–2 plane mirrors, 0–2 opaque stops and 0–2 detectors (max 16 components, maxRayDepth <= 16; >= 0.01 mm finite-segment clearance).',
   scope:'Pinned PhyDemo traces every refraction, TIR, Fresnel branch, lens deflection, reflection, absorption and detector crossing. Endpoint, corner, tangency (< 0.01 mm), grazing, near-critical, or truncated runs withhold accepted measurements.'
  }
 });

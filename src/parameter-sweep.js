@@ -18,8 +18,11 @@ export function validateSweep(spec,baseline){
   const p=spec.parameter;
   keys(p,['id','section','key','unit'],'sweep parameter');
   const component=baseline.scene.physics.components.find(c=>c.id===p.id);
+  const isV40FlatRadius=baseline.scene.schemaVersion===OPTICAL_BENCH_V40_VERSION&&
+    component?.type==='spherical-lens'&&p.section==='parameters'&&
+    ['frontRadius','backRadius'].includes(p.key)&&component.parameters[p.key]===null;
   if(!component||!['parameters','emission'].includes(p.section)||
-    !Object.hasOwn(component[p.section]||{},p.key)||typeof component[p.section][p.key]!=='number')
+    !Object.hasOwn(component[p.section]||{},p.key)||(typeof component[p.section][p.key]!=='number'&&!isV40FlatRadius))
     throw Error('Sweep target must be one existing numeric physical field');
   if(LENGTH_PARAMETERS.includes(p.key)){
     if(!['mm','cm','m'].includes(p.unit))throw Error('Length sweep requires explicit mm, cm or m');
