@@ -1755,3 +1755,65 @@ test('Milestone 3 R2 regressions: P2-1 Fresnel flag parity & order invariance, P
   assert.equal(pById.d1.value,3); // S1 forward + S2 forward + S1 reflected return
   assert.equal(pById.d2.value,1); // S2 transmits through unsilvered outer portion!
 });
+
+test('Milestone 3 R3 regression (P2-1 R2): curved partial-silvering arc inclusion must not misclassify unsilvered glass as silvered while still failing closed on coated bypass',async()=>{
+  // Astra R2 witness: R=100 glass circle with narrow apertureHeight=1 silvered arc covering y in [-0.5, +0.5].
+  // Ray S1 at (0, 1.2) hits unsilvered glass 0.7 mm outside the arc; S1b at (0, 0.52) hits 0.02 mm outside!
+  // Both MUST refract cleanly out of C1 into D1 with 0 mirror hits and v40EndpointsVerified=true.
+  // Ray S3 at (0, 0.1) hits inside the silvered arc and MUST reflect back into D2!
+  const circle={id:'C1',type:'circular-dielectric',parameters:{x:0,y:0,radius:100,insideIndex:1.5,outsideIndex:1,partialReflection:false}};
+  const arc={id:'M1',type:'circular-arc-mirror',parameters:{x:100,y:0,normalDeg:180,radius:100,apertureHeight:1}};
+  const detOut={id:'D1',type:'ray-detector',parameters:{x:120,y:1.2,orientationDeg:90,length:20}};
+  const detBack={id:'D2',type:'ray-detector',parameters:{x:-120,y:0,orientationDeg:90,length:20}};
+
+  // Exact single-ray Astra witness (y=1.2):
+  const {document:witnessDoc}=prepareScene(v40Req([
+    circle,arc,
+    {id:'S1',type:'point-source',parameters:{x:0,y:1.2,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    detOut
+  ]));
+  const wReqs=[
+    {id:'m1',kind:'mirror-reflections',componentId:'M1'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ];
+  const wRun=await evaluateDocument(witnessDoc,core,wReqs);
+  assert.equal(wRun.summary.executionPassed,true);
+  assert.equal(wRun.summary.observations.v40EndpointsVerified,true);
+  const wById=Object.fromEntries((await evaluateObservables(witnessDoc,wReqs,wRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(wById.m1.value,0);
+  assert.equal(wById.hits.value.length,1);
+  // Exact Snell oracle at (sqrt(100^2 - 1.2^2), 1.2):
+  const xHit=Math.sqrt(100*100-1.2*1.2);
+  const sExit=snellStep({x:1,y:0},{x:xHit/100,y:1.2/100},1.5,1);
+  const expectedY=1.2+(120-xHit)*(sExit.dir.y/sExit.dir.x);
+  assert.ok(Math.abs(wById.hits.value[0].pointMm.y-expectedY)<1e-6,
+    `Unsilvered curved exit expected y=${expectedY}, got ${wById.hits.value[0].pointMm.y}`);
+
+  // Combined near-edge unsilvered (y=0.52, just 0.02 mm outside arc endpoint) + central silvered (y=0.1) rays:
+  const {document:bothDoc}=prepareScene(v40Req([
+    circle,arc,
+    {id:'S1',type:'point-source',parameters:{x:0,y:0.52,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'S2',type:'point-source',parameters:{x:0,y:0.1,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    detOut,detBack
+  ]));
+  const bReqs=[
+    {id:'m1',kind:'mirror-reflections',componentId:'M1'},
+    {id:'d1',kind:'detector-crossings',componentId:'D1'},
+    {id:'d2',kind:'detector-crossings',componentId:'D2'}
+  ];
+  const bRun=await evaluateDocument(bothDoc,core,bReqs);
+  assert.equal(bRun.summary.executionPassed,true);
+  assert.equal(bRun.summary.observations.v40EndpointsVerified,true);
+  const bById=Object.fromEntries((await evaluateObservables(bothDoc,bReqs,bRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(bById.m1.value,1); // only S2 hits the central silvered arc
+  assert.equal(bById.d1.value,1); // only S1 exits through the unsilvered region 0.02 mm outside M1
+  assert.equal(bById.d2.value,1); // S2 reflects from M1 straight back into D2!
+
+  // Direct runtime unit check: a true coated-arc bypass at (100, 0) MUST still fail closed!
+  const loaded=core.loadDocument(witnessDoc);
+  const objC1=loaded.scene.objs[loaded.idMap.get('C1')];
+  objC1.onRayIncident({p1:{x:0,y:0},p2:{x:100,y:0},brightness_s:0.1,brightness_p:0.1},0,{x:100,y:0},[]);
+  const diagBypass=core.diagnostics(loaded.scene,{error:null,warning:null,processedRayCount:1,totalTruncation:0,totalUndefinedBehavior:0,brightnessScale:1},null,null,null,null,null,{nativeEvent:'simulationComplete'});
+  assert.equal(diagBypass.v40EndpointsVerified,false);
+  assert.match(diagBypass.errors.join(' '),/bypassed native mirror merge/);
+});

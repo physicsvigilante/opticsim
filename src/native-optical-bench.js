@@ -267,12 +267,10 @@ export function installNativeOpticalBenchV40Audit(doc,scene,idMap,mirrorEndpoint
   // Precompute admitted touching/silvered contact pairs so the runtime audit fails closed
   // if an intended coincident surface fails to trigger PhyDemo surfaceMergingObjs.
   const auditBodies=[];
-  const auditBodyById=new Map();
   for(const c of doc.physics.components){
     if(!V40_DIELECTRIC_TYPES.includes(c.type))continue;
     const body=buildDielectricBody(c,'$',()=>{},{allowSignedSpherical:true});
     auditBodies.push({comp:c,body});
-    auditBodyById.set(c.id,body);
   }
   const touchingPartnerById=new Map();
   if(auditBodies.length===2&&!bodiesDisjointExact(auditBodies[0].body,auditBodies[1].body,OPTICAL_BENCH_V40_CLEARANCE_MM)){
@@ -293,12 +291,13 @@ export function installNativeOpticalBenchV40Audit(doc,scene,idMap,mirrorEndpoint
       const p=c.parameters,{n}=curvedFrame(p),pts=curvedPoints(c);
       const disk={center:{x:p.x,y:p.y},radius:Math.hypot(pts[0].x-p.x,pts[0].y-p.y)};
       const center={x:p.x+p.radius*n.x,y:p.y+p.radius*n.y},radius=Math.abs(p.radius);
-      const chordMid={x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2};
-      const chordVec=delta(pts[0],pts[1]);
+      const sgn=Math.sign(p.radius);
+      const uVertex={x:-sgn*n.x,y:-sgn*n.y};
+      const halfAngle=Math.asin(Math.min(1,p.apertureHeight/(2*radius)));
       for(const {comp,body} of auditBodies){
         if(!circleOutsideBodyExact(disk,body,OPTICAL_BENCH_V40_CLEARANCE_MM)&&arcMirrorCoincidentWithBody(c,body)){
           if(!flushMirrorsByBodyId.has(comp.id))flushMirrorsByBodyId.set(comp.id,[]);
-          flushMirrorsByBodyId.get(comp.id).push({kind:'arc',id:c.id,center,radius,pts,chordMid,chordVec});
+          flushMirrorsByBodyId.get(comp.id).push({kind:'arc',id:c.id,center,radius,uVertex,halfAngle});
         }
       }
     }
@@ -306,11 +305,12 @@ export function installNativeOpticalBenchV40Audit(doc,scene,idMap,mirrorEndpoint
   function pointOnFlushMirror(pt,m){
     const eps=1e-5;
     if(m.kind==='plane')return pointSegmentDistance(pt,m.seg)<=eps;
-    if(Math.abs(Math.hypot(pt.x-m.center.x,pt.y-m.center.y)-m.radius)>eps)return false;
-    // Same side of chord (p1->p2) as arc vertex p3 (minor arc inclusion):
-    const vSide=cross(m.chordVec,delta(m.pts[0],m.pts[2]));
-    const pSide=cross(m.chordVec,delta(m.pts[0],pt));
-    return vSide*pSide>=-eps*Math.hypot(m.chordVec.x,m.chordVec.y);
+    const dx=pt.x-m.center.x,dy=pt.y-m.center.y,r=Math.hypot(dx,dy);
+    if(!(r>0)||Math.abs(r-m.radius)>eps)return false;
+    // Exact angular arc inclusion around center (arc-length overhang strictly <= eps):
+    const uPt={x:dx/r,y:dy/r};
+    const angle=Math.atan2(Math.abs(cross(m.uVertex,uPt)),dot(m.uVertex,uPt));
+    return angle<=m.halfAngle+eps/m.radius;
   }
 
   // Proportionate dielectric incidence check on each finite glass body:
