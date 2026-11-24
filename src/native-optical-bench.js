@@ -23,9 +23,9 @@ import {
   BENCH_NATIVE_STATE_LIMIT,
   DIELECTRIC_BODY_TYPES,
   allowedCoord,
-  bodiesDisjoint,
+  bodiesDisjointExact,
   buildDielectricBody,
-  circleOutsideBody,
+  circleOutsideBodyExact,
   componentFiniteEndpoints,
   componentTangentCircles,
   cross,
@@ -98,7 +98,7 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
       fail(`${path}[${index}].parameters.outsideIndex`,'Every finite dielectric body in v40 must match physics.backgroundIndex ('+backgroundIndex+').','UNSUPPORTED_SCOPE');
     bodies.push(body);
   }
-  if(bodies.length===2&&!bodiesDisjoint(bodies[0],bodies[1],OPTICAL_BENCH_V40_CLEARANCE_MM))
+  if(bodies.length===2&&!bodiesDisjointExact(bodies[0],bodies[1],OPTICAL_BENCH_V40_CLEARANCE_MM))
     fail(path,'Finite dielectric bodies must be disjoint with at least 0.01 mm clearance ('+bodies[0].id+' and '+bodies[1].id+').','UNSUPPORTED_SCOPE');
 
   // Point sources may start in ambient medium OR strictly inside a circle, prism, or convex quad (>= 0.01 mm clearance).
@@ -141,7 +141,7 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
     if(beamSeg&&pointSegmentDistance(disk.center,beamSeg)<disk.radius+OPTICAL_BENCH_V40_CLEARANCE_MM)
       fail(path,'Parallel emitter must lie at least 0.01 mm outside curved aperture bounding disk ('+disk.id+').','UNSUPPORTED_SCOPE');
     for(const body of bodies)
-      if(!circleOutsideBody(disk,body,OPTICAL_BENCH_V40_CLEARANCE_MM))
+      if(!circleOutsideBodyExact(disk,body,OPTICAL_BENCH_V40_CLEARANCE_MM))
         fail(path,'Curved mirror bounding disk must lie outside dielectric body by at least 0.01 mm ('+body.id+' and '+disk.id+').','UNSUPPORTED_SCOPE');
     curveDisks.push(disk);
   }
@@ -165,7 +165,7 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
       if(Math.hypot(d.center.x-p.x,d.center.y-p.y)<d.radius+p.radius+OPTICAL_BENCH_V40_CLEARANCE_MM)
         fail(path,'opaque circle overlaps curved mirror bounding disk ('+d.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
     for(const body of bodies)
-      if(!circleOutsideBody(disk,body,OPTICAL_BENCH_V40_CLEARANCE_MM))
+      if(!circleOutsideBodyExact(disk,body,OPTICAL_BENCH_V40_CLEARANCE_MM))
         fail(path,'opaque circle must lie outside dielectric body by at least 0.01 mm ('+body.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
     circleDisks.push(disk);
   }

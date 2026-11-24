@@ -611,3 +611,66 @@ test('v40 negative controls: exact membership boundaries, mismatched ambient, sp
   v39Doc.simulation.maxRayDepth=16;
   assert.throws(()=>validate(v39Doc),/maxRayDepth/);
 });
+
+test('v40 P2-1 regression: exact corner clearance for circle/polygon bodies, circle blockers, curved mirrors, and diagonal polygons',async()=>{
+  const sq={id:'B1',type:'polygon-dielectric',parameters:{x1:0,y1:0,x2:20,y2:0,x3:20,y3:20,x4:0,y4:20,insideIndex:1.5,outsideIndex:1,partialReflection:false}};
+  const ray={id:'S1',type:'point-source',parameters:{x:-30,y:10,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}};
+
+  // Positive witness from PR #260 R1 P2-1:
+  // Circle centered at (-2, -2) with R = 2 has exact clearance sqrt(8) - 2 ~ 0.8284 mm (> 80x 0.01 mm) from square B1.
+  const {document:cornerCircleDoc}=prepareScene(v40Req([
+    sq,
+    {id:'C1',type:'circular-dielectric',parameters:{x:-2,y:-2,radius:2,insideIndex:1.4,outsideIndex:1,partialReflection:false}},
+    ray
+  ]));
+  const cornerRun=await evaluateDocument(cornerCircleDoc,core,[
+    {id:'b1',kind:'interface-interactions',componentId:'B1'},
+    {id:'c1',kind:'interface-interactions',componentId:'C1'}
+  ]);
+  assert.equal(cornerRun.summary.executionPassed,true);
+  assert.equal(cornerRun.summary.observations.v40EndpointsVerified,true);
+  const byId=Object.fromEntries((await evaluateObservables(cornerCircleDoc,[
+    {id:'b1',kind:'interface-interactions',componentId:'B1'},
+    {id:'c1',kind:'interface-interactions',componentId:'C1'}
+  ],cornerRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(byId.b1.value,2);
+  assert.equal(byId.c1.value,0);
+
+  // Positive witness for circle-blocker and curved-mirror bounding disk placed safely beyond a polygon corner:
+  assert.doesNotThrow(()=>prepareScene(v40Req([
+    sq,
+    {id:'K1',type:'circle-blocker',parameters:{x:-2,y:-2,radius:2}},
+    {id:'CM1',type:'ideal-curved-mirror',parameters:{x:25,y:25,normalDeg:-135,focalLength:20,apertureHeight:10}},
+    ray
+  ])));
+
+  // Positive witness for two diagonally separated convex polygons (corner gap 2*sqrt(2) ~ 2.83 mm):
+  assert.doesNotThrow(()=>prepareScene(v40Req([
+    sq,
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:-22,y1:-22,x2:-2,y2:-22,x3:-2,y3:-2,x4:-22,y4:-2,insideIndex:1.4,outsideIndex:1,partialReflection:false}},
+    ray
+  ])));
+
+  // Negative controls: nested circle, near-corner (< 0.01 mm), overlapping near-corner circle/blocker, and overlapping diagonal polygon.
+  for(const [label,cx,cy] of [
+    ['nested circle inside polygon',10,10],
+    ['near-corner circle (< 0.01 mm clearance)',-1.42,-1.42],
+    ['overlapping near-corner circle',-1.4,-1.4]
+  ]){
+    assert.throws(()=>prepareScene(v40Req([
+      sq,
+      {id:'C1',type:'circular-dielectric',parameters:{x:cx,y:cy,radius:2,insideIndex:1.4,outsideIndex:1,partialReflection:false}},
+      ray
+    ])),/Finite dielectric bodies must be disjoint/,label);
+  }
+  assert.throws(()=>prepareScene(v40Req([
+    sq,
+    {id:'K1',type:'circle-blocker',parameters:{x:-1.4,y:-1.4,radius:2}},
+    ray
+  ])),/opaque circle must lie outside dielectric body/);
+  assert.throws(()=>prepareScene(v40Req([
+    sq,
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:-20.005,y1:-20.005,x2:-0.005,y2:-20.005,x3:-0.005,y3:-0.005,x4:-20.005,y4:-0.005,insideIndex:1.4,outsideIndex:1,partialReflection:false}},
+    ray
+  ])),/Finite dielectric bodies must be disjoint/);
+});
