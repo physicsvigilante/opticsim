@@ -20,7 +20,7 @@ import {SPHERICAL_LENS_TYPE,sphericalLensEncounter,thickLensExtents,thickLensGeo
 import {PRISM_TYPE,prismEncounter,prismVertices} from './triangular-prism.js';
 
 export const BENCH_CLEARANCE_MM=0.01;
-export const BENCH_CONTACT_TOL_MM=1e-8;
+export const BENCH_CONTACT_TOL_MM=1e-11;
 export const BENCH_MIN_CONTACT_OVERLAP_MM=1;
 export const BENCH_NATIVE_STATE_LIMIT=10000;
 export const OPTICAL_BENCH_V40_VERSION=40;
@@ -254,8 +254,8 @@ function collinearOverlapMm(a,b,c,d){
 
 // Exact clean flat-face contact between two disjoint-interior dielectric bodies
 // (e.g. stacked slabs, water-on-glass, prism-on-slab, or flat face of a spherical lens on a slab).
-// Contact tolerance 1e-8 mm guarantees PhyDemo Simulator.js surfaceMergingObjs activation
-// even at the v40 grazing cutoff |d·n| = 1e-4 while still rejecting near-contact air gaps.
+// Contact tolerance 1e-11 mm stays 10x below PhyDemo's 1e-6 mm MIN_RAY_SEGMENT_LENGTH merge threshold
+// across the admitted dielectric angular envelope (|d·n| > 1e-4) while rejecting near-contact gaps.
 export function bodiesShareFlatContact(a,b,tol=BENCH_CONTACT_TOL_MM,minOverlap=BENCH_MIN_CONTACT_OVERLAP_MM){
   if(!a.flatFaces?.length||!b.flatFaces?.length)return false;
   for(const fa of a.flatFaces){

@@ -549,7 +549,7 @@ test('v40 negative controls: exact membership boundaries, mismatched ambient, sp
     {id:'C1',type:'circular-dielectric',parameters:{x:-40,y:0,radius:10,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
     {id:'C2',type:'circular-dielectric',parameters:{x:0,y:0,radius:10,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
     {id:'C3',type:'circular-dielectric',parameters:{x:40,y:0,radius:10,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
-  ])),/0–2 disjoint finite dielectrics/);
+  ])),/0–2 finite dielectrics/);
   assert.throws(()=>prepareScene(v40Req([
     {id:'S1',type:'point-source',parameters:{x:-120,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
     {id:'L1',type:'ideal-lens',parameters:{x:-80,y:0,focalLength:100,apertureHeight:40}},
@@ -1617,4 +1617,141 @@ test('Milestone 3 negative controls: near-contact gaps, overlaps, mismatched sil
       ]
     }),/outside dielectric/);
   }
+});
+
+test('Milestone 3 R2 regressions: P2-1 Fresnel flag parity & order invariance, P2-2 1e-11 contact tolerance & failed-merge guard, detector extension, and unequal/partial silvering',async()=>{
+  // P2-1: Mixed partialReflection flags on touching flat slabs or cemented doublets MUST be rejected in BOTH orders!
+  const slabA={id:'A',type:'polygon-dielectric',parameters:{x1:-20,y1:-20,x2:0,y2:-20,x3:0,y3:20,x4:-20,y4:20,insideIndex:2,outsideIndex:1,partialReflection:false}};
+  const slabB={id:'B',type:'polygon-dielectric',parameters:{x1:0,y1:-20,x2:20,y2:-20,x3:20,y3:20,x4:0,y4:20,insideIndex:1,outsideIndex:1,partialReflection:true}};
+  const srcInsideA={id:'S1',type:'point-source',parameters:{x:-10,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}};
+  for(const pair of [[slabA,slabB],[slabB,slabA]]){
+    assert.throws(()=>prepareScene(v40Req([...pair,srcInsideA])),/matching partialReflection/);
+  }
+  const tl1False={id:'TL1',type:'spherical-lens',parameters:{x:-6,y:0,apertureHeight:40,centerThickness:12,frontRadius:60,backRadius:50,insideIndex:1.5,outsideIndex:1,partialReflection:false}};
+  const tl2True={id:'TL2',type:'spherical-lens',parameters:{x:4,y:0,apertureHeight:40,centerThickness:8,frontRadius:-50,backRadius:null,insideIndex:1.65,outsideIndex:1,partialReflection:true}};
+  const sExt={id:'S1',type:'point-source',parameters:{x:-60,y:6,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}};
+  for(const pair of [[tl1False,tl2True],[tl2True,tl1False]]){
+    assert.throws(()=>prepareScene(v40Req([...pair,sExt])),/matching partialReflection/);
+  }
+  // Disjoint bodies with mixed partialReflection flags remain admitted!
+  assert.doesNotThrow(()=>prepareScene(v40Req([
+    slabA,
+    {id:'B',type:'polygon-dielectric',parameters:{x1:10,y1:-20,x2:30,y2:-20,x3:30,y3:20,x4:10,y4:20,insideIndex:1.5,outsideIndex:1,partialReflection:true}},
+    srcInsideA
+  ])));
+  // Same-flag partialReflection:true contact yields identical Fresnel branch powers R=((2-1)/(2+1))^2 = 1/9 in BOTH orders!
+  const slabATrue={...slabA,parameters:{...slabA.parameters,partialReflection:true}};
+  const detLeft={id:'D1',type:'ray-detector',parameters:{x:-30,y:0,orientationDeg:90,length:20}};
+  for(const [pair,primaryId] of [[[slabATrue,slabB],'A'],[[slabB,slabATrue],'B']]){
+    const {document:fresnelPair}=prepareScene(v40Req([...pair,srcInsideA,detLeft]));
+    const run=await evaluateDocument(fresnelPair,core,[{id:'first',kind:'interface-first-event',componentId:primaryId}]);
+    const first=run.report.native.diagnostics.interfacesById[primaryId].first;
+    assert.equal(first.incidentIndex,2);
+    assert.equal(first.destinationIndex,1);
+    const refl=first.branches.find(b=>b.kind==='reflected');
+    const trans=first.branches.find(b=>b.kind==='transmitted');
+    assert.ok(Math.abs(refl.relativePower-0.2/9)<1e-12,`Expected reflected power ${0.2/9}, got ${refl.relativePower}`);
+    assert.ok(Math.abs(trans.relativePower-0.2*8/9)<1e-12,`Expected transmitted power ${0.2*8/9}, got ${trans.relativePower}`);
+  }
+
+  // P2-2: Astra's exact 8e-9 mm / 0.2 deg witness MUST be rejected at admission (1e-11 mm contact tolerance)!
+  const obA={id:'A',type:'polygon-dielectric',parameters:{x1:-100,y1:-20,x2:100,y2:-20,x3:100,y3:0,x4:-100,y4:0,insideIndex:1.5,outsideIndex:1,partialReflection:false}};
+  const obBOffset={id:'B',type:'polygon-dielectric',parameters:{x1:-100,y1:8e-9,x2:100,y2:8e-9,x3:100,y3:20+8e-9,x4:-100,y4:20+8e-9,insideIndex:1.6,outsideIndex:1,partialReflection:false}};
+  const obSrc={id:'S1',type:'point-source',parameters:{x:-40,y:-0.15,brightness:0.2},emission:{mode:'single-ray',directionDeg:0.2}};
+  assert.throws(()=>prepareScene(v40Req([obA,obBOffset,obSrc])),/Finite dielectric bodies/);
+
+  // Exact 0 mm contact at 0.2 deg (1.5 -> 1.6) MUST merge cleanly and transmit into B (never phantom glass-air TIR)!
+  // Exact 3-step oracle: enters B at (xHit, 0), TIRs off B's top face y=20, exits B's right wall x=100 into D1 at x=120.
+  const rad02=0.2*Math.PI/180;
+  const xHitOb=-40+0.15/Math.tan(rad02);
+  const sinThB=(1.5/1.6)*Math.cos(rad02),cosThB=Math.sqrt(1-sinThB*sinThB),slopeB=cosThB/sinThB;
+  const xTopOb=xHitOb+20/slopeB;
+  const yWallOb=20-(100-xTopOb)*slopeB;
+  const sinExitOb=1.6*cosThB,slopeExitOb=-sinExitOb/Math.sqrt(1-sinExitOb*sinExitOb);
+  const expectedObY=yWallOb+20*slopeExitOb;
+  const obBExact={id:'B',type:'polygon-dielectric',parameters:{x1:-100,y1:0,x2:100,y2:0,x3:100,y3:20,x4:-100,y4:20,insideIndex:1.6,outsideIndex:1,partialReflection:false}};
+  const {document:obDoc}=prepareScene(v40Req([
+    obA,obBExact,obSrc,
+    {id:'D1',type:'ray-detector',parameters:{x:120,y:0,orientationDeg:90,length:60}}
+  ]));
+  const obReqs=[
+    {id:'first',kind:'interface-first-event',componentId:'A'},
+    {id:'tir',kind:'interface-tir-count',componentId:'A'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ];
+  const obRun=await evaluateDocument(obDoc,core,obReqs);
+  assert.equal(obRun.summary.executionPassed,true);
+  assert.equal(obRun.summary.observations.v40EndpointsVerified,true);
+  const obById=Object.fromEntries((await evaluateObservables(obDoc,obReqs,obRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(obById.tir.value,0);
+  assert.equal(obById.first.value.outcome,'transmission');
+  assert.equal(obById.first.value.incidentIndex,1.5);
+  assert.equal(obById.first.value.destinationIndex,1.6);
+  assert.equal(obById.first.value.mergedWithId,'B');
+  assert.equal(obById.hits.value.length,1);
+  assert.ok(Math.abs(obById.hits.value[0].pointMm.y-expectedObY)<1e-5,
+    `Oblique 0.2 deg exact contact expected y=${expectedObY}, got ${obById.hits.value[0].pointMm.y}`);
+
+  // Direct runtime failed-merge guard check: unmerged hit at shared contact boundary fails closed!
+  const loadedPair=core.loadDocument(obDoc);
+  const objA=loadedPair.scene.objs[loadedPair.idMap.get('A')];
+  const fakeRay={p1:{x:-10,y:0.1},p2:{x:0,y:0},brightness_s:0.1,brightness_p:0.1};
+  objA.onRayIncident(fakeRay,0,{x:0,y:0},[]); // empty surfaceMergingObjs at shared y=0!
+  const diagFail=core.diagnostics(loadedPair.scene,{error:null,warning:null,processedRayCount:1,totalTruncation:0,totalUndefinedBehavior:0,brightnessScale:1},null,null,null,null,null,{nativeEvent:'simulationComplete'});
+  assert.equal(diagFail.v40EndpointsVerified,false);
+  assert.match(diagFail.errors.join(' '),/did not merge in native simulator/);
+
+  // Nonblocking polish 1: Direct source-on-detector-line-extension positive test + detector intersection rejection.
+  const {document:detExtDoc}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:45}},
+    {id:'M1',type:'plane-mirror',parameters:{x:20,y:20,orientationDeg:90,length:20}},
+    {id:'D1',type:'ray-detector',parameters:{x:0,y:40,orientationDeg:90,length:20}} // x=0 line passes right through S1 at (0,0)!
+  ]));
+  const detExtRun=await evaluateDocument(detExtDoc,core,[{id:'hits',kind:'detector-hit-events',componentId:'D1'}]);
+  assert.equal(detExtRun.summary.executionPassed,true);
+  assert.equal(detExtRun.summary.observations.v40EndpointsVerified,true);
+  const detExtHits=(await evaluateObservables(detExtDoc,[{id:'hits',kind:'detector-hit-events',componentId:'D1'}],detExtRun.summary)).results[0].value;
+  assert.equal(detExtHits.length,1);
+  assert.ok(Math.abs(detExtHits[0].pointMm.y-40)<1e-6);
+  // Detector intersecting a plane mirror MUST still be rejected!
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-40,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'M1',type:'plane-mirror',parameters:{x:20,y:0,orientationDeg:90,length:40}},
+    {id:'D1',type:'ray-detector',parameters:{x:20,y:0,orientationDeg:0,length:40}}
+  ])),/finite segments intersect or nearly touch/);
+
+  // Nonblocking polish 2: Unequal-aperture cemented doublet + partial-aperture silvered plano-convex lens.
+  const {document:unequalDoub}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-60,y:8,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'TL1',type:'spherical-lens',parameters:{x:-6,y:0,apertureHeight:40,centerThickness:12,frontRadius:60,backRadius:50,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'TL2',type:'spherical-lens',parameters:{x:4,y:0,apertureHeight:30,centerThickness:8,frontRadius:-50,backRadius:null,insideIndex:1.65,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:120,y:0,orientationDeg:90,length:160}}
+  ]));
+  const unequalRun=await evaluateDocument(unequalDoub,core,[{id:'hits',kind:'detector-hit-events',componentId:'D1'}]);
+  assert.equal(unequalRun.summary.executionPassed,true);
+  assert.equal(unequalRun.summary.observations.v40EndpointsVerified,true);
+  assert.equal(unequalRun.summary.observations.detectorsById.D1.crossings,1);
+
+  // Partial-aperture silvering (20 mm mirror centered on 40 mm flat back of plano-convex lens):
+  // Central ray S1 (y=4) reflects back to D_back (x=-60); outer ray S2 (y=15) transmits through unsilvered glass to D_front (x=80)!
+  const {document:partialSilv}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-80,y:4,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'S2',type:'point-source',parameters:{x:-80,y:15,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:40,centerThickness:10,frontRadius:60,backRadius:null,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'M1',type:'plane-mirror',parameters:{x:5,y:0,orientationDeg:90,length:20}},
+    {id:'D1',type:'ray-detector',parameters:{x:-50,y:0,orientationDeg:90,length:80}},
+    {id:'D2',type:'ray-detector',parameters:{x:80,y:0,orientationDeg:90,length:80}}
+  ]));
+  const partialReqs=[
+    {id:'m1',kind:'mirror-reflections',componentId:'M1'},
+    {id:'d1',kind:'detector-crossings',componentId:'D1'},
+    {id:'d2',kind:'detector-crossings',componentId:'D2'}
+  ];
+  const partialRun=await evaluateDocument(partialSilv,core,partialReqs);
+  assert.equal(partialRun.summary.executionPassed,true);
+  assert.equal(partialRun.summary.observations.v40EndpointsVerified,true);
+  const pById=Object.fromEntries((await evaluateObservables(partialSilv,partialReqs,partialRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(pById.m1.value,1); // only S1 hits the central silvered mirror
+  assert.equal(pById.d1.value,3); // S1 forward + S2 forward + S1 reflected return
+  assert.equal(pById.d2.value,1); // S2 transmits through unsilvered outer portion!
 });
