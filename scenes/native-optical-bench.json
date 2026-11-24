@@ -64,6 +64,7 @@
         "type": "ideal-lens",
         "parameters": {
           "x": -10,
+          "y": 0,
           "focalLength": 150,
           "apertureHeight": 120
         }

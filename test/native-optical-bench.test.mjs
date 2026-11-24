@@ -146,7 +146,7 @@ test('Family 1 oracle: interior source inside circular dielectric -> ideal thin 
   const {document:doc}=prepareScene(v40Req([
     {id:'C1',type:'circular-dielectric',parameters:{x:0,y:0,radius:R,insideIndex:nIn,outsideIndex:nOut,partialReflection:false}},
     {id:'S1',type:'point-source',parameters:{x:0,y:y0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
-    {id:'L1',type:'ideal-lens',parameters:{x:xLens,focalLength:fLens,apertureHeight:60}},
+    {id:'L1',type:'ideal-lens',parameters:{x:xLens,y:0,focalLength:fLens,apertureHeight:60}},
     {id:'D1',type:'ray-detector',parameters:{x:xDet,y:0,orientationDeg:90,length:80}}
   ]));
   const reqs=[
@@ -206,7 +206,7 @@ test('Family 2 oracle: interior triangular-prism source -> TIR on hypotenuse -> 
   const {document:doc}=prepareScene(v40Req([
     {id:'PR1',type:'triangular-prism',parameters:{x1:0,y1:0,x2:40,y2:0,x3:0,y3:40,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
     {id:'S1',type:'point-source',parameters:{x:8,y:8,brightness:0.2},emission:{mode:'single-ray',directionDeg:95}},
-    {id:'L1',type:'ideal-lens',parameters:{x:xLens,focalLength:fLens,apertureHeight:100}},
+    {id:'L1',type:'ideal-lens',parameters:{x:xLens,y:0,focalLength:fLens,apertureHeight:100}},
     {id:'D1',type:'ray-detector',parameters:{x:xDet,y:0,orientationDeg:90,length:120}}
   ]));
   const reqs=[
@@ -376,7 +376,7 @@ test('Family 4: unfamiliar JEE compositions — equilateral prism + ideal lens +
   const {document:unfamiliarDoc}=prepareScene(v40Req([
     {id:'S1',type:'point-source',parameters:{x:-30,y:12,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
     {id:'PR1',type:'triangular-prism',parameters:{x1:0,y1:0,x2:40,y2:0,x3:20,y3:h,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
-    {id:'L1',type:'ideal-lens',parameters:{x:xLens,focalLength:fLens,apertureHeight:100}},
+    {id:'L1',type:'ideal-lens',parameters:{x:xLens,y:0,focalLength:fLens,apertureHeight:100}},
     {id:'M1',type:'plane-mirror',parameters:{x:xMir,y:yMir,orientationDeg:mirDeg,length:40}},
     {id:'D1',type:'ray-detector',parameters:{x:expectedXDet,y:yDet,orientationDeg:0,length:50}}
   ]));
@@ -399,11 +399,11 @@ test('Family 4: unfamiliar JEE compositions — equilateral prism + ideal lens +
   // Demonstrates v40 preserves parallel-beam AND 0..4 ideal lenses AND immersed backgroundIndex = 1.33.
   const {document:fourLensDoc}=prepareScene(v40Req([
     {id:'B1',type:'parallel-beam',parameters:{x:-220,y:0,width:20,directionDeg:0,brightness:0.2}},
-    {id:'L1',type:'ideal-lens',parameters:{x:-160,focalLength:300,apertureHeight:90}},
-    {id:'L2',type:'ideal-lens',parameters:{x:-110,focalLength:-400,apertureHeight:90}},
+    {id:'L1',type:'ideal-lens',parameters:{x:-160,y:0,focalLength:300,apertureHeight:90}},
+    {id:'L2',type:'ideal-lens',parameters:{x:-110,y:0,focalLength:-400,apertureHeight:90}},
     {id:'SL1',type:'polygon-dielectric',parameters:{x1:-60,y1:-50,x2:-20,y2:-50,x3:-20,y3:50,x4:-60,y4:50,insideIndex:1.6,outsideIndex:1.33,partialReflection:false}},
-    {id:'L3',type:'ideal-lens',parameters:{x:20,focalLength:250,apertureHeight:90}},
-    {id:'L4',type:'ideal-lens',parameters:{x:70,focalLength:250,apertureHeight:90}},
+    {id:'L3',type:'ideal-lens',parameters:{x:20,y:0,focalLength:250,apertureHeight:90}},
+    {id:'L4',type:'ideal-lens',parameters:{x:70,y:0,focalLength:250,apertureHeight:90}},
     {id:'A1',type:'finite-aperture',parameters:{x:110,y:0,orientationDeg:90,length:100,openingLength:60}},
     {id:'CM1',type:'circular-arc-mirror',parameters:{x:190,y:0,normalDeg:180,radius:240,apertureHeight:90}},
     {id:'D1',type:'ray-detector',parameters:{x:135,y:0,orientationDeg:90,length:110}}
@@ -550,12 +550,12 @@ test('v40 negative controls: exact membership boundaries, mismatched ambient, sp
   ])),/0–2 disjoint finite dielectrics/);
   assert.throws(()=>prepareScene(v40Req([
     {id:'S1',type:'point-source',parameters:{x:-120,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
-    {id:'L1',type:'ideal-lens',parameters:{x:-80,focalLength:100,apertureHeight:40}},
-    {id:'L2',type:'ideal-lens',parameters:{x:-40,focalLength:100,apertureHeight:40}},
-    {id:'L3',type:'ideal-lens',parameters:{x:0,focalLength:100,apertureHeight:40}},
-    {id:'L4',type:'ideal-lens',parameters:{x:40,focalLength:100,apertureHeight:40}},
-    {id:'L5',type:'ideal-lens',parameters:{x:80,focalLength:100,apertureHeight:40}}
-  ])),/0–4 coaxial ideal lenses/);
+    {id:'L1',type:'ideal-lens',parameters:{x:-80,y:0,focalLength:100,apertureHeight:40}},
+    {id:'L2',type:'ideal-lens',parameters:{x:-40,y:0,focalLength:100,apertureHeight:40}},
+    {id:'L3',type:'ideal-lens',parameters:{x:0,y:0,focalLength:100,apertureHeight:40}},
+    {id:'L4',type:'ideal-lens',parameters:{x:40,y:0,focalLength:100,apertureHeight:40}},
+    {id:'L5',type:'ideal-lens',parameters:{x:80,y:0,focalLength:100,apertureHeight:40}}
+  ])),/0–4 vertical ideal lenses/);
 
   // 9. Near-critical TIR and near-grazing dielectric incidence guards fail closed:
   // Slab x in [0,40], y in [-40,40], n=1.5 -> choose sin(theta) = (1 - 5e-7)/1.5 so |n_i sin(theta) - n_t| = 5e-7 <= 1e-6
@@ -673,4 +673,169 @@ test('v40 P2-1 regression: exact corner clearance for circle/polygon bodies, cir
     {id:'B2',type:'polygon-dielectric',parameters:{x1:-20.005,y1:-20.005,x2:-0.005,y2:-20.005,x3:-0.005,y3:-0.005,x4:-20.005,y4:-0.005,insideIndex:1.4,outsideIndex:1,partialReflection:false}},
     ray
   ])),/Finite dielectric bodies must be disjoint/);
+});
+
+test('Milestone 2A oracle: decentered ideal-lens.y exact deflection, transverse shift via reviseScene, and rim guard',async()=>{
+  // Source at (-100, 10) shooting at +10 deg into decentered lens L1 at (x=0, y=25, f=60, aperture=50),
+  // detector at x=120.
+  const x0=-100,y0=10,deg=10*Math.PI/180,m1=Math.tan(deg);
+  const xL=0,yL=25,f=60,xD=120;
+  const yHit=y0+(xL-x0)*m1;
+  const m2=m1-(yHit-yL)/f;
+  const expectedY=yHit+(xD-xL)*m2;
+
+  const {document:doc}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:x0,y:y0,brightness:0.2},emission:{mode:'single-ray',directionDeg:10}},
+    {id:'L1',type:'ideal-lens',parameters:{x:xL,y:yL,focalLength:f,apertureHeight:50}},
+    {id:'D1',type:'ray-detector',parameters:{x:xD,y:0,orientationDeg:90,length:200}}
+  ]));
+  const reqs=[{id:'hits',kind:'detector-hit-events',componentId:'D1'}];
+  const run=await evaluateDocument(doc,core,reqs);
+  assert.equal(run.summary.executionPassed,true);
+  assert.equal(run.summary.observations.v40EndpointsVerified,true);
+  const res=(await evaluateObservables(doc,reqs,run.summary)).results[0];
+  assert.equal(res.value.length,1);
+  assert.ok(Math.abs(res.value[0].pointMm.y-expectedY)<1e-6,
+    `Expected y=${expectedY}, got ${res.value[0].pointMm.y}`);
+
+  // Shift L1.y by -10 mm via reviseScene -> detector hit must shift by (xD - xL) * (-10) / f = -20 mm!
+  const shifted=reviseScene(doc,{changes:[{id:'L1',section:'parameters',key:'y',value:15,unit:'mm'}]}).document;
+  const shiftRun=await evaluateDocument(shifted,core,reqs);
+  assert.equal(shiftRun.summary.executionPassed,true);
+  const shiftRes=(await evaluateObservables(shifted,reqs,shiftRun.summary)).results[0];
+  assert.ok(Math.abs((shiftRes.value[0].pointMm.y-res.value[0].pointMm.y)-(-20))<1e-6);
+
+  // Missing y on v40 ideal-lens -> rejected.
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-100,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'L1',type:'ideal-lens',parameters:{x:0,focalLength:60,apertureHeight:50}}
+  ])),/y/);
+
+  // Initial ray hitting decentered lens upper rim (y = 25 + 25 = 50) within 0.01 mm -> rejected.
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-100,y:50.005,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'L1',type:'ideal-lens',parameters:{x:0,y:25,focalLength:60,apertureHeight:50}}
+  ])),/finite component endpoint|ideal-lens rim/);
+});
+
+test('Milestone 2A oracle: JEE Billet split-lens (two lenses at same x=0) with directional fan produces two exact real images',async()=>{
+  // Object S1 at (-120, 0), directional cone 36 deg -> hits upper lens L1 (x=0, y=+22, f=80, ap=40 -> y in [2,42])
+  // and lower lens L2 (x=0, y=-22, f=80, ap=40 -> y in [-42,-2]), leaving a 4 mm central gap.
+  // Thin-lens equation: u = 120, f = 80 -> v = 240, m = -2 -> images at (240, +66) and (240, -66)!
+  const {document:doc}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-120,y:0,brightness:0.2},emission:{mode:'directional',directionDeg:0,angleDeg:36}},
+    {id:'L1',type:'ideal-lens',parameters:{x:0,y:22,focalLength:80,apertureHeight:40}},
+    {id:'L2',type:'ideal-lens',parameters:{x:0,y:-22,focalLength:80,apertureHeight:40}},
+    {id:'D1',type:'ray-detector',parameters:{x:240,y:0,orientationDeg:90,length:200}}
+  ]));
+  const reqs=[
+    {id:'emit',kind:'source-emissions',componentId:'S1'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ];
+  const run=await evaluateDocument(doc,core,reqs);
+  assert.equal(run.summary.executionPassed,true);
+  assert.equal(run.summary.observations.v40EndpointsVerified,true);
+  assert.ok(run.summary.observations.v40OpticalIncidentsById.L1>=4);
+  assert.ok(run.summary.observations.v40OpticalIncidentsById.L2>=4);
+
+  const byId=Object.fromEntries((await evaluateObservables(doc,reqs,run.summary)).results.map(r=>[r.id,r]));
+  assert.equal(byId.hits.value.length,byId.emit.value);
+  const upperImageHits=byId.hits.value.filter(e=>Math.abs(e.pointMm.y-66)<1e-5);
+  const lowerImageHits=byId.hits.value.filter(e=>Math.abs(e.pointMm.y+66)<1e-5);
+  const gapHits=byId.hits.value.filter(e=>Math.abs(e.pointMm.y)<6);
+  assert.equal(upperImageHits.length,run.summary.observations.v40OpticalIncidentsById.L1);
+  assert.equal(lowerImageHits.length,run.summary.observations.v40OpticalIncidentsById.L2);
+  assert.equal(upperImageHits.length+lowerImageHits.length+gapHits.length,byId.emit.value);
+
+  // Overlapping lenses at the same x=0 -> rejected!
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-120,y:0,brightness:0.2},emission:{mode:'directional',directionDeg:0,angleDeg:36}},
+    {id:'L1',type:'ideal-lens',parameters:{x:0,y:15,focalLength:80,apertureHeight:40}},
+    {id:'L2',type:'ideal-lens',parameters:{x:0,y:-15,focalLength:80,apertureHeight:40}}
+  ])),/finite segments intersect or nearly touch/);
+});
+
+test('Milestone 2A oracle: JEE Snell window — interior directional fan inside water tank splits cleanly into transmission vs TIR',async()=>{
+  // Interior directional fan at (0, -20) inside water tank x in [-55, 55], y in [-40, 0], n=1.33, backgroundIndex=1.
+  // Because n = 1.33 has critical angle arcsin(1/1.33) = 48.7535 deg > 45 deg, every top-face TIR ray hits the
+  // vertical sidewall at 90 - theta < 41.25 deg < theta_c and exits cleanly (no trapped 4-wall TIR loop).
+  // At rayDensity=0.2 (3.6 deg step), symmetric 120 deg cone emits 34 rays from -60 to +58.8 deg:
+  // 27 rays (|theta| <= 48.0 deg) transmit out the top face into D1 at y=10;
+  // 7 rays (-60, -56.4, -52.8, -49.2, +51.6, +55.2, +58.8 deg) undergo exactly 1 top-face TIR and exit the sidewall!
+  const {document:doc}=prepareScene(v40Req([
+    {id:'SL1',type:'polygon-dielectric',parameters:{x1:-55,y1:-40,x2:55,y2:-40,x3:55,y3:0,x4:-55,y4:0,insideIndex:1.33,outsideIndex:1,partialReflection:false}},
+    {id:'S1',type:'point-source',parameters:{x:0,y:-20,brightness:0.2},emission:{mode:'directional',directionDeg:90,angleDeg:120}},
+    {id:'D1',type:'ray-detector',parameters:{x:0,y:10,orientationDeg:0,length:280}}
+  ]));
+  const reqs=[
+    {id:'emit',kind:'source-emissions',componentId:'S1'},
+    {id:'tir',kind:'interface-tir-count',componentId:'SL1'},
+    {id:'det',kind:'detector-crossings',componentId:'D1'}
+  ];
+  const run=await evaluateDocument(doc,core,reqs);
+  assert.equal(run.summary.executionPassed,true);
+  assert.equal(run.summary.observations.v40EndpointsVerified,true);
+  const byId=Object.fromEntries((await evaluateObservables(doc,reqs,run.summary)).results.map(r=>[r.id,r]));
+  assert.equal(byId.emit.value,34);
+  assert.equal(byId.det.value,27);
+  assert.equal(byId.tir.value,7);
+  assert.equal(byId.det.value+byId.tir.value,byId.emit.value);
+});
+
+test('Milestone 2A: full-circle (360 deg) source in v40 and reviseScene source-mode transitions',async()=>{
+  // Full-circle interior source inside a circular dielectric surrounded by an external detector.
+  const {document:doc}=prepareScene(v40Req([
+    {id:'C1',type:'circular-dielectric',parameters:{x:0,y:0,radius:25,insideIndex:1.4,outsideIndex:1,partialReflection:false}},
+    {id:'S1',type:'point-source',parameters:{x:0,y:0,brightness:0.2},emission:{mode:'full-circle'}},
+    {id:'D1',type:'ray-detector',parameters:{x:50,y:0,orientationDeg:90,length:80}}
+  ]));
+  const reqs=[
+    {id:'emit',kind:'source-emissions',componentId:'S1'},
+    {id:'c1',kind:'interface-interactions',componentId:'C1'},
+    {id:'det',kind:'detector-crossings',componentId:'D1'}
+  ];
+  const run=await evaluateDocument(doc,core,reqs);
+  assert.equal(run.summary.executionPassed,true);
+  assert.equal(run.summary.observations.v40EndpointsVerified,true);
+  const byId=Object.fromEntries((await evaluateObservables(doc,reqs,run.summary)).results.map(r=>[r.id,r]));
+  assert.equal(byId.emit.value,100); // 0.2 * 500 = 100 radial rays, all normal to C1!
+  assert.equal(byId.c1.value,100);
+  assert.ok(byId.det.value>15&&byId.det.value<35);
+
+  // reviseScene mode transitions: single-ray -> directional requires explicit angleDeg; succeeds when supplied.
+  const {document:singleDoc}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-80,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'D1',type:'ray-detector',parameters:{x:50,y:0,orientationDeg:90,length:100}}
+  ]));
+  assert.throws(()=>reviseScene(singleDoc,{
+    changes:[{id:'S1',section:'emission',key:'mode',value:'directional'}]
+  }),/explicit angleDeg/);
+  const dirDoc=reviseScene(singleDoc,{
+    changes:[
+      {id:'S1',section:'emission',key:'mode',value:'directional'},
+      {id:'S1',section:'emission',key:'angleDeg',value:24}
+    ]
+  }).document;
+  assert.equal(dirDoc.physics.components[0].emission.mode,'directional');
+  assert.equal(dirDoc.physics.components[0].emission.angleDeg,24);
+  const dirRun=await evaluateDocument(dirDoc,core,[{id:'det',kind:'detector-crossings',componentId:'D1'}]);
+  assert.equal(dirRun.summary.executionPassed,true);
+  assert.ok(dirRun.summary.observations.detectorsById.D1.crossings>=6);
+
+  // Legacy v37 isolation (PR #261 R1 P2-1): v37 reviseScene retains its prior single-ray -> directional
+  // transition without forcing a duplicate angleDeg edit when angleDeg was already authored.
+  const {document:v37Single}=prepareScene({
+    model:'native-general-optical-bench',lengthUnit:'mm',
+    components:[{
+      id:'S1',type:'point-source',
+      parameters:{x:-80,y:0,brightness:0.2},
+      emission:{mode:'single-ray',directionDeg:0,angleDeg:24}
+    }]
+  });
+  const v37Dir=reviseScene(v37Single,{
+    changes:[{id:'S1',section:'emission',key:'mode',value:'directional'}]
+  }).document;
+  assert.equal(v37Dir.schemaVersion,37);
+  assert.equal(v37Dir.physics.components[0].emission.mode,'directional');
+  assert.equal(v37Dir.physics.components[0].emission.angleDeg,24);
 });

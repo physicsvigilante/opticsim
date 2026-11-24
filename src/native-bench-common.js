@@ -225,8 +225,8 @@ export function bodiesDisjointExact(a,b,clearance){
 export function componentFiniteEndpoints(c,mirrorEndpoints){
   const p=c.parameters;
   if(c.type==='ideal-lens'){
-    const h=p.apertureHeight/2;
-    return [{x:p.x,y:-h},{x:p.x,y:h}];
+    const cy=p.y??0,h=p.apertureHeight/2;
+    return [{x:p.x,y:cy-h},{x:p.x,y:cy+h}];
   }
   if(c.type===FINITE_APERTURE_TYPE){
     const g=apertureGeometry(p,mirrorEndpoints);

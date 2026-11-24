@@ -225,9 +225,9 @@ export function capabilities() {
     bounds:COMPONENT_BOUNDS,
     runPolicies:Object.fromEntries(Object.entries(policies).map(([id,value])=>[id,{...value}])),
     requiredInput:['lengthUnit','components'],optionalInput:['title','runPolicy','model','rayDensity'],
-    lensParameterVariants:{legacy:{versions:'1–19',parameters:['x','focalLength','apertureHeight'],centreY:0},decentered:{version:DECENTERED_BEAM_VERSION,parameters:['x','y','focalLength','apertureHeight'],centreY:'required explicit mm'}},
+    lensParameterVariants:{legacy:{versions:'1–19, 28, 37, 39',parameters:['x','focalLength','apertureHeight'],centreY:0},decentered:{versions:[DECENTERED_BEAM_VERSION,OPTICAL_BENCH_V40_VERSION],parameters:['x','y','focalLength','apertureHeight'],centreY:'required explicit mm'}},
     physicalPolicy:'All physical parameter values are required. Full-circle inactive angles are explicitly filled, not measured. No optical component or missing physical information is invented.',
-    opticalGeometry:'Historical thin lenses are vertical and centred at y=0; v20 two-lens Beam lenses have explicit independent y; v21 semicircular Glass has a flat diameter and true curved arc. Mirror, detector and aperture orientationDeg is the tangent in y-up coordinates. Native opaque arms and other finite surfaces must not intersect or overlap.',
+    opticalGeometry:'Historical thin lenses are vertical and centred at y=0; v20 two-lens Beam and v40 unified optical bench lenses have explicit independent y; v21 semicircular Glass has a flat diameter and true curved arc. Mirror, detector and aperture orientationDeg is the tangent in y-up coordinates. Native opaque arms and other finite surfaces must not intersect or overlap.',
     observations:[...NATIVE_OBSERVATION_KEYS],
     limitations:['native finite-ray sampling','signed relative detector power is not watts',
       'no image prediction for unconstrained general tracing','no source-specific detector provenance']
@@ -491,6 +491,10 @@ export function reviseScene(document,patch){
     if(before.emission.mode==='full-circle'&&c.emission.mode==='single-ray'&&
        !seen.has(c.id+':emission:directionDeg'))
       issues.push(issue('$.changes','MISSING_VALUE','Switching '+c.id+' to single-ray requires an explicit directionDeg in the same revision'));
+    if(document.schemaVersion===OPTICAL_BENCH_V40_VERSION&&
+       before.emission.mode==='single-ray'&&c.emission.mode==='directional'&&
+       !seen.has(c.id+':emission:angleDeg'))
+      issues.push(issue('$.changes','MISSING_VALUE','Switching '+c.id+' to directional requires an explicit angleDeg in the same revision'));
   }
   if(issues.length)fail(issues);
   try{validate(next);}catch(error){fail([issue(error.path||'$',

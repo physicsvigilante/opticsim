@@ -38,7 +38,7 @@
     {
       "id": "L1",
       "type": "ideal-lens",
-      "parameters": { "x": -10, "focalLength": 150, "apertureHeight": 120 }
+      "parameters": { "x": -10, "y": 0, "focalLength": 150, "apertureHeight": 120 }
     },
     {
       "id": "SL1",

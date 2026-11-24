@@ -85,7 +85,7 @@ export const COMPONENT_BOUNDS = Object.freeze({
 });
 export function componentParameterNames(type, version = 4) {
   if (!Object.hasOwn(parameters,type)) return null;
-  if(type==='ideal-lens'&&version===DECENTERED_BEAM_VERSION)
+  if(type==='ideal-lens'&&(version===DECENTERED_BEAM_VERSION||version===OPTICAL_BENCH_V40_VERSION))
     return ['x','y','focalLength','apertureHeight'];
   return [...parameters[type], ...(version >= 2 && type === 'point-source' ? ['brightness'] : [])];
 }
