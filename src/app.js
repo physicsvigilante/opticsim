@@ -487,7 +487,9 @@ function readDraft() {
   const candidate = structuredClone(session.document);
   for (const { id, section, key, input, nullable } of bindings) {
     const c = candidate.physics.components.find(c => c.id === id);
-    c[section][key] = input.type==='checkbox'?input.checked:input.value.trim() === '' ? (nullable ? null : NaN) : Number(input.value);
+    c[section][key] = input.type==='checkbox'?input.checked:
+      input.validity?.badInput ? NaN :
+      input.value.trim() === '' ? (nullable ? null : NaN) : Number(input.value);
   }
   return candidate;
 }

@@ -213,7 +213,15 @@ export function capabilities() {
       ...(type===PRISM_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-31'],geometry:'Three physical vertices; vertex order defines face labels, not a ray route'}:{}),
       ...(type===POLYGON_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-34','face-41'],geometry:'One strictly convex four-vertex finite region, never a ray route'}:{}),
       ...(type===GRIN_V25_TYPE?{nativeType:'GrinGlass',geometry:'Bounded physical rectangle with fixed positive square-root index field; native Euler inside steps, real exit and passive detector; no arbitrary LaTeX.'}:{}),
-      ...(type===SPHERICAL_LENS_TYPE?{nativeType:'SphericalLens',booleanParameters:['partialReflection'],faceIds:['front-arc','back-arc','top-rim','bottom-rim'],geometry:'Native finite 2D biconvex lens. Both radii are positive lengths, not a thin-lens focal length; back-face native curvature sign is reversed'}:{}),
+      ...(type===SPHERICAL_LENS_TYPE?{
+        nativeType:'SphericalLens',booleanParameters:['partialReflection'],
+        faceIds:['front-arc','back-arc','top-rim','bottom-rim'],
+        geometry:'Native finite 2D spherical lens (outward-convex sign convention; not a thin-lens focal length). Legacy v15–v39 are positive-only biconvex (frontRadius, backRadius >= apertureHeight/2 + 1 mm). In v40 (native-optical-bench), frontRadius and backRadius also admit negative values (concave inward, |radius| >= apertureHeight/2 + 1 mm) and null (flat/planar face, R = infinity); textbook Cartesian equivalents are R1 = frontRadius and R2 = -backRadius. Requires apertureHeight >= 4 mm, centerThickness >= 2 mm, and edgeThickness >= 1 mm.',
+        schemaVariants:{
+          legacy:{versions:'15–18, 38–39',radii:'positive-only biconvex (>= apertureHeight/2 + 1 mm)'},
+          v40:{versions:[OPTICAL_BENCH_V40_VERSION],radii:'signed (+convex outward, -concave inward, |radius| >= apertureHeight/2 + 1 mm) or null (flat/planar face)',nullableParameters:['frontRadius','backRadius']}
+        }
+      }:{}),
       ...(type==='line-blocker'?{nativeType:'Blocker',geometry:'Opaque finite line segment; centre, tangent orientation, and length are explicit; absorbs each actual native ray incident'}:{}),
       ...(type===CIRCLE_BLOCKER_TYPE?{nativeType:'CircleBlocker',geometry:'Opaque 2D circular boundary with explicit centre and positive radius; absorbs actual native ray incidents; not a 3D body'}:{}),
       ...(type===FINITE_APERTURE_TYPE?{nativeType:'Aperture',geometry:'Opaque 2D line with an explicitly transparent centred opening; no wave diffraction'}:{}),

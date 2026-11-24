@@ -1,12 +1,30 @@
 // OPTIONAL compact view of a fully verified LLM exploration context.
 // The original src/exploration.js stays byte-frozen for historical replays.
 // This module never accepts, validates or runs a physical proposal itself.
+import {componentParameterNames} from './contract.js';
 import {explorationContext} from './exploration.js';
+import {OPTICAL_BENCH_V40_VERSION} from './native-optical-bench.js';
+import {SPHERICAL_LENS_TYPE} from './spherical-lens.js';
+
+function focusedComponentTypeSpec(type,base,version){
+ const spec={...base,parameters:componentParameterNames(type,version)??base.parameters};
+ if(type===SPHERICAL_LENS_TYPE){
+  delete spec.schemaVariants;
+  if(version===OPTICAL_BENCH_V40_VERSION){
+   spec.nullableParameters=['frontRadius','backRadius'];
+   spec.geometry='Native finite 2D spherical lens (v40 outward-convex sign convention). frontRadius and backRadius admit positive values (convex outward), negative values (concave inward), or null (flat/planar face, R = infinity); textbook Cartesian equivalents are R1 = frontRadius and R2 = -backRadius. Requires apertureHeight >= 4 mm, centerThickness >= 2 mm, edgeThickness >= 1 mm, and each non-null |radius| >= apertureHeight/2 + 1 mm (<= 10000 mm).';
+  }else{
+   spec.geometry='Native finite 2D biconvex lens (legacy positive-only contract). Both frontRadius and backRadius must be positive lengths >= apertureHeight/2 + 1 mm (neither negative nor null); requires apertureHeight >= 4 mm, centerThickness >= 2 mm, and edgeThickness >= 1 mm. Back-face native curvature sign is reversed.';
+  }
+ }
+ return spec;
+}
 
 // Scope hints to the actually authored component types. The original
 // exploration/qualification/native validators still own all physical truth.
 export async function focusedExplorationContext(input,question){
  const full=await explorationContext(input,question);
+ const version=full.baseline.scene.schemaVersion;
  const components=full.baseline.scene.physics.components;
  const types=new Set(components.map(c=>c.type));
  const fields=new Set(components.flatMap(c=>Object.keys(c.parameters)));
@@ -25,7 +43,7 @@ export async function focusedExplorationContext(input,question){
    existingComponentFields:components.map(c=>({id:c.id,type:c.type,
     parameters:Object.keys(c.parameters),
     ...(c.emission?{emission:Object.keys(c.emission)}:{})})),
-   componentTypes:Object.fromEntries([...types].map(type=>[type,all.componentTypes[type]]))
+   componentTypes:Object.fromEntries([...types].map(type=>[type,focusedComponentTypeSpec(type,all.componentTypes[type],version)]))
   },
   observables:{format:observed.format,maxRequests:observed.maxRequests,
    kinds:Object.fromEntries(Object.entries(observed.kinds).filter(([,spec])=>

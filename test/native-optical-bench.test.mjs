@@ -16,7 +16,8 @@ import {
 import {parseSave,serializeSave,validate} from '../src/contract.js';
 import {createExplorationNotebook} from '../src/exploration-notebook.js';
 import {replayExplorationNotebook} from '../src/exploration-notebook-replay.js';
-import {prepareExplorationProposal,snapshotScenario} from '../src/exploration.js';
+import {explorationContext,prepareExplorationProposal,snapshotScenario} from '../src/exploration.js';
+import {focusedExplorationContext} from '../src/focused-exploration-context.js';
 import {compareScenario} from '../src/scenario-comparison.js';
 import {
   OPTICAL_BENCH_V40_MODEL,
@@ -887,6 +888,8 @@ test('Milestone 2B oracle: signed/flat spherical-lens — plano-convex (both ori
   const cases=[
     {name:'plano-convex (flat front, convex back)',y0:10,xDet:120,lens:{x:0,y:0,apertureHeight:40,centerThickness:12,frontRadius:null,backRadius:50,insideIndex:1.5,outsideIndex:1,partialReflection:false},expectSign:-1},
     {name:'plano-convex (convex front, flat back)',y0:10,xDet:120,lens:{x:0,y:0,apertureHeight:40,centerThickness:12,frontRadius:50,backRadius:null,insideIndex:1.5,outsideIndex:1,partialReflection:false},expectSign:-1},
+    {name:'plano-concave (flat front, concave back)',y0:8,xDet:100,lens:{x:0,y:0,apertureHeight:40,centerThickness:8,frontRadius:null,backRadius:-50,insideIndex:1.5,outsideIndex:1,partialReflection:false},expectSign:+1},
+    {name:'plano-concave (concave front, flat back)',y0:8,xDet:100,lens:{x:0,y:0,apertureHeight:40,centerThickness:8,frontRadius:-50,backRadius:null,insideIndex:1.5,outsideIndex:1,partialReflection:false},expectSign:+1},
     {name:'converging meniscus (+40 front, -80 back)',y0:8,xDet:120,lens:{x:0,y:0,apertureHeight:36,centerThickness:10,frontRadius:40,backRadius:-80,insideIndex:1.5,outsideIndex:1,partialReflection:false},expectSign:-1},
     {name:'diverging meniscus (+80 front, -40 back)',y0:8,xDet:120,lens:{x:0,y:0,apertureHeight:36,centerThickness:10,frontRadius:80,backRadius:-40,insideIndex:1.5,outsideIndex:1,partialReflection:false},expectSign:+1},
     {name:'biconcave (-50 front, -50 back)',y0:8,xDet:100,lens:{x:0,y:0,apertureHeight:40,centerThickness:8,frontRadius:-50,backRadius:-50,insideIndex:1.5,outsideIndex:1,partialReflection:false},expectSign:+1},
@@ -936,6 +939,27 @@ test('Milestone 2B oracle: signed/flat spherical-lens — plano-convex (both ori
   // Classic JEE spherical-aberration / principal-plane asymmetry: orienting the curved face
   // toward the collimated ray yields a distinct marginal intercept from the flat-front orientation.
   assert.ok(Math.abs(planoY[0]-planoY[1])>0.05,`Expected distinct plano-convex intercepts, got ${planoY[0]} vs ${planoY[1]}`);
+
+  // Oblique flat-flat slab oracle in non-unit ambient (backgroundIndex = 1.2, insideIndex = 1.6):
+  // Proves emergent ray stays strictly parallel to incoming 20 deg ray with exact Snell lateral shift.
+  const theta1=20*Math.PI/180,nOut=1.2,nIn=1.6,d=16,x0=-40,y0=-10,xDet=60;
+  const theta2=Math.asin((nOut/nIn)*Math.sin(theta1));
+  const expectedShiftY=y0+(xDet-x0)*Math.tan(theta1)-d*(Math.tan(theta1)-Math.tan(theta2));
+  const {document:obliqueFlat}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:x0,y:y0,brightness:0.2},emission:{mode:'single-ray',directionDeg:20}},
+    {id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:60,centerThickness:d,frontRadius:null,backRadius:null,insideIndex:nIn,outsideIndex:nOut,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:xDet,y:0,orientationDeg:90,length:120}}
+  ],{backgroundIndex:nOut}));
+  const oblReqs=[{id:'hits',kind:'detector-hit-events',componentId:'D1'}];
+  const oblRun=await evaluateDocument(obliqueFlat,core,oblReqs);
+  assert.equal(oblRun.summary.executionPassed,true);
+  assert.equal(oblRun.summary.observations.v40EndpointsVerified,true);
+  const oblHits=(await evaluateObservables(obliqueFlat,oblReqs,oblRun.summary)).results[0].value;
+  assert.equal(oblHits.length,1);
+  assert.ok(Math.abs(oblHits[0].pointMm.y-expectedShiftY)<1e-6,
+    `Oblique flat-flat slab expected y=${expectedShiftY}, got ${oblHits[0].pointMm.y}`);
+  assert.ok(Math.hypot(oblHits[0].incomingUnit.x-Math.cos(theta1),oblHits[0].incomingUnit.y-Math.sin(theta1))<1e-6,
+    'Emergent ray from parallel flat-flat faces must remain parallel to incoming ray');
 });
 
 test('Milestone 2B: signed spherical-lens revisions, cm units, flat-baseline sweep, concave AABB clearance, and legacy v15/v38 isolation',async()=>{
@@ -1201,4 +1225,58 @@ test('Milestone 2B end-to-end v40 exploration: prepareExplorationProposal (revis
   const cleanByKind=Object.fromEntries(cleanCmp.entries.map(e=>[e.kind,e]));
   assert.equal(cleanByKind['detector-crossings'].comparison,'sampled-native-comparison');
   assert.equal(cleanByKind['detector-signed-power'].comparison,'sampled-native-comparison');
+});
+
+test('Milestone 2B P2-2 regression: focusedExplorationContext & capabilities accurately expose schema-specific spherical-lens contracts',async()=>{
+  // 1. Full capabilities() documents both legacy positive-only and v40 signed/flat spherical-lens contracts.
+  const fullCaps=capabilities();
+  assert.match(fullCaps.componentTypes['spherical-lens'].geometry,/v40/);
+  assert.match(fullCaps.componentTypes['spherical-lens'].geometry,/null/);
+  assert.deepEqual(fullCaps.componentTypes['spherical-lens'].schemaVariants.v40.nullableParameters,['frontRadius','backRadius']);
+
+  // 2. Focused exploration context for v40 spherical-lens + ideal-lens baseline exposes v40 signed/null radii and ideal-lens y.
+  const {document:v40Doc}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-60,y:8,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:40,centerThickness:12,frontRadius:50,backRadius:50,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'L1',type:'ideal-lens',parameters:{x:40,y:5,focalLength:80,apertureHeight:40}}
+  ]));
+  const v40Bundle=await createQualifiedBundle(v40Doc,initialQualification(v40Doc,null,{inputSha256:await sceneHash(v40Doc)}),[]);
+  const v40Focused=await focusedExplorationContext(v40Bundle,'Make TL1 plano-concave with flat front and concave back');
+  const v40Spherical=v40Focused.authoring.componentTypes['spherical-lens'];
+  assert.deepEqual(v40Spherical.nullableParameters,['frontRadius','backRadius']);
+  assert.deepEqual(v40Spherical.faceIds,['front-arc','back-arc','top-rim','bottom-rim']);
+  assert.match(v40Spherical.geometry,/negative values \(concave inward\)/);
+  assert.match(v40Spherical.geometry,/null \(flat\/planar face/);
+  assert.doesNotMatch(v40Spherical.geometry,/positive-only/);
+  assert.equal(Object.hasOwn(v40Spherical,'schemaVariants'),false);
+  assert.deepEqual(v40Focused.authoring.componentTypes['ideal-lens'].parameters,['x','y','focalLength','apertureHeight']);
+
+  // Full explorationContext retains v40 opticalBench capabilities too.
+  const v40Full=await explorationContext(v40Bundle,'Compare plano-concave TL1');
+  assert.match(v40Full.authoring.opticalBench.components.finiteDielectrics.types['spherical-lens'].note,/null is a flat/);
+
+  // 3. Focused exploration context for legacy v15 and v38 spherical-lens baselines retains positive-only biconvex contract!
+  const {document:v15Doc}=prepareScene({
+    lengthUnit:'mm',
+    components:[
+      {id:'S1',type:'point-source',parameters:{x:-60,y:8,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+      {id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:40,centerThickness:12,frontRadius:50,backRadius:50,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+    ]
+  });
+  const {document:v38Doc}=prepareScene({
+    model:'native-general-refractive-bench',lengthUnit:'mm',
+    components:[
+      {id:'S1',type:'point-source',parameters:{x:-60,y:8,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+      {id:'TL1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:40,centerThickness:12,frontRadius:50,backRadius:50,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+    ]
+  });
+  for(const legacyDoc of [v15Doc,v38Doc]){
+    const legacyBundle=await createQualifiedBundle(legacyDoc,initialQualification(legacyDoc,null,{inputSha256:await sceneHash(legacyDoc)}),[]);
+    const legacyFocused=await focusedExplorationContext(legacyBundle,'Change frontRadius');
+    const legacySpherical=legacyFocused.authoring.componentTypes['spherical-lens'];
+    assert.equal(Object.hasOwn(legacySpherical,'nullableParameters'),false);
+    assert.equal(Object.hasOwn(legacySpherical,'schemaVariants'),false);
+    assert.match(legacySpherical.geometry,/legacy positive-only contract/);
+    assert.match(legacySpherical.geometry,/neither negative nor null/);
+  }
 });
