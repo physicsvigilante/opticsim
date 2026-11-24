@@ -1,0 +1,6 @@
+{
+  "format": "opticsim-native-optical-bench-v40-app-integration-v1",
+  "sourceV39AppGitBlob": "a427f6c8d5833668f8366ab3d4b86023fcc7fa51",
+  "v40AppGitBlob": "7662d95796c6654f556df22888e167f3a09b54ee",
+  "note": "Append-only provenance for schema-v40 native-optical-bench: admit OPTICAL_BENCH_V40_VERSION in single-ray sourcePicker and display ambient backgroundIndex/randomSeed in parameter guidance."
+}

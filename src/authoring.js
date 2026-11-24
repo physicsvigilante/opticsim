@@ -1,6 +1,15 @@
 import {IMMERSED_ARC_MODEL,IMMERSED_ARC_VERSION} from './immersed-arc-plane-port.js';
 import {GENERAL_BENCH_MODEL,GENERAL_BENCH_VERSION} from './native-general-optical-bench.js';
 import {HYBRID_BENCH_MODEL,HYBRID_BENCH_VERSION} from './native-general-hybrid-bench.js';
+import {
+  OPTICAL_BENCH_V40_MODEL,
+  OPTICAL_BENCH_V40_VERSION,
+  V40_DEFAULT_RANDOM_SEED,
+  V40_MAX_RAY_DEPTH,
+  isValidRandomSeed,
+  opticalBenchCapabilities
+} from './native-optical-bench.js';
+export {opticalBenchCapabilities};
 import {REFRACTIVE_BENCH_MODEL,REFRACTIVE_BENCH_VERSION} from './native-general-refractive-bench.js';
 import {MIRROR_BOX_MODEL,MIRROR_BOX_VERSION} from './native-mirror-box.js';
 import {GUIDE_FAN_MODEL,GUIDE_FAN_VERSION} from './finite-guide-fan.js';
@@ -41,6 +50,8 @@ const lengthScales=Object.freeze({mm:1,cm:10,m:1000});
 const policies=Object.freeze({
   'preview-v1':Object.freeze({rayDensity:SAMPLING_PRESETS.medium,maxRayDepth:8,processedRayLimit:10000}),
   'dense-v1':Object.freeze({rayDensity:SAMPLING_PRESETS.dense,maxRayDepth:8,processedRayLimit:10000}),
+  'bench-v40':Object.freeze({rayDensity:SAMPLING_PRESETS.medium,maxRayDepth:V40_MAX_RAY_DEPTH,processedRayLimit:10000}),
+  'bench-v40-dense':Object.freeze({rayDensity:SAMPLING_PRESETS.dense,maxRayDepth:V40_MAX_RAY_DEPTH,processedRayLimit:10000}),
   // The deeper native limit is restricted to these two older sealed profiles.
   'native-deep-v17':Object.freeze({rayDensity:SAMPLING_PRESETS.medium,maxRayDepth:TWO_THICK_MIRROR_NATIVE_DEPTH,processedRayLimit:10000}),
   'native-deep-v18':Object.freeze({rayDensity:SAMPLING_PRESETS.medium,maxRayDepth:THICK_APERTURE_NATIVE_DEPTH,processedRayLimit:10000}),
@@ -103,6 +114,7 @@ export function capabilities() {
     generalOpticalBench:{schemaVersion:GENERAL_BENCH_VERSION,model:GENERAL_BENCH_MODEL,selection:'Set physical.model explicitly to native-general-optical-bench. Unmarked historical requests keep their existing profile selection.',scope:'Either 1–4 point sources (full-circle, directional, or single-ray) OR 1 finite parallel Beam, combined with 0–4 coaxial ideal lenses, 0–4 plane mirrors, 0–2 curved mirrors (ideal-curved-mirror / circular-arc-mirror), 0–2 opaque stops (line-blocker / circle-blocker / finite-aperture), and 0–2 passive ray detectors (max 16 components total). Strict 0.01 mm clearance across all surfaces, emitters, and bounding disks. Pinned PhyDemo traces all rays; no route-independent image prediction or source-specific detector provenance.'},
     generalRefractiveBench:{schemaVersion:REFRACTIVE_BENCH_VERSION,model:REFRACTIVE_BENCH_MODEL,selection:'Set physical.model explicitly to native-general-refractive-bench. Unmarked historical requests keep their existing profile selection.',scope:'Either 1–4 exact single-ray point sources OR 1 finite parallel Beam, combined with 1–2 disjoint finite dielectric bodies (triangular-prism, polygon-dielectric, circular-dielectric, or spherical-lens sharing one explicit outsideIndex), 0–2 plane mirrors, 0–2 opaque stops (line-blocker / circle-blocker / finite-aperture), and 0–2 passive ray detectors (max 12 components total). Strict 0.01 mm clearance, initial corner/tangency/endpoint guards, and observed native endpoint audit (v38EndpointsVerified).'},
     generalHybridBench:{schemaVersion:HYBRID_BENCH_VERSION,model:HYBRID_BENCH_MODEL,selection:'Set physical.model explicitly to native-general-hybrid-bench. Unmarked historical requests keep their existing profile selection.',scope:'Either 1–4 exact single-ray point sources OR 1 finite parallel Beam, combined with 1–2 disjoint finite dielectric bodies (triangular-prism, polygon-dielectric, circular-dielectric, or spherical-lens sharing one explicit outsideIndex), 0–2 coaxial ideal lenses (focalLength in exterior medium outsideIndex), 0–2 curved mirrors (ideal-curved-mirror / circular-arc-mirror), 0–2 plane mirrors, 0–2 opaque stops, and 0–2 passive ray detectors (max 14 components total). Strict 0.01 mm clearance and full emitted/incoming/outgoing endpoint, corner, and tangency audit (v39EndpointsVerified).'},
+    opticalBench:opticalBenchCapabilities(),
     mirrorBox:{schemaVersion:MIRROR_BOX_VERSION,model:MIRROR_BOX_MODEL,selection:'Select physical.model explicitly.',scope:'Four separated rectangular mirror walls, one explicit SingleRay and one interior opaque target. Native qualification requires one safe reflection per wall followed by absorption.'},
     guideFan:{schemaVersion:GUIDE_FAN_VERSION,model:GUIDE_FAN_MODEL,selection:'Set physical.model explicitly. Optional physical.rayDensity sets numerical sampling.',scope:'One directional fan through a finite rectangular Glass guide with unit exterior, partial reflection disabled and one exterior vertical detector.'},
     enteringGradedSlab:{schemaVersion:GRIN_SLAB_VERSION,model:GRIN_SLAB_MODEL,selection:'Select physical.model explicitly.',scope:'One finite-angle incoming single ray, one native square-root GRIN rectangle and a horizontal passive detector after the far face.'},
@@ -232,13 +244,24 @@ export function inspectAuthoringRequest(request){
     return isObject(value);
   };
   const fanFields=[REFRACTIVE_FAN_MODEL,CURVED_BEAM_MODEL,GUIDE_FAN_MODEL].includes(request?.model)?['rayDensity']:[];
-  if(!object(request,'$',['lengthUnit','components','title','runPolicy','model',...fanFields],['lengthUnit','components']))return issues;
+  const isV40=request?.model===OPTICAL_BENCH_V40_MODEL;
+  const v40Fields=isV40?['backgroundIndex','randomSeed']:[];
+  const requiredTop=['lengthUnit','components',...(isV40?['backgroundIndex']:[])];
+  if(!object(request,'$',['lengthUnit','components','title','runPolicy','model',...fanFields,...v40Fields],requiredTop))return issues;
   let scale=null;
   if(own(request,'lengthUnit')){
     try{scale=units(request.lengthUnit,'$.lengthUnit');}
     catch(error){issues.push(...error.issues);}
   }
-  if(own(request,'model')&&![POST_LENS_MODEL,REFRACTIVE_FAN_MODEL,CURVED_BEAM_MODEL,SLAB_ARC_MODEL,CAP_MODEL,GRIN_SLAB_MODEL,IMMERSED_ARC_MODEL,MIRROR_BOX_MODEL,GUIDE_FAN_MODEL,GENERAL_BENCH_MODEL,REFRACTIVE_BENCH_MODEL,HYBRID_BENCH_MODEL].includes(request.model))issues.push(issue('$.model','UNSUPPORTED_MODEL','Unknown explicit physical model'));
+  if(own(request,'model')&&![POST_LENS_MODEL,REFRACTIVE_FAN_MODEL,CURVED_BEAM_MODEL,SLAB_ARC_MODEL,CAP_MODEL,GRIN_SLAB_MODEL,IMMERSED_ARC_MODEL,MIRROR_BOX_MODEL,GUIDE_FAN_MODEL,GENERAL_BENCH_MODEL,REFRACTIVE_BENCH_MODEL,HYBRID_BENCH_MODEL,OPTICAL_BENCH_V40_MODEL].includes(request.model))issues.push(issue('$.model','UNSUPPORTED_MODEL','Unknown explicit physical model'));
+  if(isV40&&own(request,'backgroundIndex')){
+    if(typeof request.backgroundIndex!=='number'||!Number.isFinite(request.backgroundIndex))
+      issues.push(issue('$.backgroundIndex','INVALID_VALUE','Expected a finite refractive index in [1, 4]'));
+    else if(request.backgroundIndex<1||request.backgroundIndex>4)
+      issues.push(issue('$.backgroundIndex','INVALID_INPUT','Ambient backgroundIndex must be in [1, 4]'));
+  }
+  if(isV40&&own(request,'randomSeed')&&!isValidRandomSeed(request.randomSeed))
+    issues.push(issue('$.randomSeed','INVALID_VALUE','Expected a nonempty printable seed string (1–64 characters)'));
   if(own(request,'runPolicy')&&(typeof request.runPolicy!=='string'||!own(policies,request.runPolicy)))
     issues.push(issue('$.runPolicy','UNSUPPORTED_POLICY','Use a run policy exposed by capabilities()'));
   if(own(request,'title')&&(typeof request.title!=='string'||request.title.length>120))
@@ -336,6 +359,7 @@ function camera(components) {
     zoom:isGrinV25?80:Math.max(.03,Math.min(2,.85*1200/width,.85*700/height))};
 }
 function selectRequestComposition(request) {
+  if(request.model===OPTICAL_BENCH_V40_MODEL)return {model:OPTICAL_BENCH_V40_MODEL,schemaVersion:OPTICAL_BENCH_V40_VERSION,adapterVersion:OPTICAL_BENCH_V40_VERSION};
   if(request.model===REFRACTIVE_BENCH_MODEL)return {model:REFRACTIVE_BENCH_MODEL,schemaVersion:REFRACTIVE_BENCH_VERSION,adapterVersion:REFRACTIVE_BENCH_VERSION};
   if(request.model===HYBRID_BENCH_MODEL)return {model:HYBRID_BENCH_MODEL,schemaVersion:HYBRID_BENCH_VERSION,adapterVersion:HYBRID_BENCH_VERSION};
   if(request.model===GENERAL_BENCH_MODEL)return {model:GENERAL_BENCH_MODEL,schemaVersion:GENERAL_BENCH_VERSION,adapterVersion:GENERAL_BENCH_VERSION};
@@ -377,10 +401,11 @@ export function prepareScene(request) {
     return result;
   });
   const {schemaVersion,adapterVersion,model}=selectedComposition;
-  const policyName=requestedPolicy??(schemaVersion===TWO_THICK_MIRROR_VERSION?
-    'native-deep-v17':schemaVersion===THICK_APERTURE_VERSION?'native-deep-v18':
+  const policyName=requestedPolicy??(schemaVersion===OPTICAL_BENCH_V40_VERSION?'bench-v40':
+    schemaVersion===TWO_THICK_MIRROR_VERSION?'native-deep-v17':schemaVersion===THICK_APERTURE_VERSION?'native-deep-v18':
     schemaVersion===GRIN_V25_VERSION?'native-grin-fine-v25':schemaVersion===GRIN_SLAB_VERSION?'native-grin-slab-v33':'preview-v1');
-  if((policyName==='native-deep-v17'&&schemaVersion!==TWO_THICK_MIRROR_VERSION)||
+  if(((policyName==='bench-v40'||policyName==='bench-v40-dense')&&schemaVersion!==OPTICAL_BENCH_V40_VERSION)||
+     (policyName==='native-deep-v17'&&schemaVersion!==TWO_THICK_MIRROR_VERSION)||
      (policyName==='native-deep-v18'&&schemaVersion!==THICK_APERTURE_VERSION)||
      (policyName==='native-grin-fine-v25'&&schemaVersion!==GRIN_V25_VERSION)||
      (schemaVersion===GRIN_V25_VERSION&&policyName!=='native-grin-fine-v25')||
@@ -388,9 +413,13 @@ export function prepareScene(request) {
     fail([issue('$.runPolicy','UNSUPPORTED_POLICY','Use the numerical policy registered for the selected profile.')]);
   const doc={
     format:'ray-optics-2d',schemaVersion,adapterVersion,upstreamCommit:UPSTREAM,
-    physics:{lengthUnit:'mm',coordinates:'x-right-y-up',model,components},
+    physics:{lengthUnit:'mm',coordinates:'x-right-y-up',model,
+      ...(schemaVersion===OPTICAL_BENCH_V40_VERSION?{backgroundIndex:request.backgroundIndex}:{}),
+      components},
     presentation:{title,view:camera(components),mode:'rays',grid:false},
-    simulation:{...policies[policyName],...(own(request,'rayDensity')?{rayDensity:request.rayDensity}:{})}
+    simulation:{...policies[policyName],
+      ...(own(request,'rayDensity')?{rayDensity:request.rayDensity}:{}),
+      ...(schemaVersion===OPTICAL_BENCH_V40_VERSION?{randomSeed:own(request,'randomSeed')?request.randomSeed:V40_DEFAULT_RANDOM_SEED}:{})}
   };
   try{validate(doc);}
   catch(error){
@@ -402,6 +431,7 @@ export function prepareScene(request) {
     defaulted: [
       ...(own(request,'title')?[]:['presentation.title']),
       ...(own(request,'runPolicy')?[]:['simulation.runPolicy']),
+      ...(schemaVersion===OPTICAL_BENCH_V40_VERSION&&!own(request,'randomSeed')?['simulation.randomSeed']:[]),
       'presentation.view','presentation.mode','presentation.grid',
       ...components.filter((c,i)=>c.type==='point-source'&&c.emission.mode==='single-ray'&&!own(request.components[i].emission,'angleDeg')).map(c=>c.id+'.inactiveConeAngle'),
       ...components.filter((c,i)=>c.type==='point-source'&&

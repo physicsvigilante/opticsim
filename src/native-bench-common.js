@@ -4,8 +4,9 @@
 // Pinned PhyDemo alone owns all ray tracing, intersections, refraction, TIR,
 // reflection, lens deflection, and absorption.
 import {CIRCULAR_TYPE,circularExtents} from './circular-dielectric.js';
+import {segmentsIntersect} from './composition-validation.js';
 import {curvedFrame,curvedPoints,isCurved} from './curved-mirrors.js';
-import {FINITE_APERTURE_TYPE,apertureGeometry} from './finite-aperture.js';
+import {FINITE_APERTURE_TYPE,apertureGeometry,separatedSegmentDistance} from './finite-aperture.js';
 import {finiteGlassFaces,segmentOutsideFiniteGlass} from './finite-glass-geometry.js';
 import {CIRCLE_BLOCKER_TYPE} from './opaque-circle-blocker.js';
 import {
@@ -59,7 +60,7 @@ export function buildDielectricBody(c,cPath,fail){
     const twiceArea=Math.abs(cross(delta(v[0],v[1]),delta(v[0],v[2])));
     if(faces.some(f=>f.length<1||twiceArea/f.length<1))
       fail(cPath,'Prism edges and altitudes must be at least 1 mm; collinear or repeated vertices are invalid.','UNSUPPORTED_SCOPE');
-    return {kind:'poly',id:c.id,type:c.type,outsideIndex:p.outsideIndex,vertices:v,faces,corners:v,tangentCircles:[]};
+    return {kind:'poly',id:c.id,type:c.type,insideIndex:p.insideIndex,outsideIndex:p.outsideIndex,vertices:v,faces,corners:v,tangentCircles:[]};
   }
   if(c.type===POLYGON_TYPE){
     const v=polygonVertices(p);
@@ -73,13 +74,13 @@ export function buildDielectricBody(c,cPath,fail){
     if(faces.some((f,i)=>f.length<1||v.some((q,j)=>j!==i&&j!==(i+1)%4&&
          Math.abs(cross(delta(f.a,f.b),delta(f.a,q)))/f.length<1)))
       fail(cPath,'All polygon edges and opposite-vertex altitudes must be at least 1 mm.','UNSUPPORTED_SCOPE');
-    return {kind:'poly',id:c.id,type:c.type,outsideIndex:p.outsideIndex,vertices:v,faces,corners:v,tangentCircles:[]};
+    return {kind:'poly',id:c.id,type:c.type,insideIndex:p.insideIndex,outsideIndex:p.outsideIndex,vertices:v,faces,corners:v,tangentCircles:[]};
   }
   if(c.type===CIRCULAR_TYPE){
     if(p.radius<2||circularExtents(p).some(q=>!allowedCoord(q.x,q.y)))
       fail(cPath,'Circular dielectric requires radius >= 2 mm and must fit within +/-10000 mm.','UNSUPPORTED_SCOPE');
     const center={x:p.x,y:p.y};
-    return {kind:'circle',id:c.id,type:c.type,outsideIndex:p.outsideIndex,center,radius:p.radius,corners:[],tangentCircles:[{center,radius:p.radius}]};
+    return {kind:'circle',id:c.id,type:c.type,insideIndex:p.insideIndex,outsideIndex:p.outsideIndex,center,radius:p.radius,corners:[],tangentCircles:[{center,radius:p.radius}]};
   }
   // SPHERICAL_LENS_TYPE: conservative convex AABB contains the complete physical biconvex lens;
   // both native generating circles are retained for tangency admission and runtime qualification.
@@ -96,13 +97,56 @@ export function buildDielectricBody(c,cPath,fail){
     {x:g.right,y:g.top},{x:g.left,y:g.top}
   ];
   return {
-    kind:'poly',id:c.id,type:c.type,outsideIndex:p.outsideIndex,
+    kind:'poly',id:c.id,type:c.type,insideIndex:p.insideIndex,outsideIndex:p.outsideIndex,
     vertices:boxVertices,faces:finiteGlassFaces(boxVertices),corners:g.corners,
     tangentCircles:[
       {center:g.frontCenter,radius:p.frontRadius},
       {center:g.backCenter,radius:p.backRadius}
     ]
   };
+}
+
+// Exact point membership relative to an admitted finite dielectric body.
+// - circular-dielectric: exact radial distance vs radius +/- clearance
+// - triangular-prism / polygon-dielectric: exact signed half-space distance inside,
+//   exact Euclidean edge distance outside
+// - spherical-lens: exterior-only in v40 (conservative bounding-box clearance)
+export function pointBodyMembership(pt,body,clearance=BENCH_CLEARANCE_MM){
+  if(body.kind==='circle'){
+    const d=Math.hypot(pt.x-body.center.x,pt.y-body.center.y);
+    if(Math.abs(d-body.radius)<clearance)return 'boundary';
+    return d<body.radius?'inside':'outside';
+  }
+  if(body.type===SPHERICAL_LENS_TYPE)
+    return pointOutsideBody(pt,body,clearance)?'outside':'unsupported-interior';
+  let maxSigned=-Infinity;
+  for(const f of body.faces){
+    const s=dot(delta(f.a,pt),f.normal);
+    if(s>maxSigned)maxSigned=s;
+  }
+  if(maxSigned<=-clearance)return 'inside';
+  if(maxSigned<=0)return 'boundary';
+  let minEdge=Infinity;
+  for(const f of body.faces){
+    const d=pointSegmentDistance(pt,[f.a,f.b]);
+    if(d<minEdge)minEdge=d;
+  }
+  return minEdge<clearance?'boundary':'outside';
+}
+
+export function resolveSourceMembership(pt,bodies,backgroundIndex,clearance=BENCH_CLEARANCE_MM){
+  let host=null;
+  for(const body of bodies){
+    const status=pointBodyMembership(pt,body,clearance);
+    if(status==='boundary'||status==='unsupported-interior')return {status,bodyId:body.id};
+    if(status==='inside'){
+      if(host)return {status:'ambiguous',bodyId:body.id};
+      host=body;
+    }
+  }
+  return host
+    ?{status:'inside',regionId:host.id,body:host,mediumIndex:host.insideIndex}
+    :{status:'ambient',regionId:'ambient',body:null,mediumIndex:backgroundIndex};
 }
 
 export function pointOutsideBody(pt,body,clearance){
@@ -115,6 +159,22 @@ export function segmentOutsideBody(seg,body,clearance){
   if(body.kind==='circle')
     return pointSegmentDistance(body.center,seg)>=body.radius+clearance;
   return segmentOutsideFiniteGlass(body.faces,seg,clearance);
+}
+
+// Exact Euclidean clearance between a finite segment and a convex body
+// (circle or convex polygon / thick-lens AABB). Unlike single-face separation,
+// this admits tall vertical lenses/mirrors/detectors cleanly separated from
+// slanted faces such as an equilateral prism.
+export function segmentOutsideBodyExact(seg,body,clearance){
+  if(body.kind==='circle')
+    return pointSegmentDistance(body.center,seg)>=body.radius+clearance;
+  for(const pt of seg)
+    if(body.faces.every(f=>dot(delta(f.a,pt),f.normal)<=0))return false;
+  for(const f of body.faces){
+    const edge=[f.a,f.b];
+    if(segmentsIntersect(edge,seg)||separatedSegmentDistance(edge,seg)<clearance)return false;
+  }
+  return true;
 }
 
 export function circleOutsideBody(circle,body,clearance){
