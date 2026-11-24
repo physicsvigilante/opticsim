@@ -20,6 +20,7 @@ import {
 } from './coaxial-paraxial-stack.js';
 import {prepareScene} from './authoring.js';
 import {add,divide,fromBinary64,subtract,toBinary64} from './binary64-rational.js';
+import {curvedPoints} from './curved-mirrors.js';
 import {
   OPTICAL_BENCH_V40_MODEL,
   OPTICAL_BENCH_V40_VERSION,
@@ -29,6 +30,7 @@ import {
 } from './native-optical-bench.js';
 import {evaluateObservables} from './observables.js';
 import {sceneHash} from './qualified-utils.js';
+import {thickLensGeometry} from './spherical-lens.js';
 import {
   TWO,
   WITNESS_MIRROR_MODELS as MIRROR_MODELS,
@@ -70,7 +72,7 @@ export function opticalBenchNativeWitnessCapabilities(){
       lengthUnit:'mm',
       outsideIndex:'Any explicit stack incidentIndex in [1, 4], mapped directly to v40 physics.backgroundIndex. All dielectric bodies share this exterior index, and all thin lenses / separated mirrors operate in this shared exterior medium.',
       elements:'0–2 finite dielectric bodies (planar slabs or signed/flat spherical lenses: biconvex, plano-convex, plano-concave, meniscus, biconcave; disjoint, touching layered flat contact, or coaxial cemented doublets), 0–4 coaxial thin-lens elements, and 0–1 terminal-mirror (separated plane/spherical OR flush flat/curved silvered on the final dielectric body). Planned native encounters per ray must fit within v40 maxRayDepth = 16.',
-      touchingAndSilvered:'Touching layered slabs or coaxial cemented doublets may be authored either with a single shared interior refracting-surface [S1, S2, S3] or a zero-gap matched surface pair [S1, S2a, S2b, S3]. Flush silvered optics may be authored either directly as a terminal-mirror closing the final body [..., S_front, M] or as a zero-gap matched mirror on its back face [..., S_front, S_back, M]. Flush curved silvering requires mirrorModel "circular-arc-mirror".'
+      touchingAndSilvered:'Touching layered slabs or coaxial cemented doublets may be authored either with a single shared interior refracting-surface [S1, S2, S3] (when the second layer index differs from outsideIndex) or an explicit zero-gap matched surface pair [S1, S2a, S2b, S3] (required when the second touching layer is index-matched to outsideIndex, because [S1, S2, S3] closes the first body whenever S2.downstreamIndex === outsideIndex). Flush silvered optics may be authored either directly as a terminal-mirror closing the final body [..., S_front, M] or as a zero-gap matched mirror on its back face [..., S_front, S_back, M]. Flush curved silvering requires mirrorModel "circular-arc-mirror".'
     },
     requiredWitnessInputs:{
       query:'{format: "opticsim-coaxial-paraxial-stack-query-v1", kind: "coaxial-stack-conjugate" | "coaxial-stack-collimated-focus"}',
@@ -289,6 +291,29 @@ function buildV40WitnessEmitters(facts,spec,usedIds){
   return buildRefractiveOrHybridEmitters(facts,spec,usedIds,'v40 optical-bench');
 }
 
+function compiledOpticalXEnvelope(opticalComponents){
+  let minX=Infinity,maxX=-Infinity;
+  const include=x=>{
+    if(x<minX)minX=x;
+    if(x>maxX)maxX=x;
+  };
+  for(const c of opticalComponents){
+    const p=c.parameters;
+    if(c.type==='spherical-lens'){
+      const g=thickLensGeometry(p);
+      include(g.left);
+      include(g.right);
+    }else if(c.type==='polygon-dielectric'){
+      for(const x of [p.x1,p.x2,p.x3,p.x4])include(x);
+    }else if(c.type==='circular-arc-mirror'||c.type==='ideal-curved-mirror'){
+      for(const q of curvedPoints(c))include(q.x);
+    }else{
+      include(p.x);
+    }
+  }
+  return {minX,maxX};
+}
+
 export async function buildOpticalBenchNativeWitness(input,spec){
   [input,spec]=structuredClone([input,spec]);
   const {facts,stackSha256,packageIntegritySha256}=await resolveStackInput(input);
@@ -475,12 +500,18 @@ export async function buildOpticalBenchNativeWitness(input,spec){
   // Validate explicit passive detector.
   const {detectorId,detectorComponent}=validateWitnessDetector(spec.detector,usedIds);
 
-  // In return mode, a detector whose horizontal span overlaps (minEmitterX, entranceX)
+  // Compute the conservative physical horizontal x-envelope across all compiled
+  // optical components (including spherical-lens sag and curved-mirror sag) so
+  // an incident ray crossing a detector above/below a curved lens before
+  // entering it can never be misclassified as a post-stack outgoing ray.
+  const stackXEnvelope=compiledOpticalXEnvelope(opticalComponents);
+
+  // In return mode, a detector whose horizontal span overlaps (minEmitterX, stackXEnvelope.maxX)
   // can be crossed twice (forward +x and returning -x), consuming 2 depth slots.
   const minEmitterX=Math.min(...emitterSummaries.map(e=>e.x));
   const detHalfSpanX=Math.abs((spec.detector.length/2)*Math.cos(spec.detector.orientationDeg*Math.PI/180));
   const detMinX=spec.detector.x-detHalfSpanX,detMaxX=spec.detector.x+detHalfSpanX;
-  const detectorDoubleCrossRisk=!!terminalMirror&&detMaxX>minEmitterX&&detMinX<facts.elements[0].x;
+  const detectorDoubleCrossRisk=!!terminalMirror&&detMaxX>minEmitterX&&detMinX<stackXEnvelope.maxX;
   const plannedEncountersPerRay=opticalEncountersPerRay+(detectorDoubleCrossRisk?2:1);
   if(plannedEncountersPerRay>V40_MAX_RAY_DEPTH)
     fail('UNSUPPORTED_WITNESS_SCOPE','Planned v40 return traversal with an interior detector requires '+plannedEncountersPerRay+' native encounters per ray, exceeding v40 maxRayDepth = '+V40_MAX_RAY_DEPTH+'.');
@@ -513,8 +544,8 @@ export async function buildOpticalBenchNativeWitness(input,spec){
   ];
 
   const exitPlaneX=terminalMirror
-    ?facts.elements[0].x
-    :facts.elements[facts.elements.length-1].x;
+    ?stackXEnvelope.minX
+    :stackXEnvelope.maxX;
 
   return {
     format:OPTICAL_BENCH_WITNESS_PLAN,
@@ -532,6 +563,7 @@ export async function buildOpticalBenchNativeWitness(input,spec){
       partialReflection,
       mirrorModel:hasSphericalMirror?spec.mirrorModel:null,
       plannedEncountersPerRay,
+      stackXEnvelope,
       exitPlaneX,
       emitters:emitterSummaries,
       detector:{id:detectorId,...spec.detector},

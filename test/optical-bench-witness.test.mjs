@@ -590,3 +590,93 @@ test('v40 witness fail-closed negative controls: flush mirror rules, depth > 16,
     detector:{x:60,y:0,orientationDeg:90,length:40}
   }),/bench-v40/);
 });
+
+test('v40 witness R2 regression (P2-1): physical x-envelope rejects pre-lens/pre-return-sag detector hits while preserving post-envelope coverage',async()=>{
+  // 1. Astra R1 exact meniscus witness: S1(x=0, R=+20, n=1.5), S2(x=2, R=+20, n=1), ap=30 -> AABB x=[0, 8.771243...].
+  // Slanted -45 deg ray crosses detector (3, 16.5) BEFORE entering either curved lens face, then traverses both faces.
+  // Because exitPlaneX uses the full physical envelope (8.771243...), this pre-lens hit MUST NOT be certified as outgoing!
+  const meniscusStack=stackFacts([
+    {id:'S1',type:'refracting-surface',x:0,signedRadius:20,downstreamIndex:1.5},
+    {id:'S2',type:'refracting-surface',x:2,signedRadius:20,downstreamIndex:1}
+  ],{object:{x:-20,y:39.5}});
+  const preLensRep=await runOpticalBenchNativeWitness(meniscusStack,{
+    format:OPTICAL_BENCH_WITNESS_SPEC,
+    query:qConj,
+    bodies:[{id:'G1',frontSurfaceId:'S1',backSurfaceId:'S2',apertureHeight:30}],
+    partialReflection:false,
+    emitter:{mode:'single-ray',directionDeg:-45,brightness:0.2},
+    detector:{x:3,y:16.5,orientationDeg:90,length:2}
+  },{execute});
+  assert.equal(preLensRep.native.v40EndpointsVerified,true);
+  assert.ok(preLensRep.mapping.stackXEnvelope.maxX>8.77);
+  assert.equal(preLensRep.mapping.exitPlaneX,preLensRep.mapping.stackXEnvelope.maxX);
+  assert.notEqual(preLensRep.comparison.status,'observed-ray-geometry-compared');
+  assert.equal(preLensRep.comparison.status,'no-outgoing-detector-hits');
+  assert.equal(preLensRep.comparison.outgoingHitCount,0);
+  assert.equal(preLensRep.comparison.nonExitDirectionHitCount,1);
+
+  // Positive control on the exact same meniscus & ray with detector strictly past physical envelope (x=12 > 8.77):
+  const postLensRep=await runOpticalBenchNativeWitness(meniscusStack,{
+    format:OPTICAL_BENCH_WITNESS_SPEC,
+    query:qConj,
+    bodies:[{id:'G1',frontSurfaceId:'S1',backSurfaceId:'S2',apertureHeight:30}],
+    partialReflection:false,
+    emitter:{mode:'single-ray',directionDeg:-45,brightness:0.2},
+    detector:{x:12,y:7,orientationDeg:90,length:6}
+  },{execute});
+  assert.equal(postLensRep.native.v40EndpointsVerified,true);
+  assert.equal(postLensRep.comparison.status,'observed-ray-geometry-compared');
+  assert.equal(postLensRep.comparison.outgoingHitCount,1);
+
+  // 2. Reciprocal return-mode curved-sag control: concave-front meniscus (R1=-20, R2=-20, x=[0,2], ap=30) + concave mirror M1.
+  // Front lens rim bows left to x = -6.771243... < axial vertex 0; M1 vertex at x = 12, sag left to x = 5.228756...
+  const returnConcave=stackFacts([
+    {id:'S1',type:'refracting-surface',x:0,signedRadius:-20,downstreamIndex:1.5},
+    {id:'S2',type:'refracting-surface',x:2,signedRadius:-20,downstreamIndex:1},
+    {id:'M1',type:'terminal-mirror',x:12,signedRadius:'infinity'}
+  ],{object:{x:-20,y:0}});
+  // Detector inside the sag envelope at x = -2 (between stackMinX=-6.77 and frontApex=0) receives the -x return hit at x=-2,
+  // which MUST be withheld because x=-2 > stackMinX=-6.771243!
+  const insideSagRep=await runOpticalBenchNativeWitness(returnConcave,{
+    format:OPTICAL_BENCH_WITNESS_SPEC,
+    query:qConj,
+    bodies:[{id:'G1',frontSurfaceId:'S1',backSurfaceId:'S2',apertureHeight:30}],
+    aperturesById:{M1:40},
+    partialReflection:false,
+    emitter:{mode:'single-ray',directionDeg:10,brightness:0.2},
+    detector:{x:-2,y:16.5,orientationDeg:90,length:2}
+  },{execute});
+  assert.ok(insideSagRep.mapping.stackXEnvelope.minX<-6.77);
+  assert.equal(insideSagRep.mapping.exitPlaneX,insideSagRep.mapping.stackXEnvelope.minX);
+  assert.notEqual(insideSagRep.comparison.status,'observed-ray-geometry-compared');
+
+  // Valid return-mode detector strictly left of stackMinX (x = -12 < -6.77) succeeds cleanly:
+  const postReturnRep=await runOpticalBenchNativeWitness(returnConcave,{
+    format:OPTICAL_BENCH_WITNESS_SPEC,
+    query:qConj,
+    bodies:[{id:'G1',frontSurfaceId:'S1',backSurfaceId:'S2',apertureHeight:30}],
+    aperturesById:{M1:40},
+    partialReflection:false,
+    emitter:{mode:'single-ray',directionDeg:2,brightness:0.2},
+    detector:{x:-12,y:0,orientationDeg:90,length:20}
+  },{execute});
+  assert.equal(postReturnRep.native.v40EndpointsVerified,true);
+  assert.equal(postReturnRep.comparison.status,'observed-ray-geometry-compared');
+  assert.equal(postReturnRep.comparison.outgoingHitCount,1);
+  assert.ok(postReturnRep.comparison.maxPerpendicularMissMm<2e-3);
+
+  // 3. Pure concave circular-arc-mirror return envelope (vertex x=10, R=-20, ap=30 -> rim sags left to x=3.228756...):
+  const concaveMirrorStack=stackFacts([
+    {id:'M1',type:'terminal-mirror',x:10,signedRadius:-20}
+  ],{object:{x:-20,y:0}});
+  const cmPlan=await buildOpticalBenchNativeWitness(concaveMirrorStack,{
+    format:OPTICAL_BENCH_WITNESS_SPEC,
+    query:qConj,
+    aperturesById:{M1:30},
+    mirrorModel:'circular-arc-mirror',
+    emitter:{mode:'single-ray',directionDeg:2,brightness:0.2},
+    detector:{x:-10,y:0,orientationDeg:90,length:20}
+  });
+  assert.ok(Math.abs(cmPlan.mapping.stackXEnvelope.minX-(10-(225/(20+Math.sqrt(175)))))<1e-12);
+  assert.equal(cmPlan.mapping.exitPlaneX,cmPlan.mapping.stackXEnvelope.minX);
+});
