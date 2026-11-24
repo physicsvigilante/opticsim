@@ -81,7 +81,8 @@ node scripts/author-scene.mjs bench-capabilities
 - **Proportionate runtime audit (`v40EndpointsVerified`):** Reuses the shared emitted/incoming/outgoing `< 0.01 mm` endpoint, vertex, and circular/spherical/arc tangency audit plus deterministic seed verification, near-grazing dielectric incidence refusal (`|d · n| <= 1e-4`), and high-to-low near-critical refusal (`|n_i sin θ_i - n_t| <= 1e-6`). Truncation, stops, or audit faults fail closed and withhold accepted measurements.
 - **Browser starter:** Available in the **Scene** dropdown as `v40 / Unified optical bench (interior sources + glass + lens + mirror)` (`scenes/native-optical-bench.json`, `examples/native-optical-bench.json`).
 
-## 4. Known Boundaries (Current Milestone 2A)
+## 4. Known Boundaries & Upgrade Notes (Current Milestone 2A)
 
+- **Milestone 1 → 2A `ideal-lens` note:** Milestone 2A extends `v40` in place to support decentered vertical lenses (`parameters.y`). Any pre-Milestone-2A `v40` save or authoring request containing an `ideal-lens` without `y` needs explicit `"y": 0` to preserve the original centered geometry.
 - `spherical-lens` remains biconvex and exterior-source-only (signed-radius plano-convex / meniscus / biconcave lenses are scheduled for Milestone 2B).
 - No route-independent `ideal-image` prediction or continuous irradiance/flux claim is fabricated on arbitrary multi-element benches.

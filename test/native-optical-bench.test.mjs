@@ -821,4 +821,21 @@ test('Milestone 2A: full-circle (360 deg) source in v40 and reviseScene source-m
   const dirRun=await evaluateDocument(dirDoc,core,[{id:'det',kind:'detector-crossings',componentId:'D1'}]);
   assert.equal(dirRun.summary.executionPassed,true);
   assert.ok(dirRun.summary.observations.detectorsById.D1.crossings>=6);
+
+  // Legacy v37 isolation (PR #261 R1 P2-1): v37 reviseScene retains its prior single-ray -> directional
+  // transition without forcing a duplicate angleDeg edit when angleDeg was already authored.
+  const {document:v37Single}=prepareScene({
+    model:'native-general-optical-bench',lengthUnit:'mm',
+    components:[{
+      id:'S1',type:'point-source',
+      parameters:{x:-80,y:0,brightness:0.2},
+      emission:{mode:'single-ray',directionDeg:0,angleDeg:24}
+    }]
+  });
+  const v37Dir=reviseScene(v37Single,{
+    changes:[{id:'S1',section:'emission',key:'mode',value:'directional'}]
+  }).document;
+  assert.equal(v37Dir.schemaVersion,37);
+  assert.equal(v37Dir.physics.components[0].emission.mode,'directional');
+  assert.equal(v37Dir.physics.components[0].emission.angleDeg,24);
 });

@@ -1,11 +1,12 @@
 // Unified schema-v40 composable native optical bench.
 // Composes 0-2 disjoint finite dielectric bodies (supporting zero-body deletion
-// closure, index-matched neutral bodies, and exact interior-or-ambient single-ray
+// closure, index-matched neutral bodies, and exact interior-or-ambient point
 // source placement inside circles, prisms, and convex quads) with explicit
-// ambient backgroundIndex, deterministic simulation.randomSeed, 0-4 coaxial
-// ideal lenses, 0-2 curved mirrors, 0-2 plane mirrors, 0-2 opaque stops,
-// 0-2 passive detectors, and either 1-4 single-ray sources or 1 external
-// parallel beam (max 16 components, maxRayDepth <= 16).
+// ambient backgroundIndex, deterministic simulation.randomSeed, 0-4 vertical
+// ideal lenses (independent x, y including vertically separated split lenses),
+// 0-2 curved mirrors, 0-2 plane mirrors, 0-2 opaque stops, 0-2 passive
+// detectors, and either 1-4 point sources (single-ray, directional, or
+// full-circle) or 1 external parallel beam (max 16 components, maxRayDepth <= 16).
 // Pinned PhyDemo alone owns all ray intersections, refraction, TIR, reflection,
 // lens deflection, and absorption.
 import {CIRCULAR_TYPE,circularEncounter} from './circular-dielectric.js';
