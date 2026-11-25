@@ -1,7 +1,7 @@
 // Minimal problem-to-scene preparation over the SAME strict component contract.
 // These opt-in choices change simulated physics; they are not cosmetic defaults.
 // Input completeness never certifies interpretation or the question's answer.
-import {capabilities, prepareScene, AuthoringError} from './authoring.js';
+import {capabilities, opticalBenchCapabilities, prepareScene, AuthoringError} from './authoring.js';
 import {COMPONENT_TYPES} from './contract.js';
 
 const scales=Object.freeze({mm:1,cm:10,m:1000});
@@ -16,6 +16,7 @@ const unsupportedCodes=new Set(['UNSUPPORTED_COMPONENT','UNSUPPORTED_SCOPE',
 export function problemCapabilities(){
   return {
     ...capabilities(),
+    opticalBench:opticalBenchCapabilities(),
     problemAuthoring:{
       interfaceVersion:2,policyVersion:policy.version,
       command:'problem',optInFlag:'--illustrate',

@@ -32,6 +32,7 @@ import {analyzeCurvedMirrorQuery,curvedQueryCapabilities,CURVED_FACTS_FORMAT,CUR
 import {assessMethodSuitability,METHOD_SUITABILITY_FORMAT} from './method-suitability.js';
 import {analyzeReducedInverseQuery,reducedInverseCapabilities,INVERSE_FACTS_FORMAT,INVERSE_QUERY_FORMAT} from './reduced-inverse-queries.js';
 import {problemCapabilities,resolveProblemRequest} from './problem-authoring.js';
+import {opticalBenchCapabilities} from './native-optical-bench.js';
 import {analyzePlanarAngleQuery,angularCapabilities,ANGLE_QUERY_FORMAT,ANGLE_FACTS_FORMAT} from './planar-angle-queries.js';
 import {analyzeMirrorHeadingInverse,mirrorHeadingCapabilities,MIRROR_HEADING_FACTS,
   MIRROR_HEADING_QUERY,MIRROR_LINE_RELATION_FACTS,analyzePlaneMirrorAngleQuery,
@@ -192,6 +193,7 @@ export function problemWorkflowCapabilities(){
       limits:['No natural-language interpretation, image parsing or automatic method aliasing.',
         'Known method does not prove original question fidelity; wrong or unregistered kinds stay unrepresented.',
         'An authoring-scene fact family match is not sufficient for physical validity or native run completion.']},
+    opticalBench:opticalBenchCapabilities(),
     authoring:problemCapabilities(),prismAngular:prismAngleCapabilities(),lensTrain:lensTrainCapabilities(),curvedMirrors:curvedQueryCapabilities(),reducedInverse:reducedInverseCapabilities(),angular:angularCapabilities(),mirrorAngular:mirrorAngularCapabilities(),observables:observableCapabilities(),
     policy:'One request file; route by kind, never by answers or expected values. Native componentId may be omitted only when exactly one compatible authored component exists; its binding is recorded, not guessed from geometry or ray paths. Ambiguous or absent targets remain unresolved. No physical repairs or method fallback. Angular-only requests do not trigger native work unless verifyNative is true. Interpretation remains author-provided and unverified.'});
 }

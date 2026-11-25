@@ -29,20 +29,31 @@ relative geometry. Sandbox angles are counterclockwise in x-right/y-up coordinat
 the mirror stores **surface tangent**, not normal angle. Equivalent two-sided
 mirror tangent angles differ by 180 degrees. The adapter alone handles native y-down.
 
-To minimise routine authoring effort, first run `node scripts/author-scene.mjs
-capabilities` for the live supported component types, units and bounds.
-When all necessary physical facts are known, prefer an LLM-sized request
-(`lengthUnit`, `components`, optional `title`/`runPolicy`) using the
-**same supported component types and parameter names**, then execute it
-with `node scripts/author-scene.mjs evaluate <request.json> --out
-test-artifacts/llm-authoring/<case>`. This prepares the authoritative
-scene and returns native diagnostics. The generated scene is opened through
-the existing sandbox. This is not a new apparatus/facts language.
-The general `general-component-tracing` model permits 1–4 sources,
-0–4 coaxial thin lenses, 0–4 finite mirrors and 0–2 detectors under the
-same bounded geometry rules. No lens/mirror is required merely to satisfy
-an arrangement validator. Predictions for general tracing are intentionally
-unavailable unless separately justified.
+To minimise routine authoring effort for supported **native 2D ray-tracing** setups, start with the unified `v40` optical bench (`model: "native-optical-bench"`) by running:
+
+```powershell
+node scripts/author-scene.mjs bench-capabilities
+```
+
+This returns the complete slim JSON contract without needing to read historical `v1`–`v39` schemas. (`node scripts/author-scene.mjs capabilities` remains available for frozen legacy `v1`–`v39` profiles.)
+
+**When NOT to default to `v40` (no automatic model fallback or schema migration):**
+- Choose an existing **dedicated legacy profile** when you need conditional `ideal-image` on a supported single-source coaxial thin-lens, single plane-mirror, or lens-mirror return scene (`v40` traces these natively but reports `ideal-image` as `unavailable`), or when the apparatus uses legacy-only components not in `v40` (`planar-interface` / `v5` `detector-ray-provenance`, or `graded-index-rectangle` `v25`/`v33`).
+- Choose a **reduced analytical-facts** workflow (`skills/sim-ro-problem/SKILL.md` / `scripts/run-problem.mjs`) when only a supported analytical calculation is needed without native drawing geometry.
+
+`native-optical-bench` (`schemaVersion: 40`) requires explicit `backgroundIndex` (`[1, 4]`), `lengthUnit` (`mm`/`cm`/`m`), and `components`, and composes:
+- **Emitters:** `1–4` `point-source` (`single-ray`, `directional`, or `full-circle`; ambient **or strictly inside** a circle, circular cap, prism, or convex quad `>= 0.01 mm` from boundary) **OR** `1` external `parallel-beam`.
+- **Finite dielectrics (`0–4`):** `circular-dielectric`, oriented `circular-cap-dielectric` (`normalDeg` from base midpoint `(x, y)` toward curved apex; admits minor caps, hemispheres/semicylinders, and major caps / sliced spheres), `triangular-prism`, `polygon-dielectric`, and signed/flat `spherical-lens` (`+` convex outward, `−` concave inward, `null` flat/planar; exterior sources only). Supports `>= 0.01 mm` separation, `<= 1e-11 mm` coincident flat-face 2–4 layer stacks, coaxial cemented doublets/triplets, equal-index neutral bodies, and `4 → … → 0` structural deletion closure. Touching dielectric pairs require matching `partialReflection` flags.
+- **Lenses, mirrors, stops & detectors:** `0–4` decentered vertical `ideal-lens` (`x`, `y`, `focalLength`, `apertureHeight`), `0–4` `plane-mirror` (disjoint, non-collinear `|sin θ| >= 0.05` corner-touching enclosures, or flush flat silvering), `0–2` curved mirrors (`ideal-curved-mirror` / `circular-arc-mirror` with exact point/segment/beam-to-arc clearance or flush concentric curved silvering), `0–2` opaque stops (`line-blocker`, `circle-blocker`, `finite-aperture`), and `0–2` passive `ray-detector` segments (max `16` components, `maxRayDepth <= 16`, deterministic `randomSeed`).
+
+When all necessary physical facts are known, prefer an LLM-sized request (`model: "native-optical-bench"`, `lengthUnit`, `backgroundIndex`, `components`, optional `title`/`runPolicy`/`randomSeed`) using the **exact supported component types and parameter names**, then execute or iteratively explore it through the CLI:
+- `node scripts/author-scene.mjs evaluate <request.json> --out test-artifacts/llm-authoring/<case>`
+- `node scripts/author-scene.mjs revise <scene.ray-optics-2d.json> <changes.json> --out test-artifacts/llm-authoring/<case>-rev` (SHA-guarded targeted edits via `expectedSha256`)
+- `node scripts/author-scene.mjs revise-components <scene.ray-optics-2d.json> <patch.json> --out test-artifacts/llm-authoring/<case>-struct` (SHA-guarded atomic add/remove via `opticsim-component-revision-v1`)
+- `node scripts/qualified-scene.mjs create|revise|structure ...` (preserves assumption provenance and edit lineage in a portable `qualified-scene.json` bundle for browser preview)
+- `node scripts/witness-optical-bench.mjs capabilities|plan|run ...` (cross-checks supported coaxial paraxial stacks side-by-side against pinned `v40` PhyDemo rays)
+
+This is not a new apparatus/facts language; pinned PhyDemo owns all ray tracing and predictions for unconstrained multi-element tracing remain intentionally unavailable unless separately justified. Historical `v1`–`v39` models (`general-component-tracing`, single-lens/mirror analytical models, etc.) remain frozen for existing saves and dedicated analytical workflows.
 
 If essential geometry, focal length/sign, source height/emission or finite
 aperture/length is absent, ask a focused question and withhold an authoritative
