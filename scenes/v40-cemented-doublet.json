@@ -1,0 +1,81 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 40,
+  "adapterVersion": 40,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "native-optical-bench",
+    "backgroundIndex": 1,
+    "components": [
+      {
+        "id": "B1",
+        "type": "parallel-beam",
+        "parameters": {
+          "x": -90,
+          "y": 0,
+          "width": 24,
+          "directionDeg": 0,
+          "brightness": 0.2
+        }
+      },
+      {
+        "id": "L1",
+        "type": "spherical-lens",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "apertureHeight": 40,
+          "centerThickness": 12,
+          "frontRadius": 60,
+          "backRadius": 50,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "L2",
+        "type": "spherical-lens",
+        "parameters": {
+          "x": 10,
+          "y": 0,
+          "apertureHeight": 40,
+          "centerThickness": 8,
+          "frontRadius": -50,
+          "backRadius": null,
+          "insideIndex": 1.65,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 120,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 80
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "JEE Cemented doublet: coaxial crown and flint glass lenses (v40)",
+    "view": {
+      "x": 20,
+      "y": 0,
+      "zoom": 2
+    },
+    "mode": "rays",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 16,
+    "processedRayLimit": 10000,
+    "randomSeed": "opticsim-v40-seed-v1"
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 40,
+  "adapterVersion": 40,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "native-optical-bench",
+    "backgroundIndex": 1,
+    "components": [
+      {
+        "id": "W1",
+        "type": "polygon-dielectric",
+        "parameters": {
+          "x1": -55,
+          "y1": -40,
+          "x2": 55,
+          "y2": -40,
+          "x3": 55,
+          "y3": 0,
+          "x4": -55,
+          "y4": 0,
+          "insideIndex": 1.33,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": 0,
+          "y": -20,
+          "brightness": 0.2
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 90,
+          "angleDeg": 120
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 0,
+          "y": 15,
+          "orientationDeg": 0,
+          "length": 280
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "JEE Snell's window: underwater fan splitting into transmission cone and TIR (v40)",
+    "view": {
+      "x": 0,
+      "y": -10,
+      "zoom": 2
+    },
+    "mode": "rays",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 16,
+    "processedRayLimit": 10000,
+    "randomSeed": "opticsim-v40-seed-v1"
+  }
+}

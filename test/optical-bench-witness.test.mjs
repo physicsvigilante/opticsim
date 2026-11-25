@@ -628,30 +628,49 @@ test('v40 witness R2 regression (P2-1): physical x-envelope rejects pre-lens/pre
   assert.equal(postLensRep.comparison.status,'observed-ray-geometry-compared');
   assert.equal(postLensRep.comparison.outgoingHitCount,1);
 
-  // 2. Reciprocal return-mode curved-sag control: concave-front meniscus (R1=-20, R2=-20, x=[0,2], ap=30) + concave mirror M1.
-  // Front lens rim bows left to x = -6.771243... < axial vertex 0; M1 vertex at x = 12, sag left to x = 5.228756...
+  // 2. Reciprocal return-mode curved-sag control (PR #264 P3-2 cleanup): concave-front meniscus
+  // (R1=-20, R2=-20, x=[0,2], ap=30) + concave circular-arc-mirror M1 (x=45, R=-70, ap=70).
+  // Front lens rim bows left to x = -6.771243... < axial vertex 0.
+  // Ray from (-15, 0) at +34 deg passes through G1, reflects from M1, and crosses the horizontal
+  // detector at (-0.608, 16.5) travelling -x BEFORE re-entering G1's curved back arc, then completes
+  // the return pass through G1 (exact G1=4 & M1=1 encounters). Under axial-vertex exitPlaneX=0 this
+  // pre-return-lens hit would have been falsely certified; under physical stackMinX=-6.77 it is withheld!
   const returnConcave=stackFacts([
     {id:'S1',type:'refracting-surface',x:0,signedRadius:-20,downstreamIndex:1.5},
     {id:'S2',type:'refracting-surface',x:2,signedRadius:-20,downstreamIndex:1},
-    {id:'M1',type:'terminal-mirror',x:12,signedRadius:'infinity'}
-  ],{object:{x:-20,y:0}});
-  // Detector inside the sag envelope at x = -2 (between stackMinX=-6.77 and frontApex=0) receives the -x return hit at x=-2,
-  // which MUST be withheld because x=-2 > stackMinX=-6.771243!
+    {id:'M1',type:'terminal-mirror',x:45,signedRadius:-70}
+  ],{object:{x:-15,y:0}});
   const insideSagRep=await runOpticalBenchNativeWitness(returnConcave,{
     format:OPTICAL_BENCH_WITNESS_SPEC,
     query:qConj,
     bodies:[{id:'G1',frontSurfaceId:'S1',backSurfaceId:'S2',apertureHeight:30}],
-    aperturesById:{M1:40},
+    aperturesById:{M1:70},
+    mirrorModel:'circular-arc-mirror',
     partialReflection:false,
-    emitter:{mode:'single-ray',directionDeg:10,brightness:0.2},
-    detector:{x:-2,y:16.5,orientationDeg:90,length:2}
+    emitter:{mode:'single-ray',directionDeg:34,brightness:0.2},
+    detector:{x:-3,y:16.5,orientationDeg:0,length:6}
   },{execute});
+  assert.equal(insideSagRep.native.v40EndpointsVerified,true);
   assert.ok(insideSagRep.mapping.stackXEnvelope.minX<-6.77);
   assert.equal(insideSagRep.mapping.exitPlaneX,insideSagRep.mapping.stackXEnvelope.minX);
-  assert.notEqual(insideSagRep.comparison.status,'observed-ray-geometry-compared');
+  assert.equal(insideSagRep.comparison.stackEncounters.byElementId.G1.matches,true);
+  assert.equal(insideSagRep.comparison.stackEncounters.byElementId.M1.matches,true);
+  const insideHits=insideSagRep.native.observables.find(o=>o.id==='witness-detector-hits')?.value;
+  assert.equal(insideHits.length,1);
+  assert.ok(insideHits[0].incomingUnit.x<0,'Intercepted hit must be on the returning -x pass');
+  assert.ok(insideHits[0].pointMm.x<0&&insideHits[0].pointMm.x>insideSagRep.mapping.stackXEnvelope.minX,
+    'Intercepted return hit must lie strictly between physical stackMinX and axial vertex x=0');
+  assert.equal(insideSagRep.comparison.status,'no-outgoing-detector-hits');
+  assert.equal(insideSagRep.comparison.outgoingHitCount,0);
+  assert.equal(insideSagRep.comparison.nonExitDirectionHitCount,1);
 
   // Valid return-mode detector strictly left of stackMinX (x = -12 < -6.77) succeeds cleanly:
-  const postReturnRep=await runOpticalBenchNativeWitness(returnConcave,{
+  const returnConcaveAxial=stackFacts([
+    {id:'S1',type:'refracting-surface',x:0,signedRadius:-20,downstreamIndex:1.5},
+    {id:'S2',type:'refracting-surface',x:2,signedRadius:-20,downstreamIndex:1},
+    {id:'M1',type:'terminal-mirror',x:12,signedRadius:'infinity'}
+  ],{object:{x:-20,y:0}});
+  const postReturnRep=await runOpticalBenchNativeWitness(returnConcaveAxial,{
     format:OPTICAL_BENCH_WITNESS_SPEC,
     query:qConj,
     bodies:[{id:'G1',frontSurfaceId:'S1',backSurfaceId:'S2',apertureHeight:30}],
