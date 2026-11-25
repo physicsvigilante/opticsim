@@ -68,17 +68,83 @@ test('v40 LLM front door: capabilities and repo skills expose v40 native-optical
   assert.match(imageSkill,/bench-capabilities/);
   assert.match(imageSkill,/native-optical-bench/);
   assert.match(imageSkill,/revise-components/);
+  assert.match(imageSkill,/ideal-image/);
+  assert.match(imageSkill,/planar-interface/);
+  assert.match(imageSkill,/graded-index-rectangle/);
 
   const problemSkill=readFileSync(resolve(root,'skills/sim-ro-problem/SKILL.md'),'utf8');
   assert.match(problemSkill,/native-optical-bench/);
   assert.match(problemSkill,/bench-capabilities/);
   assert.match(problemSkill,/witness-optical-bench\.mjs/);
+  assert.match(problemSkill,/ideal-image/);
+  assert.match(problemSkill,/planar-interface/);
+  assert.match(problemSkill,/graded-index-rectangle/);
+  assert.match(problemSkill,/No automatic model fallback/i);
 
   const wfDoc=readFileSync(resolve(root,'docs/UNIFIED-PROBLEM-WORKFLOW.md'),'utf8');
   assert.match(wfDoc,/native-optical-bench/);
+  assert.match(wfDoc,/ideal-image/);
+  assert.match(wfDoc,/planar-interface/);
+  assert.match(wfDoc,/graded-index-rectangle/);
 });
 
-test('v40 LLM front door end-to-end: run-problem.mjs solves JEE A28 curved-silvered hemisphere with internal bubble + sole-target binding + exact Snell oracle',async()=>{
+test('v40 LLM front door control (P2-1): v40 single-mirror traces natively with ideal-image unavailable, while historical v4 mirror yields conditional ideal-image (no automatic fallback)',async()=>{
+  const runInline=async(problem,tag)=>{
+    const outRel='test-artifacts/llm-authoring/v40-front-door-mirror-'+tag+'-'+Date.now()+'-'+process.pid;
+    const outAbs=resolve(root,outRel);
+    try{
+      return await runProblemEvidence({
+        inputBytes:Buffer.from(JSON.stringify(problem,null,2),'utf8'),
+        outputPath:outRel,
+        execute:async(scene,reqs)=>{
+          const {evaluateDocument}=await import('../scripts/author-scene.mjs');
+          return evaluateDocument(scene,core,reqs);
+        }
+      });
+    }finally{
+      rmSync(outAbs,{recursive:true,force:true});
+    }
+  };
+  const sharedComponents=[
+    {id:'S1',type:'point-source',parameters:{x:-20,y:0,brightness:0.2},emission:{mode:'directional',directionDeg:0,angleDeg:30}},
+    {id:'M1',type:'plane-mirror',parameters:{x:0,y:0,orientationDeg:90,length:40}}
+  ];
+  const reqs=[
+    {id:'refl',kind:'mirror-reflections',componentId:'M1'},
+    {id:'img',kind:'ideal-image',componentId:'S1'}
+  ];
+
+  // 1. v40 native-optical-bench: native trace succeeds, ideal-image stays unavailable (no silent downgrade)
+  const v40Res=await runInline({
+    format:'opticsim-problem-v1',
+    physical:{title:'v40 mirror trace control',model:'native-optical-bench',lengthUnit:'mm',backgroundIndex:1,components:sharedComponents},
+    requests:reqs
+  },'v40');
+  assert.equal(v40Res.exitCode,2);
+  assert.equal(v40Res.report.status,'partially-available');
+  assert.equal(v40Res.report.native.executionPassed,true);
+  const v40ById=Object.fromEntries(v40Res.report.results.map(r=>[r.id,r]));
+  assert.ok(v40ById.refl.value>0);
+  assert.equal(v40ById.img.status,'unavailable');
+
+  // 2. Historical v4 profile: same mirror traces natively AND yields conditional plane-mirror virtual image at (+20, 0)
+  const v4Res=await runInline({
+    format:'opticsim-problem-v1',
+    physical:{title:'v4 mirror conditional-image control',lengthUnit:'mm',components:sharedComponents},
+    requests:reqs
+  },'v4');
+  assert.equal(v4Res.exitCode,0);
+  assert.equal(v4Res.report.status,'all-requested-quantities-available');
+  assert.equal(v4Res.report.native.executionPassed,true);
+  const v4ById=Object.fromEntries(v4Res.report.results.map(r=>[r.id,r]));
+  assert.ok(v4ById.refl.value>0);
+  assert.equal(v4ById.img.status,'conditional');
+  assert.equal(v4ById.img.analysisModel,'plane-mirror-geometric');
+  assert.ok(Math.abs(v4ById.img.value.x-20)<1e-9);
+  assert.ok(Math.abs(v4ById.img.value.y-0)<1e-9);
+});
+
+test('v40 LLM front door developmental control: run-problem.mjs executes A28-inspired single-ray point-object approximation + sole-target binding + exact Snell oracle',async()=>{
   const R=20,nG=1.5,rad75=75*Math.PI/180,d0={x:Math.cos(rad75),y:Math.sin(rad75)};
   const pArc=rayCircleExit({x:0,y:8},d0,{x:0,y:0},R);
   const d1=reflect2D(d0,{x:-pArc.x/R,y:-pArc.y/R});
@@ -89,7 +155,7 @@ test('v40 LLM front door end-to-end: run-problem.mjs solves JEE A28 curved-silve
   const problem={
     format:'opticsim-problem-v1',
     physical:{
-      title:'JEE A28 curved-silvered hemisphere via run-problem',
+      title:'A28-inspired curved-silvered hemisphere single-ray developmental control',
       model:'native-optical-bench',
       lengthUnit:'mm',
       backgroundIndex:1,
@@ -107,9 +173,9 @@ test('v40 LLM front door end-to-end: run-problem.mjs solves JEE A28 curved-silve
       {id:'hits',kind:'detector-hit-events',componentId:'D1'}
     ],
     interpretation:{
-      requestedResult:'Verify internal bubble reflection off curved-silvered hemisphere dome and exit through flat base onto D1.',
-      stated:['Glass hemisphere R=20 mm, n=1.5, silvered curved dome, internal emitter at (0,8) at 75 deg.'],
-      assumptions:['Explicit Fresnel-off approximation (partialReflection=false).'],
+      requestedResult:'Atlas-inspired developmental control: trace one selected ray from an embedded point emitter reflecting off the curved-silvered dome and refracting out the flat base onto D1 (not an apparent-image or bubble-boundary solution).',
+      stated:['Glass hemisphere R=20 mm, n=1.5, silvered curved dome, embedded point-emitter approximation at (0,8) launched at 75 deg.'],
+      assumptions:['Explicit Fresnel-off approximation (partialReflection=false); single-ray point-object proxy only.'],
       unknowns:[]
     }
   };
@@ -148,7 +214,7 @@ test('v40 LLM front door end-to-end: run-problem.mjs solves JEE A28 curved-silve
   }
 });
 
-test('v40 LLM front door end-to-end: author-scene.mjs evaluate -> revise -> revise-components (with SHA guard & negative controls) on JEE A04 4-wall mirror box',()=>{
+test('v40 LLM front door developmental control: author-scene.mjs evaluate -> revise -> revise-components (with SHA guard & negative controls) on A04-inspired 4-wall mirror box',()=>{
   const tmp=mkdtempSync(join(tmpdir(),'opticsim-v40-cli-'));
   const tag=Date.now()+'-'+process.pid;
   const outEval='test-artifacts/llm-authoring/v40-cli-eval-'+tag;
@@ -160,7 +226,7 @@ test('v40 LLM front door end-to-end: author-scene.mjs evaluate -> revise -> revi
   try{
     const reqPath=join(tmp,'box-req.json');
     writeFileSync(reqPath,JSON.stringify({
-      title:'JEE A04 4-wall mirror box',
+      title:'A04-inspired 4-wall mirror-box developmental control',
       model:'native-optical-bench',
       lengthUnit:'mm',
       backgroundIndex:1,
@@ -262,7 +328,7 @@ test('v40 LLM front door end-to-end: author-scene.mjs evaluate -> revise -> revi
   }
 });
 
-test('v40 LLM front door end-to-end: qualified-scene.mjs create -> revise -> structure preserves lineage on layered mirror tank, and check-scene.mjs validates parallel-beam v40 hemisphere',()=>{
+test('v40 LLM front door developmental control: qualified-scene.mjs create -> revise -> structure on layered mirror tank, and check-scene.mjs parallel-beam positive & mis-keyed negative controls',()=>{
   const tmp=mkdtempSync(join(tmpdir(),'opticsim-v40-qual-'));
   const tag=Date.now()+'-'+process.pid;
   const outCreate='test-artifacts/llm-authoring/v40-qual-create-'+tag;
@@ -327,9 +393,10 @@ test('v40 LLM front door end-to-end: qualified-scene.mjs create -> revise -> str
     assert.equal(stScene.simulation.randomSeed,'tank-qual-seed');
     assert.equal(stScene.physics.backgroundIndex,1);
 
-    // 4. check-scene.mjs checkCandidate on JEE A14 parallel-beam glass hemisphere verifies parallel-beam sourceEmissions === 'complete'
+    // 4. check-scene.mjs checkCandidate on A14-inspired parallel-beam hemisphere developmental control:
+    // positive control + discriminating negative control (P3-1: mis-keyed beam ID with identical positive sum)
     const {document:a14Doc}=prepareScene({
-      title:'JEE A14 parallel-beam hemisphere check-scene test',
+      title:'A14-inspired parallel-beam hemisphere developmental control',
       model:'native-optical-bench',
       lengthUnit:'mm',
       backgroundIndex:1,
@@ -339,7 +406,8 @@ test('v40 LLM front door end-to-end: qualified-scene.mjs create -> revise -> str
         {id:'D1',type:'ray-detector',parameters:{x:0,y:-10,orientationDeg:0,length:40}}
       ]
     });
-    const checked=checkCandidate(serializeSave(a14Doc),core);
+    const a14Text=serializeSave(a14Doc);
+    const checked=checkCandidate(a14Text,core);
     assert.equal(checked.validation.valid,true);
     assert.equal(checked.native.completed,true);
     assert.equal(checked.native.sourceEmissions,'complete');
@@ -347,7 +415,26 @@ test('v40 LLM front door end-to-end: qualified-scene.mjs create -> revise -> str
     assert.equal(checked.roundTrip.sandbox,true);
     assert.equal(checked.roundTrip.native,true);
     assert.equal(checked.executionPassed,true);
-    assert.equal(checked.documentSha256,sha256(serializeSave(a14Doc)));
+    assert.equal(checked.documentSha256,sha256(a14Text));
+
+    // Discriminating negative control (P3-1): move B1's actual emitted count onto wrongBeam while
+    // keeping total emitted, round-trip, and v40EndpointsVerified intact. The pre-fix checker
+    // (which checked only point-source IDs) falsely passed this; the fixed checker must reject it.
+    const miskeyedCore={
+      ...core,
+      diagnostics(...args){
+        const d=core.diagnostics(...args);
+        assert.ok(d.emissionsById.B1.emitted>0);
+        return {...d,emissionsById:{wrongBeam:{emitted:d.emissionsById.B1.emitted}}};
+      }
+    };
+    const miskeyed=checkCandidate(a14Text,miskeyedCore);
+    assert.equal(miskeyed.native.completed,true);
+    assert.equal(miskeyed.native.diagnostics.v40EndpointsVerified,true);
+    assert.equal(miskeyed.native.sourceEmissions,'unavailable');
+    assert.equal(miskeyed.roundTrip.sandbox,true);
+    assert.equal(miskeyed.roundTrip.native,true);
+    assert.equal(miskeyed.executionPassed,false);
   }finally{
     rmSync(tmp,{recursive:true,force:true});
     for(const rel of [outCreate,outRev,outStruct])

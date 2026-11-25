@@ -29,13 +29,17 @@ relative geometry. Sandbox angles are counterclockwise in x-right/y-up coordinat
 the mirror stores **surface tangent**, not normal angle. Equivalent two-sided
 mirror tangent angles differ by 180 degrees. The adapter alone handles native y-down.
 
-To minimise routine authoring effort, **start with the unified `v40` optical bench (`model: "native-optical-bench"`)** for new 2D JEE/teaching setups by running:
+To minimise routine authoring effort for supported **native 2D ray-tracing** setups, start with the unified `v40` optical bench (`model: "native-optical-bench"`) by running:
 
 ```powershell
 node scripts/author-scene.mjs bench-capabilities
 ```
 
 This returns the complete slim JSON contract without needing to read historical `v1`–`v39` schemas. (`node scripts/author-scene.mjs capabilities` remains available for frozen legacy `v1`–`v39` profiles.)
+
+**When NOT to default to `v40` (no automatic model fallback or schema migration):**
+- Choose an existing **dedicated legacy profile** when you need conditional `ideal-image` on a supported single-source coaxial thin-lens, single plane-mirror, or lens-mirror return scene (`v40` traces these natively but reports `ideal-image` as `unavailable`), or when the apparatus uses legacy-only components not in `v40` (`planar-interface` / `v5` `detector-ray-provenance`, or `graded-index-rectangle` `v25`/`v33`).
+- Choose a **reduced analytical-facts** workflow (`skills/sim-ro-problem/SKILL.md` / `scripts/run-problem.mjs`) when only a supported analytical calculation is needed without native drawing geometry.
 
 `native-optical-bench` (`schemaVersion: 40`) requires explicit `backgroundIndex` (`[1, 4]`), `lengthUnit` (`mm`/`cm`/`m`), and `components`, and composes:
 - **Emitters:** `1–4` `point-source` (`single-ray`, `directional`, or `full-circle`; ambient **or strictly inside** a circle, circular cap, prism, or convex quad `>= 0.01 mm` from boundary) **OR** `1` external `parallel-beam`.
