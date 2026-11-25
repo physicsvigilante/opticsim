@@ -8,7 +8,7 @@ import {SPHERICAL_LENS_TYPE,SPHERICAL_FACES,sphericalLensEncounter} from './sphe
 import {CIRCULAR_TYPE,circularEncounter} from './circular-dielectric.js';
 import {circleBeamNativeEncounter} from './native-circle-beam.js';
 import {CAP_TYPE,capEncounter} from './finite-circular-cap.js';
-import {OPTICAL_BENCH_V40_VERSION,resolveMergedDielectricIndices} from './native-bench-common.js';
+import {BENCH_CLEARANCE_MM,OPTICAL_BENCH_V40_VERSION,resolveMergedDielectricIndices} from './native-bench-common.js';
 import {SEMICIRCULAR_TYPE,semicircularEncounter,semicircularFaces} from './semicircular-dielectric.js';
 export const PLANAR_TYPE='planar-interface';
 export const PLANAR_PARAMETERS=Object.freeze(['x','y','normalDeg','negativeIndex','positiveIndex','partialReflection']);
@@ -80,7 +80,7 @@ export function observeInterfaceSet(doc,scene,idMap,{parentage=null,finiteDiagno
       const encounter=prism?prismEncounter(component,args[2],incoming,
         v22Prism?PRISM_BEAM_VERTEX_CLEARANCE_MM:undefined):polygon?polygonEncounter(component,args[2],incoming):
         spherical?sphericalLensEncounter(component,args[2],incoming):
-        cap?capEncounter(component,args[2],incoming):semicircle?semicircularEncounter(component,args[2],incoming):circular?
+        cap?capEncounter(component,args[2],incoming,doc.schemaVersion===OPTICAL_BENCH_V40_VERSION?BENCH_CLEARANCE_MM:undefined):semicircle?semicircularEncounter(component,args[2],incoming):circular?
           (doc.schemaVersion===23?circleBeamNativeEncounter(component,args[2],incoming):
             circularEncounter(component,args[2],incoming)):null;
       const v40Merged=v40NativeToComp&&encounter

@@ -4,31 +4,71 @@ export const CAP_TYPE='circular-cap-dielectric';
 export const CAP_MODEL='native-inside-cap-tracing';
 export const CAP_VERSION=32;
 export const CAP_PARAMETERS=Object.freeze(['x','y','radius','capHeight','insideIndex','outsideIndex','partialReflection']);
+export const CAP_V40_PARAMETERS=Object.freeze(['x','y','radius','capHeight','normalDeg','insideIndex','outsideIndex','partialReflection']);
 const near=(a,b,tolerance=1e-6)=>Number.isFinite(a)&&Math.abs(a-b)<=tolerance;
 const world=p=>[p.x,p.y].every(v=>Number.isFinite(v)&&Math.abs(v)<=10000);
+export function capFrame(p){
+  const deg=p.normalDeg??0;
+  if(deg===0)return {u:{x:1,y:0},t:{x:0,y:1}};
+  if(deg===90)return {u:{x:0,y:1},t:{x:-1,y:0}};
+  if(deg===-90)return {u:{x:0,y:-1},t:{x:1,y:0}};
+  if(Math.abs(deg)===180)return {u:{x:-1,y:0},t:{x:0,y:-1}};
+  const a=deg*Math.PI/180,c=Math.cos(a),s=Math.sin(a);
+  return {u:{x:c,y:s},t:{x:-s,y:c}};
+}
+export function capGeometry(p){
+  const {u,t}=capFrame(p);
+  const halfChord=Math.sqrt(p.capHeight*(2*p.radius-p.capHeight));
+  const base={x:p.x,y:p.y};
+  const center={x:p.x+(p.capHeight-p.radius)*u.x,y:p.y+(p.capHeight-p.radius)*u.y};
+  const p1={x:p.x+halfChord*t.x,y:p.y+halfChord*t.y};
+  const apex={x:p.x+p.capHeight*u.x,y:p.y+p.capHeight*u.y};
+  const p2={x:p.x-halfChord*t.x,y:p.y-halfChord*t.y};
+  const flatNormal={x:-u.x,y:-u.y};
+  const capHalfAngle=Math.acos(Math.max(-1,Math.min(1,(p.radius-p.capHeight)/p.radius)));
+  return {base,u,t,center,radius:p.radius,capHeight:p.capHeight,halfChord,p1,apex,p2,flatNormal,capHalfAngle};
+}
+export function capPathPoints(p){
+  const g=capGeometry(p);
+  return [g.p1,g.apex,g.p2];
+}
 export function capExtents(p){
-  const half=Math.sqrt(p.capHeight*(2*p.radius-p.capHeight));
-  return [{x:p.x,y:p.y+half},{x:p.x+p.capHeight,y:p.y},{x:p.x,y:p.y-half}];
+  const g=capGeometry(p);
+  const pts=[g.p1,g.apex,g.p2];
+  // Include cardinal circle extrema lying strictly on the curved arc (important for major caps h > R and tilted caps).
+  const cardinals=[
+    {x:g.center.x+g.radius,y:g.center.y},{x:g.center.x-g.radius,y:g.center.y},
+    {x:g.center.x,y:g.center.y+g.radius},{x:g.center.x,y:g.center.y-g.radius}
+  ];
+  for(const q of cardinals){
+    if((q.x-g.base.x)*g.u.x+(q.y-g.base.y)*g.u.y>1e-12&&
+       pts.every(existing=>Math.hypot(existing.x-q.x,existing.y-q.y)>1e-9))pts.push(q);
+  }
+  return pts;
 }
 export function compileCircularCap(c){
-  const path=capExtents(c.parameters).map(({x,y},i)=>({x,y:-y,arc:i===1}));
+  const path=capPathPoints(c.parameters).map(({x,y},i)=>({x,y:-y,arc:i===1}));
   const p=c.parameters;
   return {type:'Glass',path,notDone:false,refIndex:p.insideIndex/p.outsideIndex,partialReflect:p.partialReflection};
 }
-export function capEncounter(component,nativePoint,incoming){
-  const p=component.parameters,point={x:nativePoint?.x,y:-nativePoint?.y};
-  const [top,,bottom]=capExtents(p);
-  const centre=p.x+p.capHeight-p.radius;
-  const dx=point.x-centre,dy=point.y-p.y,radial=Math.hypot(dx,dy);
-  const seam=Math.min(Math.hypot(point.x-p.x,point.y-top.y),Math.hypot(point.x-p.x,point.y-bottom.y));
-  let faceId=null,normal={x:NaN,y:NaN};
-  if(seam>.1&&near(point.x,p.x,1e-5)&&point.y>bottom.y&&point.y<top.y){
-    faceId='face-flat';normal={x:-1,y:0};
-  }else if(seam>.1&&point.x>p.x&&near(radial,p.radius,1e-5)){
-    faceId='face-arc';normal={x:dx/radial,y:dy/radial};
+export function capEncounter(component,nativePoint,incoming,seamClearance=0.1){
+  const p=component.parameters,g=capGeometry(p),point={x:nativePoint?.x,y:-nativePoint?.y};
+  const rx=point.x-g.base.x,ry=point.y-g.base.y;
+  const axial=rx*g.u.x+ry*g.u.y,trans=rx*g.t.x+ry*g.t.y;
+  const dx=point.x-g.center.x,dy=point.y-g.center.y,radial=Math.hypot(dx,dy);
+  const seam=Math.min(Math.hypot(point.x-g.p1.x,point.y-g.p1.y),Math.hypot(point.x-g.p2.x,point.y-g.p2.y));
+  const candidates=[];
+  if([axial,trans,radial,seam].every(Number.isFinite)&&seam>seamClearance){
+    if(near(axial,0,1e-5)&&Math.abs(trans)<g.halfChord)
+      candidates.push({faceId:'face-flat',normal:g.flatNormal});
+    if(axial>0&&radial>0&&near(radial,g.radius,1e-5))
+      candidates.push({faceId:'face-arc',normal:{x:dx/radial,y:dy/radial}});
   }
+  if(candidates.length!==1)
+    return {point,normal:{x:NaN,y:NaN},faceId:null,invalid:true,from:'unverified',incidentIndex:null,destinationIndex:null};
+  const {faceId,normal}=candidates[0];
   const projection=incoming?.x*normal.x+incoming?.y*normal.y;
-  if(!faceId||!Number.isFinite(projection)||Math.abs(projection)<1e-10)
+  if(!Number.isFinite(projection)||Math.abs(projection)<1e-10)
     return {point,normal,faceId:null,invalid:true,from:'unverified',incidentIndex:null,destinationIndex:null};
   const leaving=projection>0;
   return {point,normal,faceId,invalid:false,from:leaving?'inside':'outside',

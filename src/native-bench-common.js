@@ -7,6 +7,7 @@ import {CIRCULAR_TYPE,circularEncounter,circularExtents} from './circular-dielec
 import {segmentsIntersect} from './composition-validation.js';
 import {curvedFrame,curvedPoints,isCurved} from './curved-mirrors.js';
 import {FINITE_APERTURE_TYPE,apertureGeometry,separatedSegmentDistance} from './finite-aperture.js';
+import {CAP_TYPE,capEncounter,capExtents,capGeometry} from './finite-circular-cap.js';
 import {finiteGlassFaces,segmentOutsideFiniteGlass} from './finite-glass-geometry.js';
 import {CIRCLE_BLOCKER_TYPE} from './opaque-circle-blocker.js';
 import {
@@ -26,6 +27,9 @@ export const BENCH_NATIVE_STATE_LIMIT=10000;
 export const OPTICAL_BENCH_V40_VERSION=40;
 export const DIELECTRIC_BODY_TYPES=Object.freeze([
   PRISM_TYPE,POLYGON_TYPE,CIRCULAR_TYPE,SPHERICAL_LENS_TYPE
+]);
+export const V40_DIELECTRIC_BODY_TYPES=Object.freeze([
+  ...DIELECTRIC_BODY_TYPES,CAP_TYPE
 ]);
 
 export const delta=(a,b)=>({x:b.x-a.x,y:b.y-a.y});
@@ -85,6 +89,22 @@ export function buildDielectricBody(c,cPath,fail,{allowSignedSpherical=false}={}
     const center={x:p.x,y:p.y};
     return {kind:'circle',id:c.id,type:c.type,insideIndex:p.insideIndex,outsideIndex:p.outsideIndex,center,radius:p.radius,flatFaces:[],corners:[],tangentCircles:[{center,radius:p.radius}]};
   }
+  if(c.type===CAP_TYPE){
+    if(!(p.radius>=2&&p.capHeight>=1&&2*p.radius-p.capHeight>=1))
+      fail(cPath,'Circular cap requires radius >= 2 mm and capHeight in [1, 2*radius - 1] mm.','UNSUPPORTED_SCOPE');
+    const g=capGeometry(p),extents=capExtents(p);
+    if(!(Number.isFinite(g.halfChord)&&g.halfChord>=1)||extents.some(q=>!allowedCoord(q.x,q.y)))
+      fail(cPath,'Circular cap requires chord length >= 2 mm and must fit completely within +/-10000 mm.','UNSUPPORTED_SCOPE');
+    return {
+      kind:'cap',id:c.id,type:c.type,insideIndex:p.insideIndex,outsideIndex:p.outsideIndex,
+      base:g.base,u:g.u,t:g.t,center:g.center,radius:g.radius,capHeight:g.capHeight,
+      halfChord:g.halfChord,p1:g.p1,p2:g.p2,apex:g.apex,capHalfAngle:g.capHalfAngle,
+      vertices:extents,
+      flatFaces:[{a:g.p1,b:g.p2,normal:g.flatNormal,length:2*g.halfChord}],
+      corners:[g.p1,g.p2],
+      tangentCircles:[{center:g.center,radius:g.radius}]
+    };
+  }
   // SPHERICAL_LENS_TYPE: conservative convex AABB contains the complete physical lens
   // (biconvex, plano-convex, plano-concave, meniscus, biconcave, or flat-flat in v40);
   // curved generating circles are retained for tangency admission and runtime qualification.
@@ -128,8 +148,67 @@ export function buildDielectricBody(c,cPath,fail,{allowSignedSpherical=false}={}
   };
 }
 
+export function pointCapArcDistance(pt,cap){
+  const dx=pt.x-cap.center.x,dy=pt.y-cap.center.y,d=Math.hypot(dx,dy);
+  if(d>0){
+    const qx=cap.center.x+cap.radius*dx/d,qy=cap.center.y+cap.radius*dy/d;
+    if((qx-cap.base.x)*cap.u.x+(qy-cap.base.y)*cap.u.y>=0)return Math.abs(d-cap.radius);
+  }
+  return Math.min(Math.hypot(pt.x-cap.p1.x,pt.y-cap.p1.y),Math.hypot(pt.x-cap.p2.x,pt.y-cap.p2.y));
+}
+
+function circularArcMirrorGeom(arcMirror){
+  const p=arcMirror.parameters,{n}=curvedFrame(p),pts=curvedPoints(arcMirror);
+  const center={x:p.x+p.radius*n.x,y:p.y+p.radius*n.y},radius=Math.abs(p.radius);
+  const sgn=Math.sign(p.radius),uVertex={x:-sgn*n.x,y:-sgn*n.y};
+  const halfAngle=Math.asin(Math.min(1,p.apertureHeight/(2*radius)));
+  return {center,radius,uVertex,halfAngle,p1:pts[0],p2:pts[1]};
+}
+
+export function pointCircularArcMirrorDistance(pt,arcMirror){
+  const g=circularArcMirrorGeom(arcMirror);
+  const dx=pt.x-g.center.x,dy=pt.y-g.center.y,d=Math.hypot(dx,dy);
+  if(d>0){
+    const uPt={x:dx/d,y:dy/d};
+    const angle=Math.atan2(Math.abs(cross(g.uVertex,uPt)),dot(g.uVertex,uPt));
+    if(angle<=g.halfAngle)return Math.abs(d-g.radius);
+  }
+  return Math.min(Math.hypot(pt.x-g.p1.x,pt.y-g.p1.y),Math.hypot(pt.x-g.p2.x,pt.y-g.p2.y));
+}
+
+export function segmentOutsideCircularArcMirror(seg,arcMirror,clearance){
+  if(pointCircularArcMirrorDistance(seg[0],arcMirror)<clearance||
+     pointCircularArcMirrorDistance(seg[1],arcMirror)<clearance)return false;
+  const g=circularArcMirrorGeom(arcMirror);
+  const [a,b]=seg,v=delta(a,b),lenSq=dot(v,v);
+  if(pointSegmentDistance(g.p1,seg)<clearance||pointSegmentDistance(g.p2,seg)<clearance)return false;
+  const sFoot=lenSq>0?Math.max(0,Math.min(1,dot(delta(a,g.center),v)/lenSq)):0;
+  const pFoot={x:a.x+sFoot*v.x,y:a.y+sFoot*v.y};
+  const dFoot=Math.hypot(pFoot.x-g.center.x,pFoot.y-g.center.y);
+  if(dFoot>=g.radius+clearance)return true;
+  const onArc=q=>{
+    const dx=q.x-g.center.x,dy=q.y-g.center.y,r=Math.hypot(dx,dy);
+    if(!(r>0))return false;
+    return Math.atan2(Math.abs(cross(g.uVertex,{x:dx/r,y:dy/r})),dot(g.uVertex,{x:dx/r,y:dy/r}))<=g.halfAngle;
+  };
+  if(dFoot<=g.radius){
+    if(lenSq>0){
+      const w=delta(g.center,a),b2=dot(w,v),c0=dot(w,w)-g.radius*g.radius;
+      const disc=Math.max(0,b2*b2-lenSq*c0),root=Math.sqrt(disc);
+      for(const s of [(-b2-root)/lenSq,(-b2+root)/lenSq]){
+        if(s>=0&&s<=1&&onArc({x:a.x+s*v.x,y:a.y+s*v.y}))return false;
+      }
+    }
+    // Check if the foot on the interior side of the circle is within clearance of the arc itself.
+    if(dFoot>g.radius-clearance&&onArc(pFoot))return false;
+    return true;
+  }
+  return !onArc(pFoot);
+}
+
 // Exact point membership relative to an admitted finite dielectric body.
 // - circular-dielectric: exact radial distance vs radius +/- clearance
+// - circular-cap-dielectric: exact disk intersection with flat-base half-plane
 // - triangular-prism / polygon-dielectric: exact signed half-space distance inside,
 //   exact Euclidean edge distance outside
 // - spherical-lens: exterior-only in v40 (conservative bounding-box clearance)
@@ -138,6 +217,14 @@ export function pointBodyMembership(pt,body,clearance=BENCH_CLEARANCE_MM){
     const d=Math.hypot(pt.x-body.center.x,pt.y-body.center.y);
     if(Math.abs(d-body.radius)<clearance)return 'boundary';
     return d<body.radius?'inside':'outside';
+  }
+  if(body.kind==='cap'){
+    const axial=dot(delta(body.base,pt),body.u);
+    const d=Math.hypot(pt.x-body.center.x,pt.y-body.center.y);
+    if(d<=body.radius-clearance&&axial>=clearance)return 'inside';
+    if(d<=body.radius&&axial>=0)return 'boundary';
+    const dist=Math.min(pointSegmentDistance(pt,[body.p1,body.p2]),pointCapArcDistance(pt,body));
+    return dist<clearance?'boundary':'outside';
   }
   if(body.type===SPHERICAL_LENS_TYPE)
     return pointOutsideBody(pt,body,clearance)?'outside':'unsupported-interior';
@@ -174,22 +261,55 @@ export function resolveSourceMembership(pt,bodies,backgroundIndex,clearance=BENC
 export function pointOutsideBody(pt,body,clearance){
   if(body.kind==='circle')
     return Math.hypot(pt.x-body.center.x,pt.y-body.center.y)>=body.radius+clearance;
+  if(body.kind==='cap')
+    return pointBodyMembership(pt,body,clearance)==='outside';
   return body.faces.some(f=>dot(delta(f.a,pt),f.normal)>=clearance);
 }
 
 export function segmentOutsideBody(seg,body,clearance){
   if(body.kind==='circle')
     return pointSegmentDistance(body.center,seg)>=body.radius+clearance;
+  if(body.kind==='cap')
+    return segmentOutsideCapExact(seg,body,clearance);
   return segmentOutsideFiniteGlass(body.faces,seg,clearance);
 }
 
+function segmentOutsideCapExact(seg,cap,clearance){
+  const [a,b]=seg;
+  if(pointBodyMembership(a,cap,clearance)!=='outside'||
+     pointBodyMembership(b,cap,clearance)!=='outside')return false;
+  const chord=[cap.p1,cap.p2];
+  if(segmentsIntersect(seg,chord)||separatedSegmentDistance(seg,chord)<clearance)return false;
+  const v=delta(a,b),lenSq=dot(v,v);
+  const sFoot=lenSq>0?Math.max(0,Math.min(1,dot(delta(a,cap.center),v)/lenSq)):0;
+  const pFoot={x:a.x+sFoot*v.x,y:a.y+sFoot*v.y};
+  const dFoot=Math.hypot(pFoot.x-cap.center.x,pFoot.y-cap.center.y);
+  if(dFoot>=cap.radius+clearance)return true;
+  if(dFoot<=cap.radius){
+    if(dot(delta(cap.base,pFoot),cap.u)>=0)return false;
+    if(lenSq>0){
+      const w=delta(cap.center,a),b2=dot(w,v),c0=dot(w,w)-cap.radius*cap.radius;
+      const disc=Math.max(0,b2*b2-lenSq*c0),root=Math.sqrt(disc);
+      for(const s of [(-b2-root)/lenSq,(-b2+root)/lenSq]){
+        if(s>=0&&s<=1&&dot(delta(cap.base,{x:a.x+s*v.x,y:a.y+s*v.y}),cap.u)>=0)return false;
+      }
+    }
+    return true;
+  }
+  const qx=cap.center.x+cap.radius*(pFoot.x-cap.center.x)/dFoot;
+  const qy=cap.center.y+cap.radius*(pFoot.y-cap.center.y)/dFoot;
+  return (qx-cap.base.x)*cap.u.x+(qy-cap.base.y)*cap.u.y<0;
+}
+
 // Exact Euclidean clearance between a finite segment and a convex body
-// (circle or convex polygon / thick-lens AABB). Unlike single-face separation,
-// this admits tall vertical lenses/mirrors/detectors cleanly separated from
-// slanted faces such as an equilateral prism.
+// (circle, circular cap, or convex polygon / thick-lens AABB). Unlike single-face
+// separation, this admits tall vertical lenses/mirrors/detectors cleanly separated
+// from slanted faces or curved caps.
 export function segmentOutsideBodyExact(seg,body,clearance){
   if(body.kind==='circle')
     return pointSegmentDistance(body.center,seg)>=body.radius+clearance;
+  if(body.kind==='cap')
+    return segmentOutsideCapExact(seg,body,clearance);
   for(const pt of seg)
     if(body.faces.every(f=>dot(delta(f.a,pt),f.normal)<=0))return false;
   for(const f of body.faces){
@@ -202,19 +322,63 @@ export function segmentOutsideBodyExact(seg,body,clearance){
 export function circleOutsideBody(circle,body,clearance){
   if(body.kind==='circle')
     return Math.hypot(circle.center.x-body.center.x,circle.center.y-body.center.y)>=circle.radius+body.radius+clearance;
+  if(body.kind==='cap')
+    return pointBodyMembership(circle.center,body,circle.radius+clearance)==='outside';
   return body.faces.some(f=>dot(delta(f.a,circle.center),f.normal)>=circle.radius+clearance);
 }
 
 // Exact Euclidean clearance between a circle/disk and a convex body
-// (circle, convex polygon, or spherical-lens conservative AABB).
-// Excludes centers inside/on the polygon (no nesting), then compares the
-// center's minimum finite-edge distance against radius + clearance.
+// (circle, circular cap, convex polygon, or spherical-lens conservative AABB).
+// Excludes centers inside/on the body (no nesting), then compares the
+// center's exact boundary distance against radius + clearance.
 export function circleOutsideBodyExact(circle,body,clearance){
   if(body.kind==='circle')
     return Math.hypot(circle.center.x-body.center.x,circle.center.y-body.center.y)>=circle.radius+body.radius+clearance;
+  if(body.kind==='cap')
+    return pointBodyMembership(circle.center,body,circle.radius+clearance)==='outside';
   if(body.faces.every(f=>dot(delta(f.a,circle.center),f.normal)<=0))return false;
   for(const f of body.faces)
     if(pointSegmentDistance(circle.center,[f.a,f.b])<circle.radius+clearance)return false;
+  return true;
+}
+
+function capsDisjointExact(a,b,clearance){
+  if(pointBodyMembership(a.apex,b,clearance)!=='outside'||
+     pointBodyMembership(b.apex,a,clearance)!=='outside')return false;
+  if(!segmentOutsideCapExact([a.p1,a.p2],b,clearance)||
+     !segmentOutsideCapExact([b.p1,b.p2],a,clearance))return false;
+  const dx=b.center.x-a.center.x,dy=b.center.y-a.center.y,dist=Math.hypot(dx,dy);
+  if(dist>=a.radius+b.radius+clearance)return true;
+  if(dist<=1e-12){
+    if(Math.abs(a.radius-b.radius)<clearance){
+      const sep=Math.atan2(Math.abs(cross(a.u,b.u)),dot(a.u,b.u));
+      if(sep<=a.capHalfAngle+b.capHalfAngle)return false;
+    }
+    return true;
+  }
+  const e={x:dx/dist,y:dy/dist},ep={x:-e.y,y:e.x};
+  if(Math.abs(a.radius-b.radius)<=dist&&dist<=a.radius+b.radius){
+    const ax=(a.radius*a.radius-b.radius*b.radius+dist*dist)/(2*dist);
+    const h=Math.sqrt(Math.max(0,a.radius*a.radius-ax*ax));
+    for(const sgn of [-1,1]){
+      const q={x:a.center.x+ax*e.x+sgn*h*ep.x,y:a.center.y+ax*e.y+sgn*h*ep.y};
+      if(dot(delta(a.base,q),a.u)>=0&&dot(delta(b.base,q),b.u)>=0)return false;
+    }
+  }
+  for(const sA of [-1,1])for(const sB of [-1,1]){
+    const qA={x:a.center.x+sA*a.radius*e.x,y:a.center.y+sA*a.radius*e.y};
+    const qB={x:b.center.x+sB*b.radius*e.x,y:b.center.y+sB*b.radius*e.y};
+    if(dot(delta(a.base,qA),a.u)>=0&&dot(delta(b.base,qB),b.u)>=0&&
+       Math.hypot(qA.x-qB.x,qA.y-qB.y)<clearance)return false;
+  }
+  return true;
+}
+
+function capOutsidePolyExact(cap,poly,clearance){
+  if(poly.vertices.some(v=>pointBodyMembership(v,cap,clearance)!=='outside'))return false;
+  if(poly.faces.every(f=>dot(delta(f.a,cap.apex),f.normal)<=0))return false;
+  for(const f of poly.faces)
+    if(!segmentOutsideCapExact([f.a,f.b],cap,clearance))return false;
   return true;
 }
 
@@ -223,6 +387,7 @@ export function bodiesDisjoint(a,b,clearance){
     return Math.hypot(a.center.x-b.center.x,a.center.y-b.center.y)>=a.radius+b.radius+clearance;
   if(a.kind==='circle')return circleOutsideBody(a,b,clearance);
   if(b.kind==='circle')return circleOutsideBody(b,a,clearance);
+  if(a.kind==='cap'||b.kind==='cap')return bodiesDisjointExact(a,b,clearance);
   return a.faces.some(f=>b.vertices.every(v=>dot(delta(f.a,v),f.normal)>=clearance))||
          b.faces.some(f=>a.vertices.every(v=>dot(delta(f.a,v),f.normal)>=clearance));
 }
@@ -232,6 +397,9 @@ export function bodiesDisjointExact(a,b,clearance){
     return Math.hypot(a.center.x-b.center.x,a.center.y-b.center.y)>=a.radius+b.radius+clearance;
   if(a.kind==='circle')return circleOutsideBodyExact(a,b,clearance);
   if(b.kind==='circle')return circleOutsideBodyExact(b,a,clearance);
+  if(a.kind==='cap'&&b.kind==='cap')return capsDisjointExact(a,b,clearance);
+  if(a.kind==='cap')return capOutsidePolyExact(a,b,clearance);
+  if(b.kind==='cap')return capOutsidePolyExact(b,a,clearance);
   if(a.vertices.some(v=>b.faces.every(f=>dot(delta(f.a,v),f.normal)<=0)))return false;
   if(b.vertices.some(v=>a.faces.every(f=>dot(delta(f.a,v),f.normal)<=0)))return false;
   for(const fa of a.faces){
@@ -322,7 +490,7 @@ export function planeMirrorsShareCleanCorner(segA,segB,tol=BENCH_CONTACT_TOL_MM)
          pointSegmentDistance(bOther,segA)>=BENCH_CLEARANCE_MM;
 }
 
-// Exact flush silvering of a circular-arc-mirror on a curved spherical-lens face or circular-dielectric boundary.
+// Exact flush silvering of a circular-arc-mirror on a curved spherical-lens face, circular-dielectric, or circular-cap-dielectric boundary.
 export function arcMirrorCoincidentWithBody(arcMirror,body,tol=BENCH_CONTACT_TOL_MM){
   if(arcMirror.type!=='circular-arc-mirror')return false;
   const p=arcMirror.parameters,{n}=curvedFrame(p);
@@ -331,6 +499,13 @@ export function arcMirrorCoincidentWithBody(arcMirror,body,tol=BENCH_CONTACT_TOL
   if(body.type===CIRCULAR_TYPE){
     return Math.abs(mR-body.radius)<=tol&&
       Math.hypot(mCenter.x-body.center.x,mCenter.y-body.center.y)<=tol;
+  }
+  if(body.type===CAP_TYPE){
+    if(Math.abs(mR-body.radius)>tol||Math.hypot(mCenter.x-body.center.x,mCenter.y-body.center.y)>tol)return false;
+    const sgn=Math.sign(p.radius),uMirror={x:-sgn*n.x,y:-sgn*n.y};
+    const mirrorHalfAngle=Math.asin(Math.min(1,p.apertureHeight/(2*mR)));
+    const centerSep=Math.atan2(Math.abs(cross(body.u,uMirror)),dot(body.u,uMirror));
+    return centerSep+mirrorHalfAngle<=body.capHalfAngle+tol/mR;
   }
   if(body.type===SPHERICAL_LENS_TYPE){
     const lp=body.lensParams,g=body.lensGeom;
@@ -355,6 +530,7 @@ export function arcMirrorCoincidentWithBody(arcMirror,body,tol=BENCH_CONTACT_TOL
 
 export function dielectricEncounter(component,nativePoint,incoming){
   if(component.type===CIRCULAR_TYPE)return circularEncounter(component,nativePoint,incoming);
+  if(component.type===CAP_TYPE)return capEncounter(component,nativePoint,incoming,BENCH_CLEARANCE_MM);
   if(component.type===PRISM_TYPE)return prismEncounter(component,nativePoint,incoming);
   if(component.type===POLYGON_TYPE)return polygonEncounter(component,nativePoint,incoming);
   if(component.type===SPHERICAL_LENS_TYPE)return sphericalLensEncounter(component,nativePoint,incoming);
@@ -370,7 +546,7 @@ export function resolveMergedDielectricIndices(component,encounter,nativePoint,i
     return {incidentIndex:encounter.incidentIndex,destinationIndex:encounter.destinationIndex,mergedWithId:null,invalid:false};
   if(merged.length!==1)return {incidentIndex:NaN,destinationIndex:NaN,mergedWithId:null,invalid:true};
   const other=nativeToComp.get(merged[0]);
-  if(!other||!DIELECTRIC_BODY_TYPES.includes(other.type))
+  if(!other||!V40_DIELECTRIC_BODY_TYPES.includes(other.type))
     return {incidentIndex:NaN,destinationIndex:NaN,mergedWithId:null,invalid:true};
   const encOther=dielectricEncounter(other,nativePoint,incoming);
   if(!encOther||encOther.invalid||encounter.from===encOther.from)
@@ -403,6 +579,10 @@ export function componentTangentCircles(c){
   const p=c.parameters;
   if(c.type===CIRCULAR_TYPE||c.type===CIRCLE_BLOCKER_TYPE)
     return [{center:{x:p.x,y:p.y},radius:p.radius}];
+  if(c.type===CAP_TYPE){
+    const g=capGeometry(p);
+    return [{center:g.center,radius:g.radius,cap:{base:g.base,u:g.u}}];
+  }
   if(c.type===SPHERICAL_LENS_TYPE){
     const g=thickLensGeometry(p),circles=[];
     if(p.frontRadius!==null)circles.push({center:g.frontCenter,radius:Math.abs(p.frontRadius)});
@@ -416,8 +596,24 @@ export function componentTangentCircles(c){
   return [];
 }
 
+// Shared tangency proximity predicate for full circles/lenses/arcs and circular caps.
+// For circular-cap-dielectric (tc.cap present), restricts tangency to the retained
+// physical arc plus its clearance neighborhood (axial(pClosest) >= -clearance) so rays
+// missing on the absent portion of the generating circle are never falsely flagged.
+// Returns null on non-finite geometry, true on tangency proximity, false otherwise.
+export function rayNearTangentCircle(origin,dir,tc,clearance,allowBehind=false){
+  const offset=delta(origin,tc.center);
+  const ahead=dot(offset,dir),perp=Math.abs(cross(offset,dir));
+  if(!Number.isFinite(ahead)||!Number.isFinite(perp))return null;
+  if(!((allowBehind||ahead>0)&&Math.abs(perp-tc.radius)<clearance))return false;
+  if(!tc.cap)return true;
+  const pClosest={x:origin.x+ahead*dir.x,y:origin.y+ahead*dir.y};
+  return dot(delta(tc.cap.base,pClosest),tc.cap.u)>=-clearance;
+}
+
 export function componentDielectricCorners(c){
   const p=c.parameters;
+  if(c.type===CAP_TYPE){const g=capGeometry(p);return [g.p1,g.p2];}
   if(c.type===PRISM_TYPE)return prismVertices(p);
   if(c.type===POLYGON_TYPE)return polygonVertices(p);
   if(c.type===SPHERICAL_LENS_TYPE)return thickLensGeometry(p).corners;
@@ -542,13 +738,13 @@ export function installBenchEndpointAudit(doc,scene,idMap,mirrorEndpoints,{
     for(const target of circleTargets){
       const sameBody=target.id===sourceCompId;
       for(const tc of target.circles){
-        const offset=delta(state.origin,tc.center);
-        const ahead=dot(offset,state.dir),perp=Math.abs(cross(offset,state.dir));
-        if(!Number.isFinite(ahead)||!Number.isFinite(perp)){
+        const sameCurvedFace=sameBody&&(!tc.cap||dot(delta(tc.cap.base,state.origin),tc.cap.u)>1e-5);
+        const near=rayNearTangentCircle(state.origin,state.dir,tc,clearance,sameCurvedFace);
+        if(near===null){
           fault=target.id+': '+versionTag+' native '+surfaceLabel+' tangency check was non-finite; measurements withheld.';
           return;
         }
-        if((sameBody||ahead>0)&&Math.abs(perp-tc.radius)<clearance){
+        if(near){
           fault=target.id+': observed native ray approaches within 0.01 mm of tangency to a '+surfaceLabel+' surface; measurements withheld.';
           return;
         }
@@ -610,9 +806,13 @@ export function installBenchEndpointAudit(doc,scene,idMap,mirrorEndpoints,{
           if(!inRay){
             fault=c.id+': native incident ray state was non-finite or degenerate; measurements withheld.';
           }else{
+            const hitYUp=incidentPoint&&Number.isFinite(incidentPoint.x)&&Number.isFinite(incidentPoint.y)
+              ?{x:incidentPoint.x,y:-incidentPoint.y}:null;
             for(const tc of cTarget.circles){
-              const b=Math.abs(cross(delta(inRay.origin,tc.center),inRay.dir));
-              if(!Number.isFinite(b)||Math.abs(b-tc.radius)<clearance){
+              // Flat-chord encounters on a circular cap are not curved-arc tangency events.
+              if(tc.cap&&hitYUp&&Math.abs(dot(delta(tc.cap.base,hitYUp),tc.cap.u))<=1e-5)continue;
+              const near=rayNearTangentCircle(inRay.origin,inRay.dir,tc,clearance,true);
+              if(near===null||near){
                 fault=c.id+': native incident ray struck within 0.01 mm of tangency to a '+surfaceLabel+' surface; measurements withheld.';
                 break;
               }

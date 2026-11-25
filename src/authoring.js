@@ -208,7 +208,14 @@ export function capabilities() {
       parameters:componentParameterNames(type),
       ...(type==='planar-interface'?{booleanParameters:['partialReflection'],nativeType:'PlaneGlass',normal:'negative to positive side; degrees CCW in y-up'}:{}),
       ...(type===SEMICIRCULAR_TYPE?{booleanParameters:['partialReflection'],nativeType:'Glass',faceIds:['face-flat','face-arc'],geometry:'Native Glass with right-half circular boundary and vertical flat closing segment.'}:{}),
-      ...(type===CAP_TYPE?{booleanParameters:['partialReflection'],nativeType:'Glass',faceIds:['face-flat','face-arc'],geometry:'A circular arc from an explicit base and cap height, closed by a flat chord.'}:{}),
+      ...(type===CAP_TYPE?{
+        booleanParameters:['partialReflection'],nativeType:'Glass',faceIds:['face-flat','face-arc'],
+        geometry:'A circular arc from an explicit base midpoint (x, y) and cap height, closed by a flat chord. Legacy v32 fixes rightward +x orientation (no normalDeg, capHeight <= radius). In v40 (native-optical-bench), normalDeg (y-up degrees) orients the outward apex axis and admits minor caps, hemispheres/semicylinders (capHeight = radius), and major caps / sliced spheres (radius < capHeight < 2*radius).',
+        schemaVariants:{
+          legacy:{versions:[CAP_VERSION],parameters:componentParameterNames(CAP_TYPE,CAP_VERSION),orientation:'fixed +x rightward'},
+          v40:{versions:[OPTICAL_BENCH_V40_VERSION],parameters:componentParameterNames(CAP_TYPE,OPTICAL_BENCH_V40_VERSION),orientation:'explicit normalDeg in [-180, 180]; minor, hemisphere, or major cap (capHeight in [1, 2*radius - 1] mm)'}
+        }
+      }:{}),
       ...(type===CIRCULAR_TYPE?{booleanParameters:['partialReflection'],nativeType:'CircleGlass',indices:['insideIndex','outsideIndex'],geometry:'Finite 2D circle, not an ideal thin lens or a truncated sphere'}:{}),
       ...(type===PRISM_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-31'],geometry:'Three physical vertices; vertex order defines face labels, not a ray route'}:{}),
       ...(type===POLYGON_TYPE?{nativeType:'Glass',booleanParameters:['partialReflection'],faceIds:['face-12','face-23','face-34','face-41'],geometry:'One strictly convex four-vertex finite region, never a ray route'}:{}),
@@ -294,11 +301,11 @@ export function inspectAuthoringRequest(request){
       key==='normalDeg'?b.orientationDeg:key==='orientationDeg'?b.orientationDeg:key==='directionDeg'?b.directionDeg:
       key==='angleDeg'?b.openingAngleDeg:
       signedSpherical?b.coordinateMm:
-      ['length','openingLength','apertureHeight','centerThickness','frontRadius','backRadius'].includes(key)?b.positiveLengthMm:key==='width'?[10,100]:b.coordinateMm;
+      ['length','openingLength','apertureHeight','centerThickness','frontRadius','backRadius',...(isV40?['capHeight']:[])].includes(key)?b.positiveLengthMm:key==='width'?[10,100]:b.coordinateMm;
     if(!Number.isFinite(n)||n<bounds[0]||n>bounds[1]||
       (signedSpherical&&Math.abs(n)<1)||
       (key==='focalLength'&&Math.abs(n)<b.minimumAbsFocalLengthMm)||
-      (key==='radius'&&(type===CIRCULAR_TYPE?n<2:type===SEMICIRCULAR_TYPE?n<5:type===CIRCLE_BLOCKER_TYPE?n<1:Math.abs(n)<2)))
+      (key==='radius'&&((type===CIRCULAR_TYPE||type===CAP_TYPE)?n<2:type===SEMICIRCULAR_TYPE?n<5:type===CIRCLE_BLOCKER_TYPE?n<1:Math.abs(n)<2)))
       issues.push(issue(path,'INVALID_INPUT','Value is outside the live contract bounds'+
         (lengthKeys.has(key)?' after conversion to mm':'')));
   };

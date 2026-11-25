@@ -3,6 +3,7 @@
 // This module never accepts, validates or runs a physical proposal itself.
 import {componentParameterNames} from './contract.js';
 import {explorationContext} from './exploration.js';
+import {CAP_TYPE} from './finite-circular-cap.js';
 import {OPTICAL_BENCH_V40_VERSION} from './native-optical-bench.js';
 import {SPHERICAL_LENS_TYPE} from './spherical-lens.js';
 
@@ -15,6 +16,14 @@ function focusedComponentTypeSpec(type,base,version){
    spec.geometry='Native finite 2D spherical lens (v40 outward-convex sign convention). frontRadius and backRadius admit positive values (convex outward), negative values (concave inward), or null (flat/planar face, R = infinity); textbook Cartesian equivalents are R1 = frontRadius and R2 = -backRadius. Requires apertureHeight >= 4 mm, centerThickness >= 2 mm, edgeThickness >= 1 mm, and each non-null |radius| >= apertureHeight/2 + 1 mm (<= 10000 mm).';
   }else{
    spec.geometry='Native finite 2D biconvex lens (legacy positive-only contract). Both frontRadius and backRadius must be positive lengths >= apertureHeight/2 + 1 mm (neither negative nor null); requires apertureHeight >= 4 mm, centerThickness >= 2 mm, and edgeThickness >= 1 mm. Back-face native curvature sign is reversed.';
+  }
+ }
+ if(type===CAP_TYPE){
+  delete spec.schemaVariants;
+  if(version===OPTICAL_BENCH_V40_VERSION){
+   spec.geometry='Native finite 2D circular cap / hemisphere / sliced sphere (v40 oriented contract). Base chord midpoint is (x, y); normalDeg (y-up degrees) points from base midpoint toward curved apex. Admits minor caps (capHeight < radius), hemispheres/semicylinders (capHeight = radius), and major caps (radius < capHeight < 2*radius) with radius >= 2 mm, capHeight in [1, 2*radius - 1] mm, and chord >= 2 mm.';
+  }else{
+   spec.geometry='Native finite 2D circular cap (legacy v32 rightward +x contract). Base chord midpoint is (x, y) with vertical flat chord and rightward apex at (x + capHeight, y); capHeight in [0.2*radius, radius].';
   }
  }
  return spec;

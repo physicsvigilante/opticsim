@@ -5,7 +5,7 @@ import {OPTICAL_BENCH_V40_VERSION,V40_MAX_RAY_DEPTH,isValidRandomSeed,validateNa
 import {REFRACTIVE_BENCH_VERSION,validateGeneralRefractiveBench} from './native-general-refractive-bench.js';
 import {MIRROR_BOX_VERSION,validateMirrorBox} from './native-mirror-box.js';
 import {validateGuideFan} from './finite-guide-fan.js';
-import {CAP_TYPE,CAP_VERSION,CAP_PARAMETERS,validateCircularCap} from './finite-circular-cap.js';
+import {CAP_TYPE,CAP_VERSION,CAP_PARAMETERS,CAP_V40_PARAMETERS,validateCircularCap} from './finite-circular-cap.js';
 import {validateSlabArcReturn} from './slab-arc-return.js';
 import {validateCurvedEntryBeam} from './curved-entry-beam.js';
 import {validateRefractiveFan} from './refractive-fan.js';
@@ -87,6 +87,8 @@ export function componentParameterNames(type, version = 4) {
   if (!Object.hasOwn(parameters,type)) return null;
   if(type==='ideal-lens'&&(version===DECENTERED_BEAM_VERSION||version===OPTICAL_BENCH_V40_VERSION))
     return ['x','y','focalLength','apertureHeight'];
+  if(type===CAP_TYPE&&version===OPTICAL_BENCH_V40_VERSION)
+    return [...CAP_V40_PARAMETERS];
   return [...parameters[type], ...(version >= 2 && type === 'point-source' ? ['brightness'] : [])];
 }
 // Legacy versions stay isolated; circular scenes use v7 and triangular prisms v8.
@@ -115,7 +117,7 @@ function validateVersion(doc, version) {
     object(c, ['id', 'type', 'parameters', ...(version >= 2 && c?.type === 'point-source' ? ['emission'] : [])], path);
     if (typeof c.id !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(c.id) || ids.has(c.id)) fail(`${path}.id`, 'expected a unique stable ID (letters, digits, underscores, hyphens)');
     ids.add(c.id);
-    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version===CAP_VERSION||t!==CAP_TYPE)&&(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(t!==SPHERICAL_LENS_TYPE||[15,16,17,18,REFRACTIVE_BENCH_VERSION,HYBRID_BENCH_VERSION,OPTICAL_BENCH_V40_VERSION].includes(version))&&(t!==GRIN_V25_TYPE||[GRIN_V25_VERSION,GRIN_SLAB_VERSION].includes(version))&&(version===4||version===GENERAL_BENCH_VERSION||version===REFRACTIVE_BENCH_VERSION||version===HYBRID_BENCH_VERSION||version===OPTICAL_BENCH_V40_VERSION||([13,CURVED_ENTRY_VERSION,MIRROR_BOX_VERSION].includes(version)&&t==='line-blocker')||(version===THICK_APERTURE_VERSION&&t===FINITE_APERTURE_TYPE)||([PARALLEL_BEAM_VERSION,28].includes(version)&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||[PARALLEL_BEAM_VERSION,DECENTERED_BEAM_VERSION,SEMICIRCULAR_VERSION,PRISM_BEAM_VERSION,CIRCLE_BEAM_VERSION,BEAM_PLANAR_MIRROR_VERSION,BEAM_TWO_PLANE_MIRROR_VERSION,28,30,GENERAL_BENCH_VERSION,REFRACTIVE_BENCH_VERSION,HYBRID_BENCH_VERSION,OPTICAL_BENCH_V40_VERSION].includes(version))&&(t!==SEMICIRCULAR_TYPE||[SEMICIRCULAR_VERSION,CURVED_ENTRY_VERSION,30].includes(version))) :
+    choice(c.type, version >= 4 ? Object.keys(parameters).filter(t=>(version===CAP_VERSION||version===OPTICAL_BENCH_V40_VERSION||t!==CAP_TYPE)&&(version>=5||t!==PLANAR_TYPE)&&(version>=6||!isCurved(t))&&(version>=7||t!==CIRCULAR_TYPE)&&(version>=8||t!==PRISM_TYPE)&&(version>=9||t!==POLYGON_TYPE)&&(t!==SPHERICAL_LENS_TYPE||[15,16,17,18,REFRACTIVE_BENCH_VERSION,HYBRID_BENCH_VERSION,OPTICAL_BENCH_V40_VERSION].includes(version))&&(t!==GRIN_V25_TYPE||[GRIN_V25_VERSION,GRIN_SLAB_VERSION].includes(version))&&(version===4||version===GENERAL_BENCH_VERSION||version===REFRACTIVE_BENCH_VERSION||version===HYBRID_BENCH_VERSION||version===OPTICAL_BENCH_V40_VERSION||([13,CURVED_ENTRY_VERSION,MIRROR_BOX_VERSION].includes(version)&&t==='line-blocker')||(version===THICK_APERTURE_VERSION&&t===FINITE_APERTURE_TYPE)||([PARALLEL_BEAM_VERSION,28].includes(version)&&t===FINITE_APERTURE_TYPE)||!['line-blocker',CIRCLE_BLOCKER_TYPE,FINITE_APERTURE_TYPE].includes(t))&&(t!==PARALLEL_BEAM_TYPE||[PARALLEL_BEAM_VERSION,DECENTERED_BEAM_VERSION,SEMICIRCULAR_VERSION,PRISM_BEAM_VERSION,CIRCLE_BEAM_VERSION,BEAM_PLANAR_MIRROR_VERSION,BEAM_TWO_PLANE_MIRROR_VERSION,28,30,GENERAL_BENCH_VERSION,REFRACTIVE_BENCH_VERSION,HYBRID_BENCH_VERSION,OPTICAL_BENCH_V40_VERSION].includes(version))&&(t!==SEMICIRCULAR_TYPE||[SEMICIRCULAR_VERSION,CURVED_ENTRY_VERSION,30].includes(version))) :
       version >= 3 ? ['point-source', 'ideal-lens', 'plane-mirror'] :
       ['point-source', 'ideal-lens'], `${path}.type`);
     object(c.parameters, componentParameterNames(c.type,version), `${path}.parameters`);
@@ -131,7 +133,8 @@ function validateVersion(doc, version) {
       if(key==='normalDeg')number(value,-180,180,`${path}.parameters.${key}`);
       number(value, -10000, 10000, `${path}.parameters.${key}`);
       if (key === 'apertureHeight' && value < 1) fail(`${path}.parameters.${key}`, 'must be at least 1 mm');
-      if (key === 'radius' && (c.type===CIRCULAR_TYPE?value<2:c.type===SEMICIRCULAR_TYPE?value<5:c.type===CIRCLE_BLOCKER_TYPE?value<1:Math.abs(value)<2)) fail(`${path}.parameters.${key}`, c.type===CIRCLE_BLOCKER_TYPE?'opaque circle radius must be at least 1 mm':'radius magnitude must be at least 2 mm');
+      if (key === 'radius' && ((c.type===CIRCULAR_TYPE||c.type===CAP_TYPE)?value<2:c.type===SEMICIRCULAR_TYPE?value<5:c.type===CIRCLE_BLOCKER_TYPE?value<1:Math.abs(value)<2)) fail(`${path}.parameters.${key}`, c.type===CIRCLE_BLOCKER_TYPE?'opaque circle radius must be at least 1 mm':'radius magnitude must be at least 2 mm');
+      if (version===OPTICAL_BENCH_V40_VERSION && key === 'capHeight') number(value, 1, 10000, `${path}.parameters.${key}`);
       if (key === 'focalLength' && Math.abs(value) < 1) fail(`${path}.parameters.${key}`, 'magnitude must be at least 1 mm');
       if (key === 'brightness') number(value, 0.01, 1, `${path}.parameters.brightness`);
       if (key === 'width') number(value, 10, 100, `${path}.parameters.width`);
