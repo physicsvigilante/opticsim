@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "milestone": "native-optical-bench-v40-cap-ui-polish",
+  "sourceV40M2bAppGitBlob": "9f6d5fe2afb79cbd5e5fa499eaed5372c3a02ab1",
+  "v40CapUiAppGitBlob": "114f58cb77796661939512eaf7d5310fd6242c7e",
+  "note": "Displayed positive glass radius label and v40/v32 sidebar guidance note for circular-cap-dielectric in src/app.js; legacy v1-v39 UI unchanged."
+}

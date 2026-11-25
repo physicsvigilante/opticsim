@@ -6,7 +6,7 @@ Use this chooser to pick the right starting point without learning schema histor
 
 ## 1. Choosing a Native Ray-Tracing Bench (Browser or CLI)
 
-Start with the unified **`v40` (`native-optical-bench`)** bench for all new JEE setups. Six curated `v40` JEE starters (`native-optical-bench`, `v40-billet-split-lens`, `v40-snell-window`, `v40-silvered-plano-convex`, `v40-cemented-doublet`, `v40-layered-mirror-tank`) are available directly in the browser **Scene** dropdown (`public/index.html`), and LLMs can fetch the complete slim JSON contract in one call via `node scripts/author-scene.mjs bench-capabilities`:
+Start with the unified **`v40` (`native-optical-bench`)** bench for all new JEE setups. Seven curated `v40` JEE starters (`native-optical-bench`, `v40-billet-split-lens`, `v40-snell-window`, `v40-silvered-plano-convex`, `v40-cemented-doublet`, `v40-layered-mirror-tank`, `v40-silvered-hemisphere`) are available directly in the browser **Scene** dropdown (`public/index.html`), and LLMs can fetch the complete slim JSON contract in one call via `node scripts/author-scene.mjs bench-capabilities`:
 
 | Need | Model & Schema | What You Can Compose | Key Limits |
 | --- | --- | --- | --- |
