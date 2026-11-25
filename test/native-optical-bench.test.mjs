@@ -1828,7 +1828,7 @@ test('Milestone 3 R3 regression (P2-1 R2): curved partial-silvering arc inclusio
   assert.match(diagBypass.errors.join(' '),/bypassed native mirror merge/);
 });
 
-test('Milestone 4B: all 6 curated v40 JEE browser starters exist in scenes/ and public/index.html and trace cleanly with v40EndpointsVerified',async()=>{
+test('Milestone 4B + Upgrade #3: all 7 curated v40 JEE browser starters exist in scenes/ and public/index.html and pass per-starter physics behavioral assertions',async()=>{
   const caps=opticalBenchCapabilities();
   assert.equal(caps.witnessBridge.format,'opticsim-optical-bench-native-witness-v1');
   assert.deepEqual(caps.browserStarters,[
@@ -1837,8 +1837,10 @@ test('Milestone 4B: all 6 curated v40 JEE browser starters exist in scenes/ and 
     'v40-snell-window',
     'v40-silvered-plano-convex',
     'v40-cemented-doublet',
-    'v40-layered-mirror-tank'
+    'v40-layered-mirror-tank',
+    'v40-silvered-hemisphere'
   ]);
+  const runs=new Map();
   for(const slug of caps.browserStarters){
     assert.ok(html.includes(`option value="${slug}"`),'public/index.html missing starter '+slug);
     const raw=readFileSync(resolve(root,'scenes',slug+'.json'),'utf8');
@@ -1852,7 +1854,38 @@ test('Milestone 4B: all 6 curated v40 JEE browser starters exist in scenes/ and 
     assert.equal(run.summary.native.truncation,0,slug+' had truncation');
     assert.equal(run.summary.native.undefinedBehavior,0,slug+' had undefinedBehavior');
     assert.ok(run.summary.observations.detectorsById.D1.crossings>=1,slug+' should record >= 1 detector crossing on D1');
+    runs.set(slug,{doc,obs:run.summary.observations});
   }
+  // Per-starter behavioral physics assertions (closes PR #265 P3-2):
+  // 1. Billet split-lens: both decentered lenses L1/L2 illuminated; fan produces distinct twin crossings on D1.
+  const billet=runs.get('v40-billet-split-lens');
+  assert.ok(billet.obs.v40OpticalIncidentsById.L1>=2&&billet.obs.v40OpticalIncidentsById.L2>=2,'Billet split-lens must illuminate both L1 and L2');
+  assert.ok(billet.obs.detectorsById.D1.crossings>=4,'Billet split-lens should record >= 4 crossings on D1');
+  // 2. Snell's window: interior underwater fan genuinely splits into both transmission and TIR on W1.
+  const snell=runs.get('v40-snell-window');
+  assert.ok(snell.obs.interfacesById.W1.transmitted>=1,'Snell window must transmit inside critical cone');
+  assert.ok(snell.obs.interfacesById.W1.totalInternalReflections>=1,'Snell window must exhibit native TIR beyond critical angle');
+  // 3. Silvered plano-convex: flush curved mirror M1 reflects returning rays through flat face of L1 onto D1.
+  const silverLens=runs.get('v40-silvered-plano-convex');
+  assert.ok(silverLens.obs.reflectionsById.M1>=3,'Silvered plano-convex must reflect on flush curved mirror M1');
+  assert.equal(silverLens.obs.interfacesById.L1.faces['back-arc'].interactions,0,'Flush M1 owns curved back-arc reflection');
+  assert.ok(silverLens.obs.interfacesById.L1.faces['front-arc'].interactions>=6,'Forward + returning rays cross flat front face');
+  // 4. Cemented doublet: merged crown-to-flint boundary owned by L1 (mergedWithId='L2') -> clean transmission to D1.
+  const doublet=runs.get('v40-cemented-doublet');
+  assert.equal(doublet.obs.interfacesById.L1.faces['back-arc'].first.mergedWithId,'L2');
+  assert.equal(doublet.obs.interfacesById.L2.faces['front-arc'].interactions,0);
+  assert.ok(doublet.obs.detectorsById.D1.crossings>=3);
+  // 5. Layered mirror tank: merged water-to-glass contact (W1->G1), flush mirror return M1, and double-pass D1 crossings.
+  const tank=runs.get('v40-layered-mirror-tank');
+  assert.equal(tank.obs.interfacesById.W1.faces['face-23'].first.mergedWithId,'G1');
+  assert.ok(tank.obs.reflectionsById.M1>=3);
+  assert.ok(tank.obs.detectorsById.D1.crossings>=6);
+  // 6. Silvered glass hemisphere (JEE A28): internal bubble reflects on flush curved dome M1 (face-arc=0), exits flat base onto D1.
+  const hemi=runs.get('v40-silvered-hemisphere');
+  assert.ok(hemi.obs.reflectionsById.M1>=5,'Silvered hemisphere must reflect internal bubble fan on flush curved mirror M1');
+  assert.equal(hemi.obs.interfacesById.H1.faces['face-arc'].interactions,0,'Flush curved mirror M1 owns dome reflection');
+  assert.ok(hemi.obs.interfacesById.H1.faces['face-flat'].interactions>=5,'Reflected rays must exit flat base of H1');
+  assert.ok(hemi.obs.detectorsById.D1.crossings>=5,'Exited rays must cross table detector D1');
 });
 
 test('v40 multi-mirror enclosures: 90-deg corner reflector oracle, JEE A03 triangular mirror cavity, and JEE A04 4-wall mirror box',async()=>{
@@ -2009,7 +2042,10 @@ test('v40 3-4 layer touching dielectrics: oil-water-glass Snell oracle, 4-layer 
   assert.equal(trRun.summary.observations.v40EndpointsVerified,true);
   assert.equal(trRun.summary.observations.detectorsById.D1.crossings,1);
 
-  // 4. 4-body stack + structural 4 -> 0 deletion closure preserving backgroundIndex & randomSeed:
+  // 4. 4-body non-unit-ambient stack (n0=1.2, 10 deg) exact Snell oracle + 4 -> 0 deletion closure preserving backgroundIndex & nondefault randomSeed (closes PR #266 P3-3):
+  const s4Sin0=1.2*Math.sin(10*Math.PI/180);
+  const s4Tan=n=>{const s=s4Sin0/n;return s/Math.sqrt(1-s*s);};
+  const expectedY4=20*s4Tan(1.2)+10*s4Tan(1.4)+10*s4Tan(1.5)+10*s4Tan(1.6)+10*s4Tan(1.45)+20*s4Tan(1.2);
   const {document:stack4}=prepareScene(v40Req([
     {id:'S1',type:'point-source',parameters:{x:-20,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:10}},
     {id:'B1',type:'polygon-dielectric',parameters:{x1:0,y1:-40,x2:10,y2:-40,x3:10,y3:40,x4:0,y4:40,insideIndex:1.4,outsideIndex:1.2,partialReflection:false}},
@@ -2017,16 +2053,21 @@ test('v40 3-4 layer touching dielectrics: oil-water-glass Snell oracle, 4-layer 
     {id:'B3',type:'polygon-dielectric',parameters:{x1:20,y1:-40,x2:30,y2:-40,x3:30,y3:40,x4:20,y4:40,insideIndex:1.6,outsideIndex:1.2,partialReflection:false}},
     {id:'B4',type:'polygon-dielectric',parameters:{x1:30,y1:-40,x2:40,y2:-40,x3:40,y3:40,x4:30,y4:40,insideIndex:1.45,outsideIndex:1.2,partialReflection:false}},
     {id:'D1',type:'ray-detector',parameters:{x:60,y:0,orientationDeg:90,length:80}}
-  ],{backgroundIndex:1.2}));
-  const s4Run=await evaluateDocument(stack4,core,[{id:'d1',kind:'detector-crossings',componentId:'D1'}]);
+  ],{backgroundIndex:1.2,randomSeed:'stack4-nondefault-seed'}));
+  const s4Reqs=[{id:'hits',kind:'detector-hit-events',componentId:'D1'}];
+  const s4Run=await evaluateDocument(stack4,core,s4Reqs);
   assert.equal(s4Run.summary.executionPassed,true);
   assert.equal(s4Run.summary.observations.v40EndpointsVerified,true);
   assert.equal(s4Run.summary.observations.detectorsById.D1.crossings,1);
+  const s4Hits=(await evaluateObservables(stack4,s4Reqs,s4Run.summary)).results[0].value;
+  assert.equal(s4Hits.length,1);
+  assert.ok(Math.abs(s4Hits[0].pointMm.y-expectedY4)<1e-6,`4-layer stack expected y=${expectedY4}, got ${s4Hits[0].pointMm.y}`);
   const {document:cleared}=reviseComponents(stack4,{
     format:COMPONENT_REVISION_FORMAT,
     operations:[{op:'remove',id:'B1'},{op:'remove',id:'B2'},{op:'remove',id:'B3'},{op:'remove',id:'B4'}]
   });
   assert.equal(cleared.physics.backgroundIndex,1.2);
+  assert.equal(cleared.simulation.randomSeed,'stack4-nondefault-seed');
   assert.equal(cleared.physics.components.length,2);
 });
 
@@ -2075,12 +2116,12 @@ test('v40 multi-mirror & 3-4 dielectric negative controls: mirror X/T/collinear/
     {id:'K1',type:'line-blocker',parameters:{x:20,y:-20,orientationDeg:0,length:40}}
   ])),/finite segments intersect or nearly touch/);
 
-  // 7. Initial ray aimed directly at a shared mirror corner -> rejected by endpoint guard
+  // 7. Initial ray aimed directly at a shared mirror corner (40, -20) from clear source (0, 0) -> rejected specifically by endpoint guard (closes PR #266 P3-2)
   assert.throws(()=>prepareScene(v40Req([
-    {id:'S1',type:'point-source',parameters:{x:0,y:-20,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'S1',type:'point-source',parameters:{x:0,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:-Math.atan2(20,40)*180/Math.PI}},
     {id:'M1',type:'plane-mirror',parameters:{x:40,y:0,orientationDeg:90,length:40}},
     {id:'M2',type:'plane-mirror',parameters:{x:20,y:-20,orientationDeg:0,length:40}}
-  ])),/finite component endpoint|from finite segment/);
+  ])),/Initial forward ray passes within 0\.01 mm of a finite component endpoint/);
 
   // 8. Mixed partialReflection across a 3-body touching chain (A:false | B:false | C:true) -> rejected
   assert.throws(()=>prepareScene(v40Req([
@@ -2090,7 +2131,7 @@ test('v40 multi-mirror & 3-4 dielectric negative controls: mirror X/T/collinear/
     {id:'B3',type:'polygon-dielectric',parameters:{x1:30,y1:-40,x2:45,y2:-40,x3:45,y3:40,x4:30,y4:40,insideIndex:1.5,outsideIndex:1,partialReflection:true}}
   ])),/matching partialReflection/);
 
-  // 9. Legacy v38/v39 isolation: 3 dielectrics and 3 plane mirrors MUST remain rejected in v38/v39!
+  // 9. Legacy v38/v39 isolation: BOTH 3 dielectrics AND 3 separated plane mirrors MUST remain rejected in v38/v39 (closes PR #266 P3-3)!
   for(const model of ['native-general-refractive-bench','native-general-hybrid-bench']){
     assert.throws(()=>prepareScene({
       model,lengthUnit:'mm',
@@ -2101,6 +2142,16 @@ test('v40 multi-mirror & 3-4 dielectric negative controls: mirror X/T/collinear/
         {id:'C3',type:'circular-dielectric',parameters:{x:50,y:0,radius:8,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
       ]
     }),/1–2 finite dielectrics|disjoint/);
+    assert.throws(()=>prepareScene({
+      model,lengthUnit:'mm',
+      components:[
+        s1,
+        {id:'C1',type:'circular-dielectric',parameters:{x:0,y:0,radius:8,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+        {id:'M1',type:'plane-mirror',parameters:{x:20,y:25,orientationDeg:0,length:12}},
+        {id:'M2',type:'plane-mirror',parameters:{x:40,y:25,orientationDeg:0,length:12}},
+        {id:'M3',type:'plane-mirror',parameters:{x:60,y:25,orientationDeg:0,length:12}}
+      ]
+    }),/0–2 plane mirrors|1–2 finite dielectrics|UNSUPPORTED_SCOPE/);
   }
 });
 

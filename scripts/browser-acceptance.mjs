@@ -525,6 +525,30 @@ async function main(){
     report.checks.push({name:'scene selector bounds at 1440px and 860px',result:'pass',narrowImported,narrowV39});
     await cdp.send('Emulation.setDeviceMetricsOverride',{width:1440,height:960,deviceScaleFactor:1,mobile:false});
 
+    // Verify curated v40 JEE browser starters load, paint, and report detector crossings cleanly in real Chrome (closes PR #265 P3-2).
+    const v40Starters=[
+      ['v40-billet-split-lens','JEE Billet split-lens: two decentered lenses forming twin real images (v40)',4],
+      ['v40-snell-window',"JEE Snell's window: underwater fan splitting into transmission cone and TIR (v40)",3],
+      ['v40-silvered-plano-convex','JEE Silvered plano-convex lens: curved-face silvering return focus (v40)',4],
+      ['v40-cemented-doublet','JEE Cemented doublet: coaxial crown and flint glass lenses (v40)',4],
+      ['v40-layered-mirror-tank','JEE Layered mirror tank: water on glass resting on a flush mirror (v40)',5],
+      ['v40-silvered-hemisphere','v40 JEE: Silvered glass hemisphere (internal bubble)',4]
+    ];
+    for(const [slug,title,fieldCount] of v40Starters){
+      await evaluate('(() => {const e=document.getElementById("examples");e.value='+JSON.stringify(slug)+';e.dispatchEvent(new Event("change",{bubbles:true}));})()');
+      const s=await until(state,x=>x?.title===title&&['completed','completed-with-warnings'].includes(x.status)&&x.painted>0&&x.detectorReadouts?.includes('D1:'),slug+' loaded');
+      assert.equal(s.error,'',slug+' had UI error');
+      assert.equal(s.saveDisabled,false,slug+' disabled save');
+      assert.equal(s.fields.length,fieldCount,slug+' field count mismatch');
+      assert.equal(s.modelLabel,'Unified optical bench · v40');
+      if(slug==='v40-silvered-hemisphere'){
+        const radiusLabel=await evaluate('document.querySelector(\'label[for="H1-radius"]\')?.textContent || document.getElementById("H1-radius")?.closest("label")?.textContent || ""');
+        assert.match(radiusLabel,/Glass radius \(positive\)/);
+        await shot('v40-silvered-hemisphere');
+      }
+      report.checks.push({name:'v40 starter '+slug,result:'pass',stats:s.stats,painted:s.painted});
+    }
+
     console.log('Browser acceptance PASS: '+report.checks.length+' checks; '+report.screenshots.length+' screenshots; '+version);
   }catch(err){
     report.errors.push(err.message);

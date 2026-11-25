@@ -1,9 +1,9 @@
 # Ray Optics 2D
 
-**Start here (LLM, teacher, or student):** Use the unified **`v40` (`native-optical-bench`)** optical bench ([docs](docs/NATIVE-OPTICAL-BENCH.md)) for JEE-level 2D ray-optics exploration — supporting interior or ambient point sources (`single-ray`, `directional`, `full-circle`) and parallel beams, decentered/split ideal thin lenses, signed/flat thick spherical lenses, touching layered media, coaxial cemented doublets, flush flat/curved silvered optics, opaque stops, and passive ray detectors (`maxRayDepth = 16`).
+**Start here (LLM, teacher, or student):** Use the unified **`v40` (`native-optical-bench`)** optical bench ([docs](docs/NATIVE-OPTICAL-BENCH.md)) for JEE-level 2D ray-optics exploration — supporting interior or ambient point sources (`single-ray`, `directional`, `full-circle`) and parallel beams, decentered/split ideal thin lenses, oriented circular caps/hemispheres/sliced spheres, signed/flat thick spherical lenses, 2–4 layer touching media, coaxial cemented doublets/triplets, corner-touching plane-mirror enclosures, flush flat/curved silvered optics, opaque stops, and passive ray detectors (`maxRayDepth = 16`).
 - **One-step LLM contract:** `node scripts/author-scene.mjs bench-capabilities`
 - **Unified paraxial-vs-native witness bridge:** `node scripts/witness-optical-bench.mjs capabilities|plan|run`
-- **Browser starters:** Open any of the 6 curated `v40` JEE starters in the browser **Scene** dropdown (`native-optical-bench`, `v40-billet-split-lens`, `v40-snell-window`, `v40-silvered-plano-convex`, `v40-cemented-doublet`, `v40-layered-mirror-tank`).
+- **Browser starters:** Open any of the 7 curated `v40` JEE starters in the browser **Scene** dropdown (`native-optical-bench`, `v40-billet-split-lens`, `v40-snell-window`, `v40-silvered-plano-convex`, `v40-cemented-doublet`, `v40-layered-mirror-tank`, `v40-silvered-hemisphere`).
 - **Full model & result chooser:** [Which Model / Which Result?](docs/WHICH-MODEL.md) (covers `v40`, the coaxial paraxial stack, witness bridges, and frozen historical `v1`–`v39` profiles).
 
 Trace an axial inside source through the curved face of a finite [circular dielectric cap](docs/FINITE-CIRCULAR-CAP.md).

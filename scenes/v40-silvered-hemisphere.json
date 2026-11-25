@@ -1,0 +1,79 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 40,
+  "adapterVersion": 40,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "native-optical-bench",
+    "backgroundIndex": 1,
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": 0,
+          "y": 20,
+          "brightness": 0.2
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 90,
+          "angleDeg": 44
+        }
+      },
+      {
+        "id": "H1",
+        "type": "circular-cap-dielectric",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "radius": 60,
+          "capHeight": 60,
+          "normalDeg": 90,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "M1",
+        "type": "circular-arc-mirror",
+        "parameters": {
+          "x": 0,
+          "y": 60,
+          "normalDeg": -90,
+          "radius": 60,
+          "apertureHeight": 108
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 0,
+          "y": -30,
+          "orientationDeg": 0,
+          "length": 140
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "v40 JEE: Silvered glass hemisphere (internal bubble)",
+    "view": {
+      "x": 0,
+      "y": 15,
+      "zoom": 2
+    },
+    "mode": "rays",
+    "grid": true
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 16,
+    "processedRayLimit": 10000,
+    "randomSeed": "opticsim-v40-seed-v1"
+  }
+}

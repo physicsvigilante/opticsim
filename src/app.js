@@ -254,7 +254,7 @@ function controls() {
       const nullable = session.document.schemaVersion === OPTICAL_BENCH_V40_VERSION && component.type === 'spherical-lens' && ['frontRadius', 'backRadius'].includes(key);
       addNumber(component.type === 'point-source' && key === 'brightness' && !multipleSources ?
         $('source-parameters') : fieldset, component.id, 'parameters', key,
-        key === 'brightness' ? 'Brightness (relative)' : `${key === 'radius' && component.type === 'circle-blocker' ? 'Circle blocker radius (positive)' : key === 'radius' && component.type === 'circular-dielectric' ? 'Glass radius (positive)' : labels[key]} (${['orientationDeg','normalDeg','directionDeg'].includes(key) ? '°' : ['negativeIndex','positiveIndex','insideIndex','outsideIndex','indexSquaredAtAxis'].includes(key)?'dimensionless':'mm'})`, value, slider, fixed, nullable);
+        key === 'brightness' ? 'Brightness (relative)' : `${key === 'radius' && component.type === 'circle-blocker' ? 'Circle blocker radius (positive)' : key === 'radius' && ['circular-dielectric','circular-cap-dielectric'].includes(component.type) ? 'Glass radius (positive)' : labels[key]} (${['orientationDeg','normalDeg','directionDeg'].includes(key) ? '°' : ['negativeIndex','positiveIndex','insideIndex','outsideIndex','indexSquaredAtAxis'].includes(key)?'dimensionless':'mm'})`, value, slider, fixed, nullable);
     }
     if (['line-blocker','circle-blocker','finite-aperture'].includes(component.type)) {
       const note=document.createElement('p');note.className='muted';
@@ -299,6 +299,13 @@ function controls() {
     if(component.type==='circular-dielectric'){
       const note=document.createElement('p');note.className='muted';
       note.textContent=parallelCircle?'True native finite CircleGlass with two curved refraction surfaces, external finite Beam and 0–2 downstream detectors. Explicit index ratio and Fresnel-off; TIR remains native. Near-tangent and near-critical incidents suppress all qualified readings. No single-surface or 3D image claim.':'One homogeneous circular region, 2D cross section. Both indices are explicit; native CircleGlass uses their ratio. Fresnel off omits partial reflections, not TIR. No detected-image or 3D-sphere claim.';fieldset.append(note);
+    }
+    if(component.type==='circular-cap-dielectric'){
+      const note=document.createElement('p');note.className='muted';
+      note.textContent=session.document.schemaVersion===OPTICAL_BENCH_V40_VERSION?
+        'Pinned native Glass circular cap closed by a flat chord centred at (x, y). normalDeg points from base midpoint toward curved apex; admits minor caps (capHeight < radius), hemispheres (capHeight = radius), and major caps (radius < capHeight < 2*radius). Supports interior sources, flat touching/silvering, and concentric curved silvering.':
+        'Pinned native Glass circular cap with flat vertical base at x and rightward apex at x + capHeight. Fresnel-off is explicit; native TIR remains active.';
+      fieldset.append(note);
     }
     if(component.type==='planar-interface'){
       const note=document.createElement('p');note.className='muted';
