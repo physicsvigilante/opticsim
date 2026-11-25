@@ -5,18 +5,11 @@ description: Interpret an optics problem into one bounded task using existing ph
 
 # One interpreted problem, one execution entry point
 
-Read `AGENTS.md`, `docs/UNIFIED-PROBLEM-WORKFLOW.md`, and the live
-`node scripts/run-problem.mjs capabilities` output. Preserve the original
-problem reference, stated facts, unknowns, assumptions and requested quantities
-before execution. The tool does not read images or understand natural-language
-physics; the LLM performs that interpretation.
+Read `AGENTS.md`, `docs/UNIFIED-PROBLEM-WORKFLOW.md`, `docs/WHICH-MODEL.md`, and the live `node scripts/run-problem.mjs capabilities` output (or `node scripts/author-scene.mjs bench-capabilities` for the slim `v40` native bench contract). Preserve the original problem reference, stated facts, unknowns, assumptions and requested quantities before execution. The tool does not read images or understand natural-language physics; the LLM performs that interpretation.
 
-Use the existing minimal authoring request or reduced planar-angular facts in
-`physical`. Put existing typed requested quantities in `requests`; the
-`opticsim-problem-v1` wrapper routes them deterministically. Use null physical
-representation and an unavailable quantity rather than silently substituting
-an easier apparatus. Unknown kinds remain unavailable; never count that as a
-proof that the original problem is physically underdetermined.
+**Default native bench (`v40`):** For any new native 2D ray-tracing representation inside `opticsim-problem-v1`, set `physical.model` to `"native-optical-bench"` with explicit `backgroundIndex` (`[1, 4]`), `lengthUnit`, and `components`. `v40` composes `1–4` point sources (single-ray, directional, or full-circle; ambient or strictly inside circle/cap/prism/quad) OR `1` external `parallel-beam`, `0–4` finite dielectrics (`circular-dielectric`, oriented `circular-cap-dielectric` minor/hemisphere/major caps, `triangular-prism`, `polygon-dielectric`, signed/flat `spherical-lens`; disjoint, 2–4 layer touching flat media, or coaxial cemented doublets/triplets), `0–4` decentered vertical `ideal-lens`, `0–4` `plane-mirror` (disjoint, corner-touching enclosures, or flush flat silvering), `0–2` curved mirrors (`circular-arc-mirror` with exact arc clearances or concentric curved silvering, `ideal-curved-mirror`), `0–2` opaque stops, and `0–2` passive detectors (`maxRayDepth <= 16`, `v40EndpointsVerified`). For coaxial paraxial stacks that also need side-by-side native ray corroboration, use `node scripts/witness-optical-bench.mjs capabilities|plan|run`.
+
+Use a `v40` (or legacy) minimal authoring request, reduced analytical facts (e.g. `opticsim-coaxial-paraxial-stack-facts-v1`, `opticsim-planar-angular-facts-v1`, `opticsim-plane-mirror-angular-facts-v1`, `opticsim-curved-mirror-facts-v1`, `opticsim-prism-angular-facts-v1`), or `null` in `physical`. Put existing typed requested quantities in `requests`; the `opticsim-problem-v1` wrapper routes them deterministically. Use `null` physical representation and an unavailable quantity rather than silently substituting an easier apparatus. Unknown kinds remain unavailable; never count that as a proof that the original problem is physically underdetermined.
 
 For sequential **plane-mirror angular inverses**, the physical view
 `opticsim-plane-mirror-angular-facts-v1` takes 2–4 ordered mirror IDs
@@ -61,8 +54,8 @@ mirror, fixed focal length and time unit; transverse motion includes
 changing magnification. Focal infinity is not a finite velocity.
 
 Native scenes distinguish `ideal-curved-mirror` from
-`circular-arc-mirror`: all geometry and brightness are explicit, scenes
-use v6, and numerical circular rays can aberrate. Their measured reflection
+`circular-arc-mirror`: all geometry and brightness are explicit, new scenes
+use `v40` (`native-optical-bench`, or legacy `v6`), and numerical circular rays can aberrate. Their measured reflection
 counts are not detected images. Keep local transverse height distinct
 from global y. Later physical edits make attached calculations historical;
 recalculate using the new facts rather than presenting old values as current.

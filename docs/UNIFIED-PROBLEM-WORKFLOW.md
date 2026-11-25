@@ -37,12 +37,7 @@ node scripts/run-problem.mjs problem.json --out test-artifacts/llm-authoring/att
 }
 ```
 
-`physical` is an existing minimal authoring request, the existing reduced
-planar-angular facts, or `null` for explicitly unrepresented physics. No new
-apparatus fields are introduced. A nullable input does not make a problem
-unanswerable in principle; it records that this author has supplied no
-supported physical representation. The original statement/image remains the
-source of truth.
+`physical` is an existing minimal authoring request — **prefer `v40` (`model: "native-optical-bench"`, explicit `backgroundIndex` in `[1, 4]`, `lengthUnit`, `components`) for new native 2D ray-tracing setups** (see `opticalBench` in `node scripts/run-problem.mjs capabilities` or `node scripts/author-scene.mjs bench-capabilities`) — an existing reduced analytical-facts object (planar-angular, prism, lens-train, coaxial-paraxial-stack, curved/plane mirror, etc.), or `null` for explicitly unrepresented physics. No new apparatus fields are introduced. A nullable input does not make a problem unanswerable in principle; it records that this author has supplied no supported physical representation. The original statement/image remains the source of truth.
 
 `requests` reuses existing observable and angular-query kinds. The wrapper
 supplies the angular-query format marker mechanically. A maximum of 16 total

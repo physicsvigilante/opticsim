@@ -59,7 +59,7 @@ export function checkCandidate(text, core,{captureDetectorHits=false,captureRayP
   const terminalComplete = ['completed', 'completed-with-warnings'].includes(session.state);
   const missingAudit = terminalComplete && !hasEndpointEvidence(doc,session.data);
   const completed = terminalComplete && !missingAudit;
-  const expectedSources=doc.physics.components.filter(c=>c.type==='point-source');
+  const expectedSources=doc.physics.components.filter(c=>c.type==='point-source'||c.type==='parallel-beam');
   const sourceReadings=session.data?.emissionsById || {};
   const sourceState = !completed ? 'incomplete-or-failed' :
     expectedSources.every(c=>Number.isInteger(sourceReadings[c.id]?.emitted)&&

@@ -6,7 +6,7 @@ import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {capabilities,opticalBenchCapabilities,prepareScene,reviseScene,AuthoringError} from '../src/authoring.js';
+import {capabilities,opticalBenchCapabilities,prepareScene,reviseScene,reviseComponents,AuthoringError} from '../src/authoring.js';
 import {problemCapabilities,resolveProblemRequest} from '../src/problem-authoring.js';
 import {serializeSave} from '../src/contract.js';
 import {snapshotNativeObservations} from '../src/native-observations.js';
@@ -62,6 +62,7 @@ function usage() {
     '  node scripts/author-scene.mjs problem <request.json> [--illustrate] [--out test-artifacts/llm-authoring/<fresh-name>]\n'+
     '  node scripts/author-scene.mjs evaluate <request.json> [--out test-artifacts/llm-authoring/<fresh-name>]\n'+
     '  node scripts/author-scene.mjs revise <scene.json> <changes.json> [--out test-artifacts/llm-authoring/<fresh-name>]\n'+
+    '  node scripts/author-scene.mjs revise-components <scene.json> <patch.json> [--out test-artifacts/llm-authoring/<fresh-name>]\n'+
     'All accepted commands use the same pinned native core. Existing output directories are refused.\n';
 }
 function record(summary,details,sceneText,context){
@@ -88,8 +89,9 @@ function main(context){
     const payload=command==='capabilities'?capabilities():command==='bench-capabilities'?opticalBenchCapabilities():problemCapabilities();
     process.stdout.write(JSON.stringify(payload,null,2)+'\n');return;
   }
-  if(!['problem','evaluate','revise'].includes(command))throw new Error(usage());
-  const count=command==='revise'?2:1;
+  if(!['problem','evaluate','revise','revise-components'].includes(command))throw new Error(usage());
+  const isEdit=command==='revise'||command==='revise-components';
+  const count=isEdit?2:1;
   if(args.length<count)throw new Error(usage());
   let illustration=false,outPrefix=null;
   for(let i=count;i<args.length;i++){
@@ -97,7 +99,7 @@ function main(context){
     else if(args[i]==='--out'&&outPrefix===null&&i+1<args.length)outPrefix=args[++i];
     else throw new Error(usage());
   }
-  const bytes=readInput(args[0]),changes=command==='revise'?readInput(args[1]):null;
+  const bytes=readInput(args[0]),changes=isEdit?readInput(args[1]):null;
   context.inputSha256=hash(bytes);
   if(changes)context.changesSha256=hash(changes);
   // Reserve before any native work. Keep original input bytes even when JSON
@@ -131,7 +133,7 @@ function main(context){
       throw new AuthoringError([{path:'$.expectedSha256',code:'STALE_REVISION',
         message:'The authored scene has changed; reload before applying this edit'}]);
     const {expectedSha256,...changeSet}=edit;
-    prepared=reviseScene(request,changeSet);
+    prepared=command==='revise-components'?reviseComponents(request,changeSet):reviseScene(request,changeSet);
   }
   execFileSync(process.execPath,[resolve(root,'scripts/build.mjs'),'--test'],
     {cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']});
@@ -141,6 +143,9 @@ function main(context){
   const summary={...result.summary,
     ...(context.problem?{problem:context.problem}:{}),
     ...(command==='revise'?{revision:{changesApplied:prepared.changesApplied,
+      priorAssumptions:'unknown-from-scene-alone; retain the original qualification report'}}:
+      command==='revise-components'?{revision:{operationsApplied:prepared.operationsApplied,
+      addedIds:prepared.addedIds,removedIds:prepared.removedIds,
       priorAssumptions:'unknown-from-scene-alone; retain the original qualification report'}}:
       {preparation:prepared.preparation})};
   if(!context.output)summary.document=prepared.document;
