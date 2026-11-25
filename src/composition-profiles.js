@@ -178,19 +178,21 @@ define(39,'native-general-hybrid-bench',{
   ...Object.fromEntries(stops.map(t=>[t,range(0,2)])),
   [detector]:range(0,2)
 },[group([prism,polygon,circle,thick],1,2),group(curves,0,2),group(stops,0,2)],[rule('native-general-hybrid')],single);
-// v40 unified modern optical bench: 0-2 disjoint finite dielectric bodies
-// (zero-body deletion closure, explicit physics.backgroundIndex, interior-or-ambient
+// v40 unified modern optical bench: 0-4 finite dielectric bodies (disjoint,
+// clean coincident flat layered contact, or coaxial cemented lenses; zero-body
+// deletion closure, explicit physics.backgroundIndex, interior-or-ambient
 // point sources in single-ray/directional/full-circle modes for circle/prism/quad,
 // external parallel beam, 0-4 independently centered vertical ideal lenses,
+// 0-4 plane mirrors including clean corner-touching enclosures and flat silvering,
 // deterministic simulation.randomSeed, maxRayDepth <= 16).
 define(40,'native-optical-bench',{
   [source]:range(0,4),[beam]:range(0,1),
-  [prism]:range(0,2),[polygon]:range(0,2),[circle]:range(0,2),[thick]:range(0,2),
-  [lens]:range(0,4),[mirror]:range(0,2),
+  [prism]:range(0,4),[polygon]:range(0,4),[circle]:range(0,4),[thick]:range(0,4),
+  [lens]:range(0,4),[mirror]:range(0,4),
   ...Object.fromEntries(curves.map(t=>[t,range(0,2)])),
   ...Object.fromEntries(stops.map(t=>[t,range(0,2)])),
   [detector]:range(0,2)
-},[group([prism,polygon,circle,thick],0,2),group(curves,0,2),group(stops,0,2)],[rule('native-optical-bench-v40')],['single-ray',...fan]);
+},[group([prism,polygon,circle,thick],0,4),group(curves,0,2),group(stops,0,2)],[rule('native-optical-bench-v40')],['single-ray',...fan]);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 
@@ -320,7 +322,7 @@ const guidanceByProfile=freeze({
  },
  'native-optical-bench@40':{
   label:'Unified optical bench · v40',
-  geometry:'Explicit ambient backgroundIndex (1–4) and deterministic randomSeed. Combine either 1–4 point sources (single-ray, directional, or full-circle; ambient or strictly inside circle/prism/quad) or 1 external parallel Beam with 0–2 finite dielectrics (disjoint >= 0.01 mm, coincident flat layered contact, or coaxial cemented doublet; outsideIndex = backgroundIndex; spherical-lens admits signed +convex/−concave or null flat radii), 0–4 vertical ideal lenses (independent x, y), 0–2 curved mirrors (disjoint or silvered on a curved lens/circle face), 0–2 plane mirrors (disjoint or silvered on a flat dielectric face), 0–2 opaque stops and 0–2 detectors (max 16 components, maxRayDepth <= 16).',
+  geometry:'Explicit ambient backgroundIndex (1–4) and deterministic randomSeed. Combine either 1–4 point sources (single-ray, directional, or full-circle; ambient or strictly inside circle/prism/quad) or 1 external parallel Beam with 0–4 finite dielectrics (disjoint >= 0.01 mm, coincident flat layered contact, or coaxial cemented lenses; outsideIndex = backgroundIndex; spherical-lens admits signed +convex/−concave or null flat radii), 0–4 vertical ideal lenses (independent x, y), 0–2 curved mirrors (disjoint or silvered on a curved lens/circle face), 0–4 plane mirrors (disjoint, corner-touching enclosures, or silvered on a flat dielectric face), 0–2 opaque stops and 0–2 detectors (max 16 components, maxRayDepth <= 16).',
   scope:'Pinned PhyDemo traces every refraction, merged glass/mirror contact, TIR, Fresnel branch, lens deflection, reflection, absorption and detector crossing. Endpoint, corner, tangency (< 0.01 mm), grazing, near-critical, or truncated runs withhold accepted measurements.'
  }
 });

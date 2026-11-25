@@ -301,6 +301,27 @@ export function planeMirrorCoincidentWithBody(mirrorSeg,body,tol=BENCH_CONTACT_T
   return false;
 }
 
+// Clean corner-touching contact between two non-collinear finite plane mirrors
+// (e.g. kaleidoscope, corner reflector, equilateral mirror triangle, or 4-wall mirror box).
+// Requires exactly one shared endpoint within tol (1e-11 mm), corner angle >= ~2.86 deg
+// (|uA x uB| >= 0.05), and both opposite endpoints strictly >= 0.01 mm clear of the other mirror.
+// Rejects X-crossings, T-junctions, collinear splices, grazing slivers, and near-corner gaps.
+export function planeMirrorsShareCleanCorner(segA,segB,tol=BENCH_CONTACT_TOL_MM){
+  const vA=delta(segA[0],segA[1]),vB=delta(segB[0],segB[1]);
+  const lenA=Math.hypot(vA.x,vA.y),lenB=Math.hypot(vB.x,vB.y);
+  if(!(lenA>0&&lenB>0&&Number.isFinite(lenA)&&Number.isFinite(lenB)))return false;
+  const sinAngle=Math.abs(cross(vA,vB))/(lenA*lenB);
+  if(!(sinAngle>=0.05))return false;
+  const matches=[];
+  for(let i=0;i<2;i++)for(let j=0;j<2;j++)
+    if(Math.hypot(segA[i].x-segB[j].x,segA[i].y-segB[j].y)<=tol)matches.push([i,j]);
+  if(matches.length!==1)return false;
+  const [iShared,jShared]=matches[0];
+  const aOther=segA[1-iShared],bOther=segB[1-jShared];
+  return pointSegmentDistance(aOther,segB)>=BENCH_CLEARANCE_MM&&
+         pointSegmentDistance(bOther,segA)>=BENCH_CLEARANCE_MM;
+}
+
 // Exact flush silvering of a circular-arc-mirror on a curved spherical-lens face or circular-dielectric boundary.
 export function arcMirrorCoincidentWithBody(arcMirror,body,tol=BENCH_CONTACT_TOL_MM){
   if(arcMirror.type!=='circular-arc-mirror')return false;

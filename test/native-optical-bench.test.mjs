@@ -543,13 +543,23 @@ test('v40 negative controls: exact membership boundaries, mismatched ambient, sp
     {id:'B1',type:'parallel-beam',parameters:{x:0,y:0,width:12,directionDeg:0,brightness:0.2}}
   ])),/Parallel emitter must lie completely outside/);
 
-  // 8. Cardinality bounds: >2 bodies or >4 ideal lenses -> rejected.
+  // 8. Cardinality bounds: >4 bodies, >4 ideal lenses, or >4 plane mirrors -> rejected.
   assert.throws(()=>prepareScene(v40Req([
     {id:'S1',type:'point-source',parameters:{x:-120,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
-    {id:'C1',type:'circular-dielectric',parameters:{x:-40,y:0,radius:10,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
-    {id:'C2',type:'circular-dielectric',parameters:{x:0,y:0,radius:10,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
-    {id:'C3',type:'circular-dielectric',parameters:{x:40,y:0,radius:10,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
-  ])),/0–2 finite dielectrics/);
+    {id:'C1',type:'circular-dielectric',parameters:{x:-80,y:0,radius:10,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'C2',type:'circular-dielectric',parameters:{x:-40,y:0,radius:10,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'C3',type:'circular-dielectric',parameters:{x:0,y:0,radius:10,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'C4',type:'circular-dielectric',parameters:{x:40,y:0,radius:10,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'C5',type:'circular-dielectric',parameters:{x:80,y:0,radius:10,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+  ])),/0–4 finite dielectrics/);
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-120,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'M1',type:'plane-mirror',parameters:{x:-80,y:0,orientationDeg:90,length:20}},
+    {id:'M2',type:'plane-mirror',parameters:{x:-40,y:0,orientationDeg:90,length:20}},
+    {id:'M3',type:'plane-mirror',parameters:{x:0,y:0,orientationDeg:90,length:20}},
+    {id:'M4',type:'plane-mirror',parameters:{x:40,y:0,orientationDeg:90,length:20}},
+    {id:'M5',type:'plane-mirror',parameters:{x:80,y:0,orientationDeg:90,length:20}}
+  ])),/0–4 plane mirrors/);
   assert.throws(()=>prepareScene(v40Req([
     {id:'S1',type:'point-source',parameters:{x:-120,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
     {id:'L1',type:'ideal-lens',parameters:{x:-80,y:0,focalLength:100,apertureHeight:40}},
@@ -1842,5 +1852,254 @@ test('Milestone 4B: all 6 curated v40 JEE browser starters exist in scenes/ and 
     assert.equal(run.summary.native.truncation,0,slug+' had truncation');
     assert.equal(run.summary.native.undefinedBehavior,0,slug+' had undefinedBehavior');
     assert.ok(run.summary.observations.detectorsById.D1.crossings>=1,slug+' should record >= 1 detector crossing on D1');
+  }
+});
+
+test('v40 multi-mirror enclosures: 90-deg corner reflector oracle, JEE A03 triangular mirror cavity, and JEE A04 4-wall mirror box',async()=>{
+  // 1. 90-degree corner reflector (M1 vertical, M2 horizontal meeting cleanly at (40, -20)):
+  // Any ray hitting M1 then M2 returns strictly antiparallel (-inDir)!
+  const inDeg=-25,inRad=inDeg*Math.PI/180;
+  const {document:cornerDoc}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0,y:10,brightness:0.2},emission:{mode:'single-ray',directionDeg:inDeg}},
+    {id:'M1',type:'plane-mirror',parameters:{x:40,y:0,orientationDeg:90,length:40}}, // (40,-20) -> (40,20)
+    {id:'M2',type:'plane-mirror',parameters:{x:20,y:-20,orientationDeg:0,length:40}}, // (0,-20) -> (40,-20)
+    {id:'D1',type:'ray-detector',parameters:{x:-10,y:-20,orientationDeg:90,length:60}}
+  ]));
+  const cReqs=[
+    {id:'m1',kind:'mirror-reflections',componentId:'M1'},
+    {id:'m2',kind:'mirror-reflections',componentId:'M2'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ];
+  const cRun=await evaluateDocument(cornerDoc,core,cReqs);
+  assert.equal(cRun.summary.executionPassed,true);
+  assert.equal(cRun.summary.observations.v40EndpointsVerified,true);
+  const cById=Object.fromEntries((await evaluateObservables(cornerDoc,cReqs,cRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(cById.m1.value,1);
+  assert.equal(cById.m2.value,1);
+  assert.equal(cById.hits.value.length,1);
+  assert.ok(Math.abs(cById.hits.value[0].incomingUnit.x-(-Math.cos(inRad)))<1e-12);
+  assert.ok(Math.abs(cById.hits.value[0].incomingUnit.y-(-Math.sin(inRad)))<1e-12);
+
+  // 2. JEE A03 equilateral triangular mirror enclosure (3 corner-touching plane mirrors + interior absorber stop):
+  const L=60,h=L*Math.sqrt(3)/2;
+  const {document:triDoc}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:20}},
+    {id:'M1',type:'plane-mirror',parameters:{x:0,y:-h/3,orientationDeg:0,length:L}},
+    {id:'M2',type:'plane-mirror',parameters:{x:L/4,y:h/6,orientationDeg:120,length:L}},
+    {id:'M3',type:'plane-mirror',parameters:{x:-L/4,y:h/6,orientationDeg:60,length:L}},
+    {id:'K1',type:'line-blocker',parameters:{x:-10,y:-5,orientationDeg:90,length:18}}
+  ]));
+  const triReqs=[
+    {id:'m1',kind:'mirror-reflections',componentId:'M1'},
+    {id:'m2',kind:'mirror-reflections',componentId:'M2'},
+    {id:'m3',kind:'mirror-reflections',componentId:'M3'},
+    {id:'k1',kind:'blocker-absorptions',componentId:'K1'}
+  ];
+  const triRun=await evaluateDocument(triDoc,core,triReqs);
+  assert.equal(triRun.summary.executionPassed,true);
+  assert.equal(triRun.summary.observations.v40EndpointsVerified,true);
+  const triById=Object.fromEntries((await evaluateObservables(triDoc,triReqs,triRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(triById.m1.value,1);
+  assert.equal(triById.m2.value,1);
+  assert.equal(triById.m3.value,1);
+  assert.equal(triById.k1.value,1);
+
+  // 3. JEE A04 4-wall rectangular mirror box (4 corner-touching plane mirrors + interior absorber):
+  // Exact 45-deg orbit in [-40, 40] x [-30, 30] from (-15, -10):
+  // M_top (25, 30) -> M_right (40, 15) -> M_bot (-5, -30) -> M_left (-40, 5) -> K1 (-25, 20)!
+  const {document:boxDoc}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-15,y:-10,brightness:0.2},emission:{mode:'single-ray',directionDeg:45}},
+    {id:'M_top',type:'plane-mirror',parameters:{x:0,y:30,orientationDeg:0,length:80}},
+    {id:'M_bot',type:'plane-mirror',parameters:{x:0,y:-30,orientationDeg:0,length:80}},
+    {id:'M_right',type:'plane-mirror',parameters:{x:40,y:0,orientationDeg:90,length:60}},
+    {id:'M_left',type:'plane-mirror',parameters:{x:-40,y:0,orientationDeg:90,length:60}},
+    {id:'K1',type:'line-blocker',parameters:{x:-25,y:20,orientationDeg:0,length:12}}
+  ]));
+  const boxReqs=[
+    {id:'mt',kind:'mirror-reflections',componentId:'M_top'},
+    {id:'mb',kind:'mirror-reflections',componentId:'M_bot'},
+    {id:'mr',kind:'mirror-reflections',componentId:'M_right'},
+    {id:'ml',kind:'mirror-reflections',componentId:'M_left'},
+    {id:'k1',kind:'blocker-absorptions',componentId:'K1'}
+  ];
+  const boxRun=await evaluateDocument(boxDoc,core,boxReqs);
+  assert.equal(boxRun.summary.executionPassed,true);
+  assert.equal(boxRun.summary.observations.v40EndpointsVerified,true);
+  const boxById=Object.fromEntries((await evaluateObservables(boxDoc,boxReqs,boxRun.summary)).results.map(r=>[r.id,r]));
+  assert.equal(boxById.mt.value,1);
+  assert.equal(boxById.mr.value,1);
+  assert.equal(boxById.mb.value,1);
+  assert.equal(boxById.ml.value,1);
+  assert.equal(boxById.k1.value,1);
+});
+
+test('v40 3-4 layer touching dielectrics: oil-water-glass Snell oracle, 4-layer stack, oil-water-glass-mirror tank, cemented triplet, and 4->0 deletion closure',async()=>{
+  // 1. 3-layer touching stack (air -> oil 1.45 -> water 1.33 -> glass 1.5 -> air) exact 4-surface Snell oracle:
+  // Snell's invariant n * sin(theta) = sin(theta0) holds across every parallel boundary!
+  const deg0=25,rad0=deg0*Math.PI/180,sin0=Math.sin(rad0);
+  const tanIn=n=>{const s=sin0/n;return s/Math.sqrt(1-s*s);};
+  // Source at (-20, 0): travels 20 mm in air, 15 mm in oil (1.45), 15 mm in water (1.33), 15 mm in glass (1.5), 25 mm in air to D1 at x=70:
+  const expectedY=20*tanIn(1)+15*tanIn(1.45)+15*tanIn(1.33)+15*tanIn(1.5)+25*tanIn(1);
+  const {document:stack3}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-20,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:deg0}},
+    {id:'B1',type:'polygon-dielectric',parameters:{x1:0,y1:-40,x2:15,y2:-40,x3:15,y3:40,x4:0,y4:40,insideIndex:1.45,outsideIndex:1,partialReflection:false}},
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:15,y1:-40,x2:30,y2:-40,x3:30,y3:40,x4:15,y4:40,insideIndex:1.33,outsideIndex:1,partialReflection:false}},
+    {id:'B3',type:'polygon-dielectric',parameters:{x1:30,y1:-40,x2:45,y2:-40,x3:45,y3:40,x4:30,y4:40,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:70,y:0,orientationDeg:90,length:100}}
+  ]));
+  const s3Reqs=[
+    {id:'b1',kind:'interface-face-events',componentId:'B1'},
+    {id:'b2',kind:'interface-face-events',componentId:'B2'},
+    {id:'b3',kind:'interface-face-events',componentId:'B3'},
+    {id:'hits',kind:'detector-hit-events',componentId:'D1'}
+  ];
+  const s3Run=await evaluateDocument(stack3,core,s3Reqs);
+  assert.equal(s3Run.summary.executionPassed,true);
+  assert.equal(s3Run.summary.observations.v40EndpointsVerified,true);
+  const s3ById=Object.fromEntries((await evaluateObservables(stack3,s3Reqs,s3Run.summary)).results.map(r=>[r.id,r]));
+  assert.equal(s3ById.hits.value.length,1);
+  assert.ok(Math.abs(s3ById.hits.value[0].pointMm.y-expectedY)<1e-6,
+    `3-layer stack expected y=${expectedY}, got ${s3ById.hits.value[0].pointMm.y}`);
+  // Verify exact merged partner reporting across BOTH interior boundaries (B1->B2 and B2->B3):
+  assert.equal(s3ById.b1.value['face-23'].first.mergedWithId,'B2');
+  assert.equal(s3ById.b1.value['face-23'].first.incidentIndex,1.45);
+  assert.equal(s3ById.b1.value['face-23'].first.destinationIndex,1.33);
+  assert.equal(s3ById.b2.value['face-23'].first.mergedWithId,'B3');
+  assert.equal(s3ById.b2.value['face-23'].first.incidentIndex,1.33);
+  assert.equal(s3ById.b2.value['face-23'].first.destinationIndex,1.5);
+  assert.equal(s3ById.b3.value['face-41'].interactions,0); // owned by B2 merge
+  assert.equal(s3ById.b3.value['face-23'].interactions,1); // exits glass -> air
+
+  // Direct runtime failed-merge guard check on MIDDLE body B2 in 3-layer stack (B2 has TWO touching partners B1 & B3):
+  const loaded3=core.loadDocument(stack3);
+  const objB2=loaded3.scene.objs[loaded3.idMap.get('B2')];
+  objB2.onRayIncident({p1:{x:20,y:0},p2:{x:30,y:0},brightness_s:0.1,brightness_p:0.1},0,{x:30,y:0},[]); // unmerged hit at x=30 (B2/B3 contact)!
+  const diagFail3=core.diagnostics(loaded3.scene,{error:null,warning:null,processedRayCount:1,totalTruncation:0,totalUndefinedBehavior:0,brightnessScale:1},null,null,null,null,null,{nativeEvent:'simulationComplete'});
+  assert.equal(diagFail3.v40EndpointsVerified,false);
+  assert.match(diagFail3.errors.join(' '),/shared contact boundary with B3 did not merge/);
+
+  // 2. 4-component oil-water-glass-mirror tank (3 touching slabs + flush bottom mirror M1):
+  const {document:tank4}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-30,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:15}},
+    {id:'B1',type:'polygon-dielectric',parameters:{x1:0,y1:-50,x2:15,y2:-50,x3:15,y3:50,x4:0,y4:50,insideIndex:1.45,outsideIndex:1,partialReflection:false}},
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:15,y1:-50,x2:30,y2:-50,x3:30,y3:50,x4:15,y4:50,insideIndex:1.33,outsideIndex:1,partialReflection:false}},
+    {id:'B3',type:'polygon-dielectric',parameters:{x1:30,y1:-50,x2:45,y2:-50,x3:45,y3:50,x4:30,y4:50,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'M1',type:'plane-mirror',parameters:{x:45,y:0,orientationDeg:90,length:100}},
+    {id:'D1',type:'ray-detector',parameters:{x:-15,y:0,orientationDeg:90,length:100}}
+  ]));
+  const t4Run=await evaluateDocument(tank4,core,[
+    {id:'m1',kind:'mirror-reflections',componentId:'M1'},
+    {id:'d1',kind:'detector-crossings',componentId:'D1'}
+  ]);
+  assert.equal(t4Run.summary.executionPassed,true);
+  assert.equal(t4Run.summary.observations.v40EndpointsVerified,true);
+  assert.equal(t4Run.summary.observations.reflectionsById.M1,1);
+  assert.equal(t4Run.summary.observations.detectorsById.D1.crossings,2); // forward + returning!
+
+  // 3. 3-element coaxial cemented triplet (L1 + L2 + L3 signed spherical-lens bodies):
+  const {document:triplet}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-60,y:6,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'L1',type:'spherical-lens',parameters:{x:0,y:0,apertureHeight:36,centerThickness:10,frontRadius:60,backRadius:50,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'L2',type:'spherical-lens',parameters:{x:9,y:0,apertureHeight:36,centerThickness:8,frontRadius:-50,backRadius:-50,insideIndex:1.65,outsideIndex:1,partialReflection:false}},
+    {id:'L3',type:'spherical-lens',parameters:{x:18,y:0,apertureHeight:36,centerThickness:10,frontRadius:50,backRadius:60,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:100,y:0,orientationDeg:90,length:80}}
+  ]));
+  const trRun=await evaluateDocument(triplet,core,[{id:'d1',kind:'detector-crossings',componentId:'D1'}]);
+  assert.equal(trRun.summary.executionPassed,true);
+  assert.equal(trRun.summary.observations.v40EndpointsVerified,true);
+  assert.equal(trRun.summary.observations.detectorsById.D1.crossings,1);
+
+  // 4. 4-body stack + structural 4 -> 0 deletion closure preserving backgroundIndex & randomSeed:
+  const {document:stack4}=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-20,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:10}},
+    {id:'B1',type:'polygon-dielectric',parameters:{x1:0,y1:-40,x2:10,y2:-40,x3:10,y3:40,x4:0,y4:40,insideIndex:1.4,outsideIndex:1.2,partialReflection:false}},
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:10,y1:-40,x2:20,y2:-40,x3:20,y3:40,x4:10,y4:40,insideIndex:1.5,outsideIndex:1.2,partialReflection:false}},
+    {id:'B3',type:'polygon-dielectric',parameters:{x1:20,y1:-40,x2:30,y2:-40,x3:30,y3:40,x4:20,y4:40,insideIndex:1.6,outsideIndex:1.2,partialReflection:false}},
+    {id:'B4',type:'polygon-dielectric',parameters:{x1:30,y1:-40,x2:40,y2:-40,x3:40,y3:40,x4:30,y4:40,insideIndex:1.45,outsideIndex:1.2,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:60,y:0,orientationDeg:90,length:80}}
+  ],{backgroundIndex:1.2}));
+  const s4Run=await evaluateDocument(stack4,core,[{id:'d1',kind:'detector-crossings',componentId:'D1'}]);
+  assert.equal(s4Run.summary.executionPassed,true);
+  assert.equal(s4Run.summary.observations.v40EndpointsVerified,true);
+  assert.equal(s4Run.summary.observations.detectorsById.D1.crossings,1);
+  const {document:cleared}=reviseComponents(stack4,{
+    format:COMPONENT_REVISION_FORMAT,
+    operations:[{op:'remove',id:'B1'},{op:'remove',id:'B2'},{op:'remove',id:'B3'},{op:'remove',id:'B4'}]
+  });
+  assert.equal(cleared.physics.backgroundIndex,1.2);
+  assert.equal(cleared.physics.components.length,2);
+});
+
+test('v40 multi-mirror & 3-4 dielectric negative controls: mirror X/T/collinear/sliver/gap/non-mirror corners, mixed Fresnel chains, and legacy isolation',()=>{
+  const s1={id:'S1',type:'point-source',parameters:{x:-40,y:5,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}};
+  // 1. X-crossing plane mirrors -> rejected
+  assert.throws(()=>prepareScene(v40Req([
+    s1,
+    {id:'M1',type:'plane-mirror',parameters:{x:20,y:0,orientationDeg:0,length:40}},
+    {id:'M2',type:'plane-mirror',parameters:{x:20,y:0,orientationDeg:90,length:40}}
+  ])),/finite segments intersect or nearly touch/);
+
+  // 2. T-junction plane mirrors -> rejected
+  assert.throws(()=>prepareScene(v40Req([
+    s1,
+    {id:'M1',type:'plane-mirror',parameters:{x:20,y:0,orientationDeg:0,length:40}},
+    {id:'M2',type:'plane-mirror',parameters:{x:20,y:20,orientationDeg:90,length:40}}
+  ])),/finite segments intersect or nearly touch/);
+
+  // 3. Collinear end-to-end plane mirror splice (180 deg) -> rejected
+  assert.throws(()=>prepareScene(v40Req([
+    s1,
+    {id:'M1',type:'plane-mirror',parameters:{x:0,y:0,orientationDeg:0,length:20}},
+    {id:'M2',type:'plane-mirror',parameters:{x:20,y:0,orientationDeg:0,length:20}}
+  ])),/finite segments intersect or nearly touch/);
+
+  // 4. Acute 2-deg sliver wedge -> rejected (|sin(2 deg)| < 0.05)
+  const rad2=2*Math.PI/180;
+  assert.throws(()=>prepareScene(v40Req([
+    s1,
+    {id:'M1',type:'plane-mirror',parameters:{x:20,y:0,orientationDeg:0,length:40}},
+    {id:'M2',type:'plane-mirror',parameters:{x:20*Math.cos(rad2),y:20*Math.sin(rad2),orientationDeg:2,length:40}}
+  ])),/finite segments intersect or nearly touch/);
+
+  // 5. Near-corner gap (0.002 mm) -> rejected
+  assert.throws(()=>prepareScene(v40Req([
+    s1,
+    {id:'M1',type:'plane-mirror',parameters:{x:40,y:0,orientationDeg:90,length:40}},
+    {id:'M2',type:'plane-mirror',parameters:{x:20-0.002,y:-20,orientationDeg:0,length:40}}
+  ])),/finite segments intersect or nearly touch/);
+
+  // 6. Non-mirror segment (line-blocker) sharing a corner with a plane mirror -> rejected
+  assert.throws(()=>prepareScene(v40Req([
+    s1,
+    {id:'M1',type:'plane-mirror',parameters:{x:40,y:0,orientationDeg:90,length:40}},
+    {id:'K1',type:'line-blocker',parameters:{x:20,y:-20,orientationDeg:0,length:40}}
+  ])),/finite segments intersect or nearly touch/);
+
+  // 7. Initial ray aimed directly at a shared mirror corner -> rejected by endpoint guard
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0,y:-20,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'M1',type:'plane-mirror',parameters:{x:40,y:0,orientationDeg:90,length:40}},
+    {id:'M2',type:'plane-mirror',parameters:{x:20,y:-20,orientationDeg:0,length:40}}
+  ])),/finite component endpoint|from finite segment/);
+
+  // 8. Mixed partialReflection across a 3-body touching chain (A:false | B:false | C:true) -> rejected
+  assert.throws(()=>prepareScene(v40Req([
+    s1,
+    {id:'B1',type:'polygon-dielectric',parameters:{x1:0,y1:-40,x2:15,y2:-40,x3:15,y3:40,x4:0,y4:40,insideIndex:1.45,outsideIndex:1,partialReflection:false}},
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:15,y1:-40,x2:30,y2:-40,x3:30,y3:40,x4:15,y4:40,insideIndex:1.33,outsideIndex:1,partialReflection:false}},
+    {id:'B3',type:'polygon-dielectric',parameters:{x1:30,y1:-40,x2:45,y2:-40,x3:45,y3:40,x4:30,y4:40,insideIndex:1.5,outsideIndex:1,partialReflection:true}}
+  ])),/matching partialReflection/);
+
+  // 9. Legacy v38/v39 isolation: 3 dielectrics and 3 plane mirrors MUST remain rejected in v38/v39!
+  for(const model of ['native-general-refractive-bench','native-general-hybrid-bench']){
+    assert.throws(()=>prepareScene({
+      model,lengthUnit:'mm',
+      components:[
+        s1,
+        {id:'C1',type:'circular-dielectric',parameters:{x:0,y:0,radius:8,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+        {id:'C2',type:'circular-dielectric',parameters:{x:25,y:0,radius:8,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+        {id:'C3',type:'circular-dielectric',parameters:{x:50,y:0,radius:8,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+      ]
+    }),/1–2 finite dielectrics|disjoint/);
   }
 });
