@@ -22,8 +22,8 @@ import {
   BENCH_CLEARANCE_MM,
   BENCH_CONTACT_TOL_MM,
   BENCH_NATIVE_STATE_LIMIT,
-  DIELECTRIC_BODY_TYPES,
   OPTICAL_BENCH_V40_VERSION,
+  V40_DIELECTRIC_BODY_TYPES,
   allowedCoord,
   arcMirrorCoincidentWithBody,
   bodiesDisjointExact,
@@ -40,10 +40,12 @@ import {
   installBenchEndpointAudit,
   planeMirrorCoincidentWithBody,
   planeMirrorsShareCleanCorner,
+  pointCircularArcMirrorDistance,
   pointSegmentDistance,
   resolveMergedDielectricIndices,
   resolveSourceMembership,
   segmentOutsideBodyExact,
+  segmentOutsideCircularArcMirror,
   sphericalLensesCemented,
   validateParallelBeamAdmission,
   validatePointSourceSeparation
@@ -58,7 +60,7 @@ export const V40_DEFAULT_RANDOM_SEED='opticsim-v40-seed-v1';
 export const V40_NATIVE_STATE_LIMIT=BENCH_NATIVE_STATE_LIMIT;
 export const V40_GRAZING_MIN_COS=1e-4;
 export const V40_CRITICAL_MIN_MARGIN=1e-6;
-export const V40_DIELECTRIC_TYPES=DIELECTRIC_BODY_TYPES;
+export const V40_DIELECTRIC_TYPES=V40_DIELECTRIC_BODY_TYPES;
 
 const SEGMENT_TYPES=Object.freeze(['ideal-lens','plane-mirror','line-blocker',FINITE_APERTURE_TYPE,'ray-detector']);
 
@@ -147,12 +149,16 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
     const pts=curvedPoints(c);
     if(pts.some(q=>!allowedCoord(q.x,q.y)))
       fail(cPath,'Derived curved-mirror points exceed coordinate bounds.','UNSUPPORTED_SCOPE');
-    const disk={id:c.id,center:{x:p.x,y:p.y},radius:Math.hypot(pts[0].x-p.x,pts[0].y-p.y)};
+    const disk={id:c.id,comp:c,center:{x:p.x,y:p.y},radius:Math.hypot(pts[0].x-p.x,pts[0].y-p.y)};
     for(const other of curveDisks)
       if(Math.hypot(other.center.x-disk.center.x,other.center.y-disk.center.y)<other.radius+disk.radius+OPTICAL_BENCH_V40_CLEARANCE_MM)
         fail(path,'Curved aperture bounding disks must be separated by at least 0.01 mm ('+other.id+' and '+disk.id+').','UNSUPPORTED_SCOPE');
-    if(points.some(s=>Math.hypot(s.x-disk.center.x,s.y-disk.center.y)<disk.radius+OPTICAL_BENCH_V40_CLEARANCE_MM))
+    if(c.type==='circular-arc-mirror'){
+      if(points.some(s=>pointCircularArcMirrorDistance(s,c)<OPTICAL_BENCH_V40_CLEARANCE_MM))
+        fail(path,'Point source must lie at least 0.01 mm from circular-arc-mirror surface ('+disk.id+').','UNSUPPORTED_SCOPE');
+    }else if(points.some(s=>Math.hypot(s.x-disk.center.x,s.y-disk.center.y)<disk.radius+OPTICAL_BENCH_V40_CLEARANCE_MM)){
       fail(path,'Point source must lie at least 0.01 mm outside curved aperture bounding disk ('+disk.id+').','UNSUPPORTED_SCOPE');
+    }
     if(beamSeg&&pointSegmentDistance(disk.center,beamSeg)<disk.radius+OPTICAL_BENCH_V40_CLEARANCE_MM)
       fail(path,'Parallel emitter must lie at least 0.01 mm outside curved aperture bounding disk ('+disk.id+').','UNSUPPORTED_SCOPE');
     for(const body of bodies)
@@ -212,9 +218,14 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
           fail(cPath,'finite segments intersect or nearly touch ('+other.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
         }
       }
-      for(const d of curveDisks)
-        if(pointSegmentDistance(d.center,arm)<d.radius+OPTICAL_BENCH_V40_CLEARANCE_MM)
+      for(const d of curveDisks){
+        if(d.comp.type==='circular-arc-mirror'){
+          if(!segmentOutsideCircularArcMirror(arm,d.comp,OPTICAL_BENCH_V40_CLEARANCE_MM))
+            fail(cPath,'finite segment intersects or approaches circular-arc-mirror within 0.01 mm ('+d.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
+        }else if(pointSegmentDistance(d.center,arm)<d.radius+OPTICAL_BENCH_V40_CLEARANCE_MM){
           fail(cPath,'finite segment enters curved mirror bounding disk ('+d.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
+        }
+      }
       for(const circle of circleDisks)
         if(pointSegmentDistance(circle.center,arm)<circle.radius+OPTICAL_BENCH_V40_CLEARANCE_MM)
           fail(cPath,'finite segment intersects or nearly touches opaque circle ('+circle.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
@@ -418,19 +429,20 @@ export function opticalBenchCapabilities(){
     contactToleranceMm:BENCH_CONTACT_TOL_MM,
     emitters:{
       rule:'Choose EITHER 1–4 point-source (single-ray, directional, or full-circle) OR 1 external parallel-beam (not both).',
-      'point-source':{parameters:['x','y','brightness'],emission:{modes:['single-ray','directional','full-circle'],singleRayRequired:['directionDeg'],directionalRequired:['directionDeg','angleDeg']},interiorPlacement:'Allowed in ambient medium OR strictly inside circular-dielectric, triangular-prism, or polygon-dielectric (>= 0.01 mm from boundary). Exterior-only for spherical-lens.'},
+      'point-source':{parameters:['x','y','brightness'],emission:{modes:['single-ray','directional','full-circle'],singleRayRequired:['directionDeg'],directionalRequired:['directionDeg','angleDeg']},interiorPlacement:'Allowed in ambient medium OR strictly inside circular-dielectric, circular-cap-dielectric, triangular-prism, or polygon-dielectric (>= 0.01 mm from boundary). Exterior-only for spherical-lens.'},
       'parallel-beam':{parameters:['x','y','width','directionDeg','brightness'],interiorPlacement:'Must lie completely outside all finite dielectric bodies (>= 0.01 mm).'}
     },
     components:{
-      finiteDielectrics:{groupCount:[0,4],note:'Zero-body deletion closure (4 -> ... -> 0) and equal-index neutral bodies admitted. Every dielectric pair must be disjoint (>= 0.01 mm), share a clean coincident flat boundary (<= 1e-11 mm, overlap >= 1 mm; 2–4 layer stacked slabs, oil-water-glass, prism-on-slab, flat lens on slab), or form coaxial cemented lenses (<= 1e-11 mm matching opposite-signed curvature at shared apex; doublets or triplets). Touching or cemented glass-glass pairs require matching partialReflection flags so each shared interface has one unambiguous Fresnel policy. Native PhyDemo surfaceMergingObjs (1e-6 mm hit-point merge threshold) owns merged refraction/TIR; callbacks fire on the primary body only, reporting true merged incident/destination indices, and unmerged or >2-body multi-merge hits fail closed.',types:{
+      finiteDielectrics:{groupCount:[0,4],note:'Zero-body deletion closure (4 -> ... -> 0) and equal-index neutral bodies admitted. Every dielectric pair must be disjoint (>= 0.01 mm), share a clean coincident flat boundary (<= 1e-11 mm, overlap >= 1 mm; 2–4 layer stacked slabs, oil-water-glass, prism-on-slab, flat lens or circular cap on slab), or form coaxial cemented lenses (<= 1e-11 mm matching opposite-signed curvature at shared apex; doublets or triplets). Touching or cemented glass-glass pairs require matching partialReflection flags so each shared interface has one unambiguous Fresnel policy. Native PhyDemo surfaceMergingObjs (1e-6 mm hit-point merge threshold) owns merged refraction/TIR; callbacks fire on the primary body only, reporting true merged incident/destination indices, and unmerged or >2-body multi-merge hits fail closed.',types:{
         'circular-dielectric':{parameters:['x','y','radius','insideIndex','outsideIndex','partialReflection']},
+        'circular-cap-dielectric':{parameters:['x','y','radius','capHeight','normalDeg','insideIndex','outsideIndex','partialReflection'],note:'General oriented circular cap / hemisphere / sliced sphere closed by a flat chord centered at (x, y). normalDeg (y-up degrees) points from base midpoint toward curved apex (e.g. 90° dome pointing up on a horizontal base, 0° pointing right). Admits minor caps (capHeight < radius), hemispheres/semicylinders (capHeight = radius), and major caps / sliced spheres (radius < capHeight < 2*radius) with radius >= 2 mm, capHeight in [1, 2*radius - 1] mm, and chord >= 2 mm. Supports interior point sources, flat-base touching/silvering, and concentric curved-face silvering.'},
         'triangular-prism':{parameters:['x1','y1','x2','y2','x3','y3','insideIndex','outsideIndex','partialReflection']},
         'polygon-dielectric':{parameters:['x1','y1','x2','y2','x3','y3','x4','y4','insideIndex','outsideIndex','partialReflection']},
         'spherical-lens':{parameters:['x','y','apertureHeight','centerThickness','frontRadius','backRadius','insideIndex','outsideIndex','partialReflection'],note:'Signed outward-convex convention: positive radius bulges outward (convex), negative curves inward (concave), null is a flat/planar face (R = infinity). Supports biconvex, plano-convex, plano-concave, meniscus, biconcave, and flat-flat shapes. Textbook Cartesian equivalents: R1 = frontRadius, R2 = -backRadius. Requires |radius| >= apertureHeight/2 + 1 mm (or null), centerThickness >= 2 mm, edgeThickness >= 1 mm; exterior sources only.'}
       }},
       'ideal-lens':{count:[0,4],parameters:['x','y','focalLength','apertureHeight'],note:'Vertical thin lens with independent transverse centre y (split lenses at the same x are admitted when vertically separated by >= 0.01 mm); focalLength defined in ambient medium backgroundIndex.'},
-      'plane-mirror':{count:[0,4],parameters:['x','y','orientationDeg','length'],note:'May sit >= 0.01 mm clear of other segments/dielectrics, meet another plane-mirror cleanly at a shared non-collinear corner (<= 1e-11 mm, angle >= ~2.86 deg; e.g. corner reflectors, triangular kaleidoscopes, 4-wall boxes), OR sit flush on a physical flat dielectric face (silvered slab, silvered prism, flat-silvered lens, or mirror table) via native PhyDemo mergesWithGlass.'},
-      curvedMirrors:{groupCount:[0,2],note:'circular-arc-mirror may sit >= 0.01 mm clear of dielectrics OR concentric and flush on a curved spherical-lens face or circular-dielectric boundary (curved-silvered lens / silvered sphere) via native PhyDemo mergesWithGlass.',types:{
+      'plane-mirror':{count:[0,4],parameters:['x','y','orientationDeg','length'],note:'May sit >= 0.01 mm clear of other segments/dielectrics, meet another plane-mirror cleanly at a shared non-collinear corner (<= 1e-11 mm, |sin θ| >= 0.05; e.g. corner reflectors, triangular kaleidoscopes, 4-wall boxes), OR sit flush on a physical flat dielectric face (silvered slab, silvered prism, flat-silvered lens/cap, or mirror table) via native PhyDemo mergesWithGlass.'},
+      curvedMirrors:{groupCount:[0,2],note:'circular-arc-mirror may sit >= 0.01 mm clear of dielectrics (with exact point-to-arc and segment-to-arc >= 0.01 mm clearance) OR concentric and flush on a curved spherical-lens face, circular-dielectric boundary, or circular-cap-dielectric curved arc (curved-silvered lens / sphere / hemisphere) via native PhyDemo mergesWithGlass.',types:{
         'ideal-curved-mirror':{parameters:['x','y','normalDeg','focalLength','apertureHeight']},
         'circular-arc-mirror':{parameters:['x','y','normalDeg','radius','apertureHeight']}
       }},

@@ -3,7 +3,7 @@
 // A profile is an admission contract, NOT a prescribed optical encounter order.
 const source='point-source',beam='parallel-beam',mirror='plane-mirror',detector='ray-detector';
 const lens='ideal-lens',prism='triangular-prism',polygon='polygon-dielectric';
-const circle='circular-dielectric',semicircle='semicircular-dielectric',plane='planar-interface',thick='spherical-lens',grin='graded-index-rectangle';
+const circle='circular-dielectric',semicircle='semicircular-dielectric',cap='circular-cap-dielectric',plane='planar-interface',thick='spherical-lens',grin='graded-index-rectangle';
 const curves=['ideal-curved-mirror','circular-arc-mirror'];
 const stops=['line-blocker','circle-blocker','finite-aperture'];
 const finite='finite-dielectric-composition';
@@ -187,12 +187,12 @@ define(39,'native-general-hybrid-bench',{
 // deterministic simulation.randomSeed, maxRayDepth <= 16).
 define(40,'native-optical-bench',{
   [source]:range(0,4),[beam]:range(0,1),
-  [prism]:range(0,4),[polygon]:range(0,4),[circle]:range(0,4),[thick]:range(0,4),
+  [prism]:range(0,4),[polygon]:range(0,4),[circle]:range(0,4),[cap]:range(0,4),[thick]:range(0,4),
   [lens]:range(0,4),[mirror]:range(0,4),
   ...Object.fromEntries(curves.map(t=>[t,range(0,2)])),
   ...Object.fromEntries(stops.map(t=>[t,range(0,2)])),
   [detector]:range(0,2)
-},[group([prism,polygon,circle,thick],0,4),group(curves,0,2),group(stops,0,2)],[rule('native-optical-bench-v40')],['single-ray',...fan]);
+},[group([prism,polygon,circle,cap,thick],0,4),group(curves,0,2),group(stops,0,2)],[rule('native-optical-bench-v40')],['single-ray',...fan]);
 freeze(definitions);
 const byKey=new Map(definitions.map(p=>[p.id,p]));
 
@@ -322,7 +322,7 @@ const guidanceByProfile=freeze({
  },
  'native-optical-bench@40':{
   label:'Unified optical bench · v40',
-  geometry:'Explicit ambient backgroundIndex (1–4) and deterministic randomSeed. Combine either 1–4 point sources (single-ray, directional, or full-circle; ambient or strictly inside circle/prism/quad) or 1 external parallel Beam with 0–4 finite dielectrics (disjoint >= 0.01 mm, coincident flat layered contact, or coaxial cemented lenses; outsideIndex = backgroundIndex; spherical-lens admits signed +convex/−concave or null flat radii), 0–4 vertical ideal lenses (independent x, y), 0–2 curved mirrors (disjoint or silvered on a curved lens/circle face), 0–4 plane mirrors (disjoint, corner-touching enclosures, or silvered on a flat dielectric face), 0–2 opaque stops and 0–2 detectors (max 16 components, maxRayDepth <= 16).',
+  geometry:'Explicit ambient backgroundIndex (1–4) and deterministic randomSeed. Combine either 1–4 point sources (single-ray, directional, or full-circle; ambient or strictly inside circle/cap/prism/quad) or 1 external parallel Beam with 0–4 finite dielectrics (circular-dielectric, circular-cap-dielectric minor/hemisphere/major cap, triangular-prism, polygon-dielectric, or signed/flat spherical-lens; disjoint >= 0.01 mm, coincident flat layered contact, or coaxial cemented lenses; outsideIndex = backgroundIndex), 0–4 vertical ideal lenses (independent x, y), 0–2 curved mirrors (disjoint or silvered on a curved lens/circle/cap face), 0–4 plane mirrors (disjoint, corner-touching enclosures, or silvered on a flat dielectric face), 0–2 opaque stops and 0–2 detectors (max 16 components, maxRayDepth <= 16).',
   scope:'Pinned PhyDemo traces every refraction, merged glass/mirror contact, TIR, Fresnel branch, lens deflection, reflection, absorption and detector crossing. Endpoint, corner, tangency (< 0.01 mm), grazing, near-critical, or truncated runs withhold accepted measurements.'
  }
 });

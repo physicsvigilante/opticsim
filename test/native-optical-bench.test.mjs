@@ -2103,3 +2103,385 @@ test('v40 multi-mirror & 3-4 dielectric negative controls: mirror X/T/collinear/
     }),/1–2 finite dielectrics|disjoint/);
   }
 });
+
+// Helper: exact vector Snell refraction in 2D y-up (d unit incoming, n unit outward/any normal, ni -> nt).
+function snell2D(d,n,ni,nt){
+  let nx=n.x,ny=n.y;
+  let cosI=-(d.x*nx+d.y*ny);
+  if(cosI<0){nx=-nx;ny=-ny;cosI=-cosI;}
+  const eta=ni/nt;
+  const k=1-eta*eta*(1-cosI*cosI);
+  assert.ok(k>0,'Expected non-TIR refraction in analytical oracle');
+  const c=eta*cosI-Math.sqrt(k);
+  return {x:eta*d.x+c*nx,y:eta*d.y+c*ny};
+}
+function reflect2D(d,n){
+  const dn=d.x*n.x+d.y*n.y;
+  return {x:d.x-2*dn*n.x,y:d.y-2*dn*n.y};
+}
+function rayCircleExit(origin,dir,center,radius){
+  const ox=origin.x-center.x,oy=origin.y-center.y;
+  const b=ox*dir.x+oy*dir.y,c=ox*ox+oy*oy-radius*radius;
+  const disc=Math.sqrt(b*b-c);
+  const t1=-b-disc,t2=-b+disc;
+  const t=t1>1e-9?t1:t2;
+  return {x:origin.x+t*dir.x,y:origin.y+t*dir.y};
+}
+
+async function runCapObs(req,specs){
+  const {document:doc}=prepareScene(req);
+  const reqs=specs.map((s,i)=>({id:'r'+i,kind:s.kind,componentId:s.componentId}));
+  const run=await evaluateDocument(doc,core,reqs);
+  const obs=await evaluateObservables(doc,reqs,run.summary);
+  return {doc,run,obs};
+}
+
+test('v40 circular-cap-dielectric oracles: JEE A14 hemisphere, JEE A20 semicylinder TIR, and JEE A27 major-cap paperweight',async()=>{
+  // 1. JEE A14: glass hemisphere (normalDeg=90, base on y=0, R=20, capHeight=20)
+  // Exact single-ray Snell oracle entering downward at x=10 -> dome -> flat base -> detector y=-10.
+  const R=20,nG=1.5;
+  const pEnter={x:10,y:Math.sqrt(R*R-100)};
+  const d0={x:0,y:-1};
+  const d1=snell2D(d0,{x:pEnter.x/R,y:pEnter.y/R},1,nG);
+  const tFlat=-pEnter.y/d1.y;
+  const pFlat={x:pEnter.x+tFlat*d1.x,y:0};
+  const d2=snell2D(d1,{x:0,y:-1},nG,1);
+  const xDetExpected=pFlat.x+((-10)/d2.y)*d2.x;
+
+  const a14Single=await runCapObs(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:10,y:30,brightness:0.2},emission:{mode:'single-ray',directionDeg:-90}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:R,capHeight:R,normalDeg:90,insideIndex:nG,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:0,y:-10,orientationDeg:0,length:30}}
+  ]),[
+    {kind:'interface-interactions',componentId:'H1'},
+    {kind:'interface-face-events',componentId:'H1'},
+    {kind:'detector-hit-events',componentId:'D1'}
+  ]);
+  assert.equal(a14Single.run.summary.executionPassed,true);
+  assert.equal(a14Single.run.summary.observations.v40EndpointsVerified,true);
+  assert.equal(a14Single.obs.results[0].value,2);
+  assert.equal(a14Single.obs.results[1].value['face-arc'].interactions,1);
+  assert.equal(a14Single.obs.results[1].value['face-flat'].interactions,1);
+  const a14Hit=a14Single.obs.results[2].value[0];
+  assert.ok(Math.abs(a14Hit.pointMm.x-xDetExpected)<1e-6,`A14 x mismatch: ${a14Hit.pointMm.x} vs ${xDetExpected}`);
+  assert.ok(Math.abs(a14Hit.pointMm.y-(-10))<1e-6);
+
+  // JEE A14 parallel beam entering the hemisphere dome from above onto table detector
+  const a14Beam=await runCapObs(v40Req([
+    {id:'B1',type:'parallel-beam',parameters:{x:0,y:30,width:24,directionDeg:-90,brightness:0.1}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:R,capHeight:R,normalDeg:90,insideIndex:nG,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:0,y:-10,orientationDeg:0,length:40}}
+  ]),[
+    {kind:'source-emissions',componentId:'B1'},
+    {kind:'detector-crossings',componentId:'D1'}
+  ]);
+  assert.equal(a14Beam.run.summary.executionPassed,true);
+  assert.equal(a14Beam.run.summary.observations.v40EndpointsVerified,true);
+  assert.ok(a14Beam.obs.results[0].value>=3);
+  assert.equal(a14Beam.obs.results[1].value,a14Beam.obs.results[0].value);
+
+  // 2. JEE A20: semicylinder (normalDeg=0, flat face x=0, R=20, n=1.5):
+  // Inner ray y=6 transmits (sin theta = 0.3 < 2/3); outer ray y=16 undergoes native TIR (sin theta = 0.8 > 2/3).
+  const pArcIn={x:Math.sqrt(R*R-36),y:6};
+  const dOutIn=snell2D({x:1,y:0},{x:pArcIn.x/R,y:pArcIn.y/R},nG,1);
+  const yA20Expected=pArcIn.y+((30-pArcIn.x)/dOutIn.x)*dOutIn.y;
+  const a20In=await runCapObs(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-10,y:6,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'SC1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:R,capHeight:R,normalDeg:0,insideIndex:nG,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:30,y:0,orientationDeg:90,length:40}}
+  ]),[
+    {kind:'interface-tir-count',componentId:'SC1'},
+    {kind:'detector-hit-events',componentId:'D1'}
+  ]);
+  assert.equal(a20In.run.summary.executionPassed,true);
+  assert.equal(a20In.run.summary.observations.v40EndpointsVerified,true);
+  assert.equal(a20In.obs.results[0].value,0);
+  assert.ok(Math.abs(a20In.obs.results[1].value[0].pointMm.y-yA20Expected)<1e-6);
+
+  const a20Tir=await runCapObs(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-10,y:16,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'SC1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:R,capHeight:R,normalDeg:0,insideIndex:nG,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:30,y:0,orientationDeg:90,length:40}}
+  ]),[
+    {kind:'interface-tir-count',componentId:'SC1'},
+    {kind:'detector-crossings',componentId:'D1'}
+  ]);
+  assert.equal(a20Tir.run.summary.executionPassed,true);
+  assert.equal(a20Tir.run.summary.observations.v40EndpointsVerified,true);
+  assert.ok(a20Tir.obs.results[0].value>=1,'Expected native TIR on semicylinder curved face for y=16 > R/n');
+  assert.equal(a20Tir.obs.results[1].value,0);
+
+  // 3. JEE A27: major-cap sliced-sphere paperweight (capHeight=30 > radius=20, normalDeg=90, center=(0,10)).
+  // Oblique ray from (0,-10) aimed at +70 deg enters flat base y=0, travels across major cap, exits dome to y=40.
+  const rad70=70*Math.PI/180,da0={x:Math.cos(rad70),y:Math.sin(rad70)};
+  const pBase27={x:(10/da0.y)*da0.x,y:0};
+  const da1=snell2D(da0,{x:0,y:-1},1,nG);
+  const pArc27=rayCircleExit(pBase27,da1,{x:0,y:10},R);
+  const da2=snell2D(da1,{x:pArc27.x/R,y:(pArc27.y-10)/R},nG,1);
+  const x27Expected=pArc27.x+((40-pArc27.y)/da2.y)*da2.x;
+  const a27=await runCapObs(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0,y:-10,brightness:0.2},emission:{mode:'single-ray',directionDeg:70}},
+    {id:'PW1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:R,capHeight:30,normalDeg:90,insideIndex:nG,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:0,y:40,orientationDeg:0,length:60}}
+  ]),[
+    {kind:'interface-face-events',componentId:'PW1'},
+    {kind:'detector-hit-events',componentId:'D1'}
+  ]);
+  assert.equal(a27.run.summary.executionPassed,true);
+  assert.equal(a27.run.summary.observations.v40EndpointsVerified,true);
+  assert.equal(a27.obs.results[0].value['face-flat'].interactions,1);
+  assert.equal(a27.obs.results[0].value['face-arc'].interactions,1);
+  assert.ok(Math.abs(a27.obs.results[1].value[0].pointMm.x-x27Expected)<1e-6);
+});
+
+test('v40 circular-cap-dielectric silvered & touching oracles: JEE A28 flat- and curved-silvered hemispheres with internal bubble, plus hemisphere-on-slab',async()=>{
+  const R=20,nG=1.5;
+
+  // 1. JEE A28 Variant A: interior bubble at (0, 8) inside flat-silvered glass hemisphere (plane-mirror flush on y=0).
+  const radM60=-60*Math.PI/180,d0a={x:Math.cos(radM60),y:Math.sin(radM60)};
+  const tM=-8/d0a.y,pM={x:tM*d0a.x,y:0};
+  const d1a=reflect2D(d0a,{x:0,y:1});
+  const pArcA=rayCircleExit(pM,d1a,{x:0,y:0},R);
+  const d2a=snell2D(d1a,{x:pArcA.x/R,y:pArcA.y/R},nG,1);
+  const xAExpected=pArcA.x+((30-pArcA.y)/d2a.y)*d2a.x;
+
+  const a28Flat=await runCapObs(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0,y:8,brightness:0.2},emission:{mode:'single-ray',directionDeg:-60}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:R,capHeight:R,normalDeg:90,insideIndex:nG,outsideIndex:1,partialReflection:false}},
+    {id:'M1',type:'plane-mirror',parameters:{x:0,y:0,orientationDeg:0,length:40}},
+    {id:'D1',type:'ray-detector',parameters:{x:0,y:30,orientationDeg:0,length:60}}
+  ]),[
+    {kind:'mirror-reflections',componentId:'M1'},
+    {kind:'interface-face-events',componentId:'H1'},
+    {kind:'detector-hit-events',componentId:'D1'}
+  ]);
+  assert.equal(a28Flat.run.summary.executionPassed,true);
+  assert.equal(a28Flat.run.summary.observations.v40EndpointsVerified,true);
+  assert.equal(a28Flat.obs.results[0].value,1);
+  assert.equal(a28Flat.obs.results[1].value['face-flat'].interactions,0);
+  assert.equal(a28Flat.obs.results[1].value['face-arc'].interactions,1);
+  assert.ok(Math.abs(a28Flat.obs.results[2].value[0].pointMm.x-xAExpected)<1e-6);
+
+  // 2. JEE A28 Variant B: interior bubble at (0, 8) inside curved-silvered glass hemisphere (circular-arc-mirror concentric on top dome),
+  // with close horizontal detector at y=-5 (inside the old vertex bounding disk, proving exact point/segment-to-arc clearance).
+  const rad75=75*Math.PI/180,d0b={x:Math.cos(rad75),y:Math.sin(rad75)};
+  const pArcB=rayCircleExit({x:0,y:8},d0b,{x:0,y:0},R);
+  const d1b=reflect2D(d0b,{x:-pArcB.x/R,y:-pArcB.y/R});
+  const tFlatB=-pArcB.y/d1b.y,pFlatB={x:pArcB.x+tFlatB*d1b.x,y:0};
+  const d2b=snell2D(d1b,{x:0,y:-1},nG,1);
+  const xBExpected=pFlatB.x+((-5)/d2b.y)*d2b.x;
+
+  const a28Curved=await runCapObs(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0,y:8,brightness:0.2},emission:{mode:'single-ray',directionDeg:75}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:R,capHeight:R,normalDeg:90,insideIndex:nG,outsideIndex:1,partialReflection:false}},
+    {id:'M1',type:'circular-arc-mirror',parameters:{x:0,y:20,normalDeg:-90,radius:20,apertureHeight:36}},
+    {id:'D1',type:'ray-detector',parameters:{x:0,y:-5,orientationDeg:0,length:40}}
+  ]),[
+    {kind:'mirror-reflections',componentId:'M1'},
+    {kind:'interface-face-events',componentId:'H1'},
+    {kind:'detector-hit-events',componentId:'D1'}
+  ]);
+  assert.equal(a28Curved.run.summary.executionPassed,true);
+  assert.equal(a28Curved.run.summary.observations.v40EndpointsVerified,true);
+  assert.equal(a28Curved.obs.results[0].value,1);
+  assert.equal(a28Curved.obs.results[1].value['face-arc'].interactions,0);
+  assert.equal(a28Curved.obs.results[1].value['face-flat'].interactions,1);
+  assert.ok(Math.abs(a28Curved.obs.results[2].value[0].pointMm.x-xBExpected)<1e-6);
+
+  // 3. Hemisphere resting flush on a glass slab (H1 n=1.5 on B2 n=1.6 at y=0) -> merged flat interface + 3-surface Snell oracle.
+  const nB=1.6;
+  const pTop={x:10,y:Math.sqrt(R*R-100)};
+  const ds1=snell2D({x:0,y:-1},{x:pTop.x/R,y:pTop.y/R},1,nG);
+  const pMid={x:pTop.x+(-pTop.y/ds1.y)*ds1.x,y:0};
+  const ds2=snell2D(ds1,{x:0,y:-1},nG,nB);
+  const pBot={x:pMid.x+((-15)/ds2.y)*ds2.x,y:-15};
+  const ds3=snell2D(ds2,{x:0,y:-1},nB,1);
+  const xSlabExpected=pBot.x+((-10)/ds3.y)*ds3.x;
+
+  const capOnSlab=await runCapObs(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:10,y:30,brightness:0.2},emission:{mode:'single-ray',directionDeg:-90}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:R,capHeight:R,normalDeg:90,insideIndex:nG,outsideIndex:1,partialReflection:false}},
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:-25,y1:-15,x2:25,y2:-15,x3:25,y3:0,x4:-25,y4:0,insideIndex:nB,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:0,y:-25,orientationDeg:0,length:50}}
+  ]),[
+    {kind:'interface-face-events',componentId:'H1'},
+    {kind:'detector-hit-events',componentId:'D1'}
+  ]);
+  assert.equal(capOnSlab.run.summary.executionPassed,true);
+  assert.equal(capOnSlab.run.summary.observations.v40EndpointsVerified,true);
+  assert.equal(capOnSlab.obs.results[0].value['face-flat'].first.mergedWithId,'B2');
+  assert.equal(capOnSlab.obs.results[0].value['face-flat'].first.incidentIndex,nG);
+  assert.equal(capOnSlab.obs.results[0].value['face-flat'].first.destinationIndex,nB);
+  assert.ok(Math.abs(capOnSlab.obs.results[1].value[0].pointMm.x-xSlabExpected)<1e-6);
+
+  // 4. Two hemispheres cemented flat-to-flat on y=0 (composite two-material sphere)
+  const twoCaps=await runCapObs(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:6,y:30,brightness:0.2},emission:{mode:'single-ray',directionDeg:-90}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:R,capHeight:R,normalDeg:90,insideIndex:1.4,outsideIndex:1,partialReflection:false}},
+    {id:'H2',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:R,capHeight:R,normalDeg:-90,insideIndex:1.6,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:0,y:-30,orientationDeg:0,length:40}}
+  ]),[
+    {kind:'interface-face-events',componentId:'H1'},
+    {kind:'detector-crossings',componentId:'D1'}
+  ]);
+  assert.equal(twoCaps.run.summary.executionPassed,true);
+  assert.equal(twoCaps.run.summary.observations.v40EndpointsVerified,true);
+  assert.equal(twoCaps.obs.results[0].value['face-flat'].first.mergedWithId,'H2');
+  assert.equal(twoCaps.obs.results[1].value,1);
+});
+
+test('v40 circular-cap-dielectric revisions (reviseScene, reviseComponents) and focusedExplorationContext schema isolation',async()=>{
+  const base=prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0,y:35,brightness:0.2},emission:{mode:'single-ray',directionDeg:-90}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:20,capHeight:20,normalDeg:90,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+  ],{randomSeed:'cap-seed-40'}));
+
+  // Targeted reviseScene: rotate normalDeg and change capHeight in cm to a major cap (2.5 cm = 25 mm)
+  const rotated=reviseScene(base.document,{changes:[
+    {id:'H1',section:'parameters',key:'normalDeg',value:75},
+    {id:'H1',section:'parameters',key:'capHeight',value:2.5,unit:'cm'}
+  ]});
+  assert.equal(rotated.document.physics.components[1].parameters.normalDeg,75);
+  assert.equal(rotated.document.physics.components[1].parameters.capHeight,25);
+
+  // Structural reviseComponents: remove H1 -> 0 bodies (preserving backgroundIndex & randomSeed), then add a new cap H2
+  const removed=reviseComponents(base.document,{format:'opticsim-component-revision-v1',operations:[{op:'remove',id:'H1'}]});
+  assert.equal(removed.document.physics.components.length,1);
+  assert.equal(removed.document.physics.backgroundIndex,1);
+  assert.equal(removed.document.simulation.randomSeed,'cap-seed-40');
+
+  const readded=reviseComponents(removed.document,{
+    format:'opticsim-component-revision-v1',
+    operations:[{
+      op:'add',lengthUnit:'cm',
+      component:{id:'H2',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:2,capHeight:1.5,normalDeg:90,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+    }]
+  });
+  assert.equal(readded.document.physics.components[1].parameters.radius,20);
+  assert.equal(readded.document.physics.components[1].parameters.capHeight,15);
+
+  // focusedExplorationContext exposes v40 normalDeg and hides schemaVariants
+  const baseQual=initialQualification(base.document,null,{inputSha256:await sceneHash(base.document)});
+  const pkg=await createQualifiedBundle(base.document,baseQual,[]);
+  const focused=await focusedExplorationContext(pkg,'Vary cap height');
+  const capSpec=focused.authoring.componentTypes['circular-cap-dielectric'];
+  assert.ok(capSpec.parameters.includes('normalDeg'));
+  assert.equal(capSpec.schemaVariants,undefined);
+  assert.match(capSpec.geometry,/major caps/);
+
+  // Legacy v32 circular-cap-dielectric remains unchanged (no normalDeg)
+  const v32Doc=prepareScene({
+    model:'native-inside-cap-tracing',lengthUnit:'mm',runPolicy:'dense-v1',
+    components:[
+      {id:'S1',type:'point-source',parameters:{x:5,y:0,brightness:0.2},emission:{mode:'directional',directionDeg:0,angleDeg:2}},
+      {id:'C1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:50,capHeight:40,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+      {id:'D1',type:'ray-detector',parameters:{x:60,y:0,orientationDeg:90,length:40}}
+    ]
+  });
+  assert.equal(v32Doc.document.schemaVersion,32);
+  assert.equal('normalDeg' in v32Doc.document.physics.components[1].parameters,false);
+  const v32Qual=initialQualification(v32Doc.document,null,{inputSha256:await sceneHash(v32Doc.document)});
+  const v32Pkg=await createQualifiedBundle(v32Doc.document,v32Qual,[]);
+  const v32Focused=await focusedExplorationContext(v32Pkg,'Inspect v32 cap');
+  assert.equal(v32Focused.authoring.componentTypes['circular-cap-dielectric'].parameters.includes('normalDeg'),false);
+  assert.match(v32Focused.authoring.componentTypes['circular-cap-dielectric'].geometry,/legacy v32/);
+});
+
+test('v40 circular-cap-dielectric & circular-arc-mirror negative controls: bounds, seams, tangency, gap-spanning mirror, overlaps, and legacy isolation',()=>{
+  const sTop={id:'S1',type:'point-source',parameters:{x:0,y:40,brightness:0.2},emission:{mode:'single-ray',directionDeg:-90}};
+
+  // 1. Degenerate capHeight (< 1 or > 2*radius - 1) -> rejected
+  assert.throws(()=>prepareScene(v40Req([
+    sTop,{id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:20,capHeight:0.5,normalDeg:90,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+  ])),/capHeight|bounds/);
+  assert.throws(()=>prepareScene(v40Req([
+    sTop,{id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:20,capHeight:39.5,normalDeg:90,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+  ])),/capHeight in \[1, 2\*radius - 1\]/);
+
+  // 2. Major-cap sideways bulge exceeding +/-10000 mm even when chord endpoints & apex fit -> rejected
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:9950,y:40,brightness:0.2},emission:{mode:'single-ray',directionDeg:-90}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:9981,y:0,radius:20,capHeight:30,normalDeg:90,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+  ])),/within \+\/-10000 mm/);
+
+  // 3. Point source within 0.01 mm of flat chord OR curved arc -> rejected
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0,y:0.005,brightness:0.2},emission:{mode:'single-ray',directionDeg:90}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:20,capHeight:20,normalDeg:90,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+  ])),/0\.01 mm from dielectric body boundary/);
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0,y:19.995,brightness:0.2},emission:{mode:'single-ray',directionDeg:-90}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:20,capHeight:20,normalDeg:90,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+  ])),/0\.01 mm from dielectric body boundary/);
+
+  // 4. Initial forward ray aimed directly at a cap seam vertex (p1 = (-20, 0)) -> rejected
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-30,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:20,capHeight:20,normalDeg:90,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+  ])),/corner\/vertex/);
+
+  // 5. Initial forward ray tangent to cap generating circle -> rejected
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-30,y:20,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:20,capHeight:20,normalDeg:90,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+  ])),/tangency/);
+
+  // 6. Major-cap gap-spanning concentric arc mirror (centerSep + mirrorHalfAngle > capHalfAngle) -> rejected
+  // Major cap: normalDeg=90 (u=(0,1)), R=20, capHeight=20*(1+cos(30°)) => capHalfAngle=150°;
+  // Concentric mirror centered at uMirror rotated 140° from u (normalDeg = 90+140+180 -> vertex at angle 230° from +x, normal toward center = 50°)
+  // with mirrorHalfAngle = 80° (apertureHeight = 2*20*sin(80°)): endpoints & midpoint lie on cap, yet arc spans the missing 60° gap!
+  const capH150=20*(1+Math.cos(30*Math.PI/180));
+  const cY150=capH150-20;
+  const vAngle=230*Math.PI/180;
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0,y:60,brightness:0.2},emission:{mode:'single-ray',directionDeg:-90}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:20,capHeight:capH150,normalDeg:90,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'M1',type:'circular-arc-mirror',parameters:{x:20*Math.cos(vAngle),y:cY150+20*Math.sin(vAngle),normalDeg:50,radius:20,apertureHeight:40*Math.sin(80*Math.PI/180)}}
+  ])),/silver a coincident curved face/);
+
+  // 7. Exact circular-arc-mirror clearances: source within 0.005 mm of arc, and segment crossing arc -> rejected
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0,y:19.995,brightness:0.2},emission:{mode:'single-ray',directionDeg:-90}},
+    {id:'M1',type:'circular-arc-mirror',parameters:{x:0,y:20,normalDeg:-90,radius:20,apertureHeight:30}}
+  ])),/0\.01 mm from circular-arc-mirror/);
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0,y:-10,brightness:0.2},emission:{mode:'single-ray',directionDeg:90}},
+    {id:'M1',type:'circular-arc-mirror',parameters:{x:0,y:20,normalDeg:-90,radius:20,apertureHeight:30}},
+    {id:'D1',type:'ray-detector',parameters:{x:0,y:18,orientationDeg:0,length:20}}
+  ])),/intersects or approaches circular-arc-mirror/);
+
+  // 8. Touching hemisphere + slab with mismatched partialReflection OR 0.002 mm near-gap -> rejected
+  assert.throws(()=>prepareScene(v40Req([
+    sTop,
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:20,capHeight:20,normalDeg:90,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:-25,y1:-15,x2:25,y2:-15,x3:25,y3:0,x4:-25,y4:0,insideIndex:1.6,outsideIndex:1,partialReflection:true}}
+  ])),/matching partialReflection/);
+  assert.throws(()=>prepareScene(v40Req([
+    sTop,
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0.002,radius:20,capHeight:20,normalDeg:90,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:-25,y1:-15,x2:25,y2:-15,x3:25,y3:0,x4:-25,y4:0,insideIndex:1.6,outsideIndex:1,partialReflection:false}}
+  ])),/disjoint.*flat boundary/);
+
+  // 9. Two caps overlapping arc-to-arc OR separated by < 0.01 mm arc-to-arc -> rejected
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0,y:-40,brightness:0.2},emission:{mode:'single-ray',directionDeg:90}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:20,capHeight:20,normalDeg:90,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'H2',type:'circular-cap-dielectric',parameters:{x:0,y:38,radius:20,capHeight:20,normalDeg:-90,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+  ])),/disjoint/);
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:0,y:-40,brightness:0.2},emission:{mode:'single-ray',directionDeg:90}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:20,capHeight:20,normalDeg:90,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'H2',type:'circular-cap-dielectric',parameters:{x:0,y:40.005,radius:20,capHeight:20,normalDeg:-90,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+  ])),/disjoint/);
+
+  // 10. Legacy v38/v39 isolation: circular-cap-dielectric MUST remain rejected in v38/v39!
+  for(const model of ['native-general-refractive-bench','native-general-hybrid-bench']){
+    assert.throws(()=>prepareScene({
+      model,lengthUnit:'mm',
+      components:[
+        sTop,
+        {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:20,capHeight:20,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+      ]
+    }),/supported:|UNSUPPORTED/);
+  }
+});
