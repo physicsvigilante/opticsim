@@ -581,7 +581,7 @@ export function componentTangentCircles(c){
     return [{center:{x:p.x,y:p.y},radius:p.radius}];
   if(c.type===CAP_TYPE){
     const g=capGeometry(p);
-    return [{center:g.center,radius:g.radius}];
+    return [{center:g.center,radius:g.radius,cap:{base:g.base,u:g.u}}];
   }
   if(c.type===SPHERICAL_LENS_TYPE){
     const g=thickLensGeometry(p),circles=[];
@@ -594,6 +594,21 @@ export function componentTangentCircles(c){
     return [{center:{x:p.x+p.radius*n.x,y:p.y+p.radius*n.y},radius:Math.abs(p.radius)}];
   }
   return [];
+}
+
+// Shared tangency proximity predicate for full circles/lenses/arcs and circular caps.
+// For circular-cap-dielectric (tc.cap present), restricts tangency to the retained
+// physical arc plus its clearance neighborhood (axial(pClosest) >= -clearance) so rays
+// missing on the absent portion of the generating circle are never falsely flagged.
+// Returns null on non-finite geometry, true on tangency proximity, false otherwise.
+export function rayNearTangentCircle(origin,dir,tc,clearance,allowBehind=false){
+  const offset=delta(origin,tc.center);
+  const ahead=dot(offset,dir),perp=Math.abs(cross(offset,dir));
+  if(!Number.isFinite(ahead)||!Number.isFinite(perp))return null;
+  if(!((allowBehind||ahead>0)&&Math.abs(perp-tc.radius)<clearance))return false;
+  if(!tc.cap)return true;
+  const pClosest={x:origin.x+ahead*dir.x,y:origin.y+ahead*dir.y};
+  return dot(delta(tc.cap.base,pClosest),tc.cap.u)>=-clearance;
 }
 
 export function componentDielectricCorners(c){
@@ -723,13 +738,13 @@ export function installBenchEndpointAudit(doc,scene,idMap,mirrorEndpoints,{
     for(const target of circleTargets){
       const sameBody=target.id===sourceCompId;
       for(const tc of target.circles){
-        const offset=delta(state.origin,tc.center);
-        const ahead=dot(offset,state.dir),perp=Math.abs(cross(offset,state.dir));
-        if(!Number.isFinite(ahead)||!Number.isFinite(perp)){
+        const sameCurvedFace=sameBody&&(!tc.cap||dot(delta(tc.cap.base,state.origin),tc.cap.u)>1e-5);
+        const near=rayNearTangentCircle(state.origin,state.dir,tc,clearance,sameCurvedFace);
+        if(near===null){
           fault=target.id+': '+versionTag+' native '+surfaceLabel+' tangency check was non-finite; measurements withheld.';
           return;
         }
-        if((sameBody||ahead>0)&&Math.abs(perp-tc.radius)<clearance){
+        if(near){
           fault=target.id+': observed native ray approaches within 0.01 mm of tangency to a '+surfaceLabel+' surface; measurements withheld.';
           return;
         }
@@ -791,9 +806,13 @@ export function installBenchEndpointAudit(doc,scene,idMap,mirrorEndpoints,{
           if(!inRay){
             fault=c.id+': native incident ray state was non-finite or degenerate; measurements withheld.';
           }else{
+            const hitYUp=incidentPoint&&Number.isFinite(incidentPoint.x)&&Number.isFinite(incidentPoint.y)
+              ?{x:incidentPoint.x,y:-incidentPoint.y}:null;
             for(const tc of cTarget.circles){
-              const b=Math.abs(cross(delta(inRay.origin,tc.center),inRay.dir));
-              if(!Number.isFinite(b)||Math.abs(b-tc.radius)<clearance){
+              // Flat-chord encounters on a circular cap are not curved-arc tangency events.
+              if(tc.cap&&hitYUp&&Math.abs(dot(delta(tc.cap.base,hitYUp),tc.cap.u))<=1e-5)continue;
+              const near=rayNearTangentCircle(inRay.origin,inRay.dir,tc,clearance,true);
+              if(near===null||near){
                 fault=c.id+': native incident ray struck within 0.01 mm of tangency to a '+surfaceLabel+' surface; measurements withheld.';
                 break;
               }

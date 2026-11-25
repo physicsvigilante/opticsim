@@ -42,6 +42,7 @@ import {
   planeMirrorsShareCleanCorner,
   pointCircularArcMirrorDistance,
   pointSegmentDistance,
+  rayNearTangentCircle,
   resolveMergedDielectricIndices,
   resolveSourceMembership,
   segmentOutsideBodyExact,
@@ -156,11 +157,14 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
     if(c.type==='circular-arc-mirror'){
       if(points.some(s=>pointCircularArcMirrorDistance(s,c)<OPTICAL_BENCH_V40_CLEARANCE_MM))
         fail(path,'Point source must lie at least 0.01 mm from circular-arc-mirror surface ('+disk.id+').','UNSUPPORTED_SCOPE');
-    }else if(points.some(s=>Math.hypot(s.x-disk.center.x,s.y-disk.center.y)<disk.radius+OPTICAL_BENCH_V40_CLEARANCE_MM)){
-      fail(path,'Point source must lie at least 0.01 mm outside curved aperture bounding disk ('+disk.id+').','UNSUPPORTED_SCOPE');
+      if(beamSeg&&!segmentOutsideCircularArcMirror(beamSeg,c,OPTICAL_BENCH_V40_CLEARANCE_MM))
+        fail(path,'Parallel emitter must lie at least 0.01 mm from circular-arc-mirror surface ('+disk.id+').','UNSUPPORTED_SCOPE');
+    }else{
+      if(points.some(s=>Math.hypot(s.x-disk.center.x,s.y-disk.center.y)<disk.radius+OPTICAL_BENCH_V40_CLEARANCE_MM))
+        fail(path,'Point source must lie at least 0.01 mm outside curved aperture bounding disk ('+disk.id+').','UNSUPPORTED_SCOPE');
+      if(beamSeg&&pointSegmentDistance(disk.center,beamSeg)<disk.radius+OPTICAL_BENCH_V40_CLEARANCE_MM)
+        fail(path,'Parallel emitter must lie at least 0.01 mm outside curved aperture bounding disk ('+disk.id+').','UNSUPPORTED_SCOPE');
     }
-    if(beamSeg&&pointSegmentDistance(disk.center,beamSeg)<disk.radius+OPTICAL_BENCH_V40_CLEARANCE_MM)
-      fail(path,'Parallel emitter must lie at least 0.01 mm outside curved aperture bounding disk ('+disk.id+').','UNSUPPORTED_SCOPE');
     for(const body of bodies)
       if(!circleOutsideBodyExact(disk,body,OPTICAL_BENCH_V40_CLEARANCE_MM)&&!arcMirrorCoincidentWithBody(c,body))
         fail(path,'Curved mirror bounding disk must lie outside dielectric body by at least 0.01 mm or silver a coincident curved face ('+body.id+' and '+c.id+').','UNSUPPORTED_SCOPE');
@@ -244,8 +248,7 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
     }
     for(const c of components){
       for(const tc of componentTangentCircles(c)){
-        const offset=delta(origin,tc.center);
-        if(dot(offset,dir)>0&&Math.abs(Math.abs(cross(offset,dir))-tc.radius)<OPTICAL_BENCH_V40_CLEARANCE_MM)
+        if(rayNearTangentCircle(origin,dir,tc,OPTICAL_BENCH_V40_CLEARANCE_MM,false)!==false)
           fail(path,'Initial forward ray is within 0.01 mm of tangency to a circular/spherical/arc surface ('+c.id+').','UNSUPPORTED_SCOPE');
       }
       for(const ep of componentFiniteEndpoints(c,mirrorEndpoints)){

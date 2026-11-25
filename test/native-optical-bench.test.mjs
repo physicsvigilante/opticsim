@@ -2263,19 +2263,20 @@ test('v40 circular-cap-dielectric silvered & touching oracles: JEE A28 flat- and
   assert.ok(Math.abs(a28Flat.obs.results[2].value[0].pointMm.x-xAExpected)<1e-6);
 
   // 2. JEE A28 Variant B: interior bubble at (0, 8) inside curved-silvered glass hemisphere (circular-arc-mirror concentric on top dome),
-  // with close horizontal detector at y=-5 (inside the old vertex bounding disk, proving exact point/segment-to-arc clearance).
+  // with close horizontal detector at y=-0.5 (20.5 mm from mirror vertex < 21.2435 mm old bounding disk radius,
+  // 0.5 mm clear of flat chord and > 9 mm clear of mirror arc — genuinely exercising both point- and segment-to-arc relaxations).
   const rad75=75*Math.PI/180,d0b={x:Math.cos(rad75),y:Math.sin(rad75)};
   const pArcB=rayCircleExit({x:0,y:8},d0b,{x:0,y:0},R);
   const d1b=reflect2D(d0b,{x:-pArcB.x/R,y:-pArcB.y/R});
   const tFlatB=-pArcB.y/d1b.y,pFlatB={x:pArcB.x+tFlatB*d1b.x,y:0};
   const d2b=snell2D(d1b,{x:0,y:-1},nG,1);
-  const xBExpected=pFlatB.x+((-5)/d2b.y)*d2b.x;
+  const xBExpected=pFlatB.x+((-0.5)/d2b.y)*d2b.x;
 
   const a28Curved=await runCapObs(v40Req([
     {id:'S1',type:'point-source',parameters:{x:0,y:8,brightness:0.2},emission:{mode:'single-ray',directionDeg:75}},
     {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:R,capHeight:R,normalDeg:90,insideIndex:nG,outsideIndex:1,partialReflection:false}},
     {id:'M1',type:'circular-arc-mirror',parameters:{x:0,y:20,normalDeg:-90,radius:20,apertureHeight:36}},
-    {id:'D1',type:'ray-detector',parameters:{x:0,y:-5,orientationDeg:0,length:40}}
+    {id:'D1',type:'ray-detector',parameters:{x:0,y:-0.5,orientationDeg:0,length:40}}
   ]),[
     {kind:'mirror-reflections',componentId:'M1'},
     {kind:'interface-face-events',componentId:'H1'},
@@ -2484,4 +2485,121 @@ test('v40 circular-cap-dielectric & circular-arc-mirror negative controls: bound
       ]
     }),/supported:|UNSUPPORTED/);
   }
+});
+
+test('v40 circular-cap R2 regressions: P2-1 absent-arc tangency & chord departure, P2-2 beam vs arc-mirror clearance, tilted minor-cap oracle, and reversed merge order',async()=>{
+  // 1. P2-1 straight miss: ray along y=-20 passes 20 mm below upward hemisphere H1 (absent lower half of circle) -> admitted & qualified.
+  const straightMiss=await runCapObs(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-30,y:-20,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:20,capHeight:20,normalDeg:90,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:30,y:-20,orientationDeg:90,length:10}}
+  ]),[
+    {kind:'interface-interactions',componentId:'H1'},
+    {kind:'detector-crossings',componentId:'D1'},
+    {kind:'detector-hit-events',componentId:'D1'}
+  ]);
+  assert.equal(straightMiss.run.summary.executionPassed,true);
+  assert.equal(straightMiss.run.summary.observations.v40EndpointsVerified,true);
+  assert.equal(straightMiss.obs.results[0].value,0);
+  assert.equal(straightMiss.obs.results[1].value,1);
+  assert.ok(Math.abs(straightMiss.obs.results[2].value[0].pointMm.x-30)<1e-6);
+  assert.ok(Math.abs(straightMiss.obs.results[2].value[0].pointMm.y-(-20))<1e-6);
+
+  // 2. P2-1 redirected miss: upward ray reflected horizontally along y=-20 past absent lower half of H1 -> qualified!
+  const redirectedMiss=await runCapObs(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-30,y:-40,brightness:0.2},emission:{mode:'single-ray',directionDeg:90}},
+    {id:'M1',type:'plane-mirror',parameters:{x:-30,y:-20,orientationDeg:45,length:10}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:20,capHeight:20,normalDeg:90,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:30,y:-20,orientationDeg:90,length:10}}
+  ]),[
+    {kind:'mirror-reflections',componentId:'M1'},
+    {kind:'interface-interactions',componentId:'H1'},
+    {kind:'detector-hit-events',componentId:'D1'}
+  ]);
+  assert.equal(redirectedMiss.run.summary.executionPassed,true);
+  assert.equal(redirectedMiss.run.summary.observations.v40EndpointsVerified,true);
+  assert.equal(redirectedMiss.obs.results[0].value,1);
+  assert.equal(redirectedMiss.obs.results[1].value,0);
+  assert.ok(Math.abs(redirectedMiss.obs.results[2].value[0].pointMm.x-30)<1e-6);
+  assert.ok(Math.abs(redirectedMiss.obs.results[2].value[0].pointMm.y-(-20))<1e-6);
+
+  // 3. P2-2 positive: collimated parallel-beam 3 mm below curved-silvered R=h=100 hemisphere (inside old 106.2 mm vertex disk, >46 mm clear of arc).
+  const beamSilvered=await runCapObs(v40Req([
+    {id:'B1',type:'parallel-beam',parameters:{x:0,y:-3,width:10,directionDeg:90,brightness:0.2}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:100,capHeight:100,normalDeg:90,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'M1',type:'circular-arc-mirror',parameters:{x:0,y:100,normalDeg:-90,radius:100,apertureHeight:180}}
+  ]),[
+    {kind:'source-emissions',componentId:'B1'},
+    {kind:'mirror-reflections',componentId:'M1'},
+    {kind:'interface-face-events',componentId:'H1'}
+  ]);
+  assert.equal(beamSilvered.run.summary.executionPassed,true);
+  assert.equal(beamSilvered.run.summary.observations.v40EndpointsVerified,true);
+  assert.equal(beamSilvered.obs.results[0].value,2);
+  assert.equal(beamSilvered.obs.results[1].value,2);
+  assert.equal(beamSilvered.obs.results[2].value['face-arc'].interactions,0);
+  assert.equal(beamSilvered.obs.results[2].value['face-flat'].interactions,4);
+
+  // 4. P2-2 negative: parallel-beam intersecting or < 0.01 mm from circular-arc-mirror arc -> rejected.
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'B1',type:'parallel-beam',parameters:{x:0,y:19.995,width:10,directionDeg:-90,brightness:0.2}},
+    {id:'M1',type:'circular-arc-mirror',parameters:{x:0,y:20,normalDeg:-90,radius:20,apertureHeight:30}}
+  ])),/0\.01 mm from circular-arc-mirror/);
+  assert.throws(()=>prepareScene(v40Req([
+    {id:'B1',type:'parallel-beam',parameters:{x:0,y:18,width:20,directionDeg:-90,brightness:0.2}},
+    {id:'M1',type:'circular-arc-mirror',parameters:{x:0,y:20,normalDeg:-90,radius:20,apertureHeight:30}}
+  ])),/0\.01 mm from circular-arc-mirror/);
+
+  // 5. Tilted minor-cap optical Snell oracle: normalDeg=35, R=25, capHeight=12 (< R), n=1.5.
+  // Ray from (-15, -8) aimed at +20 deg enters flat base, refracts through minor cap, exits curved arc to vertical detector x=35.
+  const a35=35*Math.PI/180,u35={x:Math.cos(a35),y:Math.sin(a35)};
+  const c35={x:(12-25)*u35.x,y:(12-25)*u35.y};
+  const a20=20*Math.PI/180,dt0={x:Math.cos(a20),y:Math.sin(a20)};
+  const sOrig={x:-15,y:-8};
+  const tFlatTilt=-(sOrig.x*u35.x+sOrig.y*u35.y)/(dt0.x*u35.x+dt0.y*u35.y);
+  const pFlatTilt={x:sOrig.x+tFlatTilt*dt0.x,y:sOrig.y+tFlatTilt*dt0.y};
+  const dt1=snell2D(dt0,{x:-u35.x,y:-u35.y},1,1.5);
+  const pArcTilt=rayCircleExit(pFlatTilt,dt1,c35,25);
+  const dt2=snell2D(dt1,{x:(pArcTilt.x-c35.x)/25,y:(pArcTilt.y-c35.y)/25},1.5,1);
+  const yTiltExpected=pArcTilt.y+((35-pArcTilt.x)/dt2.x)*dt2.y;
+
+  const tiltedMinor=await runCapObs(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:-15,y:-8,brightness:0.2},emission:{mode:'single-ray',directionDeg:20}},
+    {id:'C1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:25,capHeight:12,normalDeg:35,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:35,y:0,orientationDeg:90,length:80}}
+  ]),[
+    {kind:'interface-face-events',componentId:'C1'},
+    {kind:'detector-hit-events',componentId:'D1'}
+  ]);
+  assert.equal(tiltedMinor.run.summary.executionPassed,true);
+  assert.equal(tiltedMinor.run.summary.observations.v40EndpointsVerified,true);
+  assert.equal(tiltedMinor.obs.results[0].value['face-flat'].interactions,1);
+  assert.equal(tiltedMinor.obs.results[0].value['face-arc'].interactions,1);
+  assert.ok(Math.abs(tiltedMinor.obs.results[1].value[0].pointMm.y-yTiltExpected)<1e-6);
+
+  // 6. Reversed component-order [B2, H1] merged flat-contact parity (B2 owns merged callback with mergedWithId='H1', identical Snell hit).
+  const R=20,nG=1.5,nB=1.6;
+  const pTop={x:10,y:Math.sqrt(R*R-100)};
+  const ds1=snell2D({x:0,y:-1},{x:pTop.x/R,y:pTop.y/R},1,nG);
+  const pMid={x:pTop.x+(-pTop.y/ds1.y)*ds1.x,y:0};
+  const ds2=snell2D(ds1,{x:0,y:-1},nG,nB);
+  const pBot={x:pMid.x+((-15)/ds2.y)*ds2.x,y:-15};
+  const ds3=snell2D(ds2,{x:0,y:-1},nB,1);
+  const xSlabExpected=pBot.x+((-10)/ds3.y)*ds3.x;
+
+  const revSlabCap=await runCapObs(v40Req([
+    {id:'S1',type:'point-source',parameters:{x:10,y:30,brightness:0.2},emission:{mode:'single-ray',directionDeg:-90}},
+    {id:'B2',type:'polygon-dielectric',parameters:{x1:-25,y1:-15,x2:25,y2:-15,x3:25,y3:0,x4:-25,y4:0,insideIndex:nB,outsideIndex:1,partialReflection:false}},
+    {id:'H1',type:'circular-cap-dielectric',parameters:{x:0,y:0,radius:R,capHeight:R,normalDeg:90,insideIndex:nG,outsideIndex:1,partialReflection:false}},
+    {id:'D1',type:'ray-detector',parameters:{x:0,y:-25,orientationDeg:0,length:50}}
+  ]),[
+    {kind:'interface-face-events',componentId:'B2'},
+    {kind:'detector-hit-events',componentId:'D1'}
+  ]);
+  assert.equal(revSlabCap.run.summary.executionPassed,true);
+  assert.equal(revSlabCap.run.summary.observations.v40EndpointsVerified,true);
+  assert.equal(revSlabCap.obs.results[0].value['face-34'].first.mergedWithId,'H1');
+  assert.equal(revSlabCap.obs.results[0].value['face-34'].first.incidentIndex,nG);
+  assert.equal(revSlabCap.obs.results[0].value['face-34'].first.destinationIndex,nB);
+  assert.ok(Math.abs(revSlabCap.obs.results[1].value[0].pointMm.x-xSlabExpected)<1e-6);
 });
