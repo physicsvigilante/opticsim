@@ -1,0 +1,98 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 40,
+  "adapterVersion": 40,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "native-optical-bench",
+    "backgroundIndex": 1,
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -80,
+          "y": 12,
+          "brightness": 0.2
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": -10,
+          "angleDeg": 14
+        }
+      },
+      {
+        "id": "W1",
+        "type": "polygon-dielectric",
+        "parameters": {
+          "x1": 0,
+          "y1": -45,
+          "x2": 20,
+          "y2": -45,
+          "x3": 20,
+          "y3": 45,
+          "x4": 0,
+          "y4": 45,
+          "insideIndex": 1.33,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "G1",
+        "type": "polygon-dielectric",
+        "parameters": {
+          "x1": 20,
+          "y1": -45,
+          "x2": 40,
+          "y2": -45,
+          "x3": 40,
+          "y3": 45,
+          "x4": 20,
+          "y4": 45,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "M1",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": 40,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 90
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": -40,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 100
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "JEE Layered mirror tank: water on glass resting on a flush mirror (v40)",
+    "view": {
+      "x": -20,
+      "y": 0,
+      "zoom": 2
+    },
+    "mode": "rays",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 16,
+    "processedRayLimit": 10000,
+    "randomSeed": "opticsim-v40-seed-v1"
+  }
+}

@@ -6,7 +6,7 @@ Use this chooser to pick the right starting point without learning schema histor
 
 ## 1. Choosing a Native Ray-Tracing Bench (Browser or CLI)
 
-Start with the unified **`v40` (`native-optical-bench`)** bench for all new JEE setups. All modern benches are available in the browser **Scene** dropdown (`public/index.html`) and via explicit `model` selection in `prepareScene`:
+Start with the unified **`v40` (`native-optical-bench`)** bench for all new JEE setups. Six curated `v40` JEE starters (`native-optical-bench`, `v40-billet-split-lens`, `v40-snell-window`, `v40-silvered-plano-convex`, `v40-cemented-doublet`, `v40-layered-mirror-tank`) are available directly in the browser **Scene** dropdown (`public/index.html`), and LLMs can fetch the complete slim JSON contract in one call via `node scripts/author-scene.mjs bench-capabilities`:
 
 | Need | Model & Schema | What You Can Compose | Key Limits |
 | --- | --- | --- | --- |
@@ -22,13 +22,12 @@ Start with the unified **`v40` (`native-optical-bench`)** bench for all new JEE 
 | --- | --- | --- |
 | **1–8 element coaxial paraxial stack** (thin lenses, planar/spherical refracting surfaces, media, optional terminal mirror, contact elements) | `src/coaxial-paraxial-stack.js` — [docs](COAXIAL-PARAXIAL-STACK.md) | Exact `binary64-rational` ABCD matrix, conjugates, collimated focus / afocal scaling, return self-conjugates (`nativeObservation: false`). |
 | **Branching, structural edits, sweeps & replayable packages** over a paraxial stack | `scripts/explore-coaxial-stack.mjs` — [docs](COAXIAL-STACK-EXPLORATION.md) | SHA-guarded revisions, atomic add/remove, bounded 1–25 value sweeps, baseline-vs-variant comparisons. |
-| **Cross-check thin-lens / mirror paraxial stack against real `v37` rays** | `scripts/witness-coaxial-stack.mjs` — [docs](COAXIAL-STACK-NATIVE-WITNESS.md) | Side-by-side ABCD prediction vs. observed `v37` outgoing ray lines (including spherical aberration on `circular-arc-mirror`). |
-| **Cross-check thick-lens / planar-slab paraxial stack against real `v38` Snell rays** | `scripts/witness-refractive-stack.mjs` — [docs](REFRACTIVE-NATIVE-WITNESS.md) | Side-by-side ABCD prediction vs. observed `v38` Snell rays (paraxial vs. marginal spherical aberration, immersed media, zero-TIR/rim-free encounter gating). |
-| **Cross-check hybrid glass + thin-lens + mirror paraxial stack against real `v39` rays** | `scripts/witness-hybrid-stack.mjs` — [docs](HYBRID-NATIVE-WITNESS.md) | Side-by-side ABCD prediction vs. observed `v39` hybrid rays across dielectrics, ideal thin lenses, and plane/curved terminal mirrors (with `maxRayDepth = 8` budget and full-stack encounter gating). |
+| **Recommended default: cross-check any coaxial paraxial stack against real `v40` rays** | `scripts/witness-optical-bench.mjs` — [docs](NATIVE-OPTICAL-BENCH.md#4-paraxial-vs-native-witness-bridge-v40) | Unified ABCD vs. pinned PhyDemo `v40` witness (`maxRayDepth = 16`) covering pure thin-lens/mirror stacks, signed/flat spherical lenses, touching layered slabs, cemented doublets, and flush flat/curved silvered optics. |
+| **Legacy `v37`/`v38`/`v39` witness bridges** | `scripts/witness-coaxial-stack.mjs`, `scripts/witness-refractive-stack.mjs`, `scripts/witness-hybrid-stack.mjs` | Frozen compatibility bridges targeting `v37` ([docs](COAXIAL-STACK-NATIVE-WITNESS.md)), `v38` ([docs](REFRACTIVE-NATIVE-WITNESS.md)), and `v39` ([docs](HYBRID-NATIVE-WITNESS.md)) (`maxRayDepth = 8`). |
 
 ## 3. Reading Opticsim Result Statuses Honestly
 
-- **`available` / `qualified` (native):** Complete, hash-matching native trace with endpoint/corner/tangency audit verified (`v37`/`v38`/`v39`). `qualified` means an explicit warning applies (e.g., `partialReflection: false` omits Fresnel reflections). Counts are sampled native hits; detector power is relative native units, not watts or continuous flux.
+- **`available` / `qualified` (native):** Complete, hash-matching native trace with endpoint/corner/tangency audit verified (`v37`–`v40`, including `v40EndpointsVerified` grazing/critical/failed-merge checks). `qualified` means an explicit warning applies (e.g., `partialReflection: false` omits Fresnel reflections). Counts are sampled native hits; detector power is relative native units, not watts or continuous flux.
 - **`conditional` (analytical):** Valid under the declared first-order or angular model assumptions (`nativeImageDetected: false`).
-- **`suppressed` / `incomplete`:** Native run truncated (e.g., `maxRayDepth = 8` reached or Fresnel weak branches clipped), stopped, or triggered a `< 0.01 mm` endpoint/corner/tangency guard. Accepted readouts are intentionally withheld — this indicates a numerical or admission boundary, not physical impossibility.
-- **`unavailable`:** The requested observable does not apply to the current apparatus (e.g., `ideal-image` on an arbitrary multi-element `v37`–`v39` bench).
+- **`suppressed` / `incomplete`:** Native run truncated (e.g., `maxRayDepth = 16` in `v40` or `8` in `v37`–`v39` reached, or Fresnel weak branches clipped), stopped, or triggered an audit guard. Accepted readouts are intentionally withheld — this indicates a numerical or admission boundary, not physical impossibility.
+- **`unavailable`:** The requested observable does not apply to the current apparatus (e.g., `ideal-image` on an arbitrary multi-element `v37`–`v40` bench).

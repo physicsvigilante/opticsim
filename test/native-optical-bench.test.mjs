@@ -1817,3 +1817,30 @@ test('Milestone 3 R3 regression (P2-1 R2): curved partial-silvering arc inclusio
   assert.equal(diagBypass.v40EndpointsVerified,false);
   assert.match(diagBypass.errors.join(' '),/bypassed native mirror merge/);
 });
+
+test('Milestone 4B: all 6 curated v40 JEE browser starters exist in scenes/ and public/index.html and trace cleanly with v40EndpointsVerified',async()=>{
+  const caps=opticalBenchCapabilities();
+  assert.equal(caps.witnessBridge.format,'opticsim-optical-bench-native-witness-v1');
+  assert.deepEqual(caps.browserStarters,[
+    'native-optical-bench',
+    'v40-billet-split-lens',
+    'v40-snell-window',
+    'v40-silvered-plano-convex',
+    'v40-cemented-doublet',
+    'v40-layered-mirror-tank'
+  ]);
+  for(const slug of caps.browserStarters){
+    assert.ok(html.includes(`option value="${slug}"`),'public/index.html missing starter '+slug);
+    const raw=readFileSync(resolve(root,'scenes',slug+'.json'),'utf8');
+    const doc=parseSave(raw);
+    validate(doc);
+    assert.equal(doc.schemaVersion,40,slug+' must be schemaVersion 40');
+    assert.equal(doc.physics.model,OPTICAL_BENCH_V40_MODEL,slug+' must use native-optical-bench');
+    const run=await evaluateDocument(doc,core,[{id:'det',kind:'detector-crossings',componentId:'D1'}]);
+    assert.equal(run.summary.executionPassed,true,slug+' failed native execution: '+JSON.stringify(run.summary.native.errors));
+    assert.equal(run.summary.observations.v40EndpointsVerified,true,slug+' failed v40EndpointsVerified');
+    assert.equal(run.summary.native.truncation,0,slug+' had truncation');
+    assert.equal(run.summary.native.undefinedBehavior,0,slug+' had undefinedBehavior');
+    assert.ok(run.summary.observations.detectorsById.D1.crossings>=1,slug+' should record >= 1 detector crossing on D1');
+  }
+});

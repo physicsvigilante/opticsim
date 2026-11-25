@@ -1,0 +1,80 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 40,
+  "adapterVersion": 40,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "native-optical-bench",
+    "backgroundIndex": 1,
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -100,
+          "y": 0,
+          "brightness": 0.2
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 0,
+          "angleDeg": 16
+        }
+      },
+      {
+        "id": "L1",
+        "type": "spherical-lens",
+        "parameters": {
+          "x": 5,
+          "y": 0,
+          "apertureHeight": 40,
+          "centerThickness": 10,
+          "frontRadius": null,
+          "backRadius": 50,
+          "insideIndex": 1.5,
+          "outsideIndex": 1,
+          "partialReflection": false
+        }
+      },
+      {
+        "id": "M1",
+        "type": "circular-arc-mirror",
+        "parameters": {
+          "x": 10,
+          "y": 0,
+          "normalDeg": 180,
+          "radius": 50,
+          "apertureHeight": 40
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": -30,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 60
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "JEE Silvered plano-convex lens: curved-face silvering return focus (v40)",
+    "view": {
+      "x": -40,
+      "y": 0,
+      "zoom": 2
+    },
+    "mode": "rays",
+    "grid": false
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 16,
+    "processedRayLimit": 10000,
+    "randomSeed": "opticsim-v40-seed-v1"
+  }
+}

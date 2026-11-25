@@ -434,6 +434,19 @@ export function opticalBenchCapabilities(){
       'interface-first-event','interface-face-events','mirror-reflections',
       'blocker-absorptions','detector-crossings','detector-signed-power','detector-hit-events'
     ],
+    witnessBridge:{
+      format:'opticsim-optical-bench-native-witness-v1',
+      cli:'node scripts/witness-optical-bench.mjs capabilities|plan|run',
+      scope:'Cross-checks coaxial-paraxial-stack facts/packages (0–2 dielectric bodies including signed/flat spherical lenses, touching layered slabs, cemented doublets, 0–4 thin lenses, 0–1 separated or flush silvered mirror, maxRayDepth = 16) side-by-side against pinned PhyDemo v40 rays.'
+    },
+    browserStarters:[
+      'native-optical-bench',
+      'v40-billet-split-lens',
+      'v40-snell-window',
+      'v40-silvered-plano-convex',
+      'v40-cemented-doublet',
+      'v40-layered-mirror-tank'
+    ],
     safeguards:[
       'Disjoint finite bodies and >= 0.01 mm surface/endpoint/vertex clearances.',
       'Observed native endpoint, corner, circular/spherical/arc tangency, near-grazing (|d·n| <= 1e-4), and high-to-low near-critical (|n_i sin(theta) - n_t| <= 1e-6) guards fail closed (v40EndpointsVerified).',

@@ -1,6 +1,10 @@
 # Ray Optics 2D
 
-**New to Opticsim?** Start with [Which Model / Which Result?](docs/WHICH-MODEL.md) for a 1-page chooser across the composable native benches (`v37` optical, `v38` refractive, `v39` hybrid — all available in the browser **Scene** dropdown), the coaxial paraxial stack, and the native witness bridges.
+**Start here (LLM, teacher, or student):** Use the unified **`v40` (`native-optical-bench`)** optical bench ([docs](docs/NATIVE-OPTICAL-BENCH.md)) for JEE-level 2D ray-optics exploration — supporting interior or ambient point sources (`single-ray`, `directional`, `full-circle`) and parallel beams, decentered/split ideal thin lenses, signed/flat thick spherical lenses, touching layered media, coaxial cemented doublets, flush flat/curved silvered optics, opaque stops, and passive ray detectors (`maxRayDepth = 16`).
+- **One-step LLM contract:** `node scripts/author-scene.mjs bench-capabilities`
+- **Unified paraxial-vs-native witness bridge:** `node scripts/witness-optical-bench.mjs capabilities|plan|run`
+- **Browser starters:** Open any of the 6 curated `v40` JEE starters in the browser **Scene** dropdown (`native-optical-bench`, `v40-billet-split-lens`, `v40-snell-window`, `v40-silvered-plano-convex`, `v40-cemented-doublet`, `v40-layered-mirror-tank`).
+- **Full model & result chooser:** [Which Model / Which Result?](docs/WHICH-MODEL.md) (covers `v40`, the coaxial paraxial stack, witness bridges, and frozen historical `v1`–`v39` profiles).
 
 Trace an axial inside source through the curved face of a finite [circular dielectric cap](docs/FINITE-CIRCULAR-CAP.md).
 
