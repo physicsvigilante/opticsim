@@ -18,6 +18,7 @@ import {curvedFrame,curvedPoints,isCurved} from './curved-mirrors.js';
 import {FINITE_APERTURE_TYPE,separatedSegmentDistance} from './finite-aperture.js';
 import {CIRCLE_BLOCKER_TYPE} from './opaque-circle-blocker.js';
 import {BEAM_CLEARANCE_MM,PARALLEL_BEAM_TYPE} from './parallel-beam.js';
+import {SPHERICAL_LENS_TYPE} from './spherical-lens.js';
 import {
   BENCH_CLEARANCE_MM,
   BENCH_CONTACT_TOL_MM,
@@ -29,7 +30,9 @@ import {
   bodiesDisjointExact,
   bodiesShareFlatContact,
   buildDielectricBody,
+  circleInsideBodyExact,
   circleOutsideBodyExact,
+  circularArcMirrorOutsideBodyExact,
   componentFiniteEndpoints,
   componentTangentCircles,
   cross,
@@ -45,6 +48,7 @@ import {
   rayNearTangentCircle,
   resolveMergedDielectricIndices,
   resolveSourceMembership,
+  segmentInsideBodyExact,
   segmentOutsideBodyExact,
   segmentOutsideCircularArcMirror,
   sphericalLensesCemented,
@@ -165,13 +169,20 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
       if(beamSeg&&pointSegmentDistance(disk.center,beamSeg)<disk.radius+OPTICAL_BENCH_V40_CLEARANCE_MM)
         fail(path,'Parallel emitter must lie at least 0.01 mm outside curved aperture bounding disk ('+disk.id+').','UNSUPPORTED_SCOPE');
     }
-    for(const body of bodies)
-      if(!circleOutsideBodyExact(disk,body,OPTICAL_BENCH_V40_CLEARANCE_MM)&&!arcMirrorCoincidentWithBody(c,body))
-        fail(path,'Curved mirror bounding disk must lie outside dielectric body by at least 0.01 mm or silver a coincident curved face ('+body.id+' and '+c.id+').','UNSUPPORTED_SCOPE');
+    if(c.type==='circular-arc-mirror'){
+      for(const body of bodies)
+        if(!circularArcMirrorOutsideBodyExact(c,body,OPTICAL_BENCH_V40_CLEARANCE_MM)&&!arcMirrorCoincidentWithBody(c,body))
+          fail(path,'Circular-arc-mirror surface must lie outside dielectric body by at least 0.01 mm or silver a coincident curved face ('+body.id+' and '+c.id+').','UNSUPPORTED_SCOPE');
+    }else{
+      for(const body of bodies)
+        if(!circleOutsideBodyExact(disk,body,OPTICAL_BENCH_V40_CLEARANCE_MM))
+          fail(path,'Curved mirror bounding disk must lie outside dielectric body by at least 0.01 mm ('+body.id+' and '+c.id+').','UNSUPPORTED_SCOPE');
+    }
     curveDisks.push(disk);
   }
 
-  // Opaque circle blockers (>= 0.01 mm clearance from emitters, bodies, curved disks, and each other).
+  // Opaque circle blockers (>= 0.01 mm clearance from emitters, curved mirrors, and each other;
+  // ambient OR strictly inside a single circular/cap/prism/quad dielectric body).
   const circleDisks=[];
   for(const [index,c] of components.entries()){
     if(c.type!==CIRCLE_BLOCKER_TYPE)continue;
@@ -186,18 +197,32 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
     for(const other of circleDisks)
       if(Math.hypot(other.center.x-p.x,other.center.y-p.y)<other.radius+p.radius+OPTICAL_BENCH_V40_CLEARANCE_MM)
         fail(path,'opaque circles overlap or touch ('+other.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
-    for(const d of curveDisks)
-      if(Math.hypot(d.center.x-p.x,d.center.y-p.y)<d.radius+p.radius+OPTICAL_BENCH_V40_CLEARANCE_MM)
+    for(const d of curveDisks){
+      if(d.comp.type==='circular-arc-mirror'){
+        if(pointCircularArcMirrorDistance(p,d.comp)<p.radius+OPTICAL_BENCH_V40_CLEARANCE_MM)
+          fail(path,'opaque circle intersects or approaches circular-arc-mirror within 0.01 mm ('+d.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
+      }else if(Math.hypot(d.center.x-p.x,d.center.y-p.y)<d.radius+p.radius+OPTICAL_BENCH_V40_CLEARANCE_MM){
         fail(path,'opaque circle overlaps curved mirror bounding disk ('+d.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
-    for(const body of bodies)
-      if(!circleOutsideBodyExact(disk,body,OPTICAL_BENCH_V40_CLEARANCE_MM))
-        fail(path,'opaque circle must lie outside dielectric body by at least 0.01 mm ('+body.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
+      }
+    }
+    let hostBody=null;
+    for(const body of bodies){
+      if(circleOutsideBodyExact(disk,body,OPTICAL_BENCH_V40_CLEARANCE_MM))continue;
+      if(body.type===SPHERICAL_LENS_TYPE)
+        fail(path,'opaque circle must lie outside spherical-lens body by at least 0.01 mm ('+body.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
+      if(!circleInsideBodyExact(disk,body,OPTICAL_BENCH_V40_CLEARANCE_MM))
+        fail(path,'opaque circle must lie outside dielectric body (or strictly inside a non-lens dielectric body) by at least 0.01 mm ('+body.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
+      if(hostBody)
+        fail(path,'opaque circle has ambiguous dielectric membership ('+hostBody.id+', '+body.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
+      hostBody=body;
+    }
     circleDisks.push(disk);
   }
 
   // Finite segment components: ideal lenses, plane mirrors, line blockers, finite apertures, detectors.
   // Emitters require >= 0.01 mm clearance from every actual finite segment (not its infinite line extension),
   // admitting side-by-side / L-shaped JEE setups while endpoint and runtime audits still fail closed on grazing rays.
+  // line-blocker and ray-detector may sit in ambient medium OR strictly inside a single non-lens finite dielectric body.
   const segments=[];
   for(const [index,c] of components.entries()){
     if(!SEGMENT_TYPES.includes(c.type))continue;
@@ -205,10 +230,23 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
     const {line,segments:arms}=finiteSurfaceGeometry(c,mirrorEndpoints);
     if(line.some(v=>!allowedCoord(v.x,v.y)))
       fail(cPath+'.parameters','segment endpoints exceed coordinate bounds','UNSUPPORTED_SCOPE');
-    for(const body of bodies)
-      if(!segmentOutsideBodyExact(line,body,OPTICAL_BENCH_V40_CLEARANCE_MM)&&
-         !(c.type==='plane-mirror'&&planeMirrorCoincidentWithBody(line,body)))
-        fail(cPath,'finite segment must lie outside dielectric body by at least 0.01 mm or (for a plane-mirror) sit flush on a flat dielectric face ('+body.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
+    const allowInterior=c.type==='line-blocker'||c.type==='ray-detector';
+    let hostBody=null;
+    for(const body of bodies){
+      if(segmentOutsideBodyExact(line,body,OPTICAL_BENCH_V40_CLEARANCE_MM))continue;
+      if(c.type==='plane-mirror'&&planeMirrorCoincidentWithBody(line,body))continue;
+      if(allowInterior){
+        if(body.type===SPHERICAL_LENS_TYPE)
+          fail(cPath,c.type+' must lie outside spherical-lens body by at least 0.01 mm ('+body.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
+        if(!segmentInsideBodyExact(line,body,OPTICAL_BENCH_V40_CLEARANCE_MM))
+          fail(cPath,c.type+' must lie strictly outside or strictly inside dielectric body by at least 0.01 mm (only a plane-mirror may sit flush on a flat dielectric face) ('+body.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
+        if(hostBody)
+          fail(cPath,c.type+' has ambiguous dielectric membership ('+hostBody.id+', '+body.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
+        hostBody=body;
+        continue;
+      }
+      fail(cPath,'finite segment must lie outside dielectric body by at least 0.01 mm or (for a plane-mirror) sit flush on a flat dielectric face ('+body.id+' and '+c.id+')','UNSUPPORTED_SCOPE');
+    }
     for(const arm of arms){
       if(points.some(s=>pointSegmentDistance(s,arm)<OPTICAL_BENCH_V40_CLEARANCE_MM))
         fail(cPath+'.parameters','each source must be at least 0.01 mm from finite segment ('+c.id+')','UNSUPPORTED_SCOPE');
@@ -318,14 +356,13 @@ export function installNativeOpticalBenchV40Audit(doc,scene,idMap,mirrorEndpoint
         }
       }
     }else if(c.type==='circular-arc-mirror'){
-      const p=c.parameters,{n}=curvedFrame(p),pts=curvedPoints(c);
-      const disk={center:{x:p.x,y:p.y},radius:Math.hypot(pts[0].x-p.x,pts[0].y-p.y)};
+      const p=c.parameters,{n}=curvedFrame(p);
       const center={x:p.x+p.radius*n.x,y:p.y+p.radius*n.y},radius=Math.abs(p.radius);
       const sgn=Math.sign(p.radius);
       const uVertex={x:-sgn*n.x,y:-sgn*n.y};
       const halfAngle=Math.asin(Math.min(1,p.apertureHeight/(2*radius)));
       for(const {comp,body} of auditBodies){
-        if(!circleOutsideBodyExact(disk,body,OPTICAL_BENCH_V40_CLEARANCE_MM)&&arcMirrorCoincidentWithBody(c,body)){
+        if(!circularArcMirrorOutsideBodyExact(c,body,OPTICAL_BENCH_V40_CLEARANCE_MM)&&arcMirrorCoincidentWithBody(c,body)){
           if(!flushMirrorsByBodyId.has(comp.id))flushMirrorsByBodyId.set(comp.id,[]);
           flushMirrorsByBodyId.get(comp.id).push({kind:'arc',id:c.id,center,radius,uVertex,halfAngle});
         }
@@ -462,16 +499,16 @@ export function opticalBenchCapabilities(){
       }},
       'ideal-lens':{count:[0,4],parameters:['x','y','focalLength','apertureHeight'],note:'Vertical thin lens with independent transverse centre y (split lenses at the same x are admitted when vertically separated by >= 0.01 mm); focalLength defined in ambient medium backgroundIndex.'},
       'plane-mirror':{count:[0,4],parameters:['x','y','orientationDeg','length'],note:'May sit >= 0.01 mm clear of other segments/dielectrics, meet another plane-mirror cleanly at a shared non-collinear corner (<= 1e-11 mm, |sin θ| >= 0.05; e.g. corner reflectors, triangular kaleidoscopes, 4-wall boxes), OR sit flush on a physical flat dielectric face (silvered slab, silvered prism, flat-silvered lens/cap, or mirror table) via native PhyDemo mergesWithGlass.'},
-      curvedMirrors:{groupCount:[0,2],note:'(x, y) is the mirror vertex and normalDeg (y-up degrees) points toward the front reflecting side; positive focalLength/radius is concave (curves toward normalDeg) and negative is convex. circular-arc-mirror requires minor-arc apertureHeight/2 < 0.99*|radius| and uses exact point-to-arc and segment-to-arc >= 0.01 mm clearance against emitters, finite segments, and parallel beams, OR sits concentric and flush on a curved spherical-lens face, circular-dielectric boundary, or circular-cap-dielectric curved arc via native PhyDemo mergesWithGlass. Against non-silvered finite dielectrics (and mirror-to-mirror / opaque-circle checks), ideal-curved-mirror enforces a half-aperture bounding disk of radius apertureHeight/2 around (x, y), while circular-arc-mirror enforces its vertex-to-endpoint bounding disk of radius hypot(h, sag) around (x, y) where h = apertureHeight/2 and sag = h^2 / (|radius| + sqrt(radius^2 - h^2)).',types:{
+      curvedMirrors:{groupCount:[0,2],note:'(x, y) is the mirror vertex and normalDeg (y-up degrees) points toward the front reflecting side; positive focalLength/radius is concave (curves toward normalDeg) and negative is convex. circular-arc-mirror requires minor-arc apertureHeight/2 < 0.99*|radius| and uses exact >= 0.01 mm arc clearance against emitters, finite segments, parallel beams, opaque circles, and non-silvered finite dielectrics (and conservative vertex-to-endpoint hypot(h, sag) bounding-disk clearance only against another curved mirror, where h = apertureHeight/2 and sag = h^2 / (|radius| + sqrt(radius^2 - h^2))), OR sits concentric and flush on a curved spherical-lens face, circular-dielectric boundary, or circular-cap-dielectric curved arc via native PhyDemo mergesWithGlass. ideal-curved-mirror enforces a half-aperture bounding disk of radius apertureHeight/2 around (x, y).',types:{
         'ideal-curved-mirror':{parameters:['x','y','normalDeg','focalLength','apertureHeight'],note:'Ideal Gaussian curved mirror: positive focalLength concave, negative convex; conservative half-aperture (apertureHeight/2) bounding-disk clearance against nearby segments/dielectrics.'},
-        'circular-arc-mirror':{parameters:['x','y','normalDeg','radius','apertureHeight'],note:'Native circular minor arc (spherical aberration included; apertureHeight/2 < 0.99*|radius|): positive radius concave (|radius| >= 2 mm), negative convex; vertex-to-endpoint hypot(h, sag) bounding-disk clearance against non-silvered dielectrics.'}
+        'circular-arc-mirror':{parameters:['x','y','normalDeg','radius','apertureHeight'],note:'Native circular minor arc (spherical aberration included; apertureHeight/2 < 0.99*|radius|): positive radius concave (|radius| >= 2 mm), negative convex; exact >= 0.01 mm arc clearance against emitters, finite segments, opaque circles, and non-silvered dielectrics (conservative hypot(h, sag) bounding-disk clearance against another curved mirror).'}
       }},
-      opaqueStops:{groupCount:[0,2],interiorPlacement:'Must lie strictly outside all finite dielectric bodies (>= 0.01 mm).',types:{
+      opaqueStops:{groupCount:[0,2],interiorPlacement:'line-blocker and circle-blocker may lie in the ambient medium OR strictly inside a single circular-dielectric, circular-cap-dielectric, triangular-prism, or polygon-dielectric (>= 0.01 mm from every boundary, face, and vertex; never crossing a boundary; spherical-lens remains exterior-only). finite-aperture must lie strictly outside all finite dielectric bodies (>= 0.01 mm).',types:{
         'line-blocker':{parameters:['x','y','orientationDeg','length']},
         'circle-blocker':{parameters:['x','y','radius']},
         'finite-aperture':{parameters:['x','y','orientationDeg','length','openingLength']}
       }},
-      'ray-detector':{count:[0,2],parameters:['x','y','orientationDeg','length'],interiorPlacement:'Must lie strictly outside all finite dielectric bodies (>= 0.01 mm).'}
+      'ray-detector':{count:[0,2],parameters:['x','y','orientationDeg','length'],interiorPlacement:'Allowed in the ambient medium OR strictly inside a single circular-dielectric, circular-cap-dielectric, triangular-prism, or polygon-dielectric (>= 0.01 mm from every boundary, face, and vertex; never crossing a boundary; spherical-lens remains exterior-only).'}
     },
     revisions:{
       targeted:{

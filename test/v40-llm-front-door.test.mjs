@@ -544,8 +544,8 @@ test('v40 LLM front door DX: slim workflow-capabilities, self-contained bench-ca
   assert.deepEqual(bench.bounds.radiusMm['circular-cap-dielectric'],[2,COMPONENT_BOUNDS.coordinateMm[1]]);
   assert.deepEqual(bench.bounds.radiusMm['circle-blocker'],[1,COMPONENT_BOUNDS.coordinateMm[1]]);
   assert.deepEqual(bench.components.finiteDielectrics.faceNaming['triangular-prism'],['face-12','face-23','face-31']);
-  assert.match(bench.components.opaqueStops.interiorPlacement,/outside/);
-  assert.match(bench.components['ray-detector'].interiorPlacement,/outside/);
+  assert.match(bench.components.opaqueStops.interiorPlacement,/line-blocker and circle-blocker.*strictly inside.*finite-aperture.*outside/);
+  assert.match(bench.components['ray-detector'].interiorPlacement,/strictly inside.*spherical-lens remains exterior-only/);
   assert.match(bench.revisions.targeted.fileShape,/expectedSha256/);
   assert.match(bench.revisions.structural.fileShape,/expectedSha256/);
 
@@ -640,12 +640,12 @@ test('v40 LLM front door DX: slim workflow-capabilities, self-contained bench-ca
     {requestId:'hits',kind:'detector-crossings',componentId:'D1',rule:'sole-compatible-authored-component'}
   ]);
 
-  // 8. Curved-mirror sign/vertex & exact ideal-vs-arc dielectric bounding-disk wording (PR #272 P2-1) + reduced-facts branch note
+  // 8. Curved-mirror sign/vertex & exact arc vs ideal-curved-mirror dielectric clearance wording + reduced-facts branch note
   assert.match(bench.components.curvedMirrors.note,/positive focalLength\/radius is concave.*negative is convex/);
   assert.match(bench.components.curvedMirrors.note,/apertureHeight\/2 < 0\.99\*\|radius\|/);
+  assert.match(bench.components.curvedMirrors.note,/exact >= 0\.01 mm arc clearance against emitters, finite segments, parallel beams, opaque circles, and non-silvered finite dielectrics/);
   assert.match(bench.components.curvedMirrors.note,/ideal-curved-mirror enforces a half-aperture bounding disk of radius apertureHeight\/2/);
-  assert.match(bench.components.curvedMirrors.note,/circular-arc-mirror enforces its vertex-to-endpoint bounding disk of radius hypot\(h, sag\)/);
   assert.match(bench.components.curvedMirrors.types['ideal-curved-mirror'].note,/positive focalLength concave/);
-  assert.match(bench.components.curvedMirrors.types['circular-arc-mirror'].note,/hypot\(h, sag\)/);
+  assert.match(bench.components.curvedMirrors.types['circular-arc-mirror'].note,/exact >= 0\.01 mm arc clearance/);
   assert.match(angularDrill.contract.querySchemas['branch-angles'].note,/for reduced angular facts/);
 });
