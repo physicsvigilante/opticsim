@@ -554,7 +554,8 @@ export function opticalBenchCapabilities(){
       'v40-silvered-plano-convex',
       'v40-cemented-doublet',
       'v40-layered-mirror-tank',
-      'v40-silvered-hemisphere'
+      'v40-silvered-hemisphere',
+      'v40-beam-splitter-bench'
     ],
     safeguards:[
       'Disjoint finite bodies and >= 0.01 mm surface/endpoint/vertex clearances.',

@@ -532,7 +532,8 @@ async function main(){
       ['v40-silvered-plano-convex','JEE Silvered plano-convex lens: curved-face silvering return focus (v40)',4],
       ['v40-cemented-doublet','JEE Cemented doublet: coaxial crown and flint glass lenses (v40)',4],
       ['v40-layered-mirror-tank','JEE Layered mirror tank: water on glass resting on a flush mirror (v40)',5],
-      ['v40-silvered-hemisphere','v40 JEE: Silvered glass hemisphere (internal bubble)',4]
+      ['v40-silvered-hemisphere','v40 JEE: Silvered glass hemisphere (internal bubble)',4],
+      ['v40-beam-splitter-bench','v40 JEE: Beam-splitter two-arm bench (split + mirror fold)',5]
     ];
     for(const [slug,title,fieldCount] of v40Starters){
       await evaluate('(() => {const e=document.getElementById("examples");e.value='+JSON.stringify(slug)+';e.dispatchEvent(new Event("change",{bubbles:true}));})()');
@@ -555,8 +556,14 @@ async function main(){
         assert.match(layout.guidanceText,/Ambient n₀ = 1/);
         assert.ok(layout.topFirstFieldsetY<700,'First component fieldset should start above the fold, got y='+layout.topFirstFieldsetY);
         assert.equal(layout.groups[0].label,'Unified Optical Bench (v40 JEE Starters)');
-        assert.equal(layout.groups[0].count,7);
+        assert.equal(layout.groups[0].count,8);
         await shot('v40-silvered-hemisphere');
+      }
+      if(slug==='v40-beam-splitter-bench'){
+        assert.match(s.stats,/native mirror reflections \(M1: \d+\)/);
+        assert.match(s.stats,/BS1: \d+ native splitter interactions/);
+        assert.match(s.detectorReadouts,/D1:.*D2:/);
+        await shot('v40-beam-splitter-bench');
       }
       report.checks.push({name:'v40 starter '+slug,result:'pass',stats:s.stats,painted:s.painted});
     }
