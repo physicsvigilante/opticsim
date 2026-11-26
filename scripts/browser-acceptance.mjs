@@ -544,6 +544,16 @@ async function main(){
       if(slug==='v40-silvered-hemisphere'){
         const radiusLabel=await evaluate('document.querySelector(\'label[for="H1-radius"]\')?.textContent || document.getElementById("H1-radius")?.closest("label")?.textContent || ""');
         assert.match(radiusLabel,/Glass radius \(positive\)/);
+        // Classroom UX checks: toolbar must never overlap #stage even when scrolled,
+        // v40 starters sit in the first optgroup, and collapsible scope keeps S1 above the fold.
+        const layout=await evaluate('(() => { window.scrollTo(0, 420); const tb=document.querySelector(".ray-toolbar").getBoundingClientRect(), st=document.getElementById("stage").getBoundingClientRect(), fs=document.querySelector("#controls fieldset").getBoundingClientRect(), det=document.querySelector(".guidance-disclosure"), groups=[...document.querySelectorAll("#examples optgroup")].map(g=>({label:g.label,count:g.querySelectorAll("option").length})); window.scrollTo(0, 0); const topFs=document.querySelector("#controls fieldset").getBoundingClientRect(), detOpenBefore=det.open; det.querySelector("summary").click(); const detOpenAfter=det.open, guidanceText=document.getElementById("parameter-guidance").textContent; det.querySelector("summary").click(); return {scrolledToolbarBottom:tb.bottom,scrolledStageTop:st.top,topFirstFieldsetY:topFs.top,detOpenBefore,detOpenAfter,guidanceText,groups}; })()');
+        assert.ok(layout.scrolledToolbarBottom<=layout.scrolledStageTop+1,'Toolbar must not overlap #stage when scrolled: '+JSON.stringify(layout));
+        assert.equal(layout.detOpenBefore,false,'Guidance disclosure should start collapsed so component controls sit beside canvas');
+        assert.equal(layout.detOpenAfter,true,'Clicking guidance disclosure should expand scope rules');
+        assert.match(layout.guidanceText,/Ambient n₀ = 1/);
+        assert.ok(layout.topFirstFieldsetY<700,'First component fieldset should start above the fold, got y='+layout.topFirstFieldsetY);
+        assert.equal(layout.groups[0].label,'Unified Optical Bench (v40 JEE Starters)');
+        assert.equal(layout.groups[0].count,7);
         await shot('v40-silvered-hemisphere');
       }
       report.checks.push({name:'v40 starter '+slug,result:'pass',stats:s.stats,painted:s.painted});
