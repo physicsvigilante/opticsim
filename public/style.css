@@ -57,3 +57,4 @@ html{scrollbar-gutter:stable}
 #detector-readouts:not([hidden]),#source-emissions:not([hidden]){padding:9px 12px;margin:6px 0;background:#fff;border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:5px;color:var(--ink);font-size:12.5px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.55;overflow-wrap:anywhere}
 #stage{height:clamp(360px,52vh,640px)}
 fieldset{padding:13px 14px;margin:14px 0}
+@media(max-width:680px){#stage{height:330px}}
