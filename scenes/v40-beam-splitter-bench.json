@@ -1,0 +1,85 @@
+{
+  "format": "ray-optics-2d",
+  "schemaVersion": 40,
+  "adapterVersion": 40,
+  "upstreamCommit": "811f508d2b070898c241a568b0c167dcb8645251",
+  "physics": {
+    "lengthUnit": "mm",
+    "coordinates": "x-right-y-up",
+    "model": "native-optical-bench",
+    "backgroundIndex": 1,
+    "components": [
+      {
+        "id": "S1",
+        "type": "point-source",
+        "parameters": {
+          "x": -90,
+          "y": 0,
+          "brightness": 0.2
+        },
+        "emission": {
+          "mode": "directional",
+          "directionDeg": 0,
+          "angleDeg": 12
+        }
+      },
+      {
+        "id": "BS1",
+        "type": "beam-splitter",
+        "parameters": {
+          "x": 0,
+          "y": 0,
+          "orientationDeg": 45,
+          "length": 70,
+          "transmissionRatio": 0.5
+        }
+      },
+      {
+        "id": "M1",
+        "type": "plane-mirror",
+        "parameters": {
+          "x": 0,
+          "y": 80,
+          "orientationDeg": 45,
+          "length": 80
+        }
+      },
+      {
+        "id": "D1",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 90,
+          "y": 0,
+          "orientationDeg": 90,
+          "length": 68
+        }
+      },
+      {
+        "id": "D2",
+        "type": "ray-detector",
+        "parameters": {
+          "x": 90,
+          "y": 80,
+          "orientationDeg": 90,
+          "length": 78
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "title": "v40 JEE: Beam-splitter two-arm bench (split + mirror fold)",
+    "view": {
+      "x": 0,
+      "y": 40,
+      "zoom": 1.7
+    },
+    "mode": "rays",
+    "grid": true
+  },
+  "simulation": {
+    "rayDensity": 0.2,
+    "maxRayDepth": 16,
+    "processedRayLimit": 10000,
+    "randomSeed": "opticsim-v40-seed-v1"
+  }
+}

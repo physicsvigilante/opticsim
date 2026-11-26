@@ -80,7 +80,7 @@ node scripts/author-scene.mjs bench-capabilities
 - **Structural add/remove (`reviseComponents`):** Add or remove dielectric bodies (`4 → … → 0`), lenses, mirrors, stops, or detectors within v40's limits without changing schema versions. Deleting a source's host body cleanly turns the source into an ambient-medium emitter in `backgroundIndex`.
 - **Parameter sweeps (`runParameterSweep`):** Supports v40 scenes up to `maxRayDepth = 16`, revalidating each sample from the unchanged baseline.
 - **Proportionate runtime audit (`v40EndpointsVerified`):** Reuses the shared emitted/incoming/outgoing `< 0.01 mm` endpoint, vertex, and circular/spherical/arc tangency audit plus deterministic seed verification, near-grazing dielectric incidence refusal (`|d · n| <= 1e-4`), and high-to-low near-critical refusal (`|n_i sin θ_i - n_t| <= 1e-6`). Truncation, stops, or audit faults fail closed and withhold accepted measurements.
-- **Browser starters:** Seven curated `v40` JEE starters are available directly in the browser **Scene** dropdown (`native-optical-bench`, `v40-billet-split-lens`, `v40-snell-window`, `v40-silvered-plano-convex`, `v40-cemented-doublet`, `v40-layered-mirror-tank`, `v40-silvered-hemisphere`).
+- **Browser starters:** Eight curated `v40` JEE starters are available directly in the browser **Scene** dropdown (`native-optical-bench`, `v40-billet-split-lens`, `v40-snell-window`, `v40-silvered-plano-convex`, `v40-cemented-doublet`, `v40-layered-mirror-tank`, `v40-silvered-hemisphere`, `v40-beam-splitter-bench`).
 
 ## 4. Paraxial-vs-Native Witness Bridge (`v40`)
 

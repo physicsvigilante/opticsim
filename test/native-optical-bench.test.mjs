@@ -1828,7 +1828,7 @@ test('Milestone 3 R3 regression (P2-1 R2): curved partial-silvering arc inclusio
   assert.match(diagBypass.errors.join(' '),/bypassed native mirror merge/);
 });
 
-test('Milestone 4B + Upgrade #3: all 7 curated v40 JEE browser starters exist in scenes/ and public/index.html and pass per-starter physics behavioral assertions',async()=>{
+test('Milestone 4B + Upgrade #3 + Track A: all 8 curated v40 JEE browser starters exist in scenes/ and public/index.html and pass per-starter physics behavioral assertions',async()=>{
   const caps=opticalBenchCapabilities();
   assert.equal(caps.witnessBridge.format,'opticsim-optical-bench-native-witness-v1');
   assert.deepEqual(caps.browserStarters,[
@@ -1838,7 +1838,8 @@ test('Milestone 4B + Upgrade #3: all 7 curated v40 JEE browser starters exist in
     'v40-silvered-plano-convex',
     'v40-cemented-doublet',
     'v40-layered-mirror-tank',
-    'v40-silvered-hemisphere'
+    'v40-silvered-hemisphere',
+    'v40-beam-splitter-bench'
   ]);
   const runs=new Map();
   for(const slug of caps.browserStarters){
@@ -1886,6 +1887,43 @@ test('Milestone 4B + Upgrade #3: all 7 curated v40 JEE browser starters exist in
   assert.equal(hemi.obs.interfacesById.H1.faces['face-arc'].interactions,0,'Flush curved mirror M1 owns dome reflection');
   assert.ok(hemi.obs.interfacesById.H1.faces['face-flat'].interactions>=5,'Reflected rays must exit flat base of H1');
   assert.ok(hemi.obs.detectorsById.D1.crossings>=5,'Exited rays must cross table detector D1');
+  // 7. Beam-splitter two-arm bench (Track A): BS1 splits fan 50/50 into transmitted arm D1 and mirror-folded arm M1->D2 with exact power split and conservation on T=0.75 revision.
+  const bsBench=runs.get('v40-beam-splitter-bench');
+  const nRays=bsBench.obs.emissionsById.S1.emitted;
+  assert.ok(nRays>=3,'Beam-splitter bench should emit >= 3 fan rays, got '+nRays);
+  assert.equal(bsBench.obs.v40OpticalIncidentsById.BS1,nRays,'Every emitted fan ray should strike BS1');
+  assert.equal(bsBench.obs.reflectionsById.M1,nRays,'Every reflected branch should fold cleanly on M1');
+  assert.equal(bsBench.obs.detectorsById.D1.crossings,nRays,'Transmitted arm should reach D1');
+  assert.equal(bsBench.obs.detectorsById.D2.crossings,nRays,'Mirror-folded reflected arm should reach D2');
+  const pTrans50=Math.abs(bsBench.obs.detectorsById.D1.signedPower);
+  const pRefl50=Math.abs(bsBench.obs.detectorsById.D2.signedPower);
+  assert.ok(pTrans50>0&&Math.abs(pTrans50-pRefl50)<1e-12,'T=0.5 should split power 50/50 across D1 and D2');
+  // Revising transmissionRatio 0.5 -> 0.75 shifts D1:D2 power to 3:1 while conserving total power across both arms.
+  const bsDoc75=structuredClone(bsBench.doc);
+  bsDoc75.physics.components.find(c=>c.id==='BS1').parameters.transmissionRatio=0.75;
+  validate(bsDoc75);
+  const bsRun75=await evaluateDocument(bsDoc75,core,[
+    {id:'bs',kind:'beam-splitter-interactions',componentId:'BS1'},
+    {id:'d1p',kind:'detector-signed-power',componentId:'D1'},
+    {id:'d2p',kind:'detector-signed-power',componentId:'D2'}
+  ]);
+  assert.equal(bsRun75.summary.executionPassed,true);
+  assert.equal(bsRun75.summary.observations.v40EndpointsVerified,true);
+  assert.equal(bsRun75.summary.native.truncation,0);
+  const pTrans75=Math.abs(bsRun75.summary.observations.detectorsById.D1.signedPower);
+  const pRefl75=Math.abs(bsRun75.summary.observations.detectorsById.D2.signedPower);
+  assert.ok(Math.abs(pTrans75/pRefl75-3)<1e-12,'T=0.75 should shift D1:D2 power ratio to 3:1');
+  assert.ok(Math.abs((pTrans75+pRefl75)-(pTrans50+pRefl50))<1e-12,'Total power across both arms should stay conserved');
+  // Verify Sparse (0.048) and Dense (1.0) browser sampling presets also stay truncation-free and endpoint-verified.
+  for(const density of [0.048,1]){
+    const sampled=structuredClone(bsBench.doc);
+    sampled.simulation.rayDensity=density;
+    validate(sampled);
+    const sRun=await evaluateDocument(sampled,core,[{id:'bs',kind:'beam-splitter-interactions',componentId:'BS1'}]);
+    assert.equal(sRun.summary.executionPassed,true,'v40-beam-splitter-bench failed at rayDensity='+density);
+    assert.equal(sRun.summary.observations.v40EndpointsVerified,true,'v40-beam-splitter-bench failed endpoint audit at rayDensity='+density);
+    assert.equal(sRun.summary.native.truncation,0,'v40-beam-splitter-bench truncated at rayDensity='+density);
+  }
 });
 
 test('v40 multi-mirror enclosures: 90-deg corner reflector oracle, JEE A03 triangular mirror cavity, and JEE A04 4-wall mirror box',async()=>{
