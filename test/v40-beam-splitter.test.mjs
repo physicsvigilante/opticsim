@@ -5,8 +5,8 @@ import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
 import {COMPONENT_REVISION_FORMAT,prepareScene,reviseComponents,reviseScene} from '../src/authoring.js';
-import {parseSave,serializeSave} from '../src/contract.js';
-import {OPTICAL_BENCH_V40_MODEL,OPTICAL_BENCH_V40_VERSION} from '../src/native-optical-bench.js';
+import {mirrorEndpoints,parseSave,serializeSave} from '../src/contract.js';
+import {OPTICAL_BENCH_V40_MODEL,OPTICAL_BENCH_V40_VERSION,installNativeOpticalBenchV40Audit} from '../src/native-optical-bench.js';
 import {evaluateObservables} from '../src/observables.js';
 import {evaluateDocument} from '../scripts/author-scene.mjs';
 import {runProblemEvidence} from '../scripts/run-problem.mjs';
@@ -221,24 +221,51 @@ test('v40 beam-splitter fail-closed controls: brightness truncation, cavity boun
     assert.match(run.summary.native.errors.join(' '),/within 0\.01 mm of a finite component endpoint/);
   }
 
-  // 4. Runtime endpoint-graze audit catches < 0.01 mm graze on TRANSMITTED child branch (result.newRays[0])
+  // 4. End-to-end integration refusal: ray deflected by M0 through BS1 passes < 0.01 mm from D_trans endpoint
+  //    (caught on M0's unbounded forward endpoint audit; isolated BS1 child-audit proof follows in subtest 5).
   {
-    // Refract/deflect first? No: deflect with 20 deg mirror M0 at (-20,0) so initial ray doesn't trigger initial forward guard,
-    // wait: use 45 deg BS1 on a ray arriving from S1 (-40, -40) at 45 deg? Even simpler:
-    // S1 at (-40, 20) reflects off tilted mirror M0 at (-20, 20, 0 deg? no, aim down-right) into BS1 (0, 0, 45 deg),
-    // then transmitted branch continues along (1, -1)/sqrt(2) grazing D_trans endpoint by 0.004 mm!
     const {document:doc}=prepareScene(v40Req([
       {id:'S1',type:'point-source',parameters:{x:-40,y:40,brightness:0.4},emission:{mode:'single-ray',directionDeg:0}},
       {id:'M0',type:'plane-mirror',parameters:{x:-20,y:40,orientationDeg:-22.5,length:20}},
       // Ray at 0 deg hitting -22.5 deg mirror reflects to -45 deg: from (-20,40) along (1,-1)/sqrt(2) -> hits (20, 0)
       {id:'BS1',type:'beam-splitter',parameters:{x:20,y:0,orientationDeg:90,length:30,transmissionRatio:0.5}},
-      // Transmitted ray continues along (1,-1)/sqrt(2) through (40, -20). Place D_trans vertically at x=40 with top endpoint at y=-20.004!
+      // Straight-through line passes (40, -20); D_trans top endpoint sits at (40, -20.004)
       {id:'D_trans',type:'ray-detector',parameters:{x:40,y:-30.004,orientationDeg:90,length:20}}
     ]));
     const run=await evaluateDocument(doc,core,[{id:'bs',kind:'beam-splitter-interactions',componentId:'BS1'}]);
     assert.equal(run.summary.executionPassed,false);
     assert.equal(run.summary.observations,null);
     assert.match(run.summary.native.errors.join(' '),/within 0\.01 mm of a finite component endpoint/);
+  }
+
+  // 5. PR #275 P3-1: Isolated, discriminating test-only audit-hook test proving installNativeOpticalBenchV40Audit
+  //    audits BS1's spawned child rays in result.newRays independently of emitter/reflected rays.
+  {
+    const {document:doc}=prepareScene(v40Req([
+      {id:'S1',type:'point-source',parameters:{x:-40,y:0,brightness:0.4},emission:{mode:'single-ray',directionDeg:0}},
+      {id:'BS1',type:'beam-splitter',parameters:{x:0,y:0,orientationDeg:45,length:30,transmissionRatio:0.5}},
+      // D_trans at x = 40, y in [-30, -10] (top endpoint at (40, -10) in y-up -> (40, +10) in native y-down):
+      // completely clear of both S1's initial ray (y = 0) and BS1's safe reflected ray (x = 0, +y)!
+      {id:'D_trans',type:'ray-detector',parameters:{x:40,y:-20,orientationDeg:90,length:20}}
+    ]));
+    const runHook=(childReturn)=>{
+      const sObj={onSimulationStart:()=>({newRays:[{p1:{x:-40,y:0},p2:{x:0,y:0}}]})};
+      // Native y-down: safe reflected ray heads upward (+y in y-up => -y in native y-down)
+      const bsObj={onRayIncident:(ray)=>{ray.p1={x:0,y:0};ray.p2={x:0,y:-10};return childReturn;}};
+      const dObj={onRayIncident:()=>undefined};
+      const stubScene={randomSeed:doc.simulation.randomSeed,objs:[sObj,bsObj,dObj]};
+      const idMap=new Map([['S1',0],['BS1',1],['D_trans',2]]);
+      const audit=installNativeOpticalBenchV40Audit(doc,stubScene,idMap,mirrorEndpoints);
+      sObj.onSimulationStart();
+      bsObj.onRayIncident({p1:{x:-40,y:0},p2:{x:0,y:0}},0,{x:0,y:0});
+      return audit.finish();
+    };
+    // Safe child along y = 0 (10 mm clear of D_trans top endpoint at y = -10) -> passes
+    assert.equal(runHook({newRays:[{p1:{x:0,y:0},p2:{x:40,y:0}}]}),null);
+    // Child ray grazing D_trans top endpoint (40, -10 y-up => (40, +10) y-down) by 0.004 mm -> fails specifically via child audit!
+    assert.match(runHook({newRays:[{p1:{x:0,y:0},p2:{x:40,y:10.004}}]}),/D_trans: observed native ray passes within 0\.01 mm of a finite component endpoint/);
+    // Malformed non-array newRays -> fails closed!
+    assert.match(runHook({newRays:'bad'}),/BS1: native incident returned non-array newRays/);
   }
 });
 
