@@ -11,8 +11,15 @@ export const ANGLE_FACTS_FORMAT='opticsim-planar-angular-facts-v1';
 export const ANGLE_RESULT_FORMAT='opticsim-planar-angle-result-v1';
 const own=(x,k)=>Object.prototype.hasOwnProperty.call(x,k);
 function record(x,keys,required,label){
-  if(!isRecord(x)||Object.keys(x).some(k=>!keys.includes(k))||
-     required.some(k=>!own(x,k)))throw Error('Invalid '+label+' fields');
+  if(!isRecord(x))throw Error('Invalid '+label+' fields: expected object; allowed ['+keys.join(', ')+']');
+  const extra=Object.keys(x).filter(k=>!keys.includes(k));
+  const missing=required.filter(k=>!own(x,k));
+  if(extra.length||missing.length){
+    const parts=[];
+    if(extra.length)parts.push('unexpected ['+extra.join(', ')+']');
+    if(missing.length)parts.push('missing ['+missing.join(', ')+']');
+    throw Error('Invalid '+label+' fields: '+parts.join('; ')+'; allowed ['+keys.join(', ')+']');
+  }
 }
 function token(x,label){
   if(typeof x!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(x))throw Error('Invalid '+label);
@@ -316,6 +323,15 @@ export function angularCapabilities(){
   return {format:ANGLE_QUERY_FORMAT,factsFormat:ANGLE_FACTS_FORMAT,
     kinds:['critical-input-angle','branch-angles'],
     physicalInput:'Either an existing complete v5 minimal authoring request, or ordered planar angular facts with source medium and relevant angles; brightness/coordinates are only required to propose a native scene',
+    factsSchema:{
+      format:ANGLE_FACTS_FORMAT,
+      source:{required:['id','region'],optional:['incidentAngleDeg','approach'],note:'region is integer 0..interfaces.length (medium index ordered from negativeIndex of interfaces[0] to positiveIndex of last interface); approach is "positive" or "negative"'},
+      interfaces:{count:[1,4],required:['id','negativeIndex','positiveIndex'],optional:['partialReflection'],note:'adjacent interfaces must share matching positiveIndex === next.negativeIndex'}
+    },
+    querySchemas:{
+      'critical-input-angle':{required:['id','kind','sourceId','boundaryId','approach','tangentSide'],note:'approach and tangentSide are "positive" or "negative"; omit source.incidentAngleDeg when solving for critical input'},
+      'branch-angles':{required:['id','kind','sourceId','branches'],branchItem:{required:['id','events'],eventItem:{required:['interfaceId','action'],action:['transmit','reflect']}},note:'1–4 branches, 1–8 ordered events per branch'}
+    },
     critical:'requires missing source direction plus explicit approach and tangentSide; solves one critical target via transmissions only',
     branches:'known source direction plus 1–4 conditional branches of 1–8 ordered reflect/transmit events by actual interface ID',
     noGuessing:'Media indices, source medium, branch decisions and unknown status are never inferred. Native scene geometry/brightness must be supplied before forward execution; a reflection policy is required only for native preparation.',

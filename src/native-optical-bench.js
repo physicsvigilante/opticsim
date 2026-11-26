@@ -430,13 +430,30 @@ export function opticalBenchCapabilities(){
     maxRayDepth:V40_MAX_RAY_DEPTH,
     clearanceMm:OPTICAL_BENCH_V40_CLEARANCE_MM,
     contactToleranceMm:BENCH_CONTACT_TOL_MM,
+    componentShape:{
+      rule:'Every entry in components[] MUST nest its numeric/boolean fields inside a "parameters" object. Only "point-source" has a sibling "emission" object (with singular key "mode").',
+      ordinary:'{ id, type, parameters: { ... } }',
+      pointSource:'{ id, type: "point-source", parameters: { x, y, brightness }, emission: { mode: "single-ray"|"directional"|"full-circle", directionDeg?, angleDeg? } }'
+    },
+    bounds:{
+      coordinateMm:[-10000,10000],
+      positiveLengthMm:[1,10000],
+      minimumAbsFocalLengthMm:1,
+      parallelBeamWidthMm:[10,100],
+      radiusMm:{'circular-dielectric':[2,10000],'circular-cap-dielectric':[2,10000],'circle-blocker':[1,10000],'circular-arc-mirror':'[-10000,10000] with |radius| >= 2'},
+      orientationDeg:[-180,180],
+      directionDeg:[-180,180],
+      angleDeg:[1,180],
+      brightness:[0.01,1],
+      refractiveIndex:[1,4]
+    },
     emitters:{
       rule:'Choose EITHER 1–4 point-source (single-ray, directional, or full-circle) OR 1 external parallel-beam (not both).',
-      'point-source':{parameters:['x','y','brightness'],emission:{modes:['single-ray','directional','full-circle'],singleRayRequired:['directionDeg'],directionalRequired:['directionDeg','angleDeg']},interiorPlacement:'Allowed in ambient medium OR strictly inside circular-dielectric, circular-cap-dielectric, triangular-prism, or polygon-dielectric (>= 0.01 mm from boundary). Exterior-only for spherical-lens.'},
-      'parallel-beam':{parameters:['x','y','width','directionDeg','brightness'],interiorPlacement:'Must lie completely outside all finite dielectric bodies (>= 0.01 mm).'}
+      'point-source':{parameters:['x','y','brightness'],emission:{field:'mode',modes:['single-ray','directional','full-circle'],singleRayRequired:['directionDeg'],directionalRequired:['directionDeg','angleDeg']},interiorPlacement:'Allowed in ambient medium OR strictly inside circular-dielectric, circular-cap-dielectric, triangular-prism, or polygon-dielectric (>= 0.01 mm from boundary). Exterior-only for spherical-lens.'},
+      'parallel-beam':{parameters:['x','y','width','directionDeg','brightness'],widthMm:[10,100],interiorPlacement:'Must lie completely outside all finite dielectric bodies (>= 0.01 mm).'}
     },
     components:{
-      finiteDielectrics:{groupCount:[0,4],note:'Zero-body deletion closure (4 -> ... -> 0) and equal-index neutral bodies admitted. Every dielectric pair must be disjoint (>= 0.01 mm), share a clean coincident flat boundary (<= 1e-11 mm, overlap >= 1 mm; 2–4 layer stacked slabs, oil-water-glass, prism-on-slab, flat lens or circular cap on slab), or form coaxial cemented lenses (<= 1e-11 mm matching opposite-signed curvature at shared apex; doublets or triplets). Touching or cemented glass-glass pairs require matching partialReflection flags so each shared interface has one unambiguous Fresnel policy. Native PhyDemo surfaceMergingObjs (1e-6 mm hit-point merge threshold) owns merged refraction/TIR; callbacks fire on the primary body only, reporting true merged incident/destination indices, and unmerged or >2-body multi-merge hits fail closed.',types:{
+      finiteDielectrics:{groupCount:[0,4],faceNaming:{'triangular-prism':['face-12','face-23','face-31'],'polygon-dielectric':['face-12','face-23','face-34','face-41'],'circular-cap-dielectric':['face-flat','face-arc'],rule:'Vertex-pair face IDs follow authored vertex order (1->2->3[->4]->1).'},note:'Zero-body deletion closure (4 -> ... -> 0) and equal-index neutral bodies admitted. Every dielectric pair must be disjoint (>= 0.01 mm), share a clean coincident flat boundary (<= 1e-11 mm, overlap >= 1 mm; 2–4 layer stacked slabs, oil-water-glass, prism-on-slab, flat lens or circular cap on slab), or form coaxial cemented lenses (<= 1e-11 mm matching opposite-signed curvature at shared apex; doublets or triplets). Touching or cemented glass-glass pairs require matching partialReflection flags so each shared interface has one unambiguous Fresnel policy. Native PhyDemo surfaceMergingObjs (1e-6 mm hit-point merge threshold) owns merged refraction/TIR; callbacks fire on the primary body only, reporting true merged incident/destination indices, and unmerged or >2-body multi-merge hits fail closed.',types:{
         'circular-dielectric':{parameters:['x','y','radius','insideIndex','outsideIndex','partialReflection']},
         'circular-cap-dielectric':{parameters:['x','y','radius','capHeight','normalDeg','insideIndex','outsideIndex','partialReflection'],note:'General oriented circular cap / hemisphere / sliced sphere closed by a flat chord centered at (x, y). normalDeg (y-up degrees) points from base midpoint toward curved apex (e.g. 90° dome pointing up on a horizontal base, 0° pointing right). Admits minor caps (capHeight < radius), hemispheres/semicylinders (capHeight = radius), and major caps / sliced spheres (radius < capHeight < 2*radius) with radius >= 2 mm, capHeight in [1, 2*radius - 1] mm, and chord >= 2 mm. Supports interior point sources, flat-base touching/silvering, and concentric curved-face silvering.'},
         'triangular-prism':{parameters:['x1','y1','x2','y2','x3','y3','insideIndex','outsideIndex','partialReflection']},
@@ -449,17 +466,36 @@ export function opticalBenchCapabilities(){
         'ideal-curved-mirror':{parameters:['x','y','normalDeg','focalLength','apertureHeight']},
         'circular-arc-mirror':{parameters:['x','y','normalDeg','radius','apertureHeight']}
       }},
-      opaqueStops:{groupCount:[0,2],types:{
+      opaqueStops:{groupCount:[0,2],interiorPlacement:'Must lie strictly outside all finite dielectric bodies (>= 0.01 mm).',types:{
         'line-blocker':{parameters:['x','y','orientationDeg','length']},
         'circle-blocker':{parameters:['x','y','radius']},
         'finite-aperture':{parameters:['x','y','orientationDeg','length','openingLength']}
       }},
-      'ray-detector':{count:[0,2],parameters:['x','y','orientationDeg','length']}
+      'ray-detector':{count:[0,2],parameters:['x','y','orientationDeg','length'],interiorPlacement:'Must lie strictly outside all finite dielectric bodies (>= 0.01 mm).'}
     },
     revisions:{
-      targeted:'reviseScene(doc, {changes:[{id, section, key, value, unit?}]})',
-      structural:'reviseComponents(doc, {format:"opticsim-component-revision-v1", operations:[{op:"add", lengthUnit, component} | {op:"remove", id}]})',
+      targeted:{
+        cli:'node scripts/author-scene.mjs revise <scene.ray-optics-2d.json> <changes.json> --out <fresh> (or scripts/qualified-scene.mjs revise <qualified-scene.json> <changes.json> --out <fresh>)',
+        fileShape:'{ expectedSha256: "<canonicalSha256>", changes: [{ id, section: "parameters"|"emission", key, value, unit? }] }',
+        jsApi:'reviseScene(doc, {changes:[{id, section, key, value, unit?}]})'
+      },
+      structural:{
+        cli:'node scripts/author-scene.mjs revise-components <scene.ray-optics-2d.json> <patch.json> --out <fresh> (or scripts/qualified-scene.mjs structure <qualified-scene.json> <patch.json> --out <fresh>)',
+        fileShape:'{ expectedSha256: "<canonicalSha256>", format: "opticsim-component-revision-v1", operations: [{ op: "add", lengthUnit, component } | { op: "remove", id }] }',
+        jsApi:'reviseComponents(doc, {format:"opticsim-component-revision-v1", operations:[{op:"add", lengthUnit, component} | {op:"remove", id}]})'
+      },
       closure:'Adding or removing bodies within 0–4 preserves physics.backgroundIndex and simulation.randomSeed.'
+    },
+    minimalExample:{
+      title:'Minimal v40 single-ray slab check',
+      model:OPTICAL_BENCH_V40_MODEL,
+      lengthUnit:'mm',
+      backgroundIndex:1,
+      components:[
+        {id:'S1',type:'point-source',parameters:{x:-30,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:15}},
+        {id:'G1',type:'polygon-dielectric',parameters:{x1:0,y1:-30,x2:20,y2:-30,x3:20,y3:30,x4:0,y4:30,insideIndex:1.5,outsideIndex:1,partialReflection:false}},
+        {id:'D1',type:'ray-detector',parameters:{x:40,y:0,orientationDeg:90,length:60}}
+      ]
     },
     observables:[
       'source-emissions','interface-interactions','interface-incidence-angle',
@@ -484,7 +520,7 @@ export function opticalBenchCapabilities(){
     safeguards:[
       'Disjoint finite bodies and >= 0.01 mm surface/endpoint/vertex clearances.',
       'Observed native endpoint, corner, circular/spherical/arc tangency, near-grazing (|d·n| <= 1e-4), and high-to-low near-critical (|n_i sin(theta) - n_t| <= 1e-6) guards fail closed (v40EndpointsVerified).',
-      'Pinned PhyDemo owns all ray tracing; partialReflection=false explicitly omits Fresnel partial reflections while keeping native TIR.'
+      'Pinned PhyDemo owns all ray tracing; partialReflection=false explicitly omits Fresnel partial reflections while keeping native TIR. On low-contrast multi-layer stacks or closed spheres, partialReflection=true can emit faint multi-bounce Fresnel rays clipped by PhyDemo brightness truncation (withheld-incomplete).'
     ]
   };
 }

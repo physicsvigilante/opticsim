@@ -7,11 +7,12 @@ import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
-import {COMPONENT_REVISION_FORMAT,prepareScene} from '../src/authoring.js';
-import {serializeSave} from '../src/contract.js';
+import {COMPONENT_REVISION_FORMAT,inspectAuthoringRequest,prepareScene} from '../src/authoring.js';
+import {COMPONENT_BOUNDS,serializeSave} from '../src/contract.js';
 import {OPTICAL_BENCH_V40_MODEL,OPTICAL_BENCH_V40_VERSION} from '../src/native-optical-bench.js';
-import {problemWorkflowCapabilities} from '../src/problem-workflow.js';
-import {parseQualifiedBundle} from '../src/qualification.js';
+import {analyzePlanarAngleQuery} from '../src/planar-angle-queries.js';
+import {planProblem,problemWorkflowCapabilities,workflowCapabilitiesSummary} from '../src/problem-workflow.js';
+import {INTERPRETATION_SCHEMA,parseQualifiedBundle,validateInterpretation} from '../src/qualification.js';
 import {runProblemEvidence} from '../scripts/run-problem.mjs';
 import {checkCandidate} from '../skills/sim-ro-image-to-scene/scripts/check-scene.mjs';
 
@@ -440,4 +441,103 @@ test('v40 LLM front door developmental control: qualified-scene.mjs create -> re
     for(const rel of [outCreate,outRev,outStruct])
       rmSync(resolve(root,rel),{recursive:true,force:true});
   }
+});
+
+test('v40 LLM front door DX: slim workflow-capabilities, self-contained bench-capabilities example/bounds, --help exit 0, and actionable diagnostics',()=>{
+  // 1. Slim workflow-capabilities CLI index (< 15 KB vs ~182 KB monolithic dump) + per-family drill-down
+  const summaryRes=runCli('scripts/author-scene.mjs',['workflow-capabilities']);
+  assert.equal(summaryRes.exitCode,0);
+  assert.ok(summaryRes.stdout.length<15000,`Expected slim workflow-capabilities summary < 15 KB, got ${summaryRes.stdout.length} bytes`);
+  const summary=JSON.parse(summaryRes.stdout);
+  assert.equal(summary.format,'opticsim-problem-workflow-summary-v1');
+  assert.deepEqual(summary.interpretationSchema.allowedKeys,[...INTERPRETATION_SCHEMA.allowedKeys]);
+  assert.ok(summary.analyticalFamilies.angular.kinds.includes('branch-angles'));
+  assert.ok(summary.analyticalFamilies.coaxialParaxialStack.kinds.includes('coaxial-stack-conjugate'));
+  assert.ok(summary.observables.kinds.includes('detector-hit-events'));
+
+  const angularDrill=JSON.parse(runCli('scripts/author-scene.mjs',['workflow-capabilities','angular']).stdout);
+  assert.equal(angularDrill.family,'angular');
+  assert.deepEqual(angularDrill.contract.factsSchema.source.required,['id','region']);
+  assert.deepEqual(angularDrill.contract.querySchemas['branch-angles'].required,['id','kind','sourceId','branches']);
+
+  const interpDrill=JSON.parse(runCli('scripts/author-scene.mjs',['workflow-capabilities','interpretation']).stdout);
+  assert.deepEqual(interpDrill.contract.allowedKeys,['source','requestedResult','stated','derived','assumptions','unknowns']);
+
+  const unknownFam=runCli('scripts/author-scene.mjs',['workflow-capabilities','nonexistent-family'],{allowFail:true});
+  assert.equal(unknownFam.exitCode,1);
+  const unknownJson=JSON.parse(unknownFam.stdout);
+  assert.equal(unknownJson.issues[0].code,'UNKNOWN_CAPABILITY_FAMILY');
+  assert.match(unknownJson.issues[0].message,/Available families:/);
+
+  // Also verify JS export parity
+  assert.equal(workflowCapabilitiesSummary().problemFormat,'opticsim-problem-v1');
+
+  // 2. author-scene.mjs --help exits 0 with clean usage text
+  const helpRes=runCli('scripts/author-scene.mjs',['--help']);
+  assert.equal(helpRes.exitCode,0);
+  assert.match(helpRes.stdout,/workflow-capabilities \[family\]/);
+
+  // 3. bench-capabilities includes nesting rule, live bounds parity, face naming, exterior-only stops/detectors, CLI revision shapes, and a live-executing minimalExample
+  const bench=JSON.parse(runCli('scripts/author-scene.mjs',['bench-capabilities']).stdout);
+  assert.match(bench.componentShape.rule,/parameters/);
+  assert.deepEqual(bench.bounds.coordinateMm,[...COMPONENT_BOUNDS.coordinateMm]);
+  assert.deepEqual(bench.bounds.positiveLengthMm,[...COMPONENT_BOUNDS.positiveLengthMm]);
+  assert.deepEqual(bench.bounds.brightness,[...COMPONENT_BOUNDS.brightness]);
+  assert.deepEqual(bench.bounds.refractiveIndex,[...COMPONENT_BOUNDS.refractiveIndex]);
+  assert.deepEqual(bench.bounds.parallelBeamWidthMm,[10,100]);
+  assert.deepEqual(bench.components.finiteDielectrics.faceNaming['triangular-prism'],['face-12','face-23','face-31']);
+  assert.match(bench.components.opaqueStops.interiorPlacement,/outside/);
+  assert.match(bench.components['ray-detector'].interiorPlacement,/outside/);
+  assert.match(bench.revisions.targeted.fileShape,/expectedSha256/);
+  assert.match(bench.revisions.structural.fileShape,/expectedSha256/);
+
+  // minimalExample from bench-capabilities must compile and pass pinned native PhyDemo cleanly!
+  const {document:minDoc}=prepareScene(bench.minimalExample);
+  const minChecked=checkCandidate(serializeSave(minDoc),core);
+  assert.equal(minChecked.executionPassed,true);
+  assert.equal(minChecked.native.diagnostics.v40EndpointsVerified,true);
+
+  // 4. Actionable interpretation metadata diagnostics (unexpected keys + allowed list, preserving prefix)
+  assert.throws(
+    ()=>validateInterpretation({sourceRef:'U1',statedFacts:['x']}),
+    /Invalid interpretation metadata: unexpected key\(s\) \[sourceRef, statedFacts\]; allowed keys: source, requestedResult, stated, derived, assumptions, unknowns/
+  );
+  assert.throws(
+    ()=>validateInterpretation({source:{file:'x.png'}}),
+    /Invalid source reference: unexpected key\(s\) \[file\]; allowed keys: caseId, path, sha256/
+  );
+  assert.throws(
+    ()=>planProblem({format:'opticsim-problem-v1',physical:null,requests:[{id:'q1',kind:'unknown-kind'}],interpretation:{summary:'bad'}}),
+    /Invalid interpretation metadata: unexpected key\(s\) \[summary\]/
+  );
+
+  // 5. Actionable planar-angle-queries record diagnostics (unexpected + missing + allowed)
+  assert.throws(
+    ()=>analyzePlanarAngleQuery({format:'opticsim-planar-angular-facts-v1',source:{id:'S1',region:0},interfaces:[{id:'I1',negativeIndex:1,positiveIndex:1.5}]},
+      {format:'opticsim-planar-angle-query-v1',kind:'branch-angles',sourceId:'S1',extraKey:1}),
+    /Invalid planar angular query fields: unexpected \[extraKey\]; allowed \[/
+  );
+  assert.throws(
+    ()=>analyzePlanarAngleQuery({format:'opticsim-planar-angular-facts-v1',source:{id:'S1'},interfaces:[{id:'I1',negativeIndex:1,positiveIndex:1.5}]},
+      {format:'opticsim-planar-angle-query-v1',kind:'branch-angles',sourceId:'S1',branches:[]}),
+    /Invalid angular source fields: missing \[region\]; allowed \[id, region, incidentAngleDeg, approach\]/
+  );
+
+  // 6. Actionable INVALID_INPUT bounds diagnostics report exact converted value & allowed range
+  const beamIssues=inspectAuthoringRequest({
+    model:'native-optical-bench',lengthUnit:'m',backgroundIndex:1,
+    components:[{id:'B1',type:'parallel-beam',parameters:{x:0,y:1,width:0.4,directionDeg:-45,brightness:0.2}}]
+  });
+  assert.equal(beamIssues[0].code,'INVALID_INPUT');
+  assert.match(beamIssues[0].message,/got 400 mm; allowed \[10, 100\] mm/);
+
+  const circleIssues=inspectAuthoringRequest({
+    model:'native-optical-bench',lengthUnit:'mm',backgroundIndex:1,
+    components:[
+      {id:'S1',type:'point-source',parameters:{x:-10,y:0,brightness:0.2},emission:{mode:'single-ray',directionDeg:0}},
+      {id:'C1',type:'circular-dielectric',parameters:{x:10,y:0,radius:1,insideIndex:1.5,outsideIndex:1,partialReflection:false}}
+    ]
+  });
+  assert.equal(circleIssues[0].code,'INVALID_INPUT');
+  assert.match(circleIssues[0].message,/got 1 mm; allowed \[2, 10000\] mm/);
 });

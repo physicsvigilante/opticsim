@@ -38,7 +38,7 @@ import {analyzeMirrorHeadingInverse,mirrorHeadingCapabilities,MIRROR_HEADING_FAC
   MIRROR_HEADING_QUERY,MIRROR_LINE_RELATION_FACTS,analyzePlaneMirrorAngleQuery,
   mirrorAngularCapabilities,MIRROR_FACTS_FORMAT,MIRROR_QUERY_FORMAT} from './mirror-angle-queries.js';
 import {observableCapabilities,validateObservables} from './observables.js';
-import {validateInterpretation} from './qualification.js';
+import {validateInterpretation,INTERPRETATION_SCHEMA} from './qualification.js';
 import {canonicalJSON,isRecord,boundedText} from './qualified-utils.js';
 export const PROBLEM_FORMAT='opticsim-problem-v1';
 const own=(x,k)=>Object.hasOwn(x,k);
@@ -159,6 +159,8 @@ export function problemWorkflowCapabilities(){
   // nested fact contracts, or a solver's shared list of registered kinds.
   return structuredClone({format:PROBLEM_FORMAT,version:1,maxRequests:16,maxCalculations:4,
     required:['format','physical','requests'],optional:['interpretation','illustration','verifyNative'],
+    interpretationSchema:INTERPRETATION_SCHEMA,
+    requestItemShape:'Each item in requests[] is { id, kind, ...fields } (do NOT include a format key on requests[i]; the workflow wrapper supplies query formats automatically).',
     physical:'Existing minimal authoring request, reduced prism/lens-train/angular/mirror/inverse facts, or null. No invented apparatus fields.',
     requestKinds:requestKindRegistry(),
     perpendicularDielectricFaces:twoFaceCapabilities(),
@@ -196,6 +198,51 @@ export function problemWorkflowCapabilities(){
     opticalBench:opticalBenchCapabilities(),
     authoring:problemCapabilities(),prismAngular:prismAngleCapabilities(),lensTrain:lensTrainCapabilities(),curvedMirrors:curvedQueryCapabilities(),reducedInverse:reducedInverseCapabilities(),angular:angularCapabilities(),mirrorAngular:mirrorAngularCapabilities(),observables:observableCapabilities(),
     policy:'One request file; route by kind, never by answers or expected values. Native componentId may be omitted only when exactly one compatible authored component exists; its binding is recorded, not guessed from geometry or ray paths. Ambiguous or absent targets remain unresolved. No physical repairs or method fallback. Angular-only requests do not trigger native work unless verifyNative is true. Interpretation remains author-provided and unverified.'});
+}
+const WORKFLOW_SUMMARY_EXCLUDED=new Set([
+  'format','version','maxRequests','maxCalculations','required','optional',
+  'interpretationSchema','requestItemShape','physical','requestKinds',
+  'methodSuitability','opticalBench','authoring','observables','policy'
+]);
+export function workflowCapabilitiesSummary(family=null){
+  const full=problemWorkflowCapabilities();
+  if(family!==null&&family!==undefined){
+    const key=family==='interpretation'?'interpretationSchema':family;
+    if(typeof key!=='string'||!own(full,key)){
+      const valid=['interpretation','opticalBench','observables','methodSuitability',
+        ...Object.keys(full).filter(k=>!WORKFLOW_SUMMARY_EXCLUDED.has(k))];
+      const err=Error('Unknown workflow capability family "'+family+'". Available families: '+valid.join(', '));
+      err.code='UNKNOWN_CAPABILITY_FAMILY';
+      throw err;
+    }
+    return structuredClone({family,contract:full[key]});
+  }
+  const analyticalFamilies=Object.fromEntries(
+    Object.keys(full).filter(k=>!WORKFLOW_SUMMARY_EXCLUDED.has(k)).map(k=>{
+      const v=full[k];
+      return [k,{
+        ...(v?.factsFormat?{factsFormat:v.factsFormat}:{}),
+        ...(v?.factsFormats?{factsFormats:v.factsFormats}:{}),
+        ...(v?.format?{queryFormat:v.format}:{}),
+        ...(Array.isArray(v?.kinds)?{kinds:v.kinds}:{})
+      }];
+    })
+  );
+  return {
+    format:'opticsim-problem-workflow-summary-v1',
+    problemFormat:full.format,
+    maxRequests:full.maxRequests,
+    maxCalculations:full.maxCalculations,
+    required:full.required,
+    optional:full.optional,
+    interpretationSchema:full.interpretationSchema,
+    requestItemShape:full.requestItemShape,
+    drillDown:'node scripts/author-scene.mjs workflow-capabilities <family>',
+    opticalBench:{cli:'node scripts/author-scene.mjs bench-capabilities',schemaVersion:full.opticalBench.schemaVersion,model:full.opticalBench.model},
+    observables:{kinds:Object.keys(full.observables.kinds),drillDown:'node scripts/author-scene.mjs workflow-capabilities observables'},
+    analyticalFamilies,
+    legacyAuthoring:'node scripts/author-scene.mjs capabilities (or node scripts/run-problem.mjs capabilities for the full monolithic dump)'
+  };
 }
 function validateEnvelope(input){
   if(!isRecord(input)||Object.keys(input).some(k=>!['format','physical','requests','interpretation','illustration','verifyNative'].includes(k))||

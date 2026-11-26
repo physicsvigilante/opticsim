@@ -6,7 +6,9 @@ observables. It is **not** an image reader, a universal equation solver or a
 new physics engine. No external model service, key or automatic retry is used.
 
 ```sh
-node scripts/run-problem.mjs capabilities
+node scripts/author-scene.mjs workflow-capabilities          # compact index (~8 KB)
+node scripts/author-scene.mjs workflow-capabilities angular  # single-family schema drill-down
+node scripts/run-problem.mjs capabilities                    # full combined dump (~180 KB)
 node scripts/run-problem.mjs problem.json --out test-artifacts/llm-authoring/attempt-01
 ```
 
@@ -50,8 +52,11 @@ requests, of which at most four are angular queries, is enforced. Unknown
 quantity kinds remain `unavailable` with `UNSUPPORTED_QUANTITY`; they are not
 replaced with a convenient supported question. Unknown fields and duplicate
 IDs are rejected. `interpretation` uses existing, unverified qualification
-metadata. Generated code, formulas, network endpoints and secrets are not
-accepted as instructions.
+metadata with strictly whitelisted keys: `source` (optional object with
+allowed keys `caseId`, `path`, `sha256`), `requestedResult` (string), `stated`
+(`string[]`), `derived` (`string[]`), `assumptions` (`string[]`), and
+`unknowns` (`string[]`). Generated code, formulas, network endpoints and
+secrets are not accepted as instructions.
 
 ## Deterministic routing
 

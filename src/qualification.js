@@ -4,6 +4,25 @@ import {validate,LENGTH_PARAMETERS} from './contract.js';
 import {validateObservables} from './observables.js';
 import {canonicalJSON,sha256Text,sceneHash,isRecord,boundedText} from './qualified-utils.js';
 export const bundleFormat='opticsim-qualified-scene-v1';
+const INTERPRETATION_KEYS=Object.freeze(['source','requestedResult','stated','derived','assumptions','unknowns']);
+const SOURCE_KEYS=Object.freeze(['caseId','path','sha256']);
+export const INTERPRETATION_SCHEMA=Object.freeze({
+  allowedKeys:INTERPRETATION_KEYS,
+  fields:Object.freeze({
+    source:'optional object with allowed keys [caseId, path, sha256] (strings; sha256 is 64-hex)',
+    requestedResult:'optional string (<= 500 chars)',
+    stated:'optional string[] (<= 32 items)',
+    derived:'optional string[] (<= 32 items)',
+    assumptions:'optional string[] (<= 32 items)',
+    unknowns:'optional string[] (<= 32 items)'
+  }),
+  example:Object.freeze({
+    requestedResult:'State what the source question asks.',
+    stated:['Explicitly stated physical facts with units.'],
+    assumptions:['Any explicit assumptions made outside stated facts.'],
+    unknowns:['Missing physical inputs or requested unknowns.']
+  })
+});
 const hashPattern=/^[a-f0-9]{64}$/;
 const textList=(value,label)=>{
   if(!Array.isArray(value)||value.length>32)throw Error(label+' must be a bounded array');
@@ -11,9 +30,13 @@ const textList=(value,label)=>{
 };
 export function validateInterpretation(value){
   if(value===null)return null;
-  if(!isRecord(value)||Object.keys(value).some(k=>!['source','requestedResult','stated','derived','assumptions','unknowns'].includes(k)))throw Error('Invalid interpretation metadata');
+  if(!isRecord(value))throw Error('Invalid interpretation metadata: expected object or null; allowed keys: '+INTERPRETATION_KEYS.join(', '));
+  const extra=Object.keys(value).filter(k=>!INTERPRETATION_KEYS.includes(k));
+  if(extra.length)throw Error('Invalid interpretation metadata: unexpected key(s) ['+extra.join(', ')+']; allowed keys: '+INTERPRETATION_KEYS.join(', '));
   if(value.source!==undefined){
-    if(!isRecord(value.source)||Object.keys(value.source).some(k=>!['caseId','path','sha256'].includes(k)))throw Error('Invalid source reference');
+    if(!isRecord(value.source))throw Error('Invalid source reference: expected object; allowed keys: '+SOURCE_KEYS.join(', '));
+    const extraSource=Object.keys(value.source).filter(k=>!SOURCE_KEYS.includes(k));
+    if(extraSource.length)throw Error('Invalid source reference: unexpected key(s) ['+extraSource.join(', ')+']; allowed keys: '+SOURCE_KEYS.join(', '));
     for(const [k,v] of Object.entries(value.source))boundedText(v,'Source '+k,500);
     if(value.source.sha256!==undefined&&!hashPattern.test(value.source.sha256))throw Error('Invalid source SHA-256');
   }

@@ -302,12 +302,18 @@ export function inspectAuthoringRequest(request){
       key==='angleDeg'?b.openingAngleDeg:
       signedSpherical?b.coordinateMm:
       ['length','openingLength','apertureHeight','centerThickness','frontRadius','backRadius',...(isV40?['capHeight']:[])].includes(key)?b.positiveLengthMm:key==='width'?[10,100]:b.coordinateMm;
+    const minAbs=signedSpherical?1:key==='focalLength'?b.minimumAbsFocalLengthMm:
+      key==='radius'&&!(type===CIRCULAR_TYPE||type===CAP_TYPE||type===SEMICIRCULAR_TYPE||type===CIRCLE_BLOCKER_TYPE)?2:null;
+    const minVal=key==='radius'?(type===CIRCULAR_TYPE||type===CAP_TYPE?2:type===SEMICIRCULAR_TYPE?5:type===CIRCLE_BLOCKER_TYPE?1:null):null;
     if(!Number.isFinite(n)||n<bounds[0]||n>bounds[1]||
-      (signedSpherical&&Math.abs(n)<1)||
-      (key==='focalLength'&&Math.abs(n)<b.minimumAbsFocalLengthMm)||
-      (key==='radius'&&((type===CIRCULAR_TYPE||type===CAP_TYPE)?n<2:type===SEMICIRCULAR_TYPE?n<5:type===CIRCLE_BLOCKER_TYPE?n<1:Math.abs(n)<2)))
+      (minAbs!==null&&Math.abs(n)<minAbs)||(minVal!==null&&n<minVal)){
+      const unit=lengthKeys.has(key)?' mm':'';
+      const range=minVal!==null?'['+minVal+', '+bounds[1]+']'+unit:
+        minAbs!==null?'['+bounds[0]+', '+bounds[1]+']'+unit+' with |value| >= '+minAbs+unit:
+        '['+bounds[0]+', '+bounds[1]+']'+unit;
       issues.push(issue(path,'INVALID_INPUT','Value is outside the live contract bounds'+
-        (lengthKeys.has(key)?' after conversion to mm':'')));
+        (lengthKeys.has(key)?' after conversion to mm':'')+' (got '+n+unit+'; allowed '+range+')'));
+    }
   };
   const selected=request.components.every(c=>isObject(c)&&typeof c.type==='string')
     ?selectRequestComposition(request):null;
