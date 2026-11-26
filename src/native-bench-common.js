@@ -206,6 +206,57 @@ export function segmentOutsideCircularArcMirror(seg,arcMirror,clearance){
   return !onArc(pFoot);
 }
 
+// Exact Euclidean clearance between a circular-arc-mirror minor arc and a finite dielectric body
+// (circular-dielectric, circular-cap-dielectric, convex triangular-prism/polygon-dielectric, or
+// spherical-lens conservative convex AABB). Rejects interior containment, intersections, and < clearance gaps.
+export function circularArcMirrorOutsideBodyExact(arcMirror,body,clearance=BENCH_CLEARANCE_MM){
+  if(body.kind==='circle')
+    return pointCircularArcMirrorDistance(body.center,arcMirror)>=body.radius+clearance;
+  const p=arcMirror.parameters,vertex={x:p.x,y:p.y},g=circularArcMirrorGeom(arcMirror);
+  if(body.kind==='cap'){
+    if(pointBodyMembership(vertex,body,clearance)!=='outside'||
+       pointBodyMembership(g.p1,body,clearance)!=='outside'||
+       pointBodyMembership(g.p2,body,clearance)!=='outside')return false;
+    if(!segmentOutsideCircularArcMirror([body.p1,body.p2],arcMirror,clearance))return false;
+    const dx=body.center.x-g.center.x,dy=body.center.y-g.center.y,dist=Math.hypot(dx,dy);
+    if(dist>=g.radius+body.radius+clearance)return true;
+    if(dist<=1e-12){
+      if(Math.abs(g.radius-body.radius)<clearance){
+        const sep=Math.atan2(Math.abs(cross(g.uVertex,body.u)),dot(g.uVertex,body.u));
+        if(sep<=g.halfAngle+body.capHalfAngle)return false;
+      }
+      return true;
+    }
+    const onArc=q=>{
+      const qx=q.x-g.center.x,qy=q.y-g.center.y,r=Math.hypot(qx,qy);
+      if(!(r>0))return false;
+      return Math.atan2(Math.abs(cross(g.uVertex,{x:qx/r,y:qy/r})),dot(g.uVertex,{x:qx/r,y:qy/r}))<=g.halfAngle;
+    };
+    const e={x:dx/dist,y:dy/dist},ep={x:-e.y,y:e.x};
+    if(Math.abs(g.radius-body.radius)<=dist&&dist<=g.radius+body.radius){
+      const ax=(g.radius*g.radius-body.radius*body.radius+dist*dist)/(2*dist);
+      const h=Math.sqrt(Math.max(0,g.radius*g.radius-ax*ax));
+      for(const sgn of [-1,1]){
+        const q={x:g.center.x+ax*e.x+sgn*h*ep.x,y:g.center.y+ax*e.y+sgn*h*ep.y};
+        if(onArc(q)&&dot(delta(body.base,q),body.u)>=0)return false;
+      }
+    }
+    for(const sA of [-1,1])for(const sB of [-1,1]){
+      const qA={x:g.center.x+sA*g.radius*e.x,y:g.center.y+sA*g.radius*e.y};
+      const qB={x:body.center.x+sB*body.radius*e.x,y:body.center.y+sB*body.radius*e.y};
+      if(onArc(qA)&&dot(delta(body.base,qB),body.u)>=0&&
+         Math.hypot(qA.x-qB.x,qA.y-qB.y)<clearance)return false;
+    }
+    return true;
+  }
+  // Convex polygon (triangular-prism, polygon-dielectric, or spherical-lens conservative AABB):
+  for(const pt of [vertex,g.p1,g.p2])
+    if(body.faces.every(f=>dot(delta(f.a,pt),f.normal)<=0))return false;
+  for(const f of body.faces)
+    if(!segmentOutsideCircularArcMirror([f.a,f.b],arcMirror,clearance))return false;
+  return true;
+}
+
 // Exact point membership relative to an admitted finite dielectric body.
 // - circular-dielectric: exact radial distance vs radius +/- clearance
 // - circular-cap-dielectric: exact disk intersection with flat-base half-plane
@@ -325,6 +376,33 @@ export function circleOutsideBody(circle,body,clearance){
   if(body.kind==='cap')
     return pointBodyMembership(circle.center,body,circle.radius+clearance)==='outside';
   return body.faces.some(f=>dot(delta(f.a,circle.center),f.normal)>=circle.radius+clearance);
+}
+
+// Exact Euclidean interior containment for a finite segment inside an admitted convex dielectric body
+// (circular-dielectric, circular-cap-dielectric, triangular-prism, or polygon-dielectric).
+// Because every admitted body's clearance-eroded interior is convex, both endpoints strictly inside
+// by >= clearance guarantees every point of the segment is >= clearance from the boundary.
+// spherical-lens stays exterior-only (conservative AABB does not certify lens interior).
+export function segmentInsideBodyExact(seg,body,clearance=BENCH_CLEARANCE_MM){
+  if(body.type===SPHERICAL_LENS_TYPE)return false;
+  return pointBodyMembership(seg[0],body,clearance)==='inside'&&
+         pointBodyMembership(seg[1],body,clearance)==='inside';
+}
+
+// Exact Euclidean interior containment for a closed disk/circle inside an admitted convex dielectric body
+// (circular-dielectric, circular-cap-dielectric, triangular-prism, or polygon-dielectric).
+// spherical-lens stays exterior-only.
+export function circleInsideBodyExact(circle,body,clearance=BENCH_CLEARANCE_MM){
+  if(body.type===SPHERICAL_LENS_TYPE)return false;
+  const margin=circle.radius+clearance;
+  if(body.kind==='circle')
+    return Math.hypot(circle.center.x-body.center.x,circle.center.y-body.center.y)<=body.radius-margin;
+  if(body.kind==='cap'){
+    const axial=dot(delta(body.base,circle.center),body.u);
+    const d=Math.hypot(circle.center.x-body.center.x,circle.center.y-body.center.y);
+    return d<=body.radius-margin&&axial>=margin;
+  }
+  return body.faces.every(f=>dot(delta(f.a,circle.center),f.normal)<=-margin);
 }
 
 // Exact Euclidean clearance between a circle/disk and a convex body
