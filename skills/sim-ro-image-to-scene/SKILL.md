@@ -35,7 +35,7 @@ To minimise routine authoring effort for supported **native 2D ray-tracing** set
 node scripts/author-scene.mjs bench-capabilities
 ```
 
-This returns the complete slim JSON contract without needing to read historical `v1`–`v39` schemas. (`node scripts/author-scene.mjs capabilities` remains available for frozen legacy `v1`–`v39` profiles.)
+This returns the complete slim JSON contract — including component nesting (`{ id, type, parameters: { ... }, emission?: { mode: ... } }`), live numeric bounds (such as the `parallel-beam` `10–100 mm` width limit), face naming, CLI revision shapes, and a copy-pasteable minimal example — without needing to read historical `v1`–`v39` schemas. (Use `node scripts/author-scene.mjs workflow-capabilities [family]` for a compact index/drill-down of analytical families and `interpretation` metadata; `node scripts/author-scene.mjs capabilities` remains available for frozen legacy `v1`–`v39` profiles.)
 
 **When NOT to default to `v40` (no automatic model fallback or schema migration):**
 - Choose an existing **dedicated legacy profile** when you need conditional `ideal-image` on a supported single-source coaxial thin-lens, single plane-mirror, or lens-mirror return scene (`v40` traces these natively but reports `ideal-image` as `unavailable`), or when the apparatus uses legacy-only components not in `v40` (`planar-interface` / `v5` `detector-ray-provenance`, or `graded-index-rectangle` `v25`/`v33`).
@@ -48,9 +48,10 @@ This returns the complete slim JSON contract without needing to read historical 
 
 When all necessary physical facts are known, prefer an LLM-sized request (`model: "native-optical-bench"`, `lengthUnit`, `backgroundIndex`, `components`, optional `title`/`runPolicy`/`randomSeed`) using the **exact supported component types and parameter names**, then execute or iteratively explore it through the CLI:
 - `node scripts/author-scene.mjs evaluate <request.json> --out test-artifacts/llm-authoring/<case>`
-- `node scripts/author-scene.mjs revise <scene.ray-optics-2d.json> <changes.json> --out test-artifacts/llm-authoring/<case>-rev` (SHA-guarded targeted edits via `expectedSha256`)
-- `node scripts/author-scene.mjs revise-components <scene.ray-optics-2d.json> <patch.json> --out test-artifacts/llm-authoring/<case>-struct` (SHA-guarded atomic add/remove via `opticsim-component-revision-v1`)
-- `node scripts/qualified-scene.mjs create|revise|structure ...` (preserves assumption provenance and edit lineage in a portable `qualified-scene.json` bundle for browser preview)
+- `node scripts/author-scene.mjs revise <scene.ray-optics-2d.json> <changes.json> --out test-artifacts/llm-authoring/<case>-rev` (SHA-guarded targeted edits: `{ expectedSha256: <canonicalSha256>, changes: [{ id, section: "parameters"|"emission", key, value, unit? }] }`)
+- `node scripts/author-scene.mjs revise-components <scene.ray-optics-2d.json> <patch.json> --out test-artifacts/llm-authoring/<case>-struct` (SHA-guarded atomic add/remove: `{ expectedSha256: <canonicalSha256>, format: "opticsim-component-revision-v1", operations: [{ op: "add", lengthUnit, component } | { op: "remove", id }] }`)
+- `node scripts/qualified-scene.mjs create <request.json> [--observables <array.json>] [--interpretation <notes.json>] --out test-artifacts/llm-authoring/<case>` (creates portable `qualified-scene.json` carrying assumption provenance; `--interpretation` is accepted on `create` only, with allowed keys `source`, `requestedResult`, `stated`, `derived`, `assumptions`, `unknowns`)
+- `node scripts/qualified-scene.mjs revise|structure <qualified-scene.json> <changes.json> --out test-artifacts/llm-authoring/<case>-rev` (hash-guarded edits via `expectedSha256: <canonicalSha256>` that inherit original interpretation and chain `parentIntegritySha256`; do not pass `--interpretation` to `revise` or `structure`)
 - `node scripts/witness-optical-bench.mjs capabilities|plan|run ...` (cross-checks supported coaxial paraxial stacks side-by-side against pinned `v40` PhyDemo rays)
 
 This is not a new apparatus/facts language; pinned PhyDemo owns all ray tracing and predictions for unconstrained multi-element tracing remain intentionally unavailable unless separately justified. Historical `v1`–`v39` models (`general-component-tracing`, single-lens/mirror analytical models, etc.) remain frozen for existing saves and dedicated analytical workflows.

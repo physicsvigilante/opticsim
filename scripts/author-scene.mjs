@@ -8,6 +8,7 @@ import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {capabilities,opticalBenchCapabilities,prepareScene,reviseScene,reviseComponents,AuthoringError} from '../src/authoring.js';
 import {problemCapabilities,resolveProblemRequest} from '../src/problem-authoring.js';
+import {workflowCapabilitiesSummary} from '../src/problem-workflow.js';
 import {serializeSave} from '../src/contract.js';
 import {snapshotNativeObservations} from '../src/native-observations.js';
 import {checkCandidate} from '../skills/sim-ro-image-to-scene/scripts/check-scene.mjs';
@@ -59,10 +60,12 @@ export function evaluateDocument(doc,core,requests=[]) {
 function usage() {
   return 'Usage:\n'+
     '  node scripts/author-scene.mjs capabilities|bench-capabilities|problem-capabilities\n'+
+    '  node scripts/author-scene.mjs workflow-capabilities [family]\n'+
     '  node scripts/author-scene.mjs problem <request.json> [--illustrate] [--out test-artifacts/llm-authoring/<fresh-name>]\n'+
     '  node scripts/author-scene.mjs evaluate <request.json> [--out test-artifacts/llm-authoring/<fresh-name>]\n'+
-    '  node scripts/author-scene.mjs revise <scene.json> <changes.json> [--out test-artifacts/llm-authoring/<fresh-name>]\n'+
-    '  node scripts/author-scene.mjs revise-components <scene.json> <patch.json> [--out test-artifacts/llm-authoring/<fresh-name>]\n'+
+    '  node scripts/author-scene.mjs revise <scene.ray-optics-2d.json> <changes.json> [--out test-artifacts/llm-authoring/<fresh-name>]\n'+
+    '  node scripts/author-scene.mjs revise-components <scene.ray-optics-2d.json> <patch.json> [--out test-artifacts/llm-authoring/<fresh-name>]\n'+
+    '  node scripts/author-scene.mjs --help\n'+
     'All accepted commands use the same pinned native core. Existing output directories are refused.\n';
 }
 function record(summary,details,sceneText,context){
@@ -85,6 +88,12 @@ function record(summary,details,sceneText,context){
 function main(context){
   const [command,...args]=process.argv.slice(2);
   context.command=command;
+  if(['--help','-h','help'].includes(command)&&args.length===0){
+    process.stdout.write(usage());return;
+  }
+  if(command==='workflow-capabilities'&&args.length<=1){
+    process.stdout.write(JSON.stringify(workflowCapabilitiesSummary(args[0]??null),null,2)+'\n');return;
+  }
   if(['capabilities','bench-capabilities','problem-capabilities'].includes(command)&&args.length===0){
     const payload=command==='capabilities'?capabilities():command==='bench-capabilities'?opticalBenchCapabilities():problemCapabilities();
     process.stdout.write(JSON.stringify(payload,null,2)+'\n');return;
