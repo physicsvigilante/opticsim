@@ -325,12 +325,30 @@ export function angularCapabilities(){
     physicalInput:'Either an existing complete v5 minimal authoring request, or ordered planar angular facts with source medium and relevant angles; brightness/coordinates are only required to propose a native scene',
     factsSchema:{
       format:ANGLE_FACTS_FORMAT,
-      source:{required:['id','region'],optional:['incidentAngleDeg','approach'],note:'region is integer 0..interfaces.length (medium index ordered from negativeIndex of interfaces[0] to positiveIndex of last interface); approach is "positive" or "negative"'},
+      source:{
+        required:['id','region'],
+        optional:['incidentAngleDeg','approach'],
+        conditionalRules:{
+          'branch-angles':'Requires BOTH source.incidentAngleDeg and source.approach (explicit known incident direction).',
+          'critical-input-angle':'Must OMIT source.incidentAngleDeg (the unknown being solved); if source.approach is supplied, it must agree with query.approach.'
+        },
+        note:'region is integer 0..interfaces.length (medium index ordered from negativeIndex of interfaces[0] to positiveIndex of last interface); approach is "positive" or "negative"'
+      },
       interfaces:{count:[1,4],required:['id','negativeIndex','positiveIndex'],optional:['partialReflection'],note:'adjacent interfaces must share matching positiveIndex === next.negativeIndex'}
     },
     querySchemas:{
-      'critical-input-angle':{required:['id','kind','sourceId','boundaryId','approach','tangentSide'],note:'approach and tangentSide are "positive" or "negative"; omit source.incidentAngleDeg when solving for critical input'},
-      'branch-angles':{required:['id','kind','sourceId','branches'],branchItem:{required:['id','events'],eventItem:{required:['interfaceId','action'],action:['transmit','reflect']}},note:'1–4 branches, 1–8 ordered events per branch'}
+      translationRule:'Standalone scripts/planar-angle-query.mjs requires top-level "format": "opticsim-planar-angle-query-v1" and forbids "id"; unified opticsim-problem-v1 requests[] requires top-level "id" and omits "format" (supplied mechanically by the workflow wrapper).',
+      'critical-input-angle':{
+        standaloneRequired:['format','kind','sourceId','boundaryId','approach','tangentSide'],
+        workflowRequestRequired:['id','kind','sourceId','boundaryId','approach','tangentSide'],
+        note:'approach and tangentSide are "positive" or "negative"; omit source.incidentAngleDeg when solving for critical input'
+      },
+      'branch-angles':{
+        standaloneRequired:['format','kind','sourceId','branches'],
+        workflowRequestRequired:['id','kind','sourceId','branches'],
+        branchItem:{required:['id','events'],eventItem:{required:['interfaceId','action'],action:['transmit','reflect']}},
+        note:'1–4 branches, 1–8 ordered events per branch; requires known source.incidentAngleDeg and source.approach'
+      }
     },
     critical:'requires missing source direction plus explicit approach and tangentSide; solves one critical target via transmissions only',
     branches:'known source direction plus 1–4 conditional branches of 1–8 ordered reflect/transmit events by actual interface ID',

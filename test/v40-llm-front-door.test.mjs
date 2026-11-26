@@ -458,10 +458,60 @@ test('v40 LLM front door DX: slim workflow-capabilities, self-contained bench-ca
   const angularDrill=JSON.parse(runCli('scripts/author-scene.mjs',['workflow-capabilities','angular']).stdout);
   assert.equal(angularDrill.family,'angular');
   assert.deepEqual(angularDrill.contract.factsSchema.source.required,['id','region']);
-  assert.deepEqual(angularDrill.contract.querySchemas['branch-angles'].required,['id','kind','sourceId','branches']);
+  assert.match(angularDrill.contract.factsSchema.source.conditionalRules['branch-angles'],/incidentAngleDeg.*approach/);
+  assert.match(angularDrill.contract.factsSchema.source.conditionalRules['critical-input-angle'],/OMIT source\.incidentAngleDeg/);
+  assert.deepEqual(angularDrill.contract.querySchemas['branch-angles'].standaloneRequired,['format','kind','sourceId','branches']);
+  assert.deepEqual(angularDrill.contract.querySchemas['branch-angles'].workflowRequestRequired,['id','kind','sourceId','branches']);
+  assert.deepEqual(angularDrill.contract.querySchemas['critical-input-angle'].standaloneRequired,['format','kind','sourceId','boundaryId','approach','tangentSide']);
+  assert.deepEqual(angularDrill.contract.querySchemas['critical-input-angle'].workflowRequestRequired,['id','kind','sourceId','boundaryId','approach','tangentSide']);
+
+  // P3-2: compact summary preserves kind-to-format facts map for planeMirrorHeadingInverse
+  assert.deepEqual(summary.analyticalFamilies.planeMirrorHeadingInverse.facts,{
+    'mirror-incidence-from-headings':'opticsim-plane-mirror-heading-facts-v1',
+    'two-mirror-inclination-and-deviation':'opticsim-two-mirror-line-relation-facts-v1'
+  });
+
+  // P2-2: exercise BOTH standalone analyzePlanarAngleQuery and unified planProblem for both angular kinds using advertised shapes
+  const critFacts={format:'opticsim-planar-angular-facts-v1',source:{id:'S1',region:0},interfaces:[{id:'I12',negativeIndex:1.6,positiveIndex:1.2}]};
+  const critStandalone=analyzePlanarAngleQuery(critFacts,{
+    format:'opticsim-planar-angle-query-v1',kind:'critical-input-angle',sourceId:'S1',boundaryId:'I12',approach:'positive',tangentSide:'negative'
+  });
+  assert.equal(critStandalone.status,'conditional');
+  const critWorkflow=planProblem({
+    format:'opticsim-problem-v1',physical:critFacts,
+    requests:[{id:'crit',kind:'critical-input-angle',sourceId:'S1',boundaryId:'I12',approach:'positive',tangentSide:'negative'}]
+  });
+  assert.equal(critWorkflow.results[0].status,'conditional');
+
+  const branchFacts={format:'opticsim-planar-angular-facts-v1',source:{id:'S1',region:0,incidentAngleDeg:30,approach:'positive'},interfaces:[{id:'I12',negativeIndex:1.0,positiveIndex:1.5}]};
+  const branchStandalone=analyzePlanarAngleQuery(branchFacts,{
+    format:'opticsim-planar-angle-query-v1',kind:'branch-angles',sourceId:'S1',
+    branches:[{id:'b1',events:[{interfaceId:'I12',action:'transmit'}]}]
+  });
+  assert.equal(branchStandalone.status,'conditional');
+  const branchWorkflow=planProblem({
+    format:'opticsim-problem-v1',physical:branchFacts,
+    requests:[{id:'br',kind:'branch-angles',sourceId:'S1',branches:[{id:'b1',events:[{interfaceId:'I12',action:'transmit'}]}]}]
+  });
+  assert.equal(branchWorkflow.results[0].status,'conditional');
+
+  // P2-1: image-to-scene skill cleanly restricts --interpretation to qualified-scene.mjs create (not revise/structure)
+  const imageSkillText=readFileSync(resolve(root,'skills/sim-ro-image-to-scene/SKILL.md'),'utf8');
+  assert.match(imageSkillText,/--interpretation` is accepted on `create` only/);
+  assert.match(imageSkillText,/do not pass `--interpretation` to `revise` or `structure`/);
 
   const interpDrill=JSON.parse(runCli('scripts/author-scene.mjs',['workflow-capabilities','interpretation']).stdout);
+  assert.equal(interpDrill.contract.nullable,true);
+  assert.match(interpDrill.contract.fields.requestedResult,/1–1200/);
+  assert.match(interpDrill.contract.fields.source,/1–500/);
   assert.deepEqual(interpDrill.contract.allowedKeys,['source','requestedResult','stated','derived','assumptions','unknowns']);
+
+  // P3-1: boundary parity — 501-char and 1200-char requestedResult accepted; 1201-char rejected; null accepted
+  assert.equal(validateInterpretation(null),null);
+  assert.ok(validateInterpretation({requestedResult:'a'.repeat(501)}));
+  assert.ok(validateInterpretation({requestedResult:'a'.repeat(1200)}));
+  assert.throws(()=>validateInterpretation({requestedResult:'a'.repeat(1201)}),/Requested result/);
+  assert.throws(()=>validateInterpretation({source:{path:'a'.repeat(501)}}),/Source path/);
 
   const unknownFam=runCli('scripts/author-scene.mjs',['workflow-capabilities','nonexistent-family'],{allowFail:true});
   assert.equal(unknownFam.exitCode,1);
@@ -482,9 +532,16 @@ test('v40 LLM front door DX: slim workflow-capabilities, self-contained bench-ca
   assert.match(bench.componentShape.rule,/parameters/);
   assert.deepEqual(bench.bounds.coordinateMm,[...COMPONENT_BOUNDS.coordinateMm]);
   assert.deepEqual(bench.bounds.positiveLengthMm,[...COMPONENT_BOUNDS.positiveLengthMm]);
+  assert.equal(bench.bounds.minimumAbsFocalLengthMm,COMPONENT_BOUNDS.minimumAbsFocalLengthMm);
+  assert.deepEqual(bench.bounds.orientationDeg,[...COMPONENT_BOUNDS.orientationDeg]);
+  assert.deepEqual(bench.bounds.directionDeg,[...COMPONENT_BOUNDS.directionDeg]);
+  assert.deepEqual(bench.bounds.angleDeg,[...COMPONENT_BOUNDS.openingAngleDeg]);
   assert.deepEqual(bench.bounds.brightness,[...COMPONENT_BOUNDS.brightness]);
   assert.deepEqual(bench.bounds.refractiveIndex,[...COMPONENT_BOUNDS.refractiveIndex]);
   assert.deepEqual(bench.bounds.parallelBeamWidthMm,[10,100]);
+  assert.deepEqual(bench.bounds.radiusMm['circular-dielectric'],[2,COMPONENT_BOUNDS.coordinateMm[1]]);
+  assert.deepEqual(bench.bounds.radiusMm['circular-cap-dielectric'],[2,COMPONENT_BOUNDS.coordinateMm[1]]);
+  assert.deepEqual(bench.bounds.radiusMm['circle-blocker'],[1,COMPONENT_BOUNDS.coordinateMm[1]]);
   assert.deepEqual(bench.components.finiteDielectrics.faceNaming['triangular-prism'],['face-12','face-23','face-31']);
   assert.match(bench.components.opaqueStops.interiorPlacement,/outside/);
   assert.match(bench.components['ray-detector'].interiorPlacement,/outside/);

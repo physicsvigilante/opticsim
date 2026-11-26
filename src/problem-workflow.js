@@ -223,6 +223,7 @@ export function workflowCapabilitiesSummary(family=null){
       return [k,{
         ...(v?.factsFormat?{factsFormat:v.factsFormat}:{}),
         ...(v?.factsFormats?{factsFormats:v.factsFormats}:{}),
+        ...(isRecord(v?.facts)?{facts:v.facts}:{}),
         ...(v?.format?{queryFormat:v.format}:{}),
         ...(Array.isArray(v?.kinds)?{kinds:v.kinds}:{})
       }];

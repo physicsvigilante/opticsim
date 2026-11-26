@@ -7,14 +7,15 @@ export const bundleFormat='opticsim-qualified-scene-v1';
 const INTERPRETATION_KEYS=Object.freeze(['source','requestedResult','stated','derived','assumptions','unknowns']);
 const SOURCE_KEYS=Object.freeze(['caseId','path','sha256']);
 export const INTERPRETATION_SCHEMA=Object.freeze({
+  nullable:true,
   allowedKeys:INTERPRETATION_KEYS,
   fields:Object.freeze({
-    source:'optional object with allowed keys [caseId, path, sha256] (strings; sha256 is 64-hex)',
-    requestedResult:'optional string (<= 500 chars)',
-    stated:'optional string[] (<= 32 items)',
-    derived:'optional string[] (<= 32 items)',
-    assumptions:'optional string[] (<= 32 items)',
-    unknowns:'optional string[] (<= 32 items)'
+    source:'optional object with allowed keys [caseId, path, sha256] (nonblank strings, 1–500 chars; sha256 is lowercase 64-hex)',
+    requestedResult:'optional nonblank string (1–1200 chars)',
+    stated:'optional array of <= 32 nonblank strings (1–1200 chars each)',
+    derived:'optional array of <= 32 nonblank strings (1–1200 chars each)',
+    assumptions:'optional array of <= 32 nonblank strings (1–1200 chars each)',
+    unknowns:'optional array of <= 32 nonblank strings (1–1200 chars each)'
   }),
   example:Object.freeze({
     requestedResult:'State what the source question asks.',
