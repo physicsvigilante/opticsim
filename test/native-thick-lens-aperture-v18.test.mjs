@@ -262,7 +262,9 @@ test('v18 browser provenance is append-only relative to reviewed v17 code, never
   assert.equal(opticalBenchV40M2aFollowup.v40M2aAppGitBlob,opticalBenchV40M2bFollowup.sourceV40M2aAppGitBlob);
   const opticalBenchV40CapUiFollowup=JSON.parse(readFileSync(new URL('./fixtures/native-optical-bench-v40-cap-ui-app-integration.json',import.meta.url),'utf8'));
   assert.equal(opticalBenchV40M2bFollowup.v40M2bAppGitBlob,opticalBenchV40CapUiFollowup.sourceV40M2bAppGitBlob);
-  assert.equal(opticalBenchV40CapUiFollowup.v40CapUiAppGitBlob,sha);
+  const opticalBenchV40BeamSplitterFollowup=JSON.parse(readFileSync(new URL('./fixtures/native-optical-bench-v40-beam-splitter-app-integration.json',import.meta.url),'utf8'));
+  assert.equal(opticalBenchV40CapUiFollowup.v40CapUiAppGitBlob,opticalBenchV40BeamSplitterFollowup.sourceV40CapUiAppGitBlob);
+  assert.equal(opticalBenchV40BeamSplitterFollowup.v40BeamSplitterAppGitBlob,sha);
   assert.notEqual(sha,reconciliation.reconciledAppGitBlob,'New v25 UI is not the reviewed v24 browser code');
   assert.notEqual(sha,p.newV18AppGitBlob,'Do not claim new UI matches old reviewed v18 byte identity');
   assert.equal(p.originalV17AppGitBlob,'9d447af4c8fc59ec1e8fdcfbcec0c4d739fc477f');

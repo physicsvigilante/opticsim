@@ -87,8 +87,11 @@ function update() {
   const d = session.data;
   const mixed = session.document?.physics.model === 'lens-mirror-return-geometric';
   const mirror = session.document?.physics.components.some(c => c.type === 'plane-mirror'||isCurved(c.type));
+  const splitters = session.document?.physics.components.filter(c => c.type === 'beam-splitter') || [];
+  const hasSplitters = splitters.length > 0;
+  const hasLenses = session.document?.physics.components.some(c => c.type === 'ideal-lens'||c.type === 'spherical-lens');
   const hasOptics = session.document?.physics.components.some(c =>
-    c.type==='ideal-lens'||c.type==='plane-mirror'||c.type==='line-blocker'||c.type==='circle-blocker'||c.type==='finite-aperture'||c.type==='circular-dielectric'||c.type==='semicircular-dielectric'||c.type==='circular-cap-dielectric'||c.type==='triangular-prism'||c.type==='polygon-dielectric'||c.type==='spherical-lens'||c.type==='graded-index-rectangle'||isCurved(c.type));
+    c.type==='ideal-lens'||c.type==='plane-mirror'||c.type==='beam-splitter'||c.type==='line-blocker'||c.type==='circle-blocker'||c.type==='finite-aperture'||c.type==='circular-dielectric'||c.type==='semicircular-dielectric'||c.type==='circular-cap-dielectric'||c.type==='triangular-prism'||c.type==='polygon-dielectric'||c.type==='spherical-lens'||c.type==='graded-index-rectangle'||isCurved(c.type));
   const partial = !['completed', 'completed-with-warnings'].includes(state);
   const perMirror = d?.reflectionsById ? Object.entries(d.reflectionsById)
     .map(([id,count])=>id+': '+count).join(' · ') : '';
@@ -101,7 +104,8 @@ function update() {
       id+': '+reading.emitted+' native rays'+
       (Number.isFinite(reading.brightnessScale) ? ' · native brightness scale '+format(reading.brightnessScale) : '')
     ).join('  |  ');
-  $('stats').textContent = d ? `${d.emitted} rays emitted · ${d.processed} segments processed${d.reflections != null ? ` · ${d.reflections} native reflections${partial ? ' (partial run)' : ''}${perMirror ? ' (' + perMirror + ')' : ''}` : ''} · truncated brightness ${d.truncation.toPrecision(3)} · undefined brightness ${d.undefinedBehavior.toPrecision(3)}` : session.document ? `Native emission pending · ${session.document.simulation.processedRayLimit} segment limit` : 'Loading scene';
+  const mirrorStatLabel = hasSplitters ? 'native mirror reflections' : 'native reflections';
+  $('stats').textContent = d ? `${d.emitted} rays emitted · ${d.processed} segments processed${d.reflections != null ? ` · ${d.reflections} ${mirrorStatLabel}${partial ? ' (partial run)' : ''}${perMirror ? ' (' + perMirror + ')' : ''}` : ''} · truncated brightness ${d.truncation.toPrecision(3)} · undefined brightness ${d.undefinedBehavior.toPrecision(3)}` : session.document ? `Native emission pending · ${session.document.simulation.processedRayLimit} segment limit` : 'Loading scene';
   const blockers = session.document?.physics.components.some(c=>['line-blocker','circle-blocker','finite-aperture'].includes(c.type));
   const detectors = session.document?.physics.components.some(c=>c.type==='ray-detector');
   $('detector-readouts').hidden = !detectors || state==='invalid';
@@ -113,21 +117,28 @@ function update() {
       (r.signedPower===null?'unavailable':format(r.signedPower))+' (relative native units)').join('  |  ');
   const blockerSummary=d?.blockersById&&blockers?Object.entries(d.blockersById).map(([id,r])=>
     id+': '+r.absorptions+' absorbed native ray'+(r.absorptions===1?'':'s')).join(' · '):'';
+  const splitterSummary=hasSplitters&&complete&&d?.v40EndpointsVerified&&d?.v40OpticalIncidentsById?splitters.map(c=>{
+    const n=d.v40OpticalIncidentsById[c.id]??0;
+    return c.id+': '+n+' native splitter interaction'+(n===1?'':'s');
+  }).join(' · '):'';
   const pointSources=session.document?.physics.components.filter(c=>c.type==='point-source')||[];
   const allSingleRay=pointSources.length>0&&pointSources.every(c=>c.emission?.mode==='single-ray');
+  const sparseTarget = mixed ? 'lens or mirror' : hasSplitters ? (mirror ? 'mirror or beam splitter' : hasLenses ? 'lens or beam splitter' : 'beam splitter') : mirror ? 'mirror' : hasLenses ? 'lenses' : 'optical components';
   $('sampling-note').textContent = session.document?.physics.components.some(c=>c.type==='parallel-beam') ?
     'Native Beam emits deterministic parallel rays from separate positions along its finite width. Density changes spatial sample count and positions, not source divergence, continuous power or a detected image.' : allSingleRay ?
     'Each single-ray source emits one exact native ray. Sampling density does not widen it into a cone; change its explicit direction to investigate incidence.' : d && d.emitted < 3 ?
     !hasOptics ? `Only ${d.emitted} native ray${d.emitted===1?'':'s'} emitted; increase sampling to inspect free-space propagation.` :
-    `Only ${d.emitted} native ray${d.emitted===1?'':'s'} emitted. This cone is sparsely sampled and may miss the ${mixed ? 'lens or mirror' : mirror ? 'mirror' : 'lenses'}. Increase sampling or opening angle to inspect more rays.` :
+    `Only ${d.emitted} native ray${d.emitted===1?'':'s'} emitted. This cone is sparsely sampled and may miss the ${sparseTarget}. Increase sampling or opening angle to inspect more rays.` :
     'Sampling changes the angular spacing, not the optical model.';
   if(blockerSummary)$('stats').textContent += ' · '+blockerSummary+(partial?' (partial run)':'');
+  if(splitterSummary)$('stats').textContent += ' · '+splitterSummary;
   if(session.document?.schemaVersion===29){
     $('sampling-note').textContent='Density sets the angular spacing of the sampled fan. Changing it can change how many rays transmit or undergo total internal reflection.';
     if(partial)$('stats').textContent='Fan readings require a complete, verified native run.';
   }
-  $('reflection-note').textContent = mirror ? !d ? state === 'running' ? 'Native reflection count pending for this revision.' : 'No current reflection count is available.' : partial ? 'Reflection counts are partial; the simulation is incomplete.' :
-    d.reflections === 0 ? `No sampled rays reflected. ${session.prediction ? 'The analytical image is conditional; this run does not establish a simulated image.' : 'This run does not establish a simulated image.'}` :
+  $('reflection-note').textContent = mirror ? !d ? state === 'running' ? (hasSplitters ? 'Native mirror reflection count pending for this revision.' : 'Native reflection count pending for this revision.') : (hasSplitters ? 'No current mirror reflection count is available.' : 'No current reflection count is available.') : partial ? (hasSplitters ? 'Mirror reflection counts are partial; the simulation is incomplete.' : 'Reflection counts are partial; the simulation is incomplete.') :
+    d.reflections === 0 ? (hasSplitters ? 'No sampled rays struck a plane/curved mirror (beam-splitter interactions are reported separately). This run does not establish a simulated image.' : `No sampled rays reflected. ${session.prediction ? 'The analytical image is conditional; this run does not establish a simulated image.' : 'This run does not establish a simulated image.'}`) :
+    hasSplitters ? `${d.reflections} sampled ray${d.reflections === 1 ? '' : 's'} struck a plane/curved mirror (beam-splitter interactions are reported separately). This count does not establish an image or guarantee continuous-cone coverage.` :
     `${d.reflections} sampled ray${d.reflections === 1 ? '' : 's'} reflected. This count does not establish an image or guarantee ${mixed ? 'the lens → mirror → lens path or ' : ''}continuous-cone coverage.` : '';
   $('brightness-note').textContent = d && d.brightnessScale > 0 && d.brightnessScale < 1 ? `Native brightness scale ${format(d.brightnessScale)}: intensity is clipped at this sampling level. This is separate from ray truncation and completion.` : '';
   if (session.document && state !== 'invalid') syncSampling();
@@ -231,7 +242,7 @@ function controls() {
   const general = session.document.physics.model === 'general-component-tracing';
    const hasLineBlockers = session.document.physics.components.some(c=>['line-blocker','circle-blocker','finite-aperture'].includes(c.type));
   const tracing = general || session.document.physics.model === 'mixed-lens-mirror-tracing';
-  const labels = { x1:'Vertex 1 x',y1:'Vertex 1 y',x2:'Vertex 2 x',y2:'Vertex 2 y',x3:'Vertex 3 x',y3:'Vertex 3 y',x4:'Vertex 4 x',y4:'Vertex 4 y',capHeight:'Cap height from base',radius:(circular||parallelSemi||parallelCircle||curvedEntry||session.document.schemaVersion===32)?'Glass radius (positive)':general?'Circle blocker radius (positive)':'Signed curvature radius',insideIndex:'Inside refractive index',outsideIndex:'Outside refractive index',normalDeg:'Normal direction',negativeIndex:'Negative-side index',positiveIndex:'Positive-side index',x: 'Position x', y: 'Position y', focalLength: 'Focal length', apertureHeight: 'Aperture height',leftX:'Left face x',axisY:'Reference axis y',spanX:'GRIN width',upHeight:'Height above axis',downHeight:'Height below axis',gradientLength:'Index gradient length',indexSquaredAtAxis:'Index squared on axis',centerThickness:'Centre thickness',frontRadius:'Front spherical radius',backRadius:'Back spherical radius', orientationDeg: 'Surface orientation', length: 'Length', openingLength:'Clear opening length',width:'Perpendicular beam width',directionDeg:'Propagation direction' };
+  const labels = { x1:'Vertex 1 x',y1:'Vertex 1 y',x2:'Vertex 2 x',y2:'Vertex 2 y',x3:'Vertex 3 x',y3:'Vertex 3 y',x4:'Vertex 4 x',y4:'Vertex 4 y',capHeight:'Cap height from base',radius:(circular||parallelSemi||parallelCircle||curvedEntry||session.document.schemaVersion===32)?'Glass radius (positive)':general?'Circle blocker radius (positive)':'Signed curvature radius',insideIndex:'Inside refractive index',outsideIndex:'Outside refractive index',normalDeg:'Normal direction',negativeIndex:'Negative-side index',positiveIndex:'Positive-side index',x: 'Position x', y: 'Position y', focalLength: 'Focal length', apertureHeight: 'Aperture height',leftX:'Left face x',axisY:'Reference axis y',spanX:'GRIN width',upHeight:'Height above axis',downHeight:'Height below axis',gradientLength:'Index gradient length',indexSquaredAtAxis:'Index squared on axis',centerThickness:'Centre thickness',frontRadius:'Front spherical radius',backRadius:'Back spherical radius', orientationDeg: 'Surface orientation', length: 'Length', transmissionRatio: 'Transmission ratio', openingLength:'Clear opening length',width:'Perpendicular beam width',directionDeg:'Propagation direction' };
   for (const component of session.document.physics.components) {
     const fieldset = document.createElement('fieldset');
     const legend = document.createElement('legend'); legend.textContent = component.id;
@@ -246,15 +257,16 @@ function controls() {
         bindings.push({id:component.id,section:'parameters',key,input});input.onchange=()=>{cancelScheduled();commitDraft();};continue;
       }
       const slider = key === 'brightness' ? { min: 0.01, max: 1, step: 0.01 } :
+        key === 'transmissionRatio' ? { min: 0.01, max: 0.99, step: 0.01 } :
         component.type==='parallel-beam'&&key==='width' ? {min:10,max:100,step:1} :
         component.type==='parallel-beam'&&key==='directionDeg' ? {min:-180,max:180,step:1} :
-        ['plane-mirror','line-blocker','circle-blocker','finite-aperture','ray-detector'].includes(component.type) ?
+        ['plane-mirror','beam-splitter','line-blocker','circle-blocker','finite-aperture','ray-detector'].includes(component.type) ?
         { min: ['length','radius','openingLength'].includes(key) ? 1 : key === 'orientationDeg' ? -180 : -10000, max: key === 'orientationDeg' ? 180 : 10000, step: 1 } : null;
       const fixed = mixed && component.type === 'plane-mirror' && ['y', 'orientationDeg'].includes(key);
       const nullable = session.document.schemaVersion === OPTICAL_BENCH_V40_VERSION && component.type === 'spherical-lens' && ['frontRadius', 'backRadius'].includes(key);
       addNumber(component.type === 'point-source' && key === 'brightness' && !multipleSources ?
         $('source-parameters') : fieldset, component.id, 'parameters', key,
-        key === 'brightness' ? 'Brightness (relative)' : `${key === 'radius' && component.type === 'circle-blocker' ? 'Circle blocker radius (positive)' : key === 'radius' && ['circular-dielectric','circular-cap-dielectric'].includes(component.type) ? 'Glass radius (positive)' : labels[key]} (${['orientationDeg','normalDeg','directionDeg'].includes(key) ? '°' : ['negativeIndex','positiveIndex','insideIndex','outsideIndex','indexSquaredAtAxis'].includes(key)?'dimensionless':'mm'})`, value, slider, fixed, nullable);
+        key === 'brightness' ? 'Brightness (relative)' : `${key === 'radius' && component.type === 'circle-blocker' ? 'Circle blocker radius (positive)' : key === 'radius' && ['circular-dielectric','circular-cap-dielectric'].includes(component.type) ? 'Glass radius (positive)' : labels[key]} (${['orientationDeg','normalDeg','directionDeg'].includes(key) ? '°' : ['negativeIndex','positiveIndex','insideIndex','outsideIndex','indexSquaredAtAxis','transmissionRatio'].includes(key)?'dimensionless':'mm'})`, value, slider, fixed, nullable);
     }
     if (['line-blocker','circle-blocker','finite-aperture'].includes(component.type)) {
       const note=document.createElement('p');note.className='muted';
@@ -263,6 +275,11 @@ function controls() {
     if (component.type === 'plane-mirror') {
       const note = document.createElement('p'); note.className = 'muted';
       note.textContent = mixed ? 'Return layout fixes centre y=0 and perpendicular orientation ±90°. Mirror x and finite length remain editable. The same lens is used on both encounters.' : 'Position is the segment centre. Surface tangent: 0° horizontal · 90° vertical · +45° rises right. Reflects from both sides.';
+      fieldset.append(note);
+    }
+    if (component.type === 'beam-splitter') {
+      const note = document.createElement('p'); note.className = 'muted';
+      note.textContent = 'Native broadband BeamSplitter (filter: false). Splits each incident ray into reflected (1 − T) and transmitted (T) branches. Sampled interaction counts are not continuous flux; faint branches (≤ 0.01) or repeated cavity bounces trigger native truncation.';
       fieldset.append(note);
     }
     if(isCurved(component.type)){

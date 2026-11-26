@@ -191,6 +191,20 @@ test('v40 exact circular-arc-mirror clearance matrix across all 5 dielectric bod
     {id:'M1',type:'circular-arc-mirror',parameters:{x:0,y:10,normalDeg:-90,radius:10,apertureHeight:16}}
   ])));
 
+  // PR #274 P3-2: Discriminating nonconcentric cap-vs-arc test isolating the interior stationary-pair
+  // (g = 0.020 admit, g = 0.005 reject) and circle-intersection (g = -0.010 reject) branches while
+  // keeping mirror vertex and both endpoints > 1 mm outside capBody.
+  const rad20=20*Math.PI/180;
+  const tiltedArcAt=g=>({
+    id:'M1',type:'circular-arc-mirror',
+    parameters:{x:10*Math.sin(rad20),y:20+g-10*Math.cos(rad20),normalDeg:110,radius:10,apertureHeight:16}
+  });
+  // Verify vertex is > 1 mm outside capBody (r = hypot(3.42, 10.60) ~ 11.14 > 11 mm):
+  assert.ok(Math.hypot(tiltedArcAt(-0.01).parameters.x,tiltedArcAt(-0.01).parameters.y)>11);
+  assert.doesNotThrow(()=>prepareScene(v40Req([capRay,capBody,tiltedArcAt(0.02)])));
+  assert.throws(()=>prepareScene(v40Req([capRay,capBody,tiltedArcAt(0.005)])),/Circular-arc-mirror surface must lie outside dielectric body/);
+  assert.throws(()=>prepareScene(v40Req([capRay,capBody,tiltedArcAt(-0.01)])),/Circular-arc-mirror surface must lie outside dielectric body/);
+
   // 5. Spherical-lens (biconvex centered at x=-20, thickness=6 -> AABB x in [-23, -17]):
   //    convex arc mirror at x=0, R=-400, aperture=120 is 17 mm clear of AABB (inside old 60.17 mm disk!) -> accepted;
   //    at x=-16.995 (0.005 mm from AABB) -> rejected; flush curved-silvered back face -> accepted!

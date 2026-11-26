@@ -538,11 +538,14 @@ test('v40 LLM front door DX: slim workflow-capabilities, self-contained bench-ca
   assert.deepEqual(bench.bounds.directionDeg,[...COMPONENT_BOUNDS.directionDeg]);
   assert.deepEqual(bench.bounds.angleDeg,[...COMPONENT_BOUNDS.openingAngleDeg]);
   assert.deepEqual(bench.bounds.brightness,[...COMPONENT_BOUNDS.brightness]);
+  assert.deepEqual(bench.bounds.transmissionRatio,[...COMPONENT_BOUNDS.transmissionRatio]);
   assert.deepEqual(bench.bounds.refractiveIndex,[...COMPONENT_BOUNDS.refractiveIndex]);
   assert.deepEqual(bench.bounds.parallelBeamWidthMm,[10,100]);
   assert.deepEqual(bench.bounds.radiusMm['circular-dielectric'],[2,COMPONENT_BOUNDS.coordinateMm[1]]);
   assert.deepEqual(bench.bounds.radiusMm['circular-cap-dielectric'],[2,COMPONENT_BOUNDS.coordinateMm[1]]);
   assert.deepEqual(bench.bounds.radiusMm['circle-blocker'],[1,COMPONENT_BOUNDS.coordinateMm[1]]);
+  assert.deepEqual(bench.components['beam-splitter'].count,[0,2]);
+  assert.ok(bench.observables.includes('beam-splitter-interactions'));
   assert.deepEqual(bench.components.finiteDielectrics.faceNaming['triangular-prism'],['face-12','face-23','face-31']);
   assert.match(bench.components.opaqueStops.interiorPlacement,/line-blocker and circle-blocker.*strictly inside.*finite-aperture.*outside/);
   assert.match(bench.components['ray-detector'].interiorPlacement,/strictly inside.*spherical-lens remains exterior-only/);
@@ -603,7 +606,7 @@ test('v40 LLM front door DX: slim workflow-capabilities, self-contained bench-ca
   const obsCaps=observableCapabilities();
   assert.deepEqual(obsCaps.itemSchema.syntacticallyRequired,['id','kind']);
   assert.deepEqual(obsCaps.itemSchema.optional,['componentId']);
-  assert.match(obsCaps.itemSchema.arrayFormat,/Bare JSON array/);
+  assert.match(obsCaps.itemSchema.arrayFormat,/Bare JSON array.*create-only/);
   assert.match(obsCaps.itemSchema.targetRequirement.qualifiedSceneSidecar,/explicit compatible componentId is required/);
   assert.match(obsCaps.itemSchema.targetRequirement.unifiedProblemWorkflow,/sole-compatible|exactly one compatible/);
   assert.equal(obsCaps.itemSchema.example.componentId,'D1');
@@ -644,6 +647,7 @@ test('v40 LLM front door DX: slim workflow-capabilities, self-contained bench-ca
   assert.match(bench.components.curvedMirrors.note,/positive focalLength\/radius is concave.*negative is convex/);
   assert.match(bench.components.curvedMirrors.note,/apertureHeight\/2 < 0\.99\*\|radius\|/);
   assert.match(bench.components.curvedMirrors.note,/exact >= 0\.01 mm arc clearance against emitters, finite segments, parallel beams, opaque circles, and non-silvered finite dielectrics/);
+  assert.match(bench.components.curvedMirrors.note,/exact against the conservative AABB for spherical-lens; otherwise exact against the physical body/);
   assert.match(bench.components.curvedMirrors.note,/ideal-curved-mirror enforces a half-aperture bounding disk of radius apertureHeight\/2/);
   assert.match(bench.components.curvedMirrors.types['ideal-curved-mirror'].note,/positive focalLength concave/);
   assert.match(bench.components.curvedMirrors.types['circular-arc-mirror'].note,/exact >= 0\.01 mm arc clearance/);

@@ -67,6 +67,10 @@ const compilers = {
     const [a, b] = mirrorEndpoints(c.parameters);
     return { type: 'Mirror', p1: { x: a.x, y: -a.y }, p2: { x: b.x, y: -b.y }, filter: false };
   },
+  'beam-splitter': c => {
+    const [a, b] = mirrorEndpoints(c.parameters);
+    return { type: 'BeamSplitter', p1: { x: a.x, y: -a.y }, p2: { x: b.x, y: -b.y }, transRatio: c.parameters.transmissionRatio, filter: false };
+  },
   'ray-detector': c => {
     const [a, b] = mirrorEndpoints(c.parameters);
     return { type: 'Detector', p1: { x: a.x, y: -a.y },

@@ -561,6 +561,49 @@ async function main(){
       report.checks.push({name:'v40 starter '+slug,result:'pass',stats:s.stats,painted:s.painted});
     }
 
+    // PR #275 P2-1 regression: import a v40 mixed beam-splitter + missed-mirror scene via #load,
+    // verify browser does NOT falsely say "No sampled rays reflected." when BS1 reflects while M1 has 0 hits,
+    // verify completion-gated splitter interaction readout, and verify dimensionless transmissionRatio edit + invalid recovery.
+    const v40SplitterPath=join(profile,'v40-beam-splitter-mixed.json');
+    await writeFile(v40SplitterPath,JSON.stringify({
+      format:'ray-optics-2d',schemaVersion:40,adapterVersion:40,
+      upstreamCommit:'811f508d2b070898c241a568b0c167dcb8645251',
+      physics:{lengthUnit:'mm',coordinates:'x-right-y-up',model:'native-optical-bench',backgroundIndex:1,components:[
+        {id:'S1',type:'point-source',parameters:{x:-40,y:0,brightness:0.4},emission:{mode:'single-ray',directionDeg:0,angleDeg:30}},
+        {id:'BS1',type:'beam-splitter',parameters:{x:0,y:0,orientationDeg:45,length:30,transmissionRatio:0.5}},
+        {id:'M1',type:'plane-mirror',parameters:{x:40,y:25,orientationDeg:90,length:10}},
+        {id:'D_trans',type:'ray-detector',parameters:{x:40,y:0,orientationDeg:90,length:20}}
+      ]},
+      presentation:{title:'v40 beam-splitter mixed mirror regression',view:{x:0,y:0,zoom:3},mode:'rays',grid:false},
+      simulation:{rayDensity:0.2,maxRayDepth:16,processedRayLimit:10000,randomSeed:'browser-bs-seed'}
+    },null,2));
+    const domBs=await cdp.send('DOM.getDocument',{depth:-1});
+    const loadBs=await cdp.send('DOM.querySelector',{nodeId:domBs.root.nodeId,selector:'#load'});
+    await cdp.send('DOM.setFileInputFiles',{nodeId:loadBs.nodeId,files:[v40SplitterPath]});
+    const bsLoaded=await until(state,x=>x?.title==='v40 beam-splitter mixed mirror regression'&&x.status==='completed'&&x.detectorReadouts?.includes('D_trans: 1 native crossings'),'v40 beam-splitter mixed load');
+    assert.ok(bsLoaded.painted>0);
+    assert.equal(bsLoaded.error,'');
+    assert.equal(bsLoaded.saveDisabled,false);
+    assert.match(bsLoaded.stats,/0 native mirror reflections \(M1: 0\)/);
+    assert.match(bsLoaded.stats,/BS1: 1 native splitter interaction\b/);
+    const bsReflectionNote=await evaluate('document.getElementById("reflection-note").textContent');
+    assert.doesNotMatch(bsReflectionNote,/No sampled rays reflected\./);
+    assert.match(bsReflectionNote,/No sampled rays struck a plane\/curved mirror/);
+    const bsRatioLabel=await evaluate('document.querySelector(\'label[for="BS1-transmissionRatio"]\')?.textContent || document.getElementById("BS1-transmissionRatio")?.closest("label")?.textContent || ""');
+    assert.match(bsRatioLabel,/Transmission ratio \(dimensionless\)/);
+    assert.match(bsLoaded.detectorReadouts,/signed detector power -?0\.2 \(relative native units\)/);
+    await edit('BS1-transmissionRatio',0.75);
+    const bsEdited=await until(state,x=>x?.title==='v40 beam-splitter mixed mirror regression'&&x.status==='completed'&&x.detectorReadouts?.includes('0.3 (relative native units)'),'v40 beam-splitter transmissionRatio edit');
+    assert.equal(await evaluate('document.getElementById("BS1-transmissionRatio").value'),'0.75');
+    assert.match(bsEdited.stats,/BS1: 1 native splitter interaction\b/);
+    await edit('BS1-transmissionRatio',1);
+    const bsInvalid=await until(state,x=>x?.status==='invalid','v40 beam-splitter invalid transmissionRatio=1');
+    assert.equal(bsInvalid.saveDisabled,true);
+    await edit('BS1-transmissionRatio',0.5);
+    await until(state,x=>x?.title==='v40 beam-splitter mixed mirror regression'&&x.status==='completed'&&x.detectorReadouts?.includes('0.2 (relative native units)'),'v40 beam-splitter recovery');
+    await shot('v40-beam-splitter-mixed');
+    report.checks.push({name:'v40 beam-splitter mixed zero-mirror readout & dimensionless transmissionRatio edit',result:'pass',stats:bsEdited.stats});
+
     console.log('Browser acceptance PASS: '+report.checks.length+' checks; '+report.screenshots.length+' screenshots; '+version);
   }catch(err){
     report.errors.push(err.message);

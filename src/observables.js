@@ -19,6 +19,7 @@ const kinds=Object.freeze({
   'guide-exit-counts':{type:'polygon-dielectric',unit:'sampled rays by actual native exit branch'},
   'blocker-absorptions':{type:['line-blocker','circle-blocker','finite-aperture'],unit:'sampled absorbed rays'},
   'mirror-reflections':{type:['plane-mirror','ideal-curved-mirror','circular-arc-mirror'],unit:'sampled interactions'},
+  'beam-splitter-interactions':{type:'beam-splitter',unit:'sampled interactions'},
   'detector-crossings':{type:'ray-detector',unit:'sampled crossings'},
   'detector-hit-events':{type:'ray-detector',unit:'mm positions and unitless incoming directions; native sampled events'},
   'detector-ray-provenance':{type:'ray-detector',unit:'native observed object ancestry; tokens are run-local'},
@@ -30,11 +31,11 @@ const OBSERVABLE_KEYS=Object.freeze(['id','kind','componentId']);
 export function observableCapabilities(){
   return {format:'opticsim-observables-v1',maxRequests:16,
     itemSchema:{
-      arrayFormat:'Bare JSON array of 0–16 request objects (no outer wrapper object) for scripts/qualified-scene.mjs --observables <array.json>; inside opticsim-problem-v1, place items directly in requests[] (1–16 total requests).',
+      arrayFormat:'Bare JSON array of 0–16 request objects (no outer wrapper object) for scripts/qualified-scene.mjs create --observables <array.json> (--observables is create-only; revise and structure automatically reuse the bundle\'s attached observables). Inside opticsim-problem-v1, place items directly in requests[] (1–16 total requests).',
       syntacticallyRequired:['id','kind'],
       optional:['componentId'],
       targetRequirement:{
-        qualifiedSceneSidecar:'An explicit compatible componentId is required for any known native observable in qualified-scene.mjs --observables to return a measurement (no auto-binding; omitting componentId yields status "unavailable").',
+        qualifiedSceneSidecar:'An explicit compatible componentId is required for any known native observable in qualified-scene.mjs create --observables to return a measurement (no auto-binding; omitting componentId yields status "unavailable"; do not pass --observables to revise or structure).',
         unifiedProblemWorkflow:'In opticsim-problem-v1 requests[], componentId may be omitted ONLY when exactly one compatible authored component exists (recorded in targetBindings).'
       },
       note:'Use "componentId" (not targetId) to target an authored component.',
@@ -204,6 +205,7 @@ export async function evaluateObservables(doc,requests,execution){
     const value=r.kind==='blocker-absorptions'?o?.blockersById?.[r.componentId]?.absorptions:
       r.kind==='source-emissions'?o?.emissionsById?.[r.componentId]?.emitted:
       r.kind==='mirror-reflections'?o?.reflectionsById?.[r.componentId]:
+      r.kind==='beam-splitter-interactions'?o?.v40OpticalIncidentsById?.[r.componentId]:
       r.kind==='detector-crossings'?o?.detectorsById?.[r.componentId]?.crossings:
       o?.detectorsById?.[r.componentId]?.signedPower;
     if(!Number.isFinite(value))return {...base,reason:'No complete native observation exists for this component.'};

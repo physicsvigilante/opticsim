@@ -67,7 +67,7 @@ export const V40_GRAZING_MIN_COS=1e-4;
 export const V40_CRITICAL_MIN_MARGIN=1e-6;
 export const V40_DIELECTRIC_TYPES=V40_DIELECTRIC_BODY_TYPES;
 
-const SEGMENT_TYPES=Object.freeze(['ideal-lens','plane-mirror','line-blocker',FINITE_APERTURE_TYPE,'ray-detector']);
+const SEGMENT_TYPES=Object.freeze(['ideal-lens','plane-mirror','beam-splitter','line-blocker',FINITE_APERTURE_TYPE,'ray-detector']);
 
 export function isValidRandomSeed(seed){
   return typeof seed==='string'&&seed.length>=1&&seed.length<=64&&
@@ -78,7 +78,7 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
   const path='$.physics.components';
   if(!compositionCountsMatch(components,OPTICAL_BENCH_V40_MODEL,OPTICAL_BENCH_V40_VERSION)||
      components.length>OPTICAL_BENCH_V40_MAX_COMPONENTS)
-    fail(path,'v40 optical bench supports either 1–4 point sources (single-ray, directional, or full-circle) or 1 external parallel beam, 0–4 finite dielectrics (disjoint, coincident flat contact, or coaxial cemented lenses), 0–4 vertical ideal lenses, 0–2 curved mirrors, 0–4 plane mirrors, 0–2 opaque stops and 0–2 detectors (max 16 components).','UNSUPPORTED_SCOPE');
+    fail(path,'v40 optical bench supports either 1–4 point sources (single-ray, directional, or full-circle) or 1 external parallel beam, 0–4 finite dielectrics (disjoint, coincident flat contact, or coaxial cemented lenses), 0–4 vertical ideal lenses, 0–2 curved mirrors, 0–4 plane mirrors, 0–2 beam splitters, 0–2 opaque stops and 0–2 detectors (max 16 components).','UNSUPPORTED_SCOPE');
 
   const sources=components.filter(c=>c.type==='point-source');
   const beams=components.filter(c=>c.type===PARALLEL_BEAM_TYPE);
@@ -307,7 +307,7 @@ export function validateNativeOpticalBenchV40(components,backgroundIndex,rayDens
 }
 
 export function installNativeOpticalBenchV40Audit(doc,scene,idMap,mirrorEndpoints){
-  const isOptical=c=>c.type==='ideal-lens'||c.type==='plane-mirror'||isCurved(c.type);
+  const isOptical=c=>c.type==='ideal-lens'||c.type==='plane-mirror'||c.type==='beam-splitter'||isCurved(c.type);
   const baseAudit=installBenchEndpointAudit(doc,scene,idMap,mirrorEndpoints,{
     versionTag:'v40',
     key:'v40EndpointsVerified',
@@ -482,6 +482,7 @@ export function opticalBenchCapabilities(){
       directionDeg:[-180,180],
       angleDeg:[1,180],
       brightness:[0.01,1],
+      transmissionRatio:[0.01,0.99],
       refractiveIndex:[1,4]
     },
     emitters:{
@@ -499,9 +500,10 @@ export function opticalBenchCapabilities(){
       }},
       'ideal-lens':{count:[0,4],parameters:['x','y','focalLength','apertureHeight'],note:'Vertical thin lens with independent transverse centre y (split lenses at the same x are admitted when vertically separated by >= 0.01 mm); focalLength defined in ambient medium backgroundIndex.'},
       'plane-mirror':{count:[0,4],parameters:['x','y','orientationDeg','length'],note:'May sit >= 0.01 mm clear of other segments/dielectrics, meet another plane-mirror cleanly at a shared non-collinear corner (<= 1e-11 mm, |sin θ| >= 0.05; e.g. corner reflectors, triangular kaleidoscopes, 4-wall boxes), OR sit flush on a physical flat dielectric face (silvered slab, silvered prism, flat-silvered lens/cap, or mirror table) via native PhyDemo mergesWithGlass.'},
-      curvedMirrors:{groupCount:[0,2],note:'(x, y) is the mirror vertex and normalDeg (y-up degrees) points toward the front reflecting side; positive focalLength/radius is concave (curves toward normalDeg) and negative is convex. circular-arc-mirror requires minor-arc apertureHeight/2 < 0.99*|radius| and uses exact >= 0.01 mm arc clearance against emitters, finite segments, parallel beams, opaque circles, and non-silvered finite dielectrics (and conservative vertex-to-endpoint hypot(h, sag) bounding-disk clearance only against another curved mirror, where h = apertureHeight/2 and sag = h^2 / (|radius| + sqrt(radius^2 - h^2))), OR sits concentric and flush on a curved spherical-lens face, circular-dielectric boundary, or circular-cap-dielectric curved arc via native PhyDemo mergesWithGlass. ideal-curved-mirror enforces a half-aperture bounding disk of radius apertureHeight/2 around (x, y).',types:{
+      'beam-splitter':{count:[0,2],parameters:['x','y','orientationDeg','length','transmissionRatio'],interiorPlacement:'Must lie strictly outside all finite dielectric bodies (>= 0.01 mm; pinned PhyDemo BeamSplitter does not merge with glass).',note:'Native broadband BeamSplitter (v40 only, filter: false) splitting each incident ray into reflected power (1 - transmissionRatio) and transmitted power transmissionRatio (bounds [0.01, 0.99]). Geometrical ray optics only (classical reflected/transmitted rays and relative powers; no optical phase or wave interference). Must stay >= 0.01 mm clear of all emitters, dielectric bodies, and other finite/curved surfaces (no corner-touching or flush contact). Repeated cavity bounces (e.g. strict on-axis return facing a mirror) or faint transmitted branches (<= 0.01 relative brightness) trigger native PhyDemo truncation (withheld-incomplete).'},
+      curvedMirrors:{groupCount:[0,2],note:'(x, y) is the mirror vertex and normalDeg (y-up degrees) points toward the front reflecting side; positive focalLength/radius is concave (curves toward normalDeg) and negative is convex. circular-arc-mirror requires minor-arc apertureHeight/2 < 0.99*|radius| and uses exact >= 0.01 mm arc clearance against emitters, finite segments, parallel beams, opaque circles, and non-silvered finite dielectrics (exact against the conservative AABB for spherical-lens; otherwise exact against the physical body; and conservative vertex-to-endpoint hypot(h, sag) bounding-disk clearance only against another curved mirror, where h = apertureHeight/2 and sag = h^2 / (|radius| + sqrt(radius^2 - h^2))), OR sits concentric and flush on a curved spherical-lens face, circular-dielectric boundary, or circular-cap-dielectric curved arc via native PhyDemo mergesWithGlass. ideal-curved-mirror enforces a half-aperture bounding disk of radius apertureHeight/2 around (x, y).',types:{
         'ideal-curved-mirror':{parameters:['x','y','normalDeg','focalLength','apertureHeight'],note:'Ideal Gaussian curved mirror: positive focalLength concave, negative convex; conservative half-aperture (apertureHeight/2) bounding-disk clearance against nearby segments/dielectrics.'},
-        'circular-arc-mirror':{parameters:['x','y','normalDeg','radius','apertureHeight'],note:'Native circular minor arc (spherical aberration included; apertureHeight/2 < 0.99*|radius|): positive radius concave (|radius| >= 2 mm), negative convex; exact >= 0.01 mm arc clearance against emitters, finite segments, opaque circles, and non-silvered dielectrics (conservative hypot(h, sag) bounding-disk clearance against another curved mirror).'}
+        'circular-arc-mirror':{parameters:['x','y','normalDeg','radius','apertureHeight'],note:'Native circular minor arc (spherical aberration included; apertureHeight/2 < 0.99*|radius|): positive radius concave (|radius| >= 2 mm), negative convex; exact >= 0.01 mm arc clearance against emitters, finite segments, opaque circles, and non-silvered dielectrics (exact against the conservative AABB for spherical-lens; otherwise exact against the physical body; conservative hypot(h, sag) bounding-disk clearance against another curved mirror).'}
       }},
       opaqueStops:{groupCount:[0,2],interiorPlacement:'line-blocker and circle-blocker may lie in the ambient medium OR strictly inside a single circular-dielectric, circular-cap-dielectric, triangular-prism, or polygon-dielectric (>= 0.01 mm from every boundary, face, and vertex; never crossing a boundary; spherical-lens remains exterior-only). finite-aperture must lie strictly outside all finite dielectric bodies (>= 0.01 mm).',types:{
         'line-blocker':{parameters:['x','y','orientationDeg','length']},
@@ -537,7 +539,7 @@ export function opticalBenchCapabilities(){
     observables:[
       'source-emissions','interface-interactions','interface-incidence-angle',
       'interface-transmission-angle','interface-reflection-angle','interface-tir-count',
-      'interface-first-event','interface-face-events','mirror-reflections',
+      'interface-first-event','interface-face-events','mirror-reflections','beam-splitter-interactions',
       'blocker-absorptions','detector-crossings','detector-signed-power','detector-hit-events'
     ],
     witnessBridge:{

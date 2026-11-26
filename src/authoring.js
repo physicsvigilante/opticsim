@@ -61,7 +61,7 @@ const policies=Object.freeze({
     maxRayDepth:GRIN_V25_POLICY.maxRayDepth,processedRayLimit:GRIN_V25_POLICY.processedRayLimit})
 });
 const prefixes=Object.freeze({
-  'point-source':'source',[PARALLEL_BEAM_TYPE]:'beam',[SEMICIRCULAR_TYPE]:'semicircle',[CAP_TYPE]:'cap','ideal-lens':'lens','plane-mirror':'mirror','line-blocker':'blocker',[CIRCLE_BLOCKER_TYPE]:'circle-blocker',[FINITE_APERTURE_TYPE]:'aperture','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism',[POLYGON_TYPE]:'glass',[SPHERICAL_LENS_TYPE]:'thick-lens',[GRIN_V25_TYPE]:'grin'
+  'point-source':'source',[PARALLEL_BEAM_TYPE]:'beam',[SEMICIRCULAR_TYPE]:'semicircle',[CAP_TYPE]:'cap','ideal-lens':'lens','plane-mirror':'mirror','beam-splitter':'splitter','line-blocker':'blocker',[CIRCLE_BLOCKER_TYPE]:'circle-blocker',[FINITE_APERTURE_TYPE]:'aperture','ray-detector':'detector','planar-interface':'interface','ideal-curved-mirror':'ideal-mirror','circular-arc-mirror':'arc-mirror',[CIRCULAR_TYPE]:'dielectric',[PRISM_TYPE]:'prism',[POLYGON_TYPE]:'glass',[SPHERICAL_LENS_TYPE]:'thick-lens',[GRIN_V25_TYPE]:'grin'
 });
 const lengthKeys=new Set(LENGTH_PARAMETERS);
 const own=(value,key)=>Object.prototype.hasOwnProperty.call(value,key);
@@ -229,6 +229,7 @@ export function capabilities() {
           v40:{versions:[OPTICAL_BENCH_V40_VERSION],radii:'signed (+convex outward, -concave inward, |radius| >= apertureHeight/2 + 1 mm) or null (flat/planar face)',nullableParameters:['frontRadius','backRadius']}
         }
       }:{}),
+      ...(type==='beam-splitter'?{nativeType:'BeamSplitter',geometry:'Finite broadband partial-reflecting beam splitter (v40 only; filter: false); splits each actual native ray into reflected (1 - transmissionRatio) and transmitted (transmissionRatio) branches'}:{}),
       ...(type==='line-blocker'?{nativeType:'Blocker',geometry:'Opaque finite line segment; centre, tangent orientation, and length are explicit; absorbs each actual native ray incident'}:{}),
       ...(type===CIRCLE_BLOCKER_TYPE?{nativeType:'CircleBlocker',geometry:'Opaque 2D circular boundary with explicit centre and positive radius; absorbs actual native ray incidents; not a 3D body'}:{}),
       ...(type===FINITE_APERTURE_TYPE?{nativeType:'Aperture',geometry:'Opaque 2D line with an explicitly transparent centred opening; no wave diffraction'}:{}),
@@ -297,6 +298,7 @@ export function inspectAuthoringRequest(request){
     if(lengthKeys.has(key)&&scale===null)return;
     const n=value*(lengthKeys.has(key)?scale:1),b=COMPONENT_BOUNDS;
     const bounds=key==='brightness'?b.brightness:
+      key==='transmissionRatio'?b.transmissionRatio:
       ['negativeIndex','positiveIndex','insideIndex','outsideIndex'].includes(key)?b.refractiveIndex:
       key==='normalDeg'?b.orientationDeg:key==='orientationDeg'?b.orientationDeg:key==='directionDeg'?b.directionDeg:
       key==='angleDeg'?b.openingAngleDeg:
