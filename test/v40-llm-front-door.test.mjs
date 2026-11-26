@@ -10,7 +10,7 @@ import {createRequire} from 'node:module';
 import {COMPONENT_REVISION_FORMAT,inspectAuthoringRequest,prepareScene} from '../src/authoring.js';
 import {COMPONENT_BOUNDS,serializeSave} from '../src/contract.js';
 import {OPTICAL_BENCH_V40_MODEL,OPTICAL_BENCH_V40_VERSION} from '../src/native-optical-bench.js';
-import {observableCapabilities,validateObservables} from '../src/observables.js';
+import {evaluateObservables,observableCapabilities,validateObservables} from '../src/observables.js';
 import {analyzePlanarAngleQuery} from '../src/planar-angle-queries.js';
 import {planProblem,problemWorkflowCapabilities,workflowCapabilitiesSummary} from '../src/problem-workflow.js';
 import {INTERPRETATION_SCHEMA,parseQualifiedBundle,validateInterpretation} from '../src/qualification.js';
@@ -444,7 +444,7 @@ test('v40 LLM front door developmental control: qualified-scene.mjs create -> re
   }
 });
 
-test('v40 LLM front door DX: slim workflow-capabilities, self-contained bench-capabilities example/bounds, --help exit 0, and actionable diagnostics',()=>{
+test('v40 LLM front door DX: slim workflow-capabilities, self-contained bench-capabilities example/bounds, --help exit 0, and actionable diagnostics',async()=>{
   // 1. Slim workflow-capabilities CLI index (< 15 KB vs ~182 KB monolithic dump) + per-family drill-down
   const summaryRes=runCli('scripts/author-scene.mjs',['workflow-capabilities']);
   assert.equal(summaryRes.exitCode,0);
@@ -599,25 +599,53 @@ test('v40 LLM front door DX: slim workflow-capabilities, self-contained bench-ca
   assert.equal(circleIssues[0].code,'INVALID_INPUT');
   assert.match(circleIssues[0].message,/got 1 mm; allowed \[2, 10000\] mm/);
 
-  // 7. Observable itemSchema + actionable validateObservables diagnostics (U7/U8 cold-trial fix)
+  // 7. Observable itemSchema + actionable validateObservables diagnostics (U7/U8 cold-trial fix + PR #272 P2-2 & P3-1)
   const obsCaps=observableCapabilities();
-  assert.deepEqual(obsCaps.itemSchema.required,['id','kind']);
+  assert.deepEqual(obsCaps.itemSchema.syntacticallyRequired,['id','kind']);
   assert.deepEqual(obsCaps.itemSchema.optional,['componentId']);
   assert.match(obsCaps.itemSchema.arrayFormat,/Bare JSON array/);
+  assert.match(obsCaps.itemSchema.targetRequirement.qualifiedSceneSidecar,/explicit compatible componentId is required/);
+  assert.match(obsCaps.itemSchema.targetRequirement.unifiedProblemWorkflow,/sole-compatible|exactly one compatible/);
   assert.equal(obsCaps.itemSchema.example.componentId,'D1');
   assert.throws(
     ()=>validateObservables([{id:'o1',kind:'mirror-reflections',targetId:'M1'}]),
-    /Invalid observable request fields at index 0: unexpected key\(s\) \[targetId\]; allowed keys: id, kind, componentId/
+    /Invalid observable request fields \(id "o1"\): unexpected key\(s\) \[targetId\]; allowed keys: id, kind, componentId/
   );
   assert.throws(
     ()=>validateObservables(['not-an-object']),
-    /Invalid observable request fields at index 0: expected object; allowed keys: id, kind, componentId/
+    /Invalid observable request fields: expected object; allowed keys: id, kind, componentId/
   );
+  // P3-1: two-item unified planProblem must identify id "o2" rather than a misleading "at index 0"
+  assert.throws(
+    ()=>planProblem({
+      format:'opticsim-problem-v1',physical:bench.minimalExample,
+      requests:[
+        {id:'o1',kind:'detector-crossings',componentId:'D1'},
+        {id:'o2',kind:'detector-hit-events',targetId:'D1'}
+      ]
+    }),
+    /Invalid observable request fields \(id "o2"\): unexpected key\(s\) \[targetId\]; allowed keys: id, kind, componentId/
+  );
+  // P2-2: contrast direct evaluateObservables (no auto-binding when componentId omitted -> unavailable) vs planProblem (sole-compatible auto-binding -> D1)
+  const {evaluateDocument}=await import('../scripts/author-scene.mjs');
+  const minEval=evaluateDocument(minDoc,core,[{id:'hits',kind:'detector-hit-events',componentId:'D1'}]);
+  const directOmitted=await evaluateObservables(minDoc,[{id:'hits',kind:'detector-crossings'}],minEval.summary);
+  assert.equal(directOmitted.results[0].status,'unavailable');
+  assert.match(directOmitted.results[0].reason,/missing or has the wrong physical type/);
+  const unifiedOmitted=planProblem({
+    format:'opticsim-problem-v1',physical:bench.minimalExample,
+    requests:[{id:'hits',kind:'detector-crossings'}]
+  });
+  assert.deepEqual(unifiedOmitted.targetBindings,[
+    {requestId:'hits',kind:'detector-crossings',componentId:'D1',rule:'sole-compatible-authored-component'}
+  ]);
 
-  // 8. Curved-mirror sign/vertex & bounding-disk wording in bench-capabilities + reduced-facts branch note
+  // 8. Curved-mirror sign/vertex & exact ideal-vs-arc dielectric bounding-disk wording (PR #272 P2-1) + reduced-facts branch note
   assert.match(bench.components.curvedMirrors.note,/positive focalLength\/radius is concave.*negative is convex/);
-  assert.match(bench.components.curvedMirrors.note,/bounding disk of radius apertureHeight\/2/);
+  assert.match(bench.components.curvedMirrors.note,/apertureHeight\/2 < 0\.99\*\|radius\|/);
+  assert.match(bench.components.curvedMirrors.note,/ideal-curved-mirror enforces a half-aperture bounding disk of radius apertureHeight\/2/);
+  assert.match(bench.components.curvedMirrors.note,/circular-arc-mirror enforces its vertex-to-endpoint bounding disk of radius hypot\(h, sag\)/);
   assert.match(bench.components.curvedMirrors.types['ideal-curved-mirror'].note,/positive focalLength concave/);
-  assert.match(bench.components.curvedMirrors.types['circular-arc-mirror'].note,/positive radius concave/);
+  assert.match(bench.components.curvedMirrors.types['circular-arc-mirror'].note,/hypot\(h, sag\)/);
   assert.match(angularDrill.contract.querySchemas['branch-angles'].note,/for reduced angular facts/);
 });
