@@ -347,7 +347,7 @@ export function angularCapabilities(){
         standaloneRequired:['format','kind','sourceId','branches'],
         workflowRequestRequired:['id','kind','sourceId','branches'],
         branchItem:{required:['id','events'],eventItem:{required:['interfaceId','action'],action:['transmit','reflect']}},
-        note:'1–4 branches, 1–8 ordered events per branch; requires known source.incidentAngleDeg and source.approach'
+        note:'1–4 branches, 1–8 ordered events per branch; for reduced angular facts, requires known source.incidentAngleDeg and source.approach (complete v5 scene requests instead derive incidence/approach from source.emission.directionDeg)'
       }
     },
     critical:'requires missing source direction plus explicit approach and tangentSide; solves one critical target via transmissions only',

@@ -10,6 +10,7 @@ import {createRequire} from 'node:module';
 import {COMPONENT_REVISION_FORMAT,inspectAuthoringRequest,prepareScene} from '../src/authoring.js';
 import {COMPONENT_BOUNDS,serializeSave} from '../src/contract.js';
 import {OPTICAL_BENCH_V40_MODEL,OPTICAL_BENCH_V40_VERSION} from '../src/native-optical-bench.js';
+import {observableCapabilities,validateObservables} from '../src/observables.js';
 import {analyzePlanarAngleQuery} from '../src/planar-angle-queries.js';
 import {planProblem,problemWorkflowCapabilities,workflowCapabilitiesSummary} from '../src/problem-workflow.js';
 import {INTERPRETATION_SCHEMA,parseQualifiedBundle,validateInterpretation} from '../src/qualification.js';
@@ -597,4 +598,26 @@ test('v40 LLM front door DX: slim workflow-capabilities, self-contained bench-ca
   });
   assert.equal(circleIssues[0].code,'INVALID_INPUT');
   assert.match(circleIssues[0].message,/got 1 mm; allowed \[2, 10000\] mm/);
+
+  // 7. Observable itemSchema + actionable validateObservables diagnostics (U7/U8 cold-trial fix)
+  const obsCaps=observableCapabilities();
+  assert.deepEqual(obsCaps.itemSchema.required,['id','kind']);
+  assert.deepEqual(obsCaps.itemSchema.optional,['componentId']);
+  assert.match(obsCaps.itemSchema.arrayFormat,/Bare JSON array/);
+  assert.equal(obsCaps.itemSchema.example.componentId,'D1');
+  assert.throws(
+    ()=>validateObservables([{id:'o1',kind:'mirror-reflections',targetId:'M1'}]),
+    /Invalid observable request fields at index 0: unexpected key\(s\) \[targetId\]; allowed keys: id, kind, componentId/
+  );
+  assert.throws(
+    ()=>validateObservables(['not-an-object']),
+    /Invalid observable request fields at index 0: expected object; allowed keys: id, kind, componentId/
+  );
+
+  // 8. Curved-mirror sign/vertex & bounding-disk wording in bench-capabilities + reduced-facts branch note
+  assert.match(bench.components.curvedMirrors.note,/positive focalLength\/radius is concave.*negative is convex/);
+  assert.match(bench.components.curvedMirrors.note,/bounding disk of radius apertureHeight\/2/);
+  assert.match(bench.components.curvedMirrors.types['ideal-curved-mirror'].note,/positive focalLength concave/);
+  assert.match(bench.components.curvedMirrors.types['circular-arc-mirror'].note,/positive radius concave/);
+  assert.match(angularDrill.contract.querySchemas['branch-angles'].note,/for reduced angular facts/);
 });

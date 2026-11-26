@@ -26,8 +26,17 @@ const kinds=Object.freeze({
   'detector-signed-power':{type:'ray-detector',unit:'relative native units; not watts'},
   'ideal-image':{type:'point-source',unit:'mm; magnification dimensionless'}
 });
+const OBSERVABLE_KEYS=Object.freeze(['id','kind','componentId']);
 export function observableCapabilities(){
-  return {format:'opticsim-observables-v1',maxRequests:16,kinds:structuredClone(kinds),
+  return {format:'opticsim-observables-v1',maxRequests:16,
+    itemSchema:{
+      arrayFormat:'Bare JSON array of 0–16 request objects (no outer wrapper object) for --observables <array.json>; inside opticsim-problem-v1, place items directly in requests[].',
+      required:['id','kind'],
+      optional:['componentId'],
+      note:'Use "componentId" (not targetId) to target an authored component; in opticsim-problem-v1, componentId may be omitted only when a sole compatible component exists.',
+      example:{id:'obs-1',kind:'detector-hit-events',componentId:'D1'}
+    },
+    kinds:structuredClone(kinds),
     limits:['Native counts are sampled, not continuous coverage.',
       'Ideal image is conditional analysis, never native image detection.',
       'A requested result does not certify interpretation of its source question.',
@@ -42,8 +51,10 @@ export function observableCapabilities(){
 export function validateObservables(requests){
   if(!Array.isArray(requests)||requests.length>16)throw Error('Expected at most 16 observable requests');
   const ids=new Set();
-  for(const r of requests){
-    if(!isRecord(r)||Object.keys(r).some(k=>!['id','kind','componentId'].includes(k)))throw Error('Invalid observable request fields');
+  for(const [index,r] of requests.entries()){
+    if(!isRecord(r))throw Error('Invalid observable request fields at index '+index+': expected object; allowed keys: '+OBSERVABLE_KEYS.join(', '));
+    const extra=Object.keys(r).filter(k=>!OBSERVABLE_KEYS.includes(k));
+    if(extra.length)throw Error('Invalid observable request fields at index '+index+': unexpected key(s) ['+extra.join(', ')+']; allowed keys: '+OBSERVABLE_KEYS.join(', '));
     boundedText(r.id,'Observable id',64);boundedText(r.kind,'Observable kind',80);
     if(ids.has(r.id))throw Error('Duplicate observable id');ids.add(r.id);
     if(r.componentId!==undefined)boundedText(r.componentId,'Observable componentId',64);

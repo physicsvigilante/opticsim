@@ -13,7 +13,7 @@ Read `AGENTS.md`, `docs/UNIFIED-PROBLEM-WORKFLOW.md`, `docs/WHICH-MODEL.md`, and
 (`node scripts/run-problem.mjs capabilities` also exists as the full combined dump, but is ~180 KB because it embeds frozen `v1`–`v39` authoring contracts.) Preserve the original problem reference, stated facts, unknowns, assumptions and requested quantities before execution. The tool does not read images or understand natural-language physics; the LLM performs that interpretation.
 
 **`opticsim-problem-v1` envelope & `interpretation` schema:**
-- Top-level required keys: `format: "opticsim-problem-v1"`, `physical` (request/facts object or `null`), `requests` (`1–16` items, each `{ id, kind, ...fields }` — omit `format` on items inside `requests[]`).
+- Top-level required keys: `format: "opticsim-problem-v1"`, `physical` (request/facts object or `null`), `requests` (`1–16` items, each `{ id, kind, ...fields }` — omit `format` on items inside `requests[]`; for native observables, use `componentId` — not `targetId` — when naming an authored component).
 - Top-level optional keys: `interpretation`, `illustration` (boolean), `verifyNative` (boolean).
 - Allowed `interpretation` keys (any other key is rejected): `source` (optional object with allowed keys `caseId`, `path`, `sha256`), `requestedResult` (string), `stated` (`string[]`), `derived` (`string[]`), `assumptions` (`string[]`), `unknowns` (`string[]`).
 
