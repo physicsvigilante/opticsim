@@ -644,7 +644,7 @@ export function componentFiniteEndpoints(c,mirrorEndpoints){
     const g=apertureGeometry(p,mirrorEndpoints);
     return [g.p1,g.p2,g.p3,g.p4];
   }
-  if(['plane-mirror','line-blocker','ray-detector'].includes(c.type))
+  if(['plane-mirror','beam-splitter','line-blocker','ray-detector'].includes(c.type))
     return mirrorEndpoints(p);
   if(isCurved(c.type)){
     const pts=curvedPoints(c);

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "milestone": "native-optical-bench-v40-beam-splitter",
+  "sourceV40CapUiAppGitBlob": "114f58cb77796661939512eaf7d5310fd6242c7e",
+  "v40BeamSplitterAppGitBlob": "ff25e671799a53cb079dbce756f0db2ea7e44f87",
+  "note": "Added v40-only beam-splitter sidebar controls (x, y, orientationDeg, length, dimensionless transmissionRatio [0.01, 0.99] slider), hasOptics recognition, and broadband BeamSplitter guidance note in src/app.js; legacy v1-v39 UI unchanged."
+}
